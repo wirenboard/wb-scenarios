@@ -1,0 +1,157 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "title": "Automation scenarios",
+    "configFile": {
+        "path": "/etc/scenarios.conf",
+        "service": "wb-rules"
+    },
+    "definitions": {
+        "scenario": {
+            "title": "Scenario",
+            "headerTemplate": "{{ self.name }}",
+            "oneOf": [
+                { "$ref": "#/definitions/linkInToOut" }
+            ],
+            "_format": "wb-multiple",
+            "options": {
+                "keep_oneof_values": false,
+                "disable_collapse": true,
+                "disable_edit_json": true,
+                "disable_properties": true,
+                "wb": {
+                    "disable_panel": true
+                }
+            }
+        },
+        "linkInToOut": {
+            "type": "object",
+            "title": "Link in to out",
+            "description":"Данный сценарий предоставляет возможность прямого соединения дискретного входа с дискретным выходом<br><img src=\"images/scenarios-link-in-to-out.png\">",
+            "_format": "grid",
+            "properties": {
+                "scenarioType": {
+                    "type": "string",
+                    "enum": ["linkInToOut"],
+                    "default": "linkInToOut",
+                    "options": {
+                        "hidden": true
+                    }
+                },
+                "enable": {
+                    "type": "boolean",
+                    "title": "Enable",
+                    "default": true,
+                    "_format": "checkbox",
+                    "propertyOrder": 1,
+                    "options": {
+                        "grid_columns": 12
+                    }
+                },
+                "name": {
+                    "type": "string",
+                    "title": "Scenario name",
+                    "default": "Управление нагрузкой",
+                    "minLength": 1,
+                    "maxLength": 30,
+                    "propertyOrder": 2,
+                    "options": {
+                        "grid_columns": 12
+                    }
+                },
+                "id_prefix": {
+                    "type": "string",
+                    "title": "ID Prefix",
+                    "description": "Одно слово на английском языке исключая: пробел, /, +, #. Длина до 15 символов.",
+                    "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
+                    "pattern": "^[0-9a-zA-Z_]+$",
+                    "default": "link_from_to",
+                    "minLength": 1,
+                    "maxLength": 15,
+                    "propertyOrder": 3,
+                    "options": {
+                        "grid_columns": 12
+                    }
+                },
+                "inControl": {
+                    "type": "string",
+                    "_format": "wb-autocomplete",
+                    "title": "Input control",
+                    "description": "What input control we need use in format: device/control",
+                    "pattern": "^[^/+#]+/[^/+#]+$",
+                    "propertyOrder": 4,
+                    "options": {
+                        "grid_columns": 12,
+                        "wb": {
+                            "data": "devices"
+                        }
+                    },
+                    "minLength": 1
+                },
+                "inverseLink": {
+                    "type": "boolean",
+                    "title": "Inverse link behavior",
+                    "default": false,
+                    "_format": "checkbox",
+                    "propertyOrder": 5,
+                    "options": {
+                        "grid_columns": 12
+                    }
+                },
+                "outControl": {
+                    "type": "string",
+                    "_format": "wb-autocomplete",
+                    "title": "Output control",
+                    "description": "What output control we need use in format: device/control",
+                    "pattern": "^[^/+#]+/[^/+#]+$",
+                    "propertyOrder": 6,
+                    "options": {
+                        "grid_columns": 12,
+                        "wb": {
+                            "data": "devices"
+                        }
+                    },
+                    "minLength": 1
+                }
+            },
+            "required": ["scenarioType", "enable", "name", "id_prefix"]
+        }
+    },
+
+    "properties": {
+        "scenarios": {
+            "type": "array",
+            "title": "Scenarios",
+            "items": { "$ref": "#/definitions/scenario" },
+            "options": {
+                "disable_collapse": true,
+                "disable_array_reorder": true,
+                "disable_array_delete_last_row": true,
+                "enable_array_copy": true
+            },
+            "_format": "tabs"
+        }
+    },
+
+    "required": ["scenarios"],
+
+    "options": {
+        "wb": {
+            "disable_title": true
+        }
+    },
+
+    "translations": {
+        "en": {
+        },
+        "ru": {
+            "Automation": "Сценарии автоматизации",
+            "Scenarios": "Сценарии",
+            "Scenario": "Сценарий",
+            "Scenario name": "Название сценария",
+            "Link in to out": "Связь входа с выходом",
+            "Name": "Имя",
+            "Optional": "Не обязательно"
+        }
+    }
+}
