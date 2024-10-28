@@ -16,6 +16,7 @@
 */debian/mosquitto-dev/*
 */debian/mosquitto/*
 */debian/wb-rules-system/*
+*/debian/wb-configs/*
 *.swp
 *.un~
 
