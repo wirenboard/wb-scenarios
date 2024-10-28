@@ -3,7 +3,7 @@
     "type": "object",
     "title": "Automation scenarios",
     "configFile": {
-        "path": "/etc/scenarios.conf",
+        "path": "/etc/wb-scenarios.conf",
         "service": "wb-rules"
     },
     "definitions": {

@@ -1,3 +1,15 @@
+wb-scenarios (1.0.2) stable; urgency=medium
+
+  * Fix git history
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Thu, 28 Oct 2024 20:45:00 +0300
+
+wb-scenarios (1.0.1) stable; urgency=medium
+
+  * Fix config files
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Thu, 25 Oct 2024 18:30:00 +0300
+
 wb-scenarios (1.0.0) stable; urgency=medium
 
   * Initial release
