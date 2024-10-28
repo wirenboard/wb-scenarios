@@ -7,6 +7,26 @@
 *.debhelper
 *.substvars
 *.o
+*.swp
+*.un~
+*.pyc
+
+.tern-port
+
+node_modules/
+
+# 1. Buil files for debian packages
+# 1.1. General files
+**/debian/files
+**/debian/*.debhelper
+**/debian/*.debhelper.log
+**/debian/*.substvars
+
+utils/debian/wb-utils/
+wb-utils_*.deb
+wb-utils_*.changes
+
+# 1.2. Specify repo configs
 */debian/libmosquitto-dev/*
 */debian/libmosquitto1/*
 */debian/libmosquittopp-dev/*
@@ -17,23 +37,3 @@
 */debian/mosquitto/*
 */debian/wb-rules-system/*
 */debian/wb-configs/*
-*.swp
-*.un~
-
-**/debian/files
-**/debian/*.debhelper
-**/debian/*.debhelper.log
-**/debian/*.substvars
-
-utils/debian/wb-utils/
-wb-utils_*.deb
-wb-utils_*.changes
-
-configs/debian/wb-configs/
-wb-configs_*.*
-*.pyc
-
-.tern-port
-debian/wb-rules-system
-
-node_modules/
