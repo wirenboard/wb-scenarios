@@ -22,7 +22,7 @@ var LINK_IN_TO_OUT_TYPE = "linkInToOut";
  * Глобальная переменная, хранящая строку пути расположения файла конфигурации
  * @type {string}
  */
-var CONFIG_PATH = "/etc/scenarios.conf";
+var CONFIG_PATH = "/etc/wb-scenarios.conf";
 
 /**
  * Находит и возвращает все включеные сценарии с типом LINK_IN_TO_OUT_TYPE
@@ -71,7 +71,7 @@ function initializeScenario(scenario) {
 }
 
 function main() {
-  var config = readConfig("/etc/scenarios.conf");
+  var config = readConfig(CONFIG_PATH);
   log("Input config: " + JSON.stringify(config));
 
   var listScenario = config.scenarios;

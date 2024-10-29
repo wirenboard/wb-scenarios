@@ -1,8 +1,15 @@
+wb-scenarios (1.0.3) stable; urgency=medium
+
+  * refactor: rename files, improve .gitignore, delete redundant files
+  * fix: path typo, add redundant files to ignore, typo in changelog
+
+ -- Vitalii Gaponov <vitalii.gaponov@wirenboard.com>  Mon, 28 Oct 2024 23:50:00 +0300
+
 wb-scenarios (1.0.2) stable; urgency=medium
 
   * Fix git history
 
- -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Thu, 28 Oct 2024 20:45:00 +0300
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Mon, 28 Oct 2024 20:45:00 +0300
 
 wb-scenarios (1.0.1) stable; urgency=medium
 
