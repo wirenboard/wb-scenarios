@@ -11,7 +11,8 @@
             "title": "Scenario",
             "headerTemplate": "{{ self.name }}",
             "oneOf": [
-                { "$ref": "#/definitions/linkInToOut" }
+                { "$ref": "#/definitions/linkInToOut" },
+                { "$ref": "#/definitions/lightControl" }
             ],
             "_format": "wb-multiple",
             "options": {
@@ -115,6 +116,162 @@
                 }
             },
             "required": ["scenarioType", "enable", "name", "id_prefix"]
+        },
+    "lightControl": {
+      "type": "object",
+      "title": "Light control",
+      "description": "Данный сценарий предоставляет возможность управления светом с выключателей <br><img src=\"images/scenarios-link-in-to-out.png\">",
+      "_format": "grid",
+      "properties": {
+        "scenarioType": {
+          "type": "string",
+          "enum": [
+            "lightControl"
+          ],
+          "default": "lightControl",
+          "options": {
+            "hidden": true
+          }
+        },
+        "enable": {
+          "type": "boolean",
+          "title": "Enable",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "Scenario name",
+          "default": "Управление светом",
+          "minLength": 1,
+          "maxLength": 30,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "id_prefix": {
+          "type": "string",
+          "title": "ID Prefix",
+          "description": "Одно слово на английском языке исключая: пробел, /, +, #. Длина до 15 символов.",
+          "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
+          "pattern": "^[0-9a-zA-Z_]+$",
+          "default": "light_control",
+          "minLength": 1,
+          "maxLength": 15,
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "inControls": {
+          "type": "array",
+          "minItems": 1,
+          "propertyOrder": 4,
+          "_title_note": "When options-> compact: true - this title not shown",
+          "title": "Input controls1",
+          "description": "List of input controls with event types",
+          "_format": "table",
+          "options": {
+            "grid_columns": 12,
+            "disable_array_reorder": true,
+            "disable_collapse": true,
+            "compact": true
+          },
+          "items": {
+            "title": "Input control",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "Input control topic name",
+                "description": "Input control in format: device/control",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "minLength": 3
+              },
+              "eventType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "Event Type",
+                "enum": [
+                  "onChange",
+                  "onEnabled",
+                  "onDisabled"
+                ],
+                "default": "onChange"
+              }
+            },
+            "required": [
+              "control",
+              "eventType"
+            ]
+          }
+        },
+        "outControls": {
+          "type": "array",
+          "minItems": 1,
+          "propertyOrder": 5,
+          "_title_note": "When options-> compact: true - this title not shown",
+          "title": "Output controls1",
+          "description": "List of output controls with action types",
+          "_format": "table",
+          "options": {
+            "grid_columns": 12,
+            "disable_array_reorder": true,
+            "disable_collapse": true,
+            "compact": true
+          },
+          "items": {
+            "title": "Output control",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "Output control topic name",
+                "description": "Output control in format: device/control",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "minLength": 3
+              },
+              "actionType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "Action Type",
+                "enum": [
+                  "setOff",
+                  "setOn",
+                  "toggle"
+                ],
+                "default": "setOff"
+              }
+            },
+            "required": [
+              "control",
+              "actionType"
+            ]
+          }
+        }
+            },
+            "required": ["scenarioType", "enable", "name", "id_prefix", "inControls", "outControls"]
         }
     },
 
@@ -151,7 +308,15 @@
             "Scenario name": "Название сценария",
             "Link in to out": "Связь входа с выходом",
             "Name": "Имя",
-            "Optional": "Не обязательно"
+            "Optional": "Не обязательно",
+            "Light control": "Управление светом",
+            "Enable": "Активен",
+            "Input control": "Входной контрол",
+            "Input control topic name": "Имя топика входного контрола",
+            "Event Type": "Тип события",
+            "Output control": "Выходной контрол",
+            "Output control topic name": "Имя топика выходного контрола",
+            "Action Type": "Тип действия"
         }
     }
 }
