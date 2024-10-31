@@ -131,7 +131,7 @@
     "lightControl": {
       "type": "object",
       "title": "Light control",
-      "description": "Данный сценарий предоставляет возможность управления светом с выключателей <br><img src=\"images/scenarios-link-in-to-out.png\">",
+      "description": "Данный сценарий предоставляет возможность управления светом с выключателей <br><img src=\"images/scenarios-light-control.png\">",
       "_format": "grid",
       "properties": {
         "scenarioType": {
