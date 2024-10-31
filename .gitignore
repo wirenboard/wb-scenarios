@@ -29,3 +29,6 @@
 !/debian/*service
 !/debian/*preinst
 !/debian/*postinst
+
+# IDE files
+.vscode
