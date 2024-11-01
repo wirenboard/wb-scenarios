@@ -5,12 +5,25 @@
 
 ## Автоматическая установка
 
-Клонирование на контроллер
+Переходим в желаемое место, например в домашнюю дирректорию
 
 ```terminal
 # cd ~
+```
+
+Клонирование на контроллер
+
+```terminal
 # git clone https://github.com/wirenboard/wb-scenarios
 # cd wb-scenarios
+```
+
+В процессе разработки удобно клонировать свою ветку и сразу провести установку
+
+```terminal
+# git clone -b feature/add-light-scenario-first-iteration --single-branch https://github.com/wirenboard/wb-scenarios.git
+# cd wb-scenarios
+# make
 ```
 
 ### Сборка пакета и установка через apt
