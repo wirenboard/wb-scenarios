@@ -1,4 +1,4 @@
 /usr/share/wb-rules-system/rules
 /usr/share/wb-mqtt-confed/schemas
 /var/www/images
-/etc/wb-rules-modules
+/usr/share/wb-rules-modules
