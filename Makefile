@@ -38,17 +38,17 @@ install:
 	@# Копирование всех конфигурационных файлов из корня проекта
 	@$(foreach file,$(CONFIG_FILES),\
 		echo "Copying $(file) to $(DESTDIR)/etc";\
-		install -Dm644 $(file) $(DESTDIR)/etc;)
+		install -Dm644 $(file) -t $(DESTDIR)/etc;)
 
 	@# Копирование изображений из папки schema
 	@$(foreach file,$(IMAGE_FILES),\
 		echo "Copying image $(file) to $(DESTDIR)/var/www/images";\
-		install -Dm644 $(file) $(DESTDIR)/var/www/images;)
+		install -Dm644 $(file) -t $(DESTDIR)/var/www/images;)
 
 	@# Копирование схем из папки schema
 	@$(foreach file,$(SCHEMA_FILES),\
 		echo "Copying schema $(file) to $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas";\
-		install -Dm644 $(file) $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas;)
+		install -Dm644 $(file) -t $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas;)
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
@@ -66,14 +66,14 @@ install-$(1):
 	@# так как /etc/wb-rules/* должно использоваться для пользовательских скриптов
 	@if [ -n "$(RULE_FILES)" ]; then \
 		echo "    - Copying rule files: $(RULE_FILES) to $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules";\
-		install -Dm644 $(RULE_FILES) $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules;\
+		install -Dm644 $(RULE_FILES) -t $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules;\
 	fi
 
 	@# Используем системный путь до модулей /usr/share/wb-rules-modules
 	@# так как /etc/wb-rules-modules/* должно использоваться для пользовательских модулей
 	@if [ -n "$(MODULE_FILES)" ]; then \
 		echo "    - Copying module files: $(MODULE_FILES) to $(DESTDIR)$(PREFIX)/share/wb-rules-modules";\
-		install -Dm644 $(MODULE_FILES) $(DESTDIR)$(PREFIX)/share/wb-rules-modules;\
+		install -Dm644 $(MODULE_FILES) -t $(DESTDIR)$(PREFIX)/share/wb-rules-modules;\
 	fi
 
 .PHONY: dummy install-$(1)
