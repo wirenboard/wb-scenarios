@@ -8,7 +8,7 @@
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
-var moduleInToOut = require("light-control.mod");
+var moduleInToOut = require("devices-control.mod");
 
 /**
  * Глобальная переменная, хранящая строку типа сценария для поиска в конфиге

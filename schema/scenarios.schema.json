@@ -131,8 +131,8 @@
     },
     "devicesControl": {
       "type": "object",
-      "title": "Light control",
-      "description": "Сценарий для любых действий над одним или несколькими устройствами.<br> Может пременятся для группового управления освещением, шторами и тд.<br>Подробнее и примеры использования в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a><br><img src=\"images/scenarios-light-control.png\">",
+      "title": "Devices control",
+      "description": "Сценарий для любых действий над одним или несколькими устройствами.<br> Может пременятся для группового управления освещением, шторами и тд.<br>Подробнее и примеры использования в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a><br><img src=\"images/scenarios-devices-control.png\">",
       "_format": "grid",
       "properties": {
         "scenarioType": {
@@ -172,7 +172,7 @@
           "description": "Одно слово на английском языке исключая: пробел, /, +, #. Длина до 15 символов.",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
-          "default": "light_control",
+          "default": "devices_control",
           "minLength": 1,
           "maxLength": 15,
           "propertyOrder": 3,
@@ -335,7 +335,7 @@
       "Link in to out": "Связь входа с выходом",
       "Name": "Имя",
       "Optional": "Не обязательно",
-      "Light control": "Управление светом",
+      "Devices control": "Управление устройствами",
       "Enable": "Активен",
       "Input control": "Входной контрол",
       "Input controls": "Входные контролы",
