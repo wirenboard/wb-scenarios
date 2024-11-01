@@ -158,7 +158,7 @@
         "name": {
           "type": "string",
           "title": "Scenario name",
-          "default": "Управление светом",
+          "default": "Управление устройствами",
           "minLength": 1,
           "maxLength": 30,
           "propertyOrder": 2,
