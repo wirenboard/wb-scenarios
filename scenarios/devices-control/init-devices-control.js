@@ -55,18 +55,18 @@ function initializeScenario(scenario) {
   log("Output Controls conf: " + outControls);
 
   // Check type prop - must be "switch" and equal
-  var isAllInputsSwitchTypes = true;
-  for (var i = 0; i < inControls.length; i++) {
-    var curInControl = inControls[i].control;
-    var inputType = dev[curInControl + "#type"];
-    log("Input control: " + curInControl + " | Type: " + inputType);
+  // var isAllInputsSwitchTypes = true;
+  // for (var i = 0; i < inControls.length; i++) {
+  //   var curInControl = inControls[i].control;
+  //   var inputType = dev[curInControl + "#type"];
+  //   log("Input control: " + curInControl + " | Type: " + inputType);
 
-    if (inputType !== "switch") {
-      isAllInputsSwitchTypes = false;
-      log("Error: Input control '" + curInControl + "' is not of type 'switch'");
-      break;
-    }
-  }
+  //   if (inputType !== "switch") {
+  //     isAllInputsSwitchTypes = false;
+  //     log("Error: Input control '" + curInControl + "' is not of type 'switch'");
+  //     break;
+  //   }
+  // }
 
   var isAllOutputsSwitchTypes = true;
   for (var j = 0; j < outControls.length; j++) {
@@ -81,7 +81,8 @@ function initializeScenario(scenario) {
     }
   }
 
-  var isValidTypes = (isAllInputsSwitchTypes && isAllOutputsSwitchTypes);
+  // var isValidTypes = (isAllInputsSwitchTypes && isAllOutputsSwitchTypes);
+  var isValidTypes = (isAllOutputsSwitchTypes);
   if (!isValidTypes) {
     log("Error: One or more controls are not of type 'switch' for: " + scenario.name);
     return;
