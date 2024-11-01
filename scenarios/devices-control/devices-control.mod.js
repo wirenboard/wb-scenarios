@@ -53,6 +53,10 @@ function init(idPrefix, inControls, outControls) {
       if (!matchedInControl) return;
       var eventType = matchedInControl.eventType;
 
+      // @todo:vg Реализовать нормальную обработку счетчиков
+      //          Для этого нужно изменить обработку чтобы
+      //          не было инверсии !newValue
+
       // Проверяем настроенное условие срабатывания
       if (eventType === "onEnabled" && !newValue) return;
       if (eventType === "onDisabled" && newValue) return;
