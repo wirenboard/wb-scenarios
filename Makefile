@@ -56,13 +56,18 @@ install-$(1):
 	$(eval RULE_FILES := $(filter-out $(wildcard $(1)/*.mod.js), $(wildcard $(1)/*.js)))
 	$(eval MODULE_FILES := $(wildcard $(1)/*.mod.js))
 
+	@# Используем системный путь до скриптов /usr/share/wb-rules-system/rules
+	@# так как /etc/wb-rules/* должно использоваться для пользовательских скриптов
 	@if [ -n "$(RULE_FILES)" ]; then \
 		echo "    - Copying rule files: $(RULE_FILES) to $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules";\
 		install -Dm644 $(RULE_FILES) $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules;\
 	fi
+
+	@# Используем системный путь до модулей /usr/share/wb-rules-modules
+	@# так как /etc/wb-rules-modules/* должно использоваться для пользовательских модулей
 	@if [ -n "$(MODULE_FILES)" ]; then \
-		echo "    - Copying module files: $(MODULE_FILES) to $(DESTDIR)/etc/wb-rules-modules";\
-		install -Dm644 $(MODULE_FILES) $(DESTDIR)/etc/wb-rules-modules;\
+		echo "    - Copying module files: $(MODULE_FILES) to $(DESTDIR)$(PREFIX)/share/wb-rules-modules";\
+		install -Dm644 $(MODULE_FILES) $(DESTDIR)$(PREFIX)/share/wb-rules-modules;\
 	fi
 
 .PHONY: dummy install-$(1)
