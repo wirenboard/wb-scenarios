@@ -13,7 +13,7 @@
       "headerTemplate": "{{ self.name }}",
       "oneOf": [
         {
-          "$ref": "#/definitions/lightControl"
+          "$ref": "#/definitions/devicesControl"
         },
         {
           "$ref": "#/definitions/linkInToOut"
@@ -129,7 +129,7 @@
         "id_prefix"
       ]
     },
-    "lightControl": {
+    "devicesControl": {
       "type": "object",
       "title": "Light control",
       "description": "Сценарий для любых действий над одним или несколькими устройствами.<br> Может пременятся для группового управления освещением, шторами и тд.<br>Подробнее и примеры использования в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a><br><img src=\"images/scenarios-light-control.png\">",
@@ -138,9 +138,9 @@
         "scenarioType": {
           "type": "string",
           "enum": [
-            "lightControl"
+            "devicesControl"
           ],
-          "default": "lightControl",
+          "default": "devicesControl",
           "options": {
             "hidden": true
           }

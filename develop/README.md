@@ -86,7 +86,7 @@
 ---
 Добавить в секцию definitions новый раздел
 
-Раздел должен иметь уникальное название - в данном случае это `"lightControl"`
+Раздел должен иметь уникальное название - в данном случае это `"devicesControl"`
 Далее идут стандартные описания раздела - титл и тд
 Далее идет раздел properties - этот раздел содержит свойства данного сценария
 1) Вначале в любом сценарии должны всегда идти 4 стандартные поля
@@ -99,7 +99,7 @@
 3) В конце идет `required` которое говорит какие поля должны быть заполнены перед сохранением
 
 ```json
-        "lightControl": {
+        "devicesControl": {
             "type": "object",
             "title": "Light control",
             "description":"Данный сценарий предоставляет возможность управления светом с выключателей <br><img src=\"images/scenarios-link-in-to-out.png\">",
@@ -107,8 +107,8 @@
             "properties": {
                 "scenarioType": {
                     "type": "string",
-                    "enum": ["lightControl"],
-                    "default": "lightControl",
+                    "enum": ["devicesControl"],
+                    "default": "devicesControl",
                     "options": {
                         "hidden": true
                     }
@@ -159,7 +159,7 @@
 ```json
 "oneOf": [
     { "$ref": "#/definitions/linkInToOut" },
-    { "$ref": "#/definitions/lightControl" }
+    { "$ref": "#/definitions/devicesControl" }
 ],
 ```
 

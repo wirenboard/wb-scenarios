@@ -15,7 +15,7 @@ var moduleInToOut = require("light-control.mod");
  * Сценарии SCENARIO_TYPE_STR могут соединять только два MQTT switch топика
  * @type {string}
  */
-var SCENARIO_TYPE_STR = "lightControl";
+var SCENARIO_TYPE_STR = "devicesControl";
 
 /**
  * Глобальная переменная, хранящая строку пути расположения файла конфигурации
