@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Automation scenarios",
+  "description": "Сценарии автоматизации дают возможность управления устройствами и настраивания<br>связи между ними без необходимости создания скриптов.<br>Подробнее смотрите в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios\"><b>Сценарии Wiren Board</b></a>",
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
     "service": "wb-rules"
@@ -12,10 +13,10 @@
       "headerTemplate": "{{ self.name }}",
       "oneOf": [
         {
-          "$ref": "#/definitions/linkInToOut"
+          "$ref": "#/definitions/lightControl"
         },
         {
-          "$ref": "#/definitions/lightControl"
+          "$ref": "#/definitions/linkInToOut"
         }
       ],
       "_format": "wb-multiple",
@@ -131,7 +132,7 @@
     "lightControl": {
       "type": "object",
       "title": "Light control",
-      "description": "Данный сценарий предоставляет возможность управления светом с выключателей <br><img src=\"images/scenarios-light-control.png\">",
+      "description": "Сценарий для любых действий над одним или несколькими устройствами.<br> Может пременятся для группового управления освещением, шторами и тд.<br>Подробнее и примеры использования в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a><br><img src=\"images/scenarios-light-control.png\">",
       "_format": "grid",
       "properties": {
         "scenarioType": {
@@ -184,14 +185,18 @@
           "minItems": 1,
           "propertyOrder": 4,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "Input controls1",
+          "title": "Input controls",
           "description": "List of input controls with event types",
           "_format": "table",
           "options": {
-            "grid_columns": 12,
-            "disable_array_reorder": true,
             "disable_collapse": true,
-            "compact": true
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+                "disable_panel": true
+            }
           },
           "items": {
             "title": "Input control",
@@ -235,14 +240,18 @@
           "minItems": 1,
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "Output controls1",
+          "title": "Output controls",
           "description": "List of output controls with action types",
           "_format": "table",
           "options": {
-            "grid_columns": 12,
-            "disable_array_reorder": true,
             "disable_collapse": true,
-            "compact": true
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+                "disable_panel": true
+            }
           },
           "items": {
             "title": "Output control",
@@ -319,7 +328,7 @@
   "translations": {
     "en": {},
     "ru": {
-      "Automation": "Сценарии автоматизации",
+      "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "Scenario name": "Название сценария",
@@ -329,9 +338,13 @@
       "Light control": "Управление светом",
       "Enable": "Активен",
       "Input control": "Входной контрол",
+      "Input controls": "Входные контролы",
+      "List of input controls with event types": "Список входных контролов и типы событий",
       "Input control topic name": "Имя топика входного контрола",
       "Event Type": "Тип события",
       "Output control": "Выходной контрол",
+      "Output controls": "Выходные контролы",
+      "List of output controls with action types": "Список выходных контролов и типы действий",
       "Output control topic name": "Имя топика выходного контрола",
       "Action Type": "Тип действия"
     }
