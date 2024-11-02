@@ -83,8 +83,7 @@ function initializeScenario(scenario) {
     }
   }
 
-  // var isValidTypes = (isAllInputsSwitchTypes && isAllOutputsSwitchTypes);
-  var isValidTypes = (isAllOutputsSwitchTypes);
+  var isValidTypes = (isAllInputsSwitchTypes && isAllOutputsSwitchTypes);
   if (!isValidTypes) {
     log("Error: One or more controls are not of type 'switch' for: " + scenario.name);
     return;
