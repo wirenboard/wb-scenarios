@@ -12,6 +12,55 @@
  */
 
 /**
+ * Проверяет, что все указанные входные и выходные контролы имеют тип 'switch'.
+ * В случае несоответствия типа контролов, логирует ошибку и прерывает выполнение.
+ *
+ * @param {Array<Object>} inControls - Массив конфигураций входных контролов.
+ * @param {Array<Object>} outControls - Массив конфигураций выходных контролов.
+ * @returns {void}
+ */
+function checkControls(inControls, outControls) {
+  log("Input Controls conf: " + inControls);
+  log("Output Controls conf: " + outControls);
+
+  // Check type prop - must be "switch" and equal
+  // @todo:vg Добавить проверку существования указанных контролов перед работой
+  // @todo:vg Реализовать нормальную обработку счетчиков
+  //          Для этого нужно изменить обработку входных параметров
+  var isAllInputsSwitchTypes = true;
+  for (var i = 0; i < inControls.length; i++) {
+    var curInControl = inControls[i].control;
+    var inputType = dev[curInControl + "#type"];
+    log("Input control: " + curInControl + " | Type: " + inputType);
+
+    if (inputType !== "switch") {
+      isAllInputsSwitchTypes = false;
+      log("Error: Input control '" + curInControl + "' is not of type 'switch'");
+      break;
+    }
+  }
+
+  var isAllOutputsSwitchTypes = true;
+  for (var j = 0; j < outControls.length; j++) {
+    var curOutControl = outControls[j].control;
+    var outputType = dev[curOutControl + "#type"];
+    log("Output control: " + curOutControl + " | Type: " + outputType);
+
+    if (outputType !== "switch") {
+      isAllOutputsSwitchTypes = false;
+      log("Error: Output control '" + curOutControl + "' is not of type 'switch'");
+      break;
+    }
+  }
+
+  var isValidTypes = (isAllInputsSwitchTypes && isAllOutputsSwitchTypes);
+  if (!isValidTypes) {
+    log("Error: One or more controls are not of type 'switch'. Operation aborted!");
+    return;
+  }
+}
+
+/**
  * Инициализирует виртуальное устройство и определяет правило для управления
  * множеством выходных топиков на основе множества входных топиков
  * @param {string} idPrefix - Префикс сценария, используемый для идентификации
@@ -52,6 +101,8 @@
  * @returns {void}
  */
 function init(idPrefix, inControls, outControls) {
+  checkControls(inControls, outControls);
+
   defineVirtualDevice("GenVd_" + idPrefix, {
     title: "Generated VD: " + idPrefix,
     cells: {
