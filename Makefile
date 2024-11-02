@@ -77,7 +77,7 @@ install-$(1):
 	$(eval MODULE_FILES_$(1) := $(wildcard $(1)/*.mod.js))
 	$(eval JS_FILES_$(1) := $(wildcard $(1)/*.js))
 	@# Собираем все файлы .js, кроме модулей (заканчиваются на .mod.js)
-	$(eval RULE_FILES_$(1) := $(filter-out $$(MODULE_FILES_$(1)), $$(JS_FILES_$(1))))
+	$(eval RULE_FILES_$(1) := $(filter-out $(MODULE_FILES_$(1)), $(JS_FILES_$(1))))
 
 	@if [ -n "$$(RULE_FILES_$(1))" ]; then \
 		echo "    - Copying rule files: $$(RULE_FILES_$(1)) to $(RULES_DEST)";\
