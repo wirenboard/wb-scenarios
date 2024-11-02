@@ -195,7 +195,7 @@
             "disable_array_delete_last_row": true,
             "disable_array_reorder": true,
             "wb": {
-                "disable_panel": true
+              "disable_panel": true
             }
           },
           "items": {
@@ -222,11 +222,18 @@
                 "propertyOrder": 2,
                 "title": "Event Type",
                 "enum": [
-                  "onChange",
-                  "onEnabled",
-                  "onDisabled"
+                  "whenChange",
+                  "whenDisabled",
+                  "whenEnabled"
                 ],
-                "default": "onChange"
+                "default": "whenChange",
+                "options": {
+                  "enum_titles": [
+                    "When Change",
+                    "When Disabled (switch)",
+                    "When Enabled (switch)"
+                  ]
+                }
               }
             },
             "required": [
@@ -250,7 +257,7 @@
             "disable_array_delete_last_row": true,
             "disable_array_reorder": true,
             "wb": {
-                "disable_panel": true
+              "disable_panel": true
             }
           },
           "items": {
@@ -277,11 +284,31 @@
                 "propertyOrder": 2,
                 "title": "Action Type",
                 "enum": [
-                  "setOff",
-                  "setOn",
-                  "toggle"
+                  "toggle",
+                  "setEnable",
+                  "setDisable",
+                  "setValue",
+                  "increaseValueBy",
+                  "decreaseValueBy"
                 ],
-                "default": "setOff"
+                "default": "setDisable",
+                "options": {
+                  "enum_titles": [
+                    "Toggle (switch)",
+                    "Enable (switch)",
+                    "Disable (switch)",
+                    "Set Value",
+                    "Increase Value By",
+                    "Decrease Value By"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "Value For Action",
+                "description": "Used for 'setNewValue', 'increaseValueBy', 'decreaseValueBy'",
+                "default": 0
               }
             },
             "required": [
@@ -342,11 +369,21 @@
       "List of input controls with event types": "Список входных контролов и типы событий",
       "Input control topic name": "Имя топика входного контрола",
       "Event Type": "Тип события",
+      "When Change": "Когда изменится",
+      "When Disabled (switch)": "Когда отключено (для переключателей)",
+      "When Enabled (switch)": "Когда включено (для переключателей)",
       "Output control": "Выходной контрол",
       "Output controls": "Выходные контролы",
       "List of output controls with action types": "Список выходных контролов и типы действий",
       "Output control topic name": "Имя топика выходного контрола",
-      "Action Type": "Тип действия"
+      "Action Type": "Тип действия",
+      "Toggle (switch)": "Переключить (для переключателей)",
+      "Enable (switch)": "Включить (для переключателей)",
+      "Disable (switch)": "Выключить (для переключателей)",
+      "Set Value": "Установить значение",
+      "Increase Value By": "Увеличить значение на",
+      "Decrease Value By": "Уменьшить  значение на",
+      "Value For Action": "Значение для действия"
     }
   }
 }
