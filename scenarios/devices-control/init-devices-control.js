@@ -31,16 +31,16 @@ var SCENARIO_TYPE_STR = "devicesControl";
  * @returns {Array} Массив активных сценариев с типом searchScenarioType
  */
 function findAllScenariosWithType(listScenario, searchScenarioType) {
-  var resScenarios = [];
+  var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
     var scenario = listScenario[i];
     var isTarget = (scenario.scenarioType === searchScenarioType) &&
       (scenario.enable === true);
     if (isTarget) {
-      resScenarios.push(scenario);
+      matchedScenarios.push(scenario);
     }
   }
-  return resScenarios;
+  return matchedScenarios;
 }
 
 /**
@@ -57,28 +57,55 @@ function initializeScenario(scenario) {
   log("Initialization successful for: " + scenario.name);
 }
 
-function main() {
-  var config = readConfig(CONFIG_PATH);
+/**
+ * Читает конфигурационный файл и возвращает объект конфигурации.
+ * @param {string} configPath Путь к конфигурационному файлу.
+ * @returns {Object|null} Возвращает:
+ *                          - Массив: сценариев если проверки пройденыили
+ *                          - null: в случае ошибки
+ */
+function readAndValidateConfig(configPath) {
+  var config = readConfig(configPath);
+
   if (!config) {
-    log("Error: Could not read config from " + CONFIG_PATH);
-    return;
+    log("Error: Could not read config from " + configPath);
+    return null;
   }
   log("Input config: " + JSON.stringify(config));
 
-  var listScenario = config.scenarios;
-  if (!Array.isArray(listScenario) || listScenario.length === 0) {
-    log("Error: 'scenarios' is not an array, does not exist, or is empty.");
-    return;
+  // Проверяем существование поля, тип массив, что не пуст
+  if (!config.hasOwnProperty('scenarios')) {
+    log("Error: 'scenarios' does not exist in the configuration.");
+    return null;
   }
 
-  var resScenarios = findAllScenariosWithType(listScenario, SCENARIO_TYPE_STR);
-  if (resScenarios.length === 0) {
+  var listAllScenarios = config.scenarios;
+  if (!Array.isArray(listAllScenarios)) {
+    log("Error: 'scenarios' is not an array.");
+    return null;
+  }
+
+  if (listAllScenarios.length === 0) {
+    log("Error: 'scenarios' array is empty.");
+    return null;
+  }
+
+  return listAllScenarios;
+}
+
+function main() {
+  var listAllScenarios = readAndValidateConfig(CONFIG_PATH);
+  if (!listAllScenarios) return;
+
+  var matchedScenarios = findAllScenariosWithType(listAllScenarios,
+                                                  SCENARIO_TYPE_STR);
+  if (matchedScenarios.length === 0) {
     log("Error: No scenarios of type '" + SCENARIO_TYPE_STR + "' found.");
     return;
   }
 
-  for (var i = 0; i < resScenarios.length; i++) {
-    initializeScenario(resScenarios[i]);
+  for (var i = 0; i < matchedScenarios.length; i++) {
+    initializeScenario(matchedScenarios[i]);
   }
 }
 
