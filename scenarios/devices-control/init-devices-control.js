@@ -1,9 +1,11 @@
 /**
  * @file Скрипт для инициализации сценариев с типом SCENARIO_TYPE_STR
- * @overview Этот скрипт загружает все конфигурации сценарииев с типом
- *           SCENARIO_TYPE_STR из файла, находит все активные сценарии
- *           данного типа, и инициализирует их согласно настройкам, указанным
- *           в каждом сценарии.
+ * @overview Этот скрипт:
+ *             - Загружает все конфигурации сценарииев с типом
+ *               SCENARIO_TYPE_STR из файла
+ *             - Находит все активные сценарии данного типа
+ *             - Инициализирует их согласно настройкам, указанным
+ *               в каждом сценарии
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
@@ -11,17 +13,16 @@
 var moduleInToOut = require("devices-control.mod");
 
 /**
- * Глобальная переменная, хранящая строку типа сценария для поиска в конфиге
- * Сценарии SCENARIO_TYPE_STR могут соединять только два MQTT switch топика
- * @type {string}
- */
-var SCENARIO_TYPE_STR = "devicesControl";
-
-/**
  * Глобальная переменная, хранящая строку пути расположения файла конфигурации
  * @type {string}
  */
 var CONFIG_PATH = "/etc/wb-scenarios.conf";
+
+/**
+ * Глобальная переменная, хранящая строку типа сценария для поиска в конфиге
+ * @type {string}
+ */
+var SCENARIO_TYPE_STR = "devicesControl";
 
 /**
  * Находит и возвращает все включеные сценарии с типом searchScenarioType
@@ -55,6 +56,7 @@ function initializeScenario(scenario) {
   log("Output Controls conf: " + outControls);
 
   // Check type prop - must be "switch" and equal
+  // @todo:vg Добавить проверку существования указанных контролов перед работой
   // @todo:vg Реализовать нормальную обработку счетчиков
   //          Для этого нужно изменить обработку входних параметров
   var isAllInputsSwitchTypes = true;

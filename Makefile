@@ -14,8 +14,23 @@ SCENARIOS_ROOT := scenarios/
 # Папка для схем и изображений в схеме
 SCHEMA_DIR := schema/
 
+# Целевые пути
+CONFIG_DEST := $(DESTDIR)/etc
+IMAGE_DEST := $(DESTDIR)/var/www/images
+SCHEMA_DEST := $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas
+# Используем системный путь до скриптов /usr/share/wb-rules-system/rules
+# так как /etc/wb-rules/* должно использоваться для пользовательских скриптов
+RULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules
+# Используем системный путь до модулей /usr/share/wb-rules-modules
+# так как /etc/wb-rules-modules/* должно использоваться
+# для пользовательских модулей
+MODULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-modules
+
 # Поиск папок сценариев внутри папки scenarios
 SCENARIO_DIRS := $(wildcard $(SCENARIOS_ROOT)*)
+
+# @note: Потенциально могут быть пробелы и спец символы в именах файлов
+#        или папок - можно сделать проверку перед началом работы
 
 # Предварительно вычисленные списки файлов для копирования
 CONFIG_FILES := $(wildcard *.conf)
@@ -37,46 +52,44 @@ install:
 
 	@# Копирование всех конфигурационных файлов из корня проекта
 	@$(foreach file,$(CONFIG_FILES),\
-		echo "Copying $(file) to $(DESTDIR)/etc";\
-		install -Dm644 $(file) -t $(DESTDIR)/etc;)
+		echo "Copying $(file) to $(CONFIG_DEST)";\
+		install -Dm644 $(file) -t $(CONFIG_DEST);)
 
 	@# Копирование изображений из папки schema
 	@$(foreach file,$(IMAGE_FILES),\
-		echo "Copying image $(file) to $(DESTDIR)/var/www/images";\
-		install -Dm644 $(file) -t $(DESTDIR)/var/www/images;)
+		echo "Copying image $(file) to $(IMAGE_DEST)";\
+		install -Dm644 $(file) -t $(IMAGE_DEST);)
 
 	@# Копирование схем из папки schema
 	@$(foreach file,$(SCHEMA_FILES),\
-		echo "Copying schema $(file) to $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas";\
-		install -Dm644 $(file) -t $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas;)
+		echo "Copying schema $(file) to $(SCHEMA_DEST)";\
+		install -Dm644 $(file) -t $(SCHEMA_DEST);)
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
 		echo "Installing from directory $(dir)...";\
 		$(MAKE) -s install-$(dir);)
 
-define TEMPLATE
+define INSTALL_SCENARIO_TEMPLATE
 install-$(1):
 	@echo "  + Processing directory $(1)..."
+	@# Используем уникальные имена *_$(1) чтобы не перезаписывать переменные
+	$(eval MODULE_FILES_$(1) := $(wildcard $(1)/*.mod.js))
+	$(eval JS_FILES_$(1) := $(wildcard $(1)/*.js))
 	@# Собираем все файлы .js, кроме модулей (заканчиваются на .mod.js)
-	$(eval RULE_FILES := $(filter-out $(wildcard $(1)/*.mod.js), $(wildcard $(1)/*.js)))
-	$(eval MODULE_FILES := $(wildcard $(1)/*.mod.js))
+	$(eval RULE_FILES_$(1) := $(filter-out $$(MODULE_FILES_$(1)), $$(JS_FILES_$(1))))
 
-	@# Используем системный путь до скриптов /usr/share/wb-rules-system/rules
-	@# так как /etc/wb-rules/* должно использоваться для пользовательских скриптов
-	@if [ -n "$(RULE_FILES)" ]; then \
-		echo "    - Copying rule files: $(RULE_FILES) to $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules";\
-		install -Dm644 $(RULE_FILES) -t $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules;\
+	@if [ -n "$$(RULE_FILES_$(1))" ]; then \
+		echo "    - Copying rule files: $$(RULE_FILES_$(1)) to $(RULES_DEST)";\
+		install -Dm644 $$(RULE_FILES_$(1)) -t $(RULES_DEST);\
 	fi
 
-	@# Используем системный путь до модулей /usr/share/wb-rules-modules
-	@# так как /etc/wb-rules-modules/* должно использоваться для пользовательских модулей
-	@if [ -n "$(MODULE_FILES)" ]; then \
-		echo "    - Copying module files: $(MODULE_FILES) to $(DESTDIR)$(PREFIX)/share/wb-rules-modules";\
-		install -Dm644 $(MODULE_FILES) -t $(DESTDIR)$(PREFIX)/share/wb-rules-modules;\
+	@if [ -n "$$(MODULE_FILES_$(1))" ]; then \
+		echo "    - Copying module files: $$(MODULE_FILES_$(1)) to $(MODULES_DEST)";\
+		install -Dm644 $$(MODULE_FILES_$(1)) -t $(MODULES_DEST);\
 	fi
 
 .PHONY: dummy install-$(1)
 endef
 
-$(foreach dir,$(SCENARIO_DIRS),$(eval $(call TEMPLATE,$(dir))))
+$(foreach dir,$(SCENARIO_DIRS),$(eval $(call INSTALL_SCENARIO_TEMPLATE,$(dir))))
