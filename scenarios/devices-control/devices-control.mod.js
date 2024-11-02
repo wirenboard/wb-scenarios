@@ -125,7 +125,7 @@ function init(idPrefix, inControls, outControls) {
       var controlFullName = devName + '/' + cellName;
       var matchedInControl = null;
 
-      // Ищем контрол, который вызвал изменение и его тип изменения
+      // Ищем контрол вызвавший изменение, получаем прослушиваемый тип события
       for (var i = 0; i < inControls.length; i++) {
         if (inControls[i].control === controlFullName) {
           matchedInControl = inControls[i];
