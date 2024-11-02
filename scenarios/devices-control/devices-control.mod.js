@@ -11,14 +11,40 @@
  * множеством выходных топиков на основе множества входных топиков
  * @param {string} idPrefix - Префикс сценария, используемый для идентификации
  *                            виртуального устройства и правила
- * @param {Array<string>} inControls - Массив входных контролов, значения
- *                                     которых следует слушать
- *                                     Пример: ["device1/control1",
- *                                              "device2/control2"]
- * @param {Array<string>} outControls - Массив выходных контролов, значения
- *                                      которых будут изменены
- *                                      Пример: ["device3/control3",
- *                                               "device4/control4"]
+ * @param {Array<Object>} inControls - Массив входных контролов, значения
+ *                          которых нужно слушать. Каждый объект содержит:
+ *                            - Имя контрола
+ *                            - Тип события которое ловится
+ *                          Пример:
+ *                          [
+ *                            {
+ *                              "control": "vd-wall-switch1/enabled",
+ *                              "eventType": "whenChange"
+ *                            },
+ *                            {
+ *                              "control": "vd-wall-switch2/enabled",
+ *                              "eventType": "whenDisabled"
+ *                            }
+ *                          ]
+ * @param {Array<Object>} outControls - Массив выходных контролов, значения
+ *                          которых будут изменены. Каждый объект содержит:
+ *                            - Имя контрола
+ *                            - Тип выполняемого с контролом действия
+ *                            - Значение для установки (актуально для value)
+ *                            Пример:
+ *                            [
+ *                              {
+ *                                "control": "vd-pump1/enabled",
+ *                                "actionType": "setDisable",
+ *                                "actionValue": 0
+ *                              },
+ *                              {
+ *                                "control": "vd-pump2/enabled",
+ *                                "actionType": "setValue",
+ *                                "actionValue": 22
+ *                              }
+ *                            ]
+ * @returns {void}
  */
 function init(idPrefix, inControls, outControls) {
   defineVirtualDevice("GenVd_" + idPrefix, {
