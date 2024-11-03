@@ -15,10 +15,12 @@
 /**
  * Таблицы событий и действий
  * Так как логика подразумевает связь трех сущностей между собой - будем
- * хранить их в одной таблице:
- *   - Тип события/действия
- *   - Разрешенные типы топиков
- *   - Обработчик
+ * хранить их в одной таблице
+ *   - Ключ Тип события/действия
+ * @param reqCtrlTypes Required Control Types
+ *                     Разрешенные типы контрол топиков MQTT для данного
+ *                     события/действия
+ * @param handler      Обработчик данного события/действия
  */
 /**
  * Отключает контрол.
@@ -44,7 +46,7 @@ function setEnable(controlName) {
  * @returns {boolean} Возвращает противоположное текущему состояние контрола.
  */
 function toggle(controlName) {
-  const newState = !dev[controlName];
+  var newState = !dev[controlName];
   return newState;
 }
 
@@ -78,41 +80,88 @@ function whenChange(newValue) {
 // Обновление таблиц с использованием именованных функций
 var actionsTable = {
   'toggle': {
-    requiredTypes: ['switch'],
+    reqCtrlTypes: ['switch'],
     handler: toggle
   },
   'setEnable': {
-    requiredTypes: ['switch'],
+    reqCtrlTypes: ['switch'],
     handler: setEnable
   },
   'setDisable': {
-    requiredTypes: ['switch'],
+    reqCtrlTypes: ['switch'],
     handler: setDisable
   }
 };
 
 var eventsTable = {
   'whenChange': {
-    requiredTypes: ['switch'],
+    reqCtrlTypes: ['switch'],
     handler: whenChange
   },
   'whenDisabled': {
-    requiredTypes: ['switch'],
+    reqCtrlTypes: ['switch'],
     handler: whenDisabled
   },
   'whenEnabled': {
-    requiredTypes: ['switch'],
+    reqCtrlTypes: ['switch'],
     handler: whenEnabled
   }
 };
 
 
 /**
- * Проверяет соответствие типов контролов и событий/действий
- * В случае несоответствия типа контролов, логирует ошибку и прерывает выполнение.
+ * Проверяет, входит ли тип контрола в список допустимых типов
  *
- * @param {Array<Object>} inControls - Массив конфигураций входных контролов.
- * @param {Array<Object>} outControls - Массив конфигураций выходных контролов.
+ * @param {string} controlName - Имя контрола
+ * @param {Array<string>} reqCtrlTypes - Список допустимых типов
+ * @returns {boolean} Возвращает true, если тип контрола допустим, иначе false
+ */
+function isControlTypeValid(controlName, reqCtrlTypes) {
+  var controlType = dev[controlName + "#type"];
+  
+  // Обработка на случай не существования контрола
+  if (!controlType) {
+    log("Control type for " + controlName + " not found, return: " + controlType);
+    return false;
+  }
+  log("Control: " + controlName + " | Type: " + controlType);
+
+  var isTypeValid = (reqCtrlTypes.indexOf(controlType) !== -1);
+  return isTypeValid;
+}
+
+
+/**
+ * Проверяет типов всех контролов в массиве на соответсвие
+ * требованиям в таблице
+ *
+ * @param {Array<Object>} controls - Массив конфигураций контролов
+ * @param {Object} table - Таблица, содержащая допустимые типы для
+ *                         каждого события/действия
+ * @returns {boolean} - Возвращает true, если все контролы имеют
+ *                      допустимые типы, иначе false
+ */
+function validateControls(controls, table) {
+  for (var i = 0; i < controls.length; i++) {
+    var curCtrlName = controls[i].control;
+    var curBehaviorType = controls[i].behaviorType;
+    var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
+    
+    if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
+      log("Error: Control '" + curCtrlName + "' is not of a valid type");
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Основная функция для проверки всех входных и выходных контролов
+ * Проверяет соответствие типов контролов и событий/действий
+ * В случае несоответствия типа контролов, логирует ошибку и прерывает выполнение
+ *
+ * @param {Array<Object>} inControls - Массив конфигураций входных контролов
+ * @param {Array<Object>} outControls - Массив конфигураций выходных контролов
  * @returns {void}
  */
 function checkControls(inControls, outControls) {
@@ -120,42 +169,20 @@ function checkControls(inControls, outControls) {
   log("Output Controls conf: " + JSON.stringify(outControls));
 
   // @todo:vg Добавить проверку существования указанных контролов перед работой
-  // @todo:vg Реализовать нормальную обработку счетчиков
-  //          Для этого нужно изменить обработку входных параметров
+  //          чтобы мы были уверенны что каждый контрол реально существует
 
-  // Проверка входных контролов
-  var isAllInputsSwitchTypes = true;
-  for (var i = 0; i < inControls.length; i++) {
-    var curInControl = inControls[i].control;
-    var inputType = dev[curInControl + "#type"];
-    log("Input control: " + curInControl + " | Type: " + inputType);
+  var isInputControlsValid = validateControls(inControls, eventsTable);
+  var isOutputControlsValid = validateControls(outControls, actionsTable);
 
-    if (inputType !== "switch") {
-      isAllInputsSwitchTypes = false;
-      log("Error: Input control '" + curInControl + "' is not of type 'switch'");
-      break;
-    }
-  }
-
-  var isAllOutputsSwitchTypes = true;
-  for (var j = 0; j < outControls.length; j++) {
-    var curOutControl = outControls[j].control;
-    var outputType = dev[curOutControl + "#type"];
-    log("Output control: " + curOutControl + " | Type: " + outputType);
-
-    if (outputType !== "switch") {
-      isAllOutputsSwitchTypes = false;
-      log("Error: Output control '" + curOutControl + "' is not of type 'switch'");
-      break;
-    }
-  }
-
-  var isValidTypes = (isAllInputsSwitchTypes && isAllOutputsSwitchTypes);
-  if (!isValidTypes) {
-    log("Error: One or more controls are not of type 'switch'. Operation aborted!");
+  var isAllCtrlTypesValid = (isInputControlsValid && isOutputControlsValid);
+  if (!isAllCtrlTypesValid) {
+    log("Error: One or more controls are not of a valid type. Operation aborted!");
     return;
   }
+
+  log("All controls have valid types");
 }
+
 
 /**
  * Инициализирует виртуальное устройство и определяет правило для управления
@@ -198,7 +225,43 @@ function checkControls(inControls, outControls) {
  * @returns {void}
  */
 function init(idPrefix, inControls, outControls) {
-  // Проверка входящих в функцию параметров
+
+  function thenHandler(newValue, devName, cellName) {
+    var controlFullName = devName + '/' + cellName;
+    var matchedInControl = null;
+  
+    // Ищем контрол вызвавший изменение, получаем прослушиваемый тип события
+    for (var i = 0; i < inControls.length; i++) {
+      if (inControls[i].control === controlFullName) {
+        matchedInControl = inControls[i];
+        break;
+      }
+    }
+    if (!matchedInControl) return;
+    var eventType = matchedInControl.behaviorType;
+  
+    // Проверяем настроенное условие срабатывания
+    // @note: Для "whenChange" продолжаем всегда
+    if (eventType === "whenDisabled" && newValue) return;
+    if (eventType === "whenEnabled" && !newValue) return;
+  
+    // Выполняем действия на выходных контролах
+    // Не усложняем проверками так как проверили все заранее в инициализации
+    for (var j = 0; j < outControls.length; j++) {
+      var curCtrlName = outControls[j].control;
+      var curUserAction = outControls[j].behaviorType;
+      var newCtrlState = false;
+  
+      newCtrlState = actionsTable[curUserAction].handler(curCtrlName);
+      dev[curCtrlName] = newCtrlState;
+  
+      log("Control " + curCtrlName + " updated to state: " + newCtrlState);
+    }
+  
+    log("Output controls updated for generate 'idPrefix222': " + idPrefix);
+  }  
+
+  // Проверка входящей в функцию конфигурации параметров
   checkControls(inControls, outControls);
 
   defineVirtualDevice("GenVd_" + idPrefix, {
@@ -217,47 +280,11 @@ function init(idPrefix, inControls, outControls) {
     inControlNames.push(inControls[i].control);
   }
 
-  defineRule("GenRule_" + idPrefix, {
-    whenChanged: inControlNames,
-    then: function (newValue, devName, cellName) {
-      var controlFullName = devName + '/' + cellName;
-      var matchedInControl = null;
-
-      // Ищем контрол вызвавший изменение, получаем прослушиваемый тип события
-      for (var i = 0; i < inControls.length; i++) {
-        if (inControls[i].control === controlFullName) {
-          matchedInControl = inControls[i];
-          break;
-        }
-      }
-      if (!matchedInControl) return;
-      var eventType = matchedInControl.behaviorType;
-
-      // @todo:vg Реализовать нормальную обработку счетчиков
-      //          Для этого нужно изменить обработку чтобы
-      //          не было инверсии !newValue
-
-      // Проверяем настроенное условие срабатывания
-      // @note: Для "whenChange" продолжаем всегда
-      if (eventType === "whenDisabled" && newValue) return;
-      if (eventType === "whenEnabled" && !newValue) return;
-
-      // Выполняем действия на выходных контролах
-      // Не усложняем проверками так как проверили все заранее в инициализации
-      for (var j = 0; j < outControls.length; j++) {
-        var curControlName = outControls[j].control;
-        var curUserAction = outControls[j].behaviorType;
-        var newControlState = false;
-
-        newControlState = actionsTable[curUserAction].handler(curControlName);
-        dev[curControlName] = newControlState;
-
-        log("Control " + curControlName + " updated to state: " + newControlState);
-      }
-
-      log("Output controls updated for Prefix:" + idPrefix);
-    }
-  });
+  var generatedRuleName = "GenRule_" + idPrefix;
+  defineRule(generatedRuleName, {
+             whenChanged: inControlNames,
+             then: thenHandler
+            });
 }
 
 exports.init = function (idPrefix, inControls, outControls) {
