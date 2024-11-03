@@ -217,7 +217,7 @@
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
               },
-              "eventType": {
+              "behaviorType": {
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "Event Type",
@@ -238,7 +238,7 @@
             },
             "required": [
               "control",
-              "eventType"
+              "behaviorType"
             ]
           }
         },
@@ -279,7 +279,7 @@
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
               },
-              "actionType": {
+              "behaviorType": {
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "Action Type",
@@ -313,7 +313,7 @@
             },
             "required": [
               "control",
-              "actionType"
+              "behaviorType"
             ]
           }
         }

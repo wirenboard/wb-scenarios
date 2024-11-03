@@ -11,8 +11,104 @@
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
+
 /**
- * Проверяет, что все указанные входные и выходные контролы имеют тип 'switch'.
+ * Таблицы событий и действий
+ * Так как логика подразумевает связь трех сущностей между собой - будем
+ * хранить их в одной таблице:
+ *   - Тип события/действия
+ *   - Разрешенные типы топиков
+ *   - Обработчик
+ */
+/**
+ * Отключает контрол.
+ * @param {string} controlName - Имя контрола.
+ * @returns {boolean} Всегда возвращает false.
+ */
+function setDisable(controlName) {
+  return false;
+}
+
+/**
+ * Включает контрол.
+ * @param {string} controlName - Имя контрола.
+ * @returns {boolean} Всегда возвращает true.
+ */
+function setEnable(controlName) {
+  return true;
+}
+
+/**
+ * Переключает состояние контрола.
+ * @param {string} controlName - Имя контрола.
+ * @returns {boolean} Возвращает противоположное текущему состояние контрола.
+ */
+function toggle(controlName) {
+  const newState = !dev[controlName];
+  return newState;
+}
+
+/**
+ * Событие активации контрола.
+ * @param {boolean} newValue - Новое состояние контрола.
+ * @returns {boolean} Возвращает true, если контрол включен.
+ */
+function whenEnabled(newValue) {
+  return newValue === true;
+}
+
+/**
+ * Событие деактивации контрола.
+ * @param {boolean} newValue - Новое состояние контрола.
+ * @returns {boolean} Возвращает true, если контрол выключен.
+ */
+function whenDisabled(newValue) {
+  return newValue === false;
+}
+
+/**
+ * Событие изменения состояния контрола.
+ * @param {any} newValue - Новое состояние контрола.
+ * @returns {boolean} Всегда возвращает true.
+ */
+function whenChange(newValue) {
+  return true; // Всегда срабатывает при изменении
+}
+
+// Обновление таблиц с использованием именованных функций
+var actionsTable = {
+  'toggle': {
+    requiredTypes: ['switch'],
+    handler: toggle
+  },
+  'setEnable': {
+    requiredTypes: ['switch'],
+    handler: setEnable
+  },
+  'setDisable': {
+    requiredTypes: ['switch'],
+    handler: setDisable
+  }
+};
+
+var eventsTable = {
+  'whenChange': {
+    requiredTypes: ['switch'],
+    handler: whenChange
+  },
+  'whenDisabled': {
+    requiredTypes: ['switch'],
+    handler: whenDisabled
+  },
+  'whenEnabled': {
+    requiredTypes: ['switch'],
+    handler: whenEnabled
+  }
+};
+
+
+/**
+ * Проверяет соответствие типов контролов и событий/действий
  * В случае несоответствия типа контролов, логирует ошибку и прерывает выполнение.
  *
  * @param {Array<Object>} inControls - Массив конфигураций входных контролов.
@@ -20,13 +116,14 @@
  * @returns {void}
  */
 function checkControls(inControls, outControls) {
-  log("Input Controls conf: " + inControls);
-  log("Output Controls conf: " + outControls);
+  log("Input Controls conf: " + JSON.stringify(inControls));
+  log("Output Controls conf: " + JSON.stringify(outControls));
 
-  // Check type prop - must be "switch" and equal
   // @todo:vg Добавить проверку существования указанных контролов перед работой
   // @todo:vg Реализовать нормальную обработку счетчиков
   //          Для этого нужно изменить обработку входных параметров
+
+  // Проверка входных контролов
   var isAllInputsSwitchTypes = true;
   for (var i = 0; i < inControls.length; i++) {
     var curInControl = inControls[i].control;
@@ -73,11 +170,11 @@ function checkControls(inControls, outControls) {
  *                          [
  *                            {
  *                              "control": "vd-wall-switch1/enabled",
- *                              "eventType": "whenChange"
+ *                              "behaviorType": "whenChange"
  *                            },
  *                            {
  *                              "control": "vd-wall-switch2/enabled",
- *                              "eventType": "whenDisabled"
+ *                              "behaviorType": "whenDisabled"
  *                            }
  *                          ]
  * @param {Array<Object>} outControls - Массив выходных контролов, значения
@@ -89,18 +186,19 @@ function checkControls(inControls, outControls) {
  *                            [
  *                              {
  *                                "control": "vd-pump1/enabled",
- *                                "actionType": "setDisable",
+ *                                "behaviorType": "setDisable",
  *                                "actionValue": 0
  *                              },
  *                              {
  *                                "control": "vd-pump2/enabled",
- *                                "actionType": "setValue",
+ *                                "behaviorType": "setValue",
  *                                "actionValue": 22
  *                              }
  *                            ]
  * @returns {void}
  */
 function init(idPrefix, inControls, outControls) {
+  // Проверка входящих в функцию параметров
   checkControls(inControls, outControls);
 
   defineVirtualDevice("GenVd_" + idPrefix, {
@@ -133,33 +231,31 @@ function init(idPrefix, inControls, outControls) {
         }
       }
       if (!matchedInControl) return;
-      var eventType = matchedInControl.eventType;
+      var eventType = matchedInControl.behaviorType;
 
       // @todo:vg Реализовать нормальную обработку счетчиков
       //          Для этого нужно изменить обработку чтобы
       //          не было инверсии !newValue
 
       // Проверяем настроенное условие срабатывания
-      if (eventType === "onEnabled" && !newValue) return;
-      if (eventType === "onDisabled" && newValue) return;
-      // Для "onChange" продолжаем всегда
+      // @note: Для "whenChange" продолжаем всегда
+      if (eventType === "whenDisabled" && newValue) return;
+      if (eventType === "whenEnabled" && !newValue) return;
 
       // Выполняем действия на выходных контролах
+      // Не усложняем проверками так как проверили все заранее в инициализации
       for (var j = 0; j < outControls.length; j++) {
         var curControlName = outControls[j].control;
-        var curUserAction = outControls[j].actionType;
-        var resAction = false; // По умолчанию - выключаем
+        var curUserAction = outControls[j].behaviorType;
+        var newControlState = false;
 
-        if (curUserAction === 'toggle')
-          resAction = !dev[curControlName];
-        else if (curUserAction === 'setOn')
-          resAction = true;
+        newControlState = actionsTable[curUserAction].handler(curControlName);
+        dev[curControlName] = newControlState;
 
-        dev[curControlName] = resAction;
-        log("Control " + curControlName + " updated to state: " + resAction);
+        log("Control " + curControlName + " updated to state: " + newControlState);
       }
 
-      log("Output controls updated for " + idPrefix);
+      log("Output controls updated for Prefix:" + idPrefix);
     }
   });
 }
