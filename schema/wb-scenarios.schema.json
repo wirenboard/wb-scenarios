@@ -130,9 +130,9 @@
       ]
     },
     "devicesControl": {
-      "type": "object",
       "title": "Devices control",
-      "description": "Сценарий для любых действий над одним или несколькими устройствами.<br> Может пременятся для группового управления освещением, шторами и тд.<br>Подробнее и примеры использования в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a><br><img src=\"images/scenarios-devices-control.png\">",
+      "type": "object",
+      "description": "Сценарий позволяет управлять одним или несколькими устройствами.<br> Применим для управления освещением, шторами и другими устройствами в одиночном или групповом режиме.<br>Более подробно о сценарии и примеры использования можно найти в нашей wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a><br><img src=\"images/scenarios-devices-control.png\">",
       "_format": "grid",
       "properties": {
         "scenarioType": {
@@ -146,8 +146,8 @@
           }
         },
         "enable": {
-          "type": "boolean",
           "title": "Enable",
+          "type": "boolean",
           "default": true,
           "_format": "checkbox",
           "propertyOrder": 1,
@@ -156,8 +156,8 @@
           }
         },
         "name": {
-          "type": "string",
           "title": "Scenario name",
+          "type": "string",
           "default": "Управление устройствами",
           "minLength": 1,
           "maxLength": 30,
@@ -167,8 +167,8 @@
           }
         },
         "id_prefix": {
-          "type": "string",
           "title": "ID Prefix",
+          "type": "string",
           "description": "Одно слово на английском языке исключая: пробел, /, +, #. Длина до 15 символов.",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
@@ -181,12 +181,12 @@
           }
         },
         "inControls": {
+          "title": "Input controls",
           "type": "array",
           "minItems": 1,
           "propertyOrder": 4,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "Input controls",
-          "description": "List of input controls with event types",
+          "description": "List of tracked input controls, each configured to respond to a specific type of event.<br><b>'OR'</b> logic is applied: When a specified event is registered on any of the input controls - all outputs are triggered to change",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -206,7 +206,7 @@
                 "type": "string",
                 "propertyOrder": 1,
                 "title": "Input control topic name",
-                "description": "Input control in format: device/control",
+                "description": "In format: 'device/control'",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -248,7 +248,7 @@
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
           "title": "Output controls",
-          "description": "List of output controls with action types",
+          "description": "List of modifiable output controls, each configured for a specific type of action.<br>Upon activation, all specified controls undergo changes",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -268,7 +268,7 @@
                 "type": "string",
                 "propertyOrder": 1,
                 "title": "Output control topic name",
-                "description": "Output control in format: device/control",
+                "description": "In format: 'device/control'",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -366,7 +366,7 @@
       "Enable": "Активен",
       "Input control": "Входной контрол",
       "Input controls": "Входные контролы",
-      "List of input controls with event types": "Список входных контролов и типы событий",
+      "List of tracked input controls, each configured to respond to a specific type of event.<br><b>'OR'</b> logic is applied: When a specified event is registered on any of the input controls - all outputs are triggered to change": "Список отслеживаемых входных контроллов, каждый из которых настроен на реагирование на определённый тип события.<br>Применяется логика <b>'ИЛИ'</b>: При регистрации заданного события на любом из входных контролов - запускается изменение всех выходов",
       "Input control topic name": "Имя топика входного контрола",
       "Event Type": "Тип события",
       "When Change": "Когда изменится",
@@ -374,8 +374,9 @@
       "When Enabled (switch)": "Когда включилось (для переключателей)",
       "Output control": "Выходной контрол",
       "Output controls": "Выходные контролы",
-      "List of output controls with action types": "Список выходных контролов и типы действий",
+      "List of modifiable output controls, each configured for a specific type of action.<br>Upon activation, all specified controls undergo changes": "Список изменяемых выходных контролов, каждый из которых настроен на конкретный тип действия.<br>При активации все указанные контролы подвергаются изменениям",
       "Output control topic name": "Имя топика выходного контрола",
+      "In format: 'device/control'": "В формате: 'устройство/контрол'",
       "Action Type": "Тип действия",
       "Toggle (switch)": "Переключить (для переключателей)",
       "Enable (switch)": "Включить (для переключателей)",
