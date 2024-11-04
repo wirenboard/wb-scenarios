@@ -154,11 +154,11 @@ function init(idPrefix, inControls, outControls) {
       var curCtrlName = outControls[j].control;
       var curUserAction = outControls[j].behaviorType;
       var actualValue = dev[curCtrlName];
+      var newCtrlValue = bTables.actionsTable[curUserAction].handler(actualValue);
 
-      var newCtrlState = bTables.actionsTable[curUserAction].handler(actualValue);
-      dev[curCtrlName] = newCtrlState;
-  
-      log("Control " + curCtrlName + " updated to state: " + newCtrlState);
+      log("Control " + curCtrlName + " will updated to state: " + newCtrlValue);
+      dev[curCtrlName] = newCtrlValue;
+      log("Control " + curCtrlName + " successfull updated");
     }
   
     log("Output controls updated for generate 'idPrefix': " + idPrefix);

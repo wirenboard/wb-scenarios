@@ -1,6 +1,7 @@
 /**
  * @file Модуль таблиц событий и действий для контролов
- * Описывает логику связи между событиями и действиями контролов, сохраняя их в единой таблице
+ * Описывает регистрируемы события и действия над контролами,
+ * сохраняя их в единой таблице
  * 
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
@@ -37,35 +38,34 @@ function whenChange(newValue) {
 }
 
 /**
- * Отключает контрол
+ * Действие отключения контрола
  * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
  * @returns {boolean} Всегда возвращает false
  */
 function setDisable(actualValue) {
-  var newControlValue = false;
-  return newControlValue;
+  var newCtrlValue = false;
+  return newCtrlValue;
 }
 
 /**
- * Включает контрол
+ * Действие включения контрола
  * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
  * @returns {boolean} Всегда возвращает true
  */
 function setEnable(actualValue) {
-  var newControlValue = true;
-  return newControlValue;
+  var newCtrlValue = true;
+  return newCtrlValue;
 }
 
 /**
- * Переключает состояние контрола
+ * Действие переключения состояния контрола
  * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
- * @returns {boolean} Возвращает противоположное текущему состояние контрола
+ * @returns {boolean} Возвращает противоположное текущему состоянию контрола
  */
 function toggle(actualValue) {
-  var newControlValue = !actualValue;
-  return newControlValue;
+  var newCtrlValue = !actualValue;
+  return newCtrlValue;
 }
-
 
 /**
 * Таблицы событий и действий
