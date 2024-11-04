@@ -11,103 +11,7 @@
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
-
-/**
- * Таблицы событий и действий
- * Так как логика подразумевает связь трех сущностей между собой - будем
- * хранить их в одной таблице
- *   - Ключ Тип события/действия
- * @param reqCtrlTypes Required Control Types
- *                     Разрешенные типы контрол топиков MQTT для данного
- *                     события/действия
- * @param handler      Обработчик данного события/действия
- */
-/**
- * Отключает контрол.
- * @param {string} controlName - Имя контрола.
- * @returns {boolean} Всегда возвращает false.
- */
-function setDisable(controlName) {
-  return false;
-}
-
-/**
- * Включает контрол.
- * @param {string} controlName - Имя контрола.
- * @returns {boolean} Всегда возвращает true.
- */
-function setEnable(controlName) {
-  return true;
-}
-
-/**
- * Переключает состояние контрола.
- * @param {string} controlName - Имя контрола.
- * @returns {boolean} Возвращает противоположное текущему состояние контрола.
- */
-function toggle(controlName) {
-  var newState = !dev[controlName];
-  return newState;
-}
-
-/**
- * Событие активации контрола.
- * @param {boolean} newValue - Новое состояние контрола.
- * @returns {boolean} Возвращает true, если контрол включен.
- */
-function whenEnabled(newValue) {
-  return newValue === true;
-}
-
-/**
- * Событие деактивации контрола.
- * @param {boolean} newValue - Новое состояние контрола.
- * @returns {boolean} Возвращает true, если контрол выключен.
- */
-function whenDisabled(newValue) {
-  return newValue === false;
-}
-
-/**
- * Событие изменения состояния контрола.
- * @param {any} newValue - Новое состояние контрола.
- * @returns {boolean} Всегда возвращает true.
- */
-function whenChange(newValue) {
-  return true; // Всегда срабатывает при изменении
-}
-
-// Обновление таблиц с использованием именованных функций
-var actionsTable = {
-  'toggle': {
-    reqCtrlTypes: ['switch'],
-    handler: toggle
-  },
-  'setEnable': {
-    reqCtrlTypes: ['switch'],
-    handler: setEnable
-  },
-  'setDisable': {
-    reqCtrlTypes: ['switch'],
-    handler: setDisable
-  }
-};
-
-var eventsTable = {
-  'whenChange': {
-    reqCtrlTypes: ['switch'],
-    handler: whenChange
-  },
-  'whenDisabled': {
-    reqCtrlTypes: ['switch'],
-    handler: whenDisabled
-  },
-  'whenEnabled': {
-    reqCtrlTypes: ['switch'],
-    handler: whenEnabled
-  }
-};
-
+var bTables = require("behavior-handling-tables.mod");
 
 /**
  * Проверяет, входит ли тип контрола в список допустимых типов
@@ -171,8 +75,8 @@ function checkControls(inControls, outControls) {
   // @todo:vg Добавить проверку существования указанных контролов перед работой
   //          чтобы мы были уверенны что каждый контрол реально существует
 
-  var isInputControlsValid = validateControls(inControls, eventsTable);
-  var isOutputControlsValid = validateControls(outControls, actionsTable);
+  var isInputControlsValid = validateControls(inControls, bTables.eventsTable);
+  var isOutputControlsValid = validateControls(outControls, bTables.actionsTable);
 
   var isAllCtrlTypesValid = (isInputControlsValid && isOutputControlsValid);
   if (!isAllCtrlTypesValid) {
@@ -242,14 +146,16 @@ function init(idPrefix, inControls, outControls) {
   
     // Проверяем настроенное условие срабатывания
     // @note: Для "whenChange" продолжаем всегда
-    if (!eventsTable[eventType].handler(newValue)) return;
+    if (!bTables.eventsTable[eventType].handler(newValue)) return;
   
     // Выполняем действия на выходных контролах
     // Не усложняем проверками так как проверили все заранее в инициализации
     for (var j = 0; j < outControls.length; j++) {
       var curCtrlName = outControls[j].control;
       var curUserAction = outControls[j].behaviorType;
-      var newCtrlState = actionsTable[curUserAction].handler(curCtrlName);
+      var actualValue = dev[curCtrlName];
+
+      var newCtrlState = bTables.actionsTable[curUserAction].handler(actualValue);
       dev[curCtrlName] = newCtrlState;
   
       log("Control " + curCtrlName + " updated to state: " + newCtrlState);
