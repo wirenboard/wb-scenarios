@@ -242,23 +242,20 @@ function init(idPrefix, inControls, outControls) {
   
     // Проверяем настроенное условие срабатывания
     // @note: Для "whenChange" продолжаем всегда
-    if (eventType === "whenDisabled" && newValue) return;
-    if (eventType === "whenEnabled" && !newValue) return;
+    if (!eventsTable[eventType].handler(newValue)) return;
   
     // Выполняем действия на выходных контролах
     // Не усложняем проверками так как проверили все заранее в инициализации
     for (var j = 0; j < outControls.length; j++) {
       var curCtrlName = outControls[j].control;
       var curUserAction = outControls[j].behaviorType;
-      var newCtrlState = false;
-  
-      newCtrlState = actionsTable[curUserAction].handler(curCtrlName);
+      var newCtrlState = actionsTable[curUserAction].handler(curCtrlName);
       dev[curCtrlName] = newCtrlState;
   
       log("Control " + curCtrlName + " updated to state: " + newCtrlState);
     }
   
-    log("Output controls updated for generate 'idPrefix222': " + idPrefix);
+    log("Output controls updated for generate 'idPrefix': " + idPrefix);
   }  
 
   // Проверка входящей в функцию конфигурации параметров
