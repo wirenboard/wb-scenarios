@@ -42,7 +42,7 @@ function whenChange(newValue) {
  * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
  * @returns {boolean} Всегда возвращает false
  */
-function setDisable(actualValue) {
+function setDisable(actualValue, actionValue) {
   var newCtrlValue = false;
   return newCtrlValue;
 }
@@ -52,7 +52,7 @@ function setDisable(actualValue) {
  * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
  * @returns {boolean} Всегда возвращает true
  */
-function setEnable(actualValue) {
+function setEnable(actualValue, actionValue) {
   var newCtrlValue = true;
   return newCtrlValue;
 }
@@ -62,8 +62,41 @@ function setEnable(actualValue) {
  * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
  * @returns {boolean} Возвращает противоположное текущему состоянию контрола
  */
-function toggle(actualValue) {
+function toggle(actualValue, actionValue) {
   var newCtrlValue = !actualValue;
+  return newCtrlValue;
+}
+
+/**
+ * Действие установки значения контрола величиной в actionValue
+ * @param {number} actualValue - Актуальное состояние контрола на данный момент
+ * @param {number} actionValue - Значение заданное пользователем
+ * @returns {number} Возвращает новое значение контрола
+ */
+function setValue(actualValue, actionValue) {
+  var newCtrlValue = actionValue;
+  return newCtrlValue;
+}
+
+/**
+ * Действие увеличения значения контрола на величину в actionValue
+ * @param {number} actualValue - Актуальное состояние контрола на данный момент
+ * @param {number} actionValue - Значение заданное пользователем
+ * @returns {number} Возвращает новое значение контрола
+ */
+function increaseValueBy(actualValue, actionValue) {
+  var newCtrlValue = actualValue + actionValue;
+  return newCtrlValue;
+}
+
+/**
+ * Действие уменьшения значения контрола на величину в actionValue
+ * @param {number} actualValue - Актуальное состояние контрола на данный момент
+ * @param {number} actionValue - Значение заданное пользователем
+ * @returns {number} Возвращает новое значение контрола
+ */
+function decreaseValueBy(actualValue, actionValue) {
+  var newCtrlValue = actualValue - actionValue;
   return newCtrlValue;
 }
 
@@ -81,7 +114,7 @@ function toggle(actualValue) {
 */
 var eventsTable = {
   'whenChange': {
-    reqCtrlTypes: ['switch'],
+    reqCtrlTypes: ['switch', 'value'],
     handler: whenChange
   },
   'whenDisabled': {
@@ -106,6 +139,18 @@ var actionsTable = {
   'setDisable': {
     reqCtrlTypes: ['switch'],
     handler: setDisable
+  },
+  'setValue': {
+    reqCtrlTypes: ['value'],
+    handler: setValue
+  },
+  'increaseValueBy': {
+    reqCtrlTypes: ['value'],
+    handler: increaseValueBy
+  },
+  'decreaseValueBy': {
+    reqCtrlTypes: ['value'],
+    handler: decreaseValueBy
   }
 };
 

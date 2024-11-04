@@ -153,8 +153,9 @@ function init(idPrefix, inControls, outControls) {
     for (var j = 0; j < outControls.length; j++) {
       var curCtrlName = outControls[j].control;
       var curUserAction = outControls[j].behaviorType;
+      var curActionValue = outControls[j].actionValue;
       var actualValue = dev[curCtrlName];
-      var newCtrlValue = bTables.actionsTable[curUserAction].handler(actualValue);
+      var newCtrlValue = bTables.actionsTable[curUserAction].handler(actualValue, curActionValue);
 
       log("Control " + curCtrlName + " will updated to state: " + newCtrlValue);
       dev[curCtrlName] = newCtrlValue;
