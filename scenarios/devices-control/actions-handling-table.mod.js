@@ -1,41 +1,9 @@
 /**
- * @file Модуль таблиц событий и действий для контролов
- * Описывает регистрируемы события и действия над контролами,
- * сохраняя их в единой таблице
+ * @file Модуль таблицы производимых над контролами действий
  * 
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
-
-/**
- * Событие активации контрола
- * @param {boolean} newValue - Новое состояние контрола
- * @returns {boolean} Возвращает true, если контрол включен
- */
-function whenEnabled(newValue) {
-  var isEventTriggered = (newValue === true);
-  return isEventTriggered;
-}
-
-/**
- * Событие деактивации контрола
- * @param {boolean} newValue - Новое состояние контрола
- * @returns {boolean} Возвращает true, если контрол выключен
- */
-function whenDisabled(newValue) {
-  var isEventTriggered = (newValue === false);
-  return isEventTriggered;
-}
-
-/**
- * Событие изменения состояния контрола
- * @param {any} newValue - Новое состояние контрола
- * @returns {boolean} Всегда возвращает true
- */
-function whenChange(newValue) {
-  var isEventTriggered = true; // Всегда срабатывает при изменении
-  return isEventTriggered;
-}
 
 /**
  * Действие отключения контрола
@@ -101,32 +69,11 @@ function decreaseValueBy(actualValue, actionValue) {
 }
 
 /**
-* Таблицы событий и действий
-* Так как логика подразумевает связь трех сущностей между собой
-* Каждое событие или действие имеет ключ, который соответствует типу события/действия и
-* включает параметры:
-* @param {Array<string>} reqCtrlTypes - Required Control Types
-*                     Разрешенные типы контрол топиков MQTT для данного
-*                     события/действия
-* @param {function} handler - Функция обработчика события или действия
-* При изменении состояния любого из входных топиков, согласно настроенным событиям,
-* все выходные топики изменяют своё состояние в соответствии с настроенным действием.
+* Таблица действий
+* Содержит имя действия и соответствующие ему:
+* - Разрешенные типы контрола
+* - Обработчик
 */
-var eventsTable = {
-  'whenChange': {
-    reqCtrlTypes: ['switch', 'value'],
-    handler: whenChange
-  },
-  'whenDisabled': {
-    reqCtrlTypes: ['switch'],
-    handler: whenDisabled
-  },
-  'whenEnabled': {
-    reqCtrlTypes: ['switch'],
-    handler: whenEnabled
-  }
-};
-
 var actionsTable = {
   'toggle': {
     reqCtrlTypes: ['switch'],
@@ -154,5 +101,4 @@ var actionsTable = {
   }
 };
 
-exports.eventsTable = eventsTable;
 exports.actionsTable = actionsTable;

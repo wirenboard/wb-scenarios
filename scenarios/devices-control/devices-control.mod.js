@@ -11,7 +11,8 @@
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
-var bTables = require("behavior-handling-tables.mod");
+var eTable = require("events-handling-table.mod");
+var aTable = require("actions-handling-table.mod");
 
 /**
  * Проверяет, входит ли тип контрола в список допустимых типов
@@ -75,8 +76,8 @@ function checkControls(inControls, outControls) {
   // @todo:vg Добавить проверку существования указанных контролов перед работой
   //          чтобы мы были уверенны что каждый контрол реально существует
 
-  var isInputControlsValid = validateControls(inControls, bTables.eventsTable);
-  var isOutputControlsValid = validateControls(outControls, bTables.actionsTable);
+  var isInputControlsValid = validateControls(inControls, eTable.eventsTable);
+  var isOutputControlsValid = validateControls(outControls, aTable.actionsTable);
 
   var isAllCtrlTypesValid = (isInputControlsValid && isOutputControlsValid);
   if (!isAllCtrlTypesValid) {
@@ -146,7 +147,7 @@ function init(idPrefix, inControls, outControls) {
   
     // Проверяем настроенное условие срабатывания
     // @note: Для "whenChange" продолжаем всегда
-    if (!bTables.eventsTable[eventType].handler(newValue)) return;
+    if (!eTable.eventsTable[eventType].handler(newValue)) return;
   
     // Выполняем действия на выходных контролах
     // Не усложняем проверками так как проверили все заранее в инициализации
@@ -155,7 +156,7 @@ function init(idPrefix, inControls, outControls) {
       var curUserAction = outControls[j].behaviorType;
       var curActionValue = outControls[j].actionValue;
       var actualValue = dev[curCtrlName];
-      var newCtrlValue = bTables.actionsTable[curUserAction].handler(actualValue, curActionValue);
+      var newCtrlValue = aTable.actionsTable[curUserAction].handler(actualValue, curActionValue);
 
       log("Control " + curCtrlName + " will updated to state: " + newCtrlValue);
       dev[curCtrlName] = newCtrlValue;
