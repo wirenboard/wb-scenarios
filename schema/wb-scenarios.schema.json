@@ -144,7 +144,7 @@
           "minItems": 1,
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "Output controls",
+          "title": "outControls_arr_title",
           "description": "List of modifiable output controls, each configured for a specific type of action.<br>Upon activation, all specified controls undergo changes",
           "_format": "table",
           "options": {
@@ -158,7 +158,7 @@
             }
           },
           "items": {
-            "title": "Output control",
+            "title": "outControls_obj_title",
             "type": "object",
             "properties": {
               "control": {
@@ -258,7 +258,9 @@
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
       "inControls_control_title": "MQTT-topic",
-      "inControls_behaviorType_title": "Trigger logic"
+      "inControls_behaviorType_title": "Trigger logic",
+      "outControls_arr_title": "Actions",
+      "outControls_obj_title": "Action"
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -273,6 +275,8 @@
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
       "inControls_control_title": "MQTT-топик",
       "inControls_behaviorType_title": "Логика срабатывания",
+      "outControls_arr_title": "Действия",
+      "outControls_obj_title": "Действие",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
@@ -282,8 +286,6 @@
       "When Change": "Когда изменится",
       "When Disabled (switch)": "Когда отключилось (для переключателей)",
       "When Enabled (switch)": "Когда включилось (для переключателей)",
-      "Output control": "Выходной контрол",
-      "Output controls": "Выходные контролы",
       "List of modifiable output controls, each configured for a specific type of action.<br>Upon activation, all specified controls undergo changes": "Список изменяемых выходных контролов, каждый из которых настроен на конкретный тип действия.<br>При активации все указанные контролы подвергаются изменениям",
       "Output control topic name": "Имя топика выходного контрола",
       "In format: 'device/control'": "В формате: 'устройство/контрол'",
