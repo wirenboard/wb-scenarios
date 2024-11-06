@@ -117,7 +117,7 @@
               "behaviorType": {
                 "type": "string",
                 "propertyOrder": 2,
-                "title": "Event Type",
+                "title": "inControls_behaviorType_title",
                 "enum": [
                   "whenChange",
                   "whenDisabled",
@@ -257,7 +257,8 @@
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
-      "inControls_control_title": "MQTT-topic"
+      "inControls_control_title": "MQTT-topic",
+      "inControls_behaviorType_title": "Trigger logic"
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -271,6 +272,7 @@
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
       "inControls_control_title": "MQTT-топик",
+      "inControls_behaviorType_title": "Логика срабатывания",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
