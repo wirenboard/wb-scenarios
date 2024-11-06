@@ -30,7 +30,7 @@
     "devicesControl": {
       "title": "Devices control",
       "type": "object",
-      "description": "Сценарий позволяет управлять одним или несколькими устройствами.<br> Применим для управления освещением, шторами и другими устройствами в одиночном или групповом режиме.<br>Более подробно о сценарии и примеры использования можно найти в нашей wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a><br><img src=\"images/scenarios-devices-control.png\">",
+      "description": "Сценарий позволяет управлять одним или несколькими устройствами.<br> Применим для управления освещением, шторами и другими устройствами в одиночном или групповом режиме.<br>Более подробно о сценарии и примеры использования можно найти в нашей wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a>",
       "_format": "grid",
       "properties": {
         "scenarioType": {
