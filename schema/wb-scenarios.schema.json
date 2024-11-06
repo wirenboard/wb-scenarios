@@ -145,7 +145,7 @@
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
           "title": "outControls_arr_title",
-          "description": "List of modifiable output controls, each configured for a specific type of action.<br>Upon activation, all specified controls undergo changes",
+          "description": "outControls_arr_description",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -260,7 +260,8 @@
       "inControls_control_title": "MQTT-topic",
       "inControls_behaviorType_title": "Trigger logic",
       "outControls_arr_title": "Actions",
-      "outControls_obj_title": "Action"
+      "outControls_obj_title": "Action",
+      "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered."
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -277,6 +278,7 @@
       "inControls_behaviorType_title": "Логика срабатывания",
       "outControls_arr_title": "Действия",
       "outControls_obj_title": "Действие",
+      "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации.",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
