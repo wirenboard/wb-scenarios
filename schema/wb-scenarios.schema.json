@@ -102,7 +102,7 @@
               "control": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "Input control topic name",
+                "title": "inControls_control_title",
                 "description": "In format: 'device/control'",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
@@ -256,7 +256,8 @@
       "id_prefix_description": "Used as part of the topic",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
-      "inControls_arr_description": "Any of the events listed here will trigger the automation."
+      "inControls_arr_description": "Any of the events listed here will trigger the automation.",
+      "inControls_control_title": "MQTT-topic"
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -269,13 +270,13 @@
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
+      "inControls_control_title": "MQTT-топик",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
       "Enable": "Активен",
       "List of tracked input controls, each configured to respond to a specific type of event.<br><b>'OR'</b> logic is applied: When a specified event is registered on any of the input controls - all outputs are triggered to change": "Список отслеживаемых входных контроллов, каждый из которых настроен на реагирование на определённый тип события.<br>Применяется логика <b>'ИЛИ'</b>: При регистрации заданного события на любом из входных контролов - запускается изменение всех выходов",
       "Input control topic name": "Имя топика входного контрола",
-      "Event Type": "Тип события",
       "When Change": "Когда изменится",
       "When Disabled (switch)": "Когда отключилось (для переключателей)",
       "When Enabled (switch)": "Когда включилось (для переключателей)",
