@@ -71,7 +71,7 @@
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "devices_control",
           "minLength": 1,
-          "maxLength": 15,
+          "maxLength": 30,
           "propertyOrder": 3,
           "options": {
             "grid_columns": 12
