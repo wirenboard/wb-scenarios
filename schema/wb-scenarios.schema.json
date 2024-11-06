@@ -64,9 +64,9 @@
           }
         },
         "id_prefix": {
-          "title": "ID Prefix",
+          "title": "id_prefix_title",
           "type": "string",
-          "description": "Одно слово на английском языке исключая: пробел, /, +, #. Длина до 15 символов.",
+          "description": "id_prefix_description",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "devices_control",
@@ -251,7 +251,9 @@
   },
   "translations": {
     "en": {
-      "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices."
+      "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
+      "id_prefix_title": "MQTT id of the device",
+      "id_prefix_description": "Used as part of the topic"
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -259,6 +261,8 @@
       "Scenario": "Сценарий",
       "Scenario name": "Название сценария",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
+      "id_prefix_title": "Идентификатор устройства в MQTT",
+      "id_prefix_description": "Используется как часть топика в MQTT",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
