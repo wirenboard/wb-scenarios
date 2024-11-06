@@ -83,7 +83,7 @@
           "minItems": 1,
           "propertyOrder": 4,
           "_title_note": "When options-> compact: true - this title not shown",
-          "description": "List of tracked input controls, each configured to respond to a specific type of event.<br><b>'OR'</b> logic is applied: When a specified event is registered on any of the input controls - all outputs are triggered to change",
+          "description": "inControls_arr_description",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -255,7 +255,8 @@
       "id_prefix_title": "MQTT id of the device",
       "id_prefix_description": "Used as part of the topic",
       "inControls_arr_title": "Triggers",
-      "inControls_obj_title": "Trigger"
+      "inControls_obj_title": "Trigger",
+      "inControls_arr_description": "Any of the events listed here will trigger the automation."
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -267,6 +268,7 @@
       "id_prefix_description": "Используется как часть топика в MQTT",
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
+      "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
