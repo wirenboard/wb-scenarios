@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "♥ Automation scenarios",
+  "title": "Automation scenarios",
   "description": "Сценарии автоматизации дают возможность управления устройствами и настраивания<br>связи между ними без необходимости создания скриптов.<br>Подробнее смотрите в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios\"><b>Сценарии Wiren Board</b></a>",
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
@@ -253,7 +253,7 @@
   "translations": {
     "en": {},
     "ru": {
-      "♥ Automation scenarios": "♥ Сценарии автоматизации",
+      "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "Scenario name": "Название сценария",
