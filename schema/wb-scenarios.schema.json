@@ -204,7 +204,7 @@
                 "type": "number",
                 "propertyOrder": 3,
                 "title": "outControls_actionValue_title",
-                "description": "Used for 'setNewValue', 'increaseValueBy', 'decreaseValueBy'",
+                "description": "outControls_actionValue_description",
                 "default": 0
               }
             },
@@ -264,7 +264,8 @@
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_control_title": "MQTT-topic",
       "outControls_behaviorType_title": "Action logic",
-      "outControls_actionValue_title": "Value"
+      "outControls_actionValue_title": "Value",
+      "outControls_actionValue_description": "If necessary"
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -285,6 +286,7 @@
       "outControls_control_title": "MQTT-топик",
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_title": "Значение",
+      "outControls_actionValue_description": "Если необходимо",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
