@@ -29,7 +29,7 @@
     "devicesControl": {
       "title": "Devices control",
       "type": "object",
-      "description": "Сценарий позволяет управлять одним или несколькими устройствами.<br> Применим для управления освещением, шторами и другими устройствами в одиночном или групповом режиме.<br>Более подробно о сценарии и примеры использования можно найти в нашей wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a>",
+      "description": "devicesControl_description",
       "_format": "grid",
       "properties": {
         "scenarioType": {
@@ -250,13 +250,15 @@
     }
   },
   "translations": {
-    "en": {},
+    "en": {
+      "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices."
+    },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "Scenario name": "Название сценария",
-      "Link in to out": "Связь входа с выходом",
+      "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
