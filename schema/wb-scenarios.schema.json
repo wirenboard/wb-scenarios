@@ -78,7 +78,7 @@
           }
         },
         "inControls": {
-          "title": "Input controls",
+          "title": "inControls_arr_title",
           "type": "array",
           "minItems": 1,
           "propertyOrder": 4,
@@ -96,7 +96,7 @@
             }
           },
           "items": {
-            "title": "Input control",
+            "title": "inControls_obj_title",
             "type": "object",
             "properties": {
               "control": {
@@ -253,7 +253,9 @@
     "en": {
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "id_prefix_title": "MQTT id of the device",
-      "id_prefix_description": "Used as part of the topic"
+      "id_prefix_description": "Used as part of the topic",
+      "inControls_arr_title": "Triggers",
+      "inControls_obj_title": "Trigger"
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -263,12 +265,12 @@
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
       "id_prefix_title": "Идентификатор устройства в MQTT",
       "id_prefix_description": "Используется как часть топика в MQTT",
+      "inControls_arr_title": "События",
+      "inControls_obj_title": "Событие",
       "Name": "Имя",
       "Optional": "Не обязательно",
       "Devices control": "Управление устройствами",
       "Enable": "Активен",
-      "Input control": "Входной контрол",
-      "Input controls": "Входные контролы",
       "List of tracked input controls, each configured to respond to a specific type of event.<br><b>'OR'</b> logic is applied: When a specified event is registered on any of the input controls - all outputs are triggered to change": "Список отслеживаемых входных контроллов, каждый из которых настроен на реагирование на определённый тип события.<br>Применяется логика <b>'ИЛИ'</b>: При регистрации заданного события на любом из входных контролов - запускается изменение всех выходов",
       "Input control topic name": "Имя топика входного контрола",
       "Event Type": "Тип события",
