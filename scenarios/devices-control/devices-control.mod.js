@@ -141,7 +141,7 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
     cells: {
       enabled: {
         type: "switch",
-        value: false
+        value: true
       },
     }
   });
