@@ -74,7 +74,8 @@
           "maxLength": 120,
           "propertyOrder": 3,
           "options": {
-            "grid_columns": 12
+            "grid_columns": 12,
+            "patternmessage": "error_regexp_patternmessage"
           }
         },
         "inControls": {
@@ -107,6 +108,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
+                "patternmessage": "error_regexp_patternmessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -169,6 +171,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
+                  "patternmessage": "error_regexp_patternmessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -266,7 +269,8 @@
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_title": "Value",
       "outControls_actionValue_description": "If necessary",
-      "control_description": "device/control"
+      "control_description": "device/control",
+      "error_regexp_patternmessage": "Value must be valid"
     },
     "ru": {
       "Automation scenarios": "Сценарии автоматизации",
@@ -289,6 +293,7 @@
       "outControls_actionValue_title": "Значение",
       "outControls_actionValue_description": "Если необходимо",
       "control_description": "Имя устройства в MQTT-топике/Название контрола",
+      "error_regexp_patternmessage": "Значение должно быть корректным",
       "Devices control": "Управление устройствами",
       "Enable": "Активен",
       "When Change": "Когда изменится",
