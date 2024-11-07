@@ -51,8 +51,9 @@ function initializeScenario(scenario) {
   log("Processing scenario: " + JSON.stringify(scenario));
 
   moduleInToOut.init(scenario.id_prefix,
-    scenario.inControls,
-    scenario.outControls);
+                     scenario.name,
+                     scenario.inControls,
+                     scenario.outControls);
 
   log("Initialization successful for: " + scenario.name);
 }

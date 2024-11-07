@@ -129,12 +129,15 @@ function checkControls(inControls, outControls) {
  *                            ]
  * @returns {void}
  */
-function init(idPrefix, inControls, outControls) {
+function init(idPrefix, deviceTitle, inControls, outControls) {
   // Проверка входящей в функцию конфигурации параметров
   checkControls(inControls, outControls);
 
-  defineVirtualDevice("GenVd_" + idPrefix, {
-    title: "Generated VD: " + idPrefix,
+  var genVirtualDeviceName = "GenVd_" + idPrefix;
+  var genRuleName = "GenRule_" + idPrefix;
+
+  defineVirtualDevice(genVirtualDeviceName, {
+    title: deviceTitle,
     cells: {
       enabled: {
         type: "switch",
@@ -184,8 +187,7 @@ function init(idPrefix, inControls, outControls) {
     log("Output controls updated for generate 'idPrefix': " + idPrefix);
   }
 
-  var generatedRuleName = "GenRule_" + idPrefix;
-  defineRule(generatedRuleName, {
+  defineRule(genRuleName, {
              whenChanged: inControlNames,
              then: thenHandler
   });
