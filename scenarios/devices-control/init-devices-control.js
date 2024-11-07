@@ -48,14 +48,14 @@ function findAllScenariosWithType(listScenario, searchScenarioType) {
  * @param {object} scenario - Объект сценария, содержащий настройки
  */
 function initializeScenario(scenario) {
-  log("Processing scenario: " + JSON.stringify(scenario));
+  log.debug("Processing scenario: " + JSON.stringify(scenario));
 
   moduleInToOut.init(scenario.id_prefix,
                      scenario.name,
                      scenario.inControls,
                      scenario.outControls);
 
-  log("Initialization successful for: " + scenario.name);
+  log.debug("Initialization successful for: " + scenario.name);
 }
 
 /**
@@ -66,28 +66,29 @@ function initializeScenario(scenario) {
  *                          - null: в случае ошибки
  */
 function readAndValidateConfig(configPath) {
+  log.debug("Input config path: " + configPath);
   var config = readConfig(configPath);
 
   if (!config) {
-    log("Error: Could not read config from " + configPath);
+    log.error("Error: Could not read config from " + configPath);
     return null;
   }
-  log("Input config: " + JSON.stringify(config));
+  log.debug("Input config contain: " + JSON.stringify(config));
 
   // Проверяем существование поля, тип массив, что не пуст
   if (!config.hasOwnProperty('scenarios')) {
-    log("Error: 'scenarios' does not exist in the configuration.");
+    log.error("Error: 'scenarios' does not exist in the configuration.");
     return null;
   }
 
   var listAllScenarios = config.scenarios;
   if (!Array.isArray(listAllScenarios)) {
-    log("Error: 'scenarios' is not an array.");
+    log.error("Error: 'scenarios' is not an array.");
     return null;
   }
 
   if (listAllScenarios.length === 0) {
-    log("Error: 'scenarios' array is empty.");
+    log.error("Error: 'scenarios' array is empty.");
     return null;
   }
 
@@ -101,9 +102,11 @@ function main() {
   var matchedScenarios = findAllScenariosWithType(listAllScenarios,
                                                   SCENARIO_TYPE_STR);
   if (matchedScenarios.length === 0) {
-    log("Error: No scenarios of type '" + SCENARIO_TYPE_STR + "' found.");
+    log.error("Error: No scenarios of type '" + SCENARIO_TYPE_STR + "' found.");
     return;
   }
+  
+  log.debug("Number of matched scenarios: " + JSON.stringify(matchedScenarios));
 
   for (var i = 0; i < matchedScenarios.length; i++) {
     initializeScenario(matchedScenarios[i]);

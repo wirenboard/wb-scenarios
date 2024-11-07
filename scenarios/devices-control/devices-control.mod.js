@@ -26,10 +26,10 @@ function isControlTypeValid(controlName, reqCtrlTypes) {
 
   // Обработка на случай не существования контрола
   if (!controlType) {
-    log("Control type for " + controlName + " not found, return: " + controlType);
+    log.debug("Control type for " + controlName + " not found, return: " + controlType);
     return false;
   }
-  log("Control: " + controlName + " | Type: " + controlType);
+  log.debug("Control: " + controlName + " | Type: " + controlType);
 
   var isTypeValid = (reqCtrlTypes.indexOf(controlType) !== -1);
   return isTypeValid;
@@ -53,7 +53,7 @@ function validateControls(controls, table) {
     var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
 
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
-      log("Error: Control '" + curCtrlName + "' is not of a valid type");
+      log.debug("Error: Control '" + curCtrlName + "' is not of a valid type");
       return false;
     }
   }
@@ -70,8 +70,8 @@ function validateControls(controls, table) {
  * @returns {void}
  */
 function checkControls(inControls, outControls) {
-  log("Input Controls conf: " + JSON.stringify(inControls));
-  log("Output Controls conf: " + JSON.stringify(outControls));
+  log.debug("Input Controls conf: " + JSON.stringify(inControls));
+  log.debug("Output Controls conf: " + JSON.stringify(outControls));
 
   // @todo:vg Добавить проверку существования указанных контролов перед работой
   //          чтобы мы были уверенны что каждый контрол реально существует
@@ -81,11 +81,11 @@ function checkControls(inControls, outControls) {
 
   var isAllCtrlTypesValid = (isInputControlsValid && isOutputControlsValid);
   if (!isAllCtrlTypesValid) {
-    log("Error: One or more controls are not of a valid type. Operation aborted!");
+    log.error("Error: One or more controls are not of a valid type. Operation aborted!");
     return;
   }
 
-  log("All controls have valid types");
+  log.debug("All controls have valid types");
 }
 
 
@@ -184,12 +184,12 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
       var actualValue = dev[curCtrlName];
       var newCtrlValue = aTable.actionsTable[curUserAction].handler(actualValue, curActionValue);
 
-      log("Control " + curCtrlName + " will updated to state: " + newCtrlValue);
+      log.debug("Control " + curCtrlName + " will updated to state: " + newCtrlValue);
       dev[curCtrlName] = newCtrlValue;
-      log("Control " + curCtrlName + " successfull updated");
+      log.debug("Control " + curCtrlName + " successfull updated");
     }
 
-    log("Output controls updated for generate 'idPrefix': " + idPrefix);
+    log.debug("Output controls updated for generate 'idPrefix': " + idPrefix);
   }
 
   defineRule(genRuleName, {
