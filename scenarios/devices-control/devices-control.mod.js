@@ -23,7 +23,7 @@ var aTable = require("actions-handling-table.mod");
  */
 function isControlTypeValid(controlName, reqCtrlTypes) {
   var controlType = dev[controlName + "#type"];
-  
+
   // Обработка на случай не существования контрола
   if (!controlType) {
     log("Control type for " + controlName + " not found, return: " + controlType);
@@ -51,7 +51,7 @@ function validateControls(controls, table) {
     var curCtrlName = controls[i].control;
     var curBehaviorType = controls[i].behaviorType;
     var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
-    
+
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
       log("Error: Control '" + curCtrlName + "' is not of a valid type");
       return false;
@@ -130,42 +130,6 @@ function checkControls(inControls, outControls) {
  * @returns {void}
  */
 function init(idPrefix, inControls, outControls) {
-
-  function thenHandler(newValue, devName, cellName) {
-    var controlFullName = devName + '/' + cellName;
-    var matchedInControl = null;
-  
-    // Ищем контрол вызвавший изменение, получаем прослушиваемый тип события
-    for (var i = 0; i < inControls.length; i++) {
-      if (inControls[i].control === controlFullName) {
-        matchedInControl = inControls[i];
-        break;
-      }
-    }
-    if (!matchedInControl) return;
-    var eventType = matchedInControl.behaviorType;
-  
-    // Проверяем настроенное условие срабатывания
-    // @note: Для "whenChange" продолжаем всегда
-    if (!eTable.eventsTable[eventType].handler(newValue)) return;
-  
-    // Выполняем действия на выходных контролах
-    // Не усложняем проверками так как проверили все заранее в инициализации
-    for (var j = 0; j < outControls.length; j++) {
-      var curCtrlName = outControls[j].control;
-      var curUserAction = outControls[j].behaviorType;
-      var curActionValue = outControls[j].actionValue;
-      var actualValue = dev[curCtrlName];
-      var newCtrlValue = aTable.actionsTable[curUserAction].handler(actualValue, curActionValue);
-
-      log("Control " + curCtrlName + " will updated to state: " + newCtrlValue);
-      dev[curCtrlName] = newCtrlValue;
-      log("Control " + curCtrlName + " successfull updated");
-    }
-  
-    log("Output controls updated for generate 'idPrefix': " + idPrefix);
-  }  
-
   // Проверка входящей в функцию конфигурации параметров
   checkControls(inControls, outControls);
 
@@ -185,11 +149,46 @@ function init(idPrefix, inControls, outControls) {
     inControlNames.push(inControls[i].control);
   }
 
+  function thenHandler(newValue, devName, cellName) {
+    var controlFullName = devName + '/' + cellName;
+    var matchedInControl = null;
+
+    // Ищем контрол вызвавший изменение, получаем прослушиваемый тип события
+    for (var i = 0; i < inControls.length; i++) {
+      if (inControls[i].control === controlFullName) {
+        matchedInControl = inControls[i];
+        break;
+      }
+    }
+    if (!matchedInControl) return;
+    var eventType = matchedInControl.behaviorType;
+
+    // Проверяем настроенное условие срабатывания
+    // @note: Для "whenChange" продолжаем всегда
+    if (!eTable.eventsTable[eventType].handler(newValue)) return;
+
+    // Выполняем действия на выходных контролах
+    // Не усложняем проверками так как проверили все заранее в инициализации
+    for (var j = 0; j < outControls.length; j++) {
+      var curCtrlName = outControls[j].control;
+      var curUserAction = outControls[j].behaviorType;
+      var curActionValue = outControls[j].actionValue;
+      var actualValue = dev[curCtrlName];
+      var newCtrlValue = aTable.actionsTable[curUserAction].handler(actualValue, curActionValue);
+
+      log("Control " + curCtrlName + " will updated to state: " + newCtrlValue);
+      dev[curCtrlName] = newCtrlValue;
+      log("Control " + curCtrlName + " successfull updated");
+    }
+
+    log("Output controls updated for generate 'idPrefix': " + idPrefix);
+  }
+
   var generatedRuleName = "GenRule_" + idPrefix;
   defineRule(generatedRuleName, {
              whenChanged: inControlNames,
              then: thenHandler
-            });
+  });
 }
 
 exports.init = function (idPrefix, inControls, outControls) {
