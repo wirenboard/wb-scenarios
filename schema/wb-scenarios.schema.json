@@ -57,7 +57,7 @@
           "type": "string",
           "default": "Управление устройствами",
           "minLength": 1,
-          "maxLength": 30,
+          "maxLength": 120,
           "propertyOrder": 2,
           "options": {
             "grid_columns": 12
