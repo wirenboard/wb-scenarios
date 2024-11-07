@@ -198,6 +198,6 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
   });
 }
 
-exports.init = function (idPrefix, inControls, outControls) {
-  init(idPrefix, inControls, outControls);
+exports.init = function (idPrefix, deviceTitle, inControls, outControls) {
+  init(idPrefix, deviceTitle, inControls, outControls);
 };
