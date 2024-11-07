@@ -139,7 +139,8 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
   defineVirtualDevice(genVirtualDeviceName, {
     title: deviceTitle,
     cells: {
-      enabled: {
+      active: {
+        title: {en: 'Activate rule', ru: 'Активировать правило'},
         type: "switch",
         value: true
       },
@@ -153,8 +154,8 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
   }
 
   function thenHandler(newValue, devName, cellName) {
-    var isEnabled = dev[genVirtualDeviceName + "/enabled"];
-    if (!isEnabled) {
+    var isActive = dev[genVirtualDeviceName + "/active"];
+    if (!isActive) {
       return;
     }
 
