@@ -133,8 +133,8 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
   // Проверка входящей в функцию конфигурации параметров
   checkControls(inControls, outControls);
 
-  var genVirtualDeviceName = "GenVd_" + idPrefix;
-  var genRuleName = "GenRule_" + idPrefix;
+  var genVirtualDeviceName = "wbsc_" + idPrefix;
+  var genRuleName = "wbru_" + idPrefix;
 
   defineVirtualDevice(genVirtualDeviceName, {
     title: deviceTitle,
