@@ -153,6 +153,11 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
   }
 
   function thenHandler(newValue, devName, cellName) {
+    var isEnabled = dev[genVirtualDeviceName + "/enabled"];
+    if (!isEnabled) {
+      return;
+    }
+
     var controlFullName = devName + '/' + cellName;
     var matchedInControl = null;
 
