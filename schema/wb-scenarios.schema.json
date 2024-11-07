@@ -43,7 +43,7 @@
           }
         },
         "enable": {
-          "title": "Enable",
+          "title": "enable_title",
           "type": "boolean",
           "default": true,
           "_format": "checkbox",
@@ -254,6 +254,7 @@
   },
   "translations": {
     "en": {
+      "enable_title": "Turn on the scenario",
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "id_prefix_title": "MQTT id of the device",
       "id_prefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
@@ -277,6 +278,7 @@
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "Scenario name": "Название сценария",
+      "enable_title": "Включить сценарий",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
       "id_prefix_title": "Идентификатор устройства в MQTT",
       "id_prefix_description": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
@@ -295,7 +297,6 @@
       "control_description": "В формате: Устройство/Контрол",
       "error_regexp_patternmessage": "Значение должно быть корректным",
       "Devices control": "Управление устройствами",
-      "Enable": "Активен",
       "When Change": "Когда изменится",
       "When Disabled (switch)": "Когда отключилось (для переключателей)",
       "When Enabled (switch)": "Когда включилось (для переключателей)",

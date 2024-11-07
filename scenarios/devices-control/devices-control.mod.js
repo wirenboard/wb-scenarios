@@ -140,7 +140,7 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
     title: deviceTitle,
     cells: {
       active: {
-        title: {en: 'Activate rule', ru: 'Активировать правило'},
+        title: {en: 'Activate scenario rule', ru: 'Активировать правило сценария'},
         type: "switch",
         value: true
       },
