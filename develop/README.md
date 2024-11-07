@@ -11,7 +11,15 @@
 # cd ~
 ```
 
-Клонирование на контроллер
+Установить git и make на контроллера
+
+```terminal
+# apt update && \
+  apt install git -y && \
+  apt install make
+```
+
+Клонирование на контроллер с помошью гит
 
 ```terminal
 # git clone https://github.com/wirenboard/wb-scenarios
@@ -21,9 +29,10 @@
 В процессе разработки удобно клонировать свою ветку и сразу провести установку
 
 ```terminal
-# git clone -b feature/add-light-scenario-first-iteration --single-branch https://github.com/wirenboard/wb-scenarios.git
-# cd wb-scenarios
-# make
+# GIT_BRANCH_NAME="feature/implement-counters-processing"
+# git clone -b "${GIT_BRANCH_NAME}" --single-branch "https://github.com/wirenboard/wb-scenarios.git" && \
+  cd wb-scenarios && \
+  make
 ```
 
 ### Сборка пакета и установка через apt
