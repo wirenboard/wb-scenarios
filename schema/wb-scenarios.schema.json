@@ -71,7 +71,7 @@
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "devices_control",
           "minLength": 1,
-          "maxLength": 30,
+          "maxLength": 120,
           "propertyOrder": 3,
           "options": {
             "grid_columns": 12
@@ -253,7 +253,7 @@
     "en": {
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "id_prefix_title": "MQTT id of the device",
-      "id_prefix_description": "Used as part of the topic",
+      "id_prefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
@@ -275,7 +275,7 @@
       "Scenario name": "Название сценария",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
       "id_prefix_title": "Идентификатор устройства в MQTT",
-      "id_prefix_description": "Используется как часть топика в MQTT",
+      "id_prefix_description": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
