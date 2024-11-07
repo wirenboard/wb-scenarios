@@ -269,7 +269,7 @@
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_title": "Value",
       "outControls_actionValue_description": "If necessary",
-      "control_description": "device/control",
+      "control_description": "In format: Device/Control",
       "error_regexp_patternmessage": "Value must be valid"
     },
     "ru": {
@@ -292,7 +292,7 @@
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_title": "Значение",
       "outControls_actionValue_description": "Если необходимо",
-      "control_description": "Имя устройства в MQTT-топике/Название контрола",
+      "control_description": "В формате: Устройство/Контрол",
       "error_regexp_patternmessage": "Значение должно быть корректным",
       "Devices control": "Управление устройствами",
       "Enable": "Активен",
