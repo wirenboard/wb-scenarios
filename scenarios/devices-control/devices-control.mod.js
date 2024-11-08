@@ -11,7 +11,7 @@
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
-var eTable = require("events-handling-table.mod");
+var eTable = require("table-handling-events.mod");
 var aTable = require("actions-handling-table.mod");
 
 /**
