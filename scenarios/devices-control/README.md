@@ -9,7 +9,11 @@
 
 Конфигурация выглядит следующим образом
 
-![alt text](doc/image.png)
+![alt text](doc/scenario-config.png)
+
+Каждому сценарию создается виртуальное устройство
+
+![virtual-device](doc/virtual-device.png)
 
 ## Добавление новых типов поведения
 
