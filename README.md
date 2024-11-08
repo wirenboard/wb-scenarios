@@ -5,8 +5,7 @@
 
 На данный момент реализованые сценарии:
 
-- [Управление устройствами](scenarios\devices-control\README.md)
-- [Связь входа с выходом](scenarios\link-in-to-out\README.md)
+- [Управление устройствами](scenarios/devices-control/README.md)
 
 ## Установка
 
