@@ -12,7 +12,7 @@
  */
 
 var eTable = require("table-handling-events.mod");
-var aTable = require("actions-handling-table.mod");
+var aTable = require("table-handling-actions.mod");
 
 /**
  * Проверяет, входит ли тип контрола в список допустимых типов
