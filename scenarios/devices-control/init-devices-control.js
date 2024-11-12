@@ -1,21 +1,16 @@
 /**
  * @file Скрипт для инициализации сценариев с типом SCENARIO_TYPE_STR
- * @overview Этот скрипт загружает все конфигурации сценарииев с типом
- *           SCENARIO_TYPE_STR из файла, находит все активные сценарии
- *           данного типа, и инициализирует их согласно настройкам, указанным
- *           в каждом сценарии.
+ * @overview Этот скрипт:
+ *             - Загружает все конфигурации сценарииев с типом
+ *               SCENARIO_TYPE_STR из файла
+ *             - Находит все активные сценарии данного типа
+ *             - Инициализирует их согласно настройкам, указанным
+ *               в каждом сценарии
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
 var moduleInToOut = require("devices-control.mod");
-
-/**
- * Глобальная переменная, хранящая строку типа сценария для поиска в конфиге
- * Сценарии SCENARIO_TYPE_STR могут соединять только два MQTT switch топика
- * @type {string}
- */
-var SCENARIO_TYPE_STR = "devicesControl";
 
 /**
  * Глобальная переменная, хранящая строку пути расположения файла конфигурации
@@ -24,22 +19,28 @@ var SCENARIO_TYPE_STR = "devicesControl";
 var CONFIG_PATH = "/etc/wb-scenarios.conf";
 
 /**
+ * Глобальная переменная, хранящая строку типа сценария для поиска в конфиге
+ * @type {string}
+ */
+var SCENARIO_TYPE_STR = "devicesControl";
+
+/**
  * Находит и возвращает все включеные сценарии с типом searchScenarioType
  * @param {Array} listScenario - Массив всех сценариев из конфигурации
  * @param {string} searchScenarioType - Тип сценария который ищем
  * @returns {Array} Массив активных сценариев с типом searchScenarioType
  */
 function findAllScenariosWithType(listScenario, searchScenarioType) {
-  var resScenarios = [];
+  var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
     var scenario = listScenario[i];
     var isTarget = (scenario.scenarioType === searchScenarioType) &&
       (scenario.enable === true);
     if (isTarget) {
-      resScenarios.push(scenario);
+      matchedScenarios.push(scenario);
     }
   }
-  return resScenarios;
+  return matchedScenarios;
 }
 
 /**
@@ -47,73 +48,68 @@ function findAllScenariosWithType(listScenario, searchScenarioType) {
  * @param {object} scenario - Объект сценария, содержащий настройки
  */
 function initializeScenario(scenario) {
-  log("Scenario found: " + JSON.stringify(scenario));
-
-  var inControls = scenario.inControls;
-  var outControls = scenario.outControls;
-  log("Input Controls conf: " + inControls);
-  log("Output Controls conf: " + outControls);
-
-  // Check type prop - must be "switch" and equal
-  // @todo:vg Реализовать нормальную обработку счетчиков
-  //          Для этого нужно изменить обработку входних параметров
-  var isAllInputsSwitchTypes = true;
-  for (var i = 0; i < inControls.length; i++) {
-    var curInControl = inControls[i].control;
-    var inputType = dev[curInControl + "#type"];
-    log("Input control: " + curInControl + " | Type: " + inputType);
-
-    if (inputType !== "switch") {
-      isAllInputsSwitchTypes = false;
-      log("Error: Input control '" + curInControl + "' is not of type 'switch'");
-      break;
-    }
-  }
-
-  var isAllOutputsSwitchTypes = true;
-  for (var j = 0; j < outControls.length; j++) {
-    var curOutControl = outControls[j].control;
-    var outputType = dev[curOutControl + "#type"];
-    log("Output control: " + curOutControl + " | Type: " + outputType);
-
-    if (outputType !== "switch") {
-      isAllOutputsSwitchTypes = false;
-      log("Error: Output control '" + curOutControl + "' is not of type 'switch'");
-      break;
-    }
-  }
-
-  // var isValidTypes = (isAllInputsSwitchTypes && isAllOutputsSwitchTypes);
-  var isValidTypes = (isAllOutputsSwitchTypes);
-  if (!isValidTypes) {
-    log("Error: One or more controls are not of type 'switch' for: " + scenario.name);
-    return;
-  }
+  log.debug("Processing scenario: " + JSON.stringify(scenario));
 
   moduleInToOut.init(scenario.id_prefix,
-    scenario.inControls,
-    scenario.outControls);
-  log("Initialization successful for: " + scenario.name);
+                     scenario.name,
+                     scenario.inControls,
+                     scenario.outControls);
+
+  log.debug("Initialization successful for: " + scenario.name);
+}
+
+/**
+ * Читает конфигурационный файл и возвращает объект конфигурации.
+ * @param {string} configPath Путь к конфигурационному файлу.
+ * @returns {Object|null} Возвращает:
+ *                          - Массив: сценариев если проверки пройденыили
+ *                          - null: в случае ошибки
+ */
+function readAndValidateConfig(configPath) {
+  log.debug("Input config path: " + configPath);
+  var config = readConfig(configPath);
+
+  if (!config) {
+    log.error("Error: Could not read config from " + configPath);
+    return null;
+  }
+  log.debug("Input config contain: " + JSON.stringify(config));
+
+  // Проверяем существование поля, тип массив, что не пуст
+  if (!config.hasOwnProperty('scenarios')) {
+    log.error("Error: 'scenarios' does not exist in the configuration.");
+    return null;
+  }
+
+  var listAllScenarios = config.scenarios;
+  if (!Array.isArray(listAllScenarios)) {
+    log.error("Error: 'scenarios' is not an array.");
+    return null;
+  }
+
+  if (listAllScenarios.length === 0) {
+    log.error("Error: 'scenarios' array is empty.");
+    return null;
+  }
+
+  return listAllScenarios;
 }
 
 function main() {
-  var config = readConfig(CONFIG_PATH);
-  log("Input config: " + JSON.stringify(config));
+  var listAllScenarios = readAndValidateConfig(CONFIG_PATH);
+  if (!listAllScenarios) return;
 
-  var listScenario = config.scenarios;
-  if (!Array.isArray(listScenario) || listScenario.length === 0) {
-    log("Error: 'scenarios' is not an array, does not exist, or is empty.");
+  var matchedScenarios = findAllScenariosWithType(listAllScenarios,
+                                                  SCENARIO_TYPE_STR);
+  if (matchedScenarios.length === 0) {
+    log.error("Error: No scenarios of type '" + SCENARIO_TYPE_STR + "' found.");
     return;
   }
+  
+  log.debug("Number of matched scenarios: " + JSON.stringify(matchedScenarios));
 
-  var resScenarios = findAllScenariosWithType(listScenario, SCENARIO_TYPE_STR);
-  if (resScenarios.length === 0) {
-    log("Error: No scenarios of type '" + SCENARIO_TYPE_STR + "' found.");
-    return;
-  }
-
-  for (var i = 0; i < resScenarios.length; i++) {
-    initializeScenario(resScenarios[i]);
+  for (var i = 0; i < matchedScenarios.length; i++) {
+    initializeScenario(matchedScenarios[i]);
   }
 }
 

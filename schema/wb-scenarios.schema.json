@@ -1,8 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "♥ Automation scenarios",
-  "description": "Сценарии автоматизации дают возможность управления устройствами и настраивания<br>связи между ними без необходимости создания скриптов.<br>Подробнее смотрите в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios\"><b>Сценарии Wiren Board</b></a>",
+  "title": "Automation scenarios",
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
     "service": "wb-rules"
@@ -14,9 +13,6 @@
       "oneOf": [
         {
           "$ref": "#/definitions/devicesControl"
-        },
-        {
-          "$ref": "#/definitions/linkInToOut"
         }
       ],
       "_format": "wb-multiple",
@@ -30,109 +26,10 @@
         }
       }
     },
-    "linkInToOut": {
-      "type": "object",
-      "title": "Link in to out",
-      "description": "Данный сценарий предоставляет возможность прямого соединения дискретного входа с дискретным выходом<br><img src=\"images/scenarios-link-in-to-out.png\">",
-      "_format": "grid",
-      "properties": {
-        "scenarioType": {
-          "type": "string",
-          "enum": [
-            "linkInToOut"
-          ],
-          "default": "linkInToOut",
-          "options": {
-            "hidden": true
-          }
-        },
-        "enable": {
-          "type": "boolean",
-          "title": "Enable",
-          "default": true,
-          "_format": "checkbox",
-          "propertyOrder": 1,
-          "options": {
-            "grid_columns": 12
-          }
-        },
-        "name": {
-          "type": "string",
-          "title": "Scenario name",
-          "default": "Управление нагрузкой",
-          "minLength": 1,
-          "maxLength": 30,
-          "propertyOrder": 2,
-          "options": {
-            "grid_columns": 12
-          }
-        },
-        "id_prefix": {
-          "type": "string",
-          "title": "ID Prefix",
-          "description": "Одно слово на английском языке исключая: пробел, /, +, #. Длина до 15 символов.",
-          "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
-          "pattern": "^[0-9a-zA-Z_]+$",
-          "default": "link_from_to",
-          "minLength": 1,
-          "maxLength": 15,
-          "propertyOrder": 3,
-          "options": {
-            "grid_columns": 12
-          }
-        },
-        "inControl": {
-          "type": "string",
-          "_format": "wb-autocomplete",
-          "title": "Input control",
-          "description": "What input control we need use in format: device/control",
-          "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 4,
-          "options": {
-            "grid_columns": 12,
-            "wb": {
-              "data": "devices"
-            }
-          },
-          "minLength": 1
-        },
-        "inverseLink": {
-          "type": "boolean",
-          "title": "Inverse link behavior",
-          "default": false,
-          "_format": "checkbox",
-          "propertyOrder": 5,
-          "options": {
-            "grid_columns": 12
-          }
-        },
-        "outControl": {
-          "type": "string",
-          "_format": "wb-autocomplete",
-          "title": "Output control",
-          "description": "What output control we need use in format: device/control",
-          "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 6,
-          "options": {
-            "grid_columns": 12,
-            "wb": {
-              "data": "devices"
-            }
-          },
-          "minLength": 1
-        }
-      },
-      "required": [
-        "scenarioType",
-        "enable",
-        "name",
-        "id_prefix"
-      ]
-    },
     "devicesControl": {
-      "type": "object",
       "title": "Devices control",
-      "description": "Сценарий для любых действий над одним или несколькими устройствами.<br> Может пременятся для группового управления освещением, шторами и тд.<br>Подробнее и примеры использования в wiki: <a href=\"https://wirenboard.com/wiki/Scenarios:Devices-control\"><b>Сценарий: Управление устройствами</b></a><br><img src=\"images/scenarios-devices-control.png\">",
+      "type": "object",
+      "description": "devicesControl_description",
       "_format": "grid",
       "properties": {
         "scenarioType": {
@@ -146,8 +43,8 @@
           }
         },
         "enable": {
+          "title": "enable_title",
           "type": "boolean",
-          "title": "Enable",
           "default": true,
           "_format": "checkbox",
           "propertyOrder": 1,
@@ -156,37 +53,38 @@
           }
         },
         "name": {
-          "type": "string",
           "title": "Scenario name",
+          "type": "string",
           "default": "Управление устройствами",
           "minLength": 1,
-          "maxLength": 30,
+          "maxLength": 120,
           "propertyOrder": 2,
           "options": {
             "grid_columns": 12
           }
         },
         "id_prefix": {
+          "title": "id_prefix_title",
           "type": "string",
-          "title": "ID Prefix",
-          "description": "Одно слово на английском языке исключая: пробел, /, +, #. Длина до 15 символов.",
+          "description": "id_prefix_description",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "devices_control",
           "minLength": 1,
-          "maxLength": 15,
+          "maxLength": 120,
           "propertyOrder": 3,
           "options": {
-            "grid_columns": 12
+            "grid_columns": 12,
+            "patternmessage": "error_regexp_patternmessage"
           }
         },
         "inControls": {
+          "title": "inControls_arr_title",
           "type": "array",
           "minItems": 1,
           "propertyOrder": 4,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "Input controls",
-          "description": "List of input controls with event types",
+          "description": "inControls_arr_description",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -195,21 +93,22 @@
             "disable_array_delete_last_row": true,
             "disable_array_reorder": true,
             "wb": {
-                "disable_panel": true
+              "disable_panel": true
             }
           },
           "items": {
-            "title": "Input control",
+            "title": "inControls_obj_title",
             "type": "object",
             "properties": {
               "control": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "Input control topic name",
-                "description": "Input control in format: device/control",
+                "title": "inControls_control_title",
+                "description": "control_description",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
+                "patternmessage": "error_regexp_patternmessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -217,21 +116,28 @@
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
               },
-              "eventType": {
+              "behaviorType": {
                 "type": "string",
                 "propertyOrder": 2,
-                "title": "Event Type",
+                "title": "inControls_behaviorType_title",
                 "enum": [
-                  "onChange",
-                  "onEnabled",
-                  "onDisabled"
+                  "whenChange",
+                  "whenDisabled",
+                  "whenEnabled"
                 ],
-                "default": "onChange"
+                "default": "whenChange",
+                "options": {
+                  "enum_titles": [
+                    "When Change",
+                    "When Disabled (switch)",
+                    "When Enabled (switch)"
+                  ]
+                }
               }
             },
             "required": [
               "control",
-              "eventType"
+              "behaviorType"
             ]
           }
         },
@@ -240,8 +146,8 @@
           "minItems": 1,
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "Output controls",
-          "description": "List of output controls with action types",
+          "title": "outControls_arr_title",
+          "description": "outControls_arr_description",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -250,21 +156,22 @@
             "disable_array_delete_last_row": true,
             "disable_array_reorder": true,
             "wb": {
-                "disable_panel": true
+              "disable_panel": true
             }
           },
           "items": {
-            "title": "Output control",
+            "title": "outControls_obj_title",
             "type": "object",
             "properties": {
               "control": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "Output control topic name",
-                "description": "Output control in format: device/control",
+                "title": "outControls_control_title",
+                "description": "control_description",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
+                  "patternmessage": "error_regexp_patternmessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -272,21 +179,41 @@
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
               },
-              "actionType": {
+              "behaviorType": {
                 "type": "string",
                 "propertyOrder": 2,
-                "title": "Action Type",
+                "title": "outControls_behaviorType_title",
                 "enum": [
-                  "setOff",
-                  "setOn",
-                  "toggle"
+                  "toggle",
+                  "setEnable",
+                  "setDisable",
+                  "setValue",
+                  "increaseValueBy",
+                  "decreaseValueBy"
                 ],
-                "default": "setOff"
+                "default": "setDisable",
+                "options": {
+                  "enum_titles": [
+                    "Toggle (switch)",
+                    "Enable (switch)",
+                    "Disable (switch)",
+                    "Set Value",
+                    "Increase Value By",
+                    "Decrease Value By"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "outControls_actionValue_title",
+                "description": "outControls_actionValue_description",
+                "default": 0
               }
             },
             "required": [
               "control",
-              "actionType"
+              "behaviorType"
             ]
           }
         }
@@ -326,27 +253,59 @@
     }
   },
   "translations": {
-    "en": {},
+    "en": {
+      "enable_title": "Turn on the scenario",
+      "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
+      "id_prefix_title": "MQTT id of the device",
+      "id_prefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
+      "inControls_arr_title": "Triggers",
+      "inControls_obj_title": "Trigger",
+      "inControls_arr_description": "Any of the events listed here will trigger the automation.",
+      "inControls_control_title": "MQTT-topic",
+      "inControls_behaviorType_title": "Trigger logic",
+      "outControls_arr_title": "Actions",
+      "outControls_obj_title": "Action",
+      "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
+      "outControls_control_title": "MQTT-topic",
+      "outControls_behaviorType_title": "Action logic",
+      "outControls_actionValue_title": "Value",
+      "outControls_actionValue_description": "If necessary",
+      "control_description": "In format: Device/Control",
+      "error_regexp_patternmessage": "Value must be valid"
+    },
     "ru": {
-      "♥ Automation scenarios": "♥ Сценарии автоматизации",
+      "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "Scenario name": "Название сценария",
-      "Link in to out": "Связь входа с выходом",
-      "Name": "Имя",
-      "Optional": "Не обязательно",
+      "enable_title": "Включить сценарий",
+      "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
+      "id_prefix_title": "Идентификатор устройства в MQTT",
+      "id_prefix_description": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
+      "inControls_arr_title": "События",
+      "inControls_obj_title": "Событие",
+      "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
+      "inControls_control_title": "MQTT-топик",
+      "inControls_behaviorType_title": "Логика срабатывания",
+      "outControls_arr_title": "Действия",
+      "outControls_obj_title": "Действие",
+      "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации.",
+      "outControls_control_title": "MQTT-топик",
+      "outControls_behaviorType_title": "Логика действия",
+      "outControls_actionValue_title": "Значение",
+      "outControls_actionValue_description": "Если необходимо",
+      "control_description": "В формате: Устройство/Контрол",
+      "error_regexp_patternmessage": "Значение должно быть корректным",
       "Devices control": "Управление устройствами",
-      "Enable": "Активен",
-      "Input control": "Входной контрол",
-      "Input controls": "Входные контролы",
-      "List of input controls with event types": "Список входных контролов и типы событий",
-      "Input control topic name": "Имя топика входного контрола",
-      "Event Type": "Тип события",
-      "Output control": "Выходной контрол",
-      "Output controls": "Выходные контролы",
-      "List of output controls with action types": "Список выходных контролов и типы действий",
-      "Output control topic name": "Имя топика выходного контрола",
-      "Action Type": "Тип действия"
+      "When Change": "Когда изменится",
+      "When Disabled (switch)": "Когда отключилось (для переключателей)",
+      "When Enabled (switch)": "Когда включилось (для переключателей)",
+      "Toggle (switch)": "Переключить (для переключателей)",
+      "Enable (switch)": "Включить (для переключателей)",
+      "Disable (switch)": "Выключить (для переключателей)",
+      "Set Value": "Установить значение",
+      "Increase Value By": "Увеличить значение на",
+      "Decrease Value By": "Уменьшить  значение на"
     }
   }
 }
