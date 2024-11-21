@@ -54,6 +54,7 @@ function validateControls(controls, table) {
 
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
       log.debug("Error: Control '" + curCtrlName + "' is not of a valid type");
+      log.debug("  - For '" + curBehaviorType + "' can used only: [" + reqCtrlTypes + "] types");
       return false;
     }
   }
@@ -67,7 +68,8 @@ function validateControls(controls, table) {
  *
  * @param {Array<Object>} inControls - Массив конфигураций входных контролов
  * @param {Array<Object>} outControls - Массив конфигураций выходных контролов
- * @returns {void}
+ * @returns {boolean} - Возвращает true, если все контролы имеют
+ *                      допустимые типы, иначе false
  */
 function checkControls(inControls, outControls) {
   log.debug("Input Controls conf: " + JSON.stringify(inControls));
@@ -81,11 +83,11 @@ function checkControls(inControls, outControls) {
 
   var isAllCtrlTypesValid = (isInputControlsValid && isOutputControlsValid);
   if (!isAllCtrlTypesValid) {
-    log.error("Error: One or more controls are not of a valid type. Operation aborted!");
-    return;
+    return false;
   }
 
   log.debug("All controls have valid types");
+  return true;
 }
 
 
@@ -127,25 +129,35 @@ function checkControls(inControls, outControls) {
  *                                "actionValue": 22
  *                              }
  *                            ]
- * @returns {void}
+ * @returns {boolean} - Возвращает true, при успешной инициализации
+ *                      иначе false
  */
 function init(idPrefix, deviceTitle, inControls, outControls) {
   // Проверка входящей в функцию конфигурации параметров
-  checkControls(inControls, outControls);
+  isAllControlsValid = checkControls(inControls, outControls);
+  if (!isAllControlsValid) {
+    log.debug("Error: One or more controls are not of a valid type.");
+    return false;
+  }
 
   var genVirtualDeviceName = "wbsc_" + idPrefix;
   var genRuleName = "wbru_" + idPrefix;
 
-  defineVirtualDevice(genVirtualDeviceName, {
-    title: deviceTitle,
-    cells: {
-      active: {
-        title: {en: 'Activate scenario rule', ru: 'Активировать правило сценария'},
-        type: "switch",
-        value: true
-      },
-    }
-  });
+  var vdev = defineVirtualDevice(genVirtualDeviceName, {
+      title: deviceTitle,
+      cells: {
+        active: {
+          title: {en: 'Activate scenario rule', ru: 'Активировать правило сценария'},
+          type: "switch",
+          value: true
+        },
+      }
+    });
+  if (!vdev) {
+    log.debug("Error: Virtual device '" + deviceTitle + "' not created.");
+    return false;
+  }
+  log.debug("Virtual device '" + deviceTitle + "' created successfully");
 
   // Предварительно извлекаем имена контролов
   var inControlNames = [];
@@ -156,7 +168,8 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
   function thenHandler(newValue, devName, cellName) {
     var isActive = dev[genVirtualDeviceName + "/active"];
     if (!isActive) {
-      return;
+      // OK: Сценарий с корректным конфигом, но выключен внутри virtual device
+      return true;
     }
 
     var controlFullName = devName + '/' + cellName;
@@ -197,8 +210,10 @@ function init(idPrefix, deviceTitle, inControls, outControls) {
              whenChanged: inControlNames,
              then: thenHandler
   });
+  return true;
 }
 
 exports.init = function (idPrefix, deviceTitle, inControls, outControls) {
-  init(idPrefix, deviceTitle, inControls, outControls);
+  res = init(idPrefix, deviceTitle, inControls, outControls);
+  return res;
 };
