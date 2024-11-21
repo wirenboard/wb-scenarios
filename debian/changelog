@@ -1,3 +1,9 @@
+wb-scenarios (1.0.6) stable; urgency=medium
+
+  * fix: ignored device settings in control scenarios, improves error logging
+
+ -- Vitalii Gaponov <vitalii.gaponov@wirenboard.com>  Thu, 21 Nov 2024 20:10:00 +0300
+
 wb-scenarios (1.0.5) stable; urgency=medium
 
   * feat: add counters control functional in devices-control scenario
