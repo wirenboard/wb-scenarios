@@ -30,7 +30,7 @@ var SCENARIO_TYPE_STR = "devicesControl";
  * @param {string} searchScenarioType - Тип сценария который ищем
  * @returns {Array} Массив активных сценариев с типом searchScenarioType
  */
-function findAllScenariosWithType(listScenario, searchScenarioType) {
+function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
   var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
     var scenario = listScenario[i];
@@ -46,14 +46,19 @@ function findAllScenariosWithType(listScenario, searchScenarioType) {
 /**
  * Инициализирует сценарий с использованием указанных настроек
  * @param {object} scenario - Объект сценария, содержащий настройки
+ * @returns {void}
  */
 function initializeScenario(scenario) {
   log.debug("Processing scenario: " + JSON.stringify(scenario));
 
-  moduleInToOut.init(scenario.id_prefix,
-                     scenario.name,
-                     scenario.inControls,
-                     scenario.outControls);
+  var isInitSucess = moduleInToOut.init(scenario.id_prefix,
+                                        scenario.name,
+                                        scenario.inControls,
+                                        scenario.outControls);
+  if (!isInitSucess) {
+    log.error("Error: Init operation aborted for scenario with 'idPrefix': " + scenario.id_prefix);
+    return;
+  }
 
   log.debug("Initialization successful for: " + scenario.name);
 }
@@ -88,7 +93,7 @@ function readAndValidateConfig(configPath) {
   }
 
   if (listAllScenarios.length === 0) {
-    log.error("Error: 'scenarios' array is empty.");
+    log.debug("'scenarios' array is empty.");
     return null;
   }
 
@@ -99,10 +104,10 @@ function main() {
   var listAllScenarios = readAndValidateConfig(CONFIG_PATH);
   if (!listAllScenarios) return;
 
-  var matchedScenarios = findAllScenariosWithType(listAllScenarios,
+  var matchedScenarios = findAllActiveScenariosWithType(listAllScenarios,
                                                   SCENARIO_TYPE_STR);
   if (matchedScenarios.length === 0) {
-    log.error("Error: No scenarios of type '" + SCENARIO_TYPE_STR + "' found.");
+    log.debug("No correct and active scenarios of type '" + SCENARIO_TYPE_STR + "' found.");
     return;
   }
   
