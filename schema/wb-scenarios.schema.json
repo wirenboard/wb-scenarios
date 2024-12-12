@@ -6,6 +6,11 @@
     "path": "/etc/wb-scenarios.conf",
     "service": "wb-rules"
   },
+  "options": {
+    "wb": {
+      "disable_title": true
+    }
+  },
   "definitions": {
     "scenario": {
       "title": "Scenario",
@@ -13,6 +18,9 @@
       "oneOf": [
         {
           "$ref": "#/definitions/devicesControl"
+        },
+        {
+          "$ref": "#/definitions/darkroom"
         }
       ],
       "_format": "wb-multiple",
@@ -32,6 +40,16 @@
       "description": "devicesControl_description",
       "_format": "grid",
       "properties": {
+        "scenarioConfigVersion": {
+          "type": "integer",
+          "title": "Config version",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
         "scenarioType": {
           "type": "string",
           "enum": [
@@ -53,7 +71,7 @@
           }
         },
         "name": {
-          "title": "Scenario name",
+          "title": "generalScenarioName",
           "type": "string",
           "default": "Управление устройствами",
           "minLength": 1,
@@ -104,7 +122,7 @@
                 "type": "string",
                 "propertyOrder": 1,
                 "title": "inControls_control_title",
-                "description": "control_description",
+                "description": "generalControlDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -167,7 +185,7 @@
                 "type": "string",
                 "propertyOrder": 1,
                 "title": "outControls_control_title",
-                "description": "control_description",
+                "description": "generalControlDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -226,9 +244,247 @@
         "inControls",
         "outControls"
       ]
+    },
+    "darkroom": {
+      "title": "darkroomScenarioName",
+      "type": "object",
+      "description": "darkroomScenarioDescription",
+      "_format": "grid",
+      "properties": {
+        "scenarioConfigVersion": {
+          "type": "integer",
+          "title": "Config version",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "scenarioType": {
+          "type": "string",
+          "enum": [
+            "darkroom"
+          ],
+          "default": "darkroom",
+          "options": {
+            "hidden": true
+          }
+        },
+        "enable": {
+          "title": "enable_title",
+          "type": "boolean",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "name": {
+          "title": "generalScenarioName",
+          "type": "string",
+          "default": "Темная комната",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "id_prefix": {
+          "title": "id_prefix_title",
+          "type": "string",
+          "description": "id_prefix_description",
+          "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
+          "pattern": "^[0-9a-zA-Z_]+$",
+          "default": "darkroom",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "error_regexp_patternmessage"
+          }
+        },
+        "delayByMotionSensors": {
+          "type": "number",
+          "title": "darkroomDelayByMotionSensorsTitle",
+          "default": 120,
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "delayByOpeningSensors": {
+          "type": "number",
+          "title": "darkroomDelayByOpeningSensorsTitle",
+          "default": 180,
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 12
+          }
+        },    
+        "motionSensors": {
+          "type": "array",
+          "title": "darkroomMotionSensorsArrTitle",
+          "_title_note": "When options-> compact: true - this title not shown",
+          "description": "darkroomMotionSensorsArrDescription",
+          "propertyOrder": 6,
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "type": "object",
+            "title": "darkroomMotionSensorsObjTitle",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "darkroomMotionSensorsObjControlTitle",
+                "description": "generalControlDescription",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "error_regexp_patternmessage",
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "minLength": 3
+              },
+              "thresholdMotionLevel": {
+                "type": "number",
+                "title": "darkroomMotionSensorsObjThresholdTitle",
+                "default": 170,
+                "propertyOrder": 2
+              }
+            },
+            "required": [
+              "control",
+              "thresholdMotionLevel"
+            ]
+          }
+        },
+        "openingSensors": {
+          "type": "array",
+          "title": "darkroomOpeningSensorsArrTitle",
+          "_title_note": "When options-> compact: true - this title not shown",
+          "description": "darkroomOpeningSensorsArrDescription",
+          "propertyOrder": 7,
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "darkroomOpeningSensorsObjTitle",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "darkroomOpeningSensorsObjControlTitle",
+                "description": "generalControlDescription",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "error_regexp_patternmessage",
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "minLength": 3
+              }
+            },
+            "required": [
+              "control"
+            ]
+          }
+        },
+        "lightDevices": {
+          "type": "array",
+          "title": "darkroomLightDevicesArrTitle",
+          "_title_note": "When options-> compact: true - this title not shown",
+          "description": "darkroomLightDevicesArrDescription",
+          "minItems": 1,
+          "propertyOrder": 8,
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "darkroomLightDevicesObjTitle",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "darkroomLightDevicesObjControlTitle",
+                "description": "generalControlDescription",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "error_regexp_patternmessage",
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "minLength": 3
+              }
+            },
+            "required": [
+              "control"
+            ]
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "enable",
+        "name",
+        "id_prefix",
+        "motionSensors",
+        "openingSensors",
+        "lightDevices"
+      ]
     }
   },
   "properties": {
+    "generalConfigVersion": {
+      "type": "integer",
+      "title": "Config version",
+      "minimum": 1,
+      "maximum": 256,
+      "default": 1,
+      "options": {
+        "hidden": true
+      }
+    },
     "scenarios": {
       "type": "array",
       "title": "Scenarios",
@@ -247,13 +503,10 @@
   "required": [
     "scenarios"
   ],
-  "options": {
-    "wb": {
-      "disable_title": true
-    }
-  },
   "translations": {
     "en": {
+      "generalScenarioName": "Scenario name",
+      "generalControlDescription": "In format: Device/Control",
       "enable_title": "Turn on the scenario",
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "id_prefix_title": "MQTT id of the device",
@@ -270,14 +523,31 @@
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_title": "Value",
       "outControls_actionValue_description": "If necessary",
-      "control_description": "In format: Device/Control",
-      "error_regexp_patternmessage": "Value must be valid"
+      "error_regexp_patternmessage": "Value must be valid",
+      "darkroomScenarioName": "Dark room",
+      "darkroomScenarioDescription": "The script allows you to control dark room",
+      "darkroomDelayByMotionSensorsTitle": "Turn-off delay when motion sensors are triggered (seconds)",
+      "darkroomDelayByOpeningSensorsTitle": "Turn-off delay when opening sensors are triggered (seconds)",
+      "darkroomMotionSensorsArrTitle": "Motion sensors",
+      "darkroomMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
+      "darkroomMotionSensorsObjTitle": "Motion sensor",
+      "darkroomMotionSensorsObjControlTitle": "MQTT-topic",
+      "darkroomMotionSensorsObjThresholdTitle": "Threshold motion level",
+      "darkroomOpeningSensorsArrTitle": "Opening sensors",
+      "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
+      "darkroomOpeningSensorsObjTitle": "Opening sensor",
+      "darkroomOpeningSensorsObjControlTitle": "MQTT-topic",
+      "darkroomLightDevicesArrTitle": "Light devices",
+      "darkroomLightDevicesArrDescription": "This list of light devices will be enabled sequentially when the automation is triggered.",
+      "darkroomLightDevicesObjTitle": "Light device",
+      "darkroomLightDevicesObjControlTitle": "MQTT-topic"
     },
     "ru": {
+      "generalScenarioName": "Название сценария",
+      "generalControlDescription": "В формате: Устройство/Контрол",
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
-      "Scenario name": "Название сценария",
       "enable_title": "Включить сценарий",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
       "id_prefix_title": "Идентификатор устройства в MQTT",
@@ -294,7 +564,6 @@
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_title": "Значение",
       "outControls_actionValue_description": "Если необходимо",
-      "control_description": "В формате: Устройство/Контрол",
       "error_regexp_patternmessage": "Значение должно быть корректным",
       "Devices control": "Управление устройствами",
       "When Change": "Когда изменится",
@@ -305,7 +574,24 @@
       "Disable (switch)": "Выключить (для переключателей)",
       "Set Value": "Установить значение",
       "Increase Value By": "Увеличить значение на",
-      "Decrease Value By": "Уменьшить  значение на"
+      "Decrease Value By": "Уменьшить  значение на",
+      "darkroomScenarioName": "Темная комната",
+      "darkroomScenarioDescription": "Сценарий позволяет управлять темной комнатой",
+      "darkroomDelayByMotionSensorsTitle": "Задержка отключения при срабатывании датчиков движения (секунды)",
+      "darkroomDelayByOpeningSensorsTitle": "Задержка отключения при срабатывании датчиков открытия (секунды)",
+      "darkroomMotionSensorsArrTitle": "Датчики движения",
+      "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движени будет запускать автоматизацию.",
+      "darkroomMotionSensorsObjTitle": "Датчик движения",
+      "darkroomMotionSensorsObjControlTitle": "MQTT-топик",
+      "darkroomMotionSensorsObjThresholdTitle": "Пороговый уровень движения",
+      "darkroomOpeningSensorsArrTitle": "Датчики открытия",
+      "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
+      "darkroomOpeningSensorsObjTitle": "Датчик открытия",
+      "darkroomOpeningSensorsObjControlTitle": "MQTT-топик",
+      "darkroomLightDevicesArrTitle": "Устройства освещения",
+      "darkroomLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
+      "darkroomLightDevicesObjTitle": "Устройство освещения",
+      "darkroomLightDevicesObjControlTitle": "MQTT-топик"
     }
   }
 }
