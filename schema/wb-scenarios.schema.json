@@ -362,16 +362,38 @@
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
               },
+              "sensorDataType": {
+                "type": "string",
+                "title": "Sensor Data Type",
+                "enum": [
+                  "valueNumericMotSensor",
+                  "boolMotSensor",
+                  "stringMotSensor"
+                ],
+                "options": {
+                  "enum_titles": [
+                    "darkroomMotionSensorsEnumValNum",
+                    "darkroomMotionSensorsEnumBool",
+                    "darkroomMotionSensorsEnumString"
+                  ]
+                },
+                "default": "valueNumericMotSensor",
+                "propertyOrder": 2
+              },
               "thresholdMotionLevel": {
                 "type": "number",
                 "title": "darkroomMotionSensorsObjThresholdTitle",
                 "default": 170,
-                "propertyOrder": 2
+                "propertyOrder": 3,
+                "options": {
+                  "dependencies": {
+                    "sensorDataType": ["valueNumericMotSensor"]
+                  }
+                }
               }
             },
             "required": [
-              "control",
-              "thresholdMotionLevel"
+              "control"
             ]
           }
         },
@@ -532,6 +554,9 @@
       "darkroomMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
       "darkroomMotionSensorsObjTitle": "Motion sensor",
       "darkroomMotionSensorsObjControlTitle": "MQTT-topic",
+      "darkroomMotionSensorsEnumValNum": "Value numeric",
+      "darkroomMotionSensorsEnumBool": "Boolean",
+      "darkroomMotionSensorsEnumString": "String: 'true', 'false'",
       "darkroomMotionSensorsObjThresholdTitle": "Threshold motion level",
       "darkroomOpeningSensorsArrTitle": "Opening sensors",
       "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
@@ -583,6 +608,9 @@
       "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движени будет запускать автоматизацию.",
       "darkroomMotionSensorsObjTitle": "Датчик движения",
       "darkroomMotionSensorsObjControlTitle": "MQTT-топик",
+      "darkroomMotionSensorsEnumValNum": "Числовое значение",
+      "darkroomMotionSensorsEnumBool": "Булево значение",
+      "darkroomMotionSensorsEnumString": "Строка: 'true', 'false'",
       "darkroomMotionSensorsObjThresholdTitle": "Пороговый уровень движения",
       "darkroomOpeningSensorsArrTitle": "Датчики открытия",
       "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
