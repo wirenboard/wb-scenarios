@@ -25,9 +25,9 @@ function findAllActiveScenariosWithType(listScenario,
       continue;
     }
 
-    var isValidCfgVer = (scenario.scenarioConfigVersion === reqScenarioCfgVer);
+    var isValidCfgVer = (scenario.componentVersion === reqScenarioCfgVer);
     if (!isValidCfgVer) {
-      log.error("Scenario with name '" + scenario.name + "' config version mismatch. Expected version: " + reqScenarioCfgVer + ", but got: " + scenario.scenarioConfigVersion);
+      log.error("Scenario with name '" + scenario.name + "' config version mismatch. Expected version: " + reqScenarioCfgVer + ", but got: " + scenario.componentVersion);
       continue;
     }
 
@@ -57,12 +57,12 @@ function readAndValidateScenariosConfig(configPath, reqGeneralCfgVer) {
   }
   log.debug("The input config contains: " + JSON.stringify(config));
 
-  if (!config.hasOwnProperty('generalConfigVersion')) {
-    log.error("Error: 'generalConfigVersion' does not exist in the configuration.");
+  if (!config.hasOwnProperty('configVersion')) {
+    log.error("Error: 'configVersion' does not exist in the configuration.");
     return null;
   }
-  if (config.generalConfigVersion !== reqGeneralCfgVer) {
-    log.error("Global config version mismatch. Expected version: " + reqGeneralCfgVer + ", but got: " + config.generalConfigVersion);
+  if (config.configVersion !== reqGeneralCfgVer) {
+    log.error("Global config version mismatch. Expected version: " + reqGeneralCfgVer + ", but got: " + config.configVersion);
     return null;
   }
 

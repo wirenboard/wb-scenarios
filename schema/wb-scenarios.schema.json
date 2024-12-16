@@ -40,16 +40,6 @@
       "description": "devicesControl_description",
       "_format": "grid",
       "properties": {
-        "scenarioConfigVersion": {
-          "type": "integer",
-          "title": "Config version",
-          "minimum": 1,
-          "maximum": 256,
-          "default": 1,
-          "options": {
-            "hidden": true
-          }
-        },
         "scenarioType": {
           "type": "string",
           "enum": [
@@ -121,8 +111,8 @@
               "control": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "inControls_control_title",
-                "description": "generalControlDescription",
+                "title": "generalMqttTopicNameTitle",
+                "description": "generalMqttTopicNameDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -184,8 +174,8 @@
               "control": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "outControls_control_title",
-                "description": "generalControlDescription",
+                "title": "generalMqttTopicNameTitle",
+                "description": "generalMqttTopicNameDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -251,7 +241,7 @@
       "description": "darkroomScenarioDescription",
       "_format": "grid",
       "properties": {
-        "scenarioConfigVersion": {
+        "componentVersion": {
           "type": "integer",
           "title": "Config version",
           "minimum": 1,
@@ -346,11 +336,11 @@
             "type": "object",
             "title": "darkroomMotionSensorsObjTitle",
             "properties": {
-              "control": {
+              "mqttTopicName": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "darkroomMotionSensorsObjControlTitle",
-                "description": "generalControlDescription",
+                "title": "generalMqttTopicNameTitle",
+                "description": "generalMqttTopicNameDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -393,7 +383,7 @@
               }
             },
             "required": [
-              "control"
+              "mqttTopicName"
             ]
           }
         },
@@ -418,11 +408,11 @@
             "title": "darkroomOpeningSensorsObjTitle",
             "type": "object",
             "properties": {
-              "control": {
+              "mqttTopicName": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "darkroomOpeningSensorsObjControlTitle",
-                "description": "generalControlDescription",
+                "title": "generalMqttTopicNameTitle",
+                "description": "generalMqttTopicNameDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -436,7 +426,7 @@
               }
             },
             "required": [
-              "control"
+              "mqttTopicName"
             ]
           }
         },
@@ -462,11 +452,11 @@
             "title": "darkroomLightDevicesObjTitle",
             "type": "object",
             "properties": {
-              "control": {
+              "mqttTopicName": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "darkroomLightDevicesObjControlTitle",
-                "description": "generalControlDescription",
+                "title": "generalMqttTopicNameTitle",
+                "description": "generalMqttTopicNameDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -480,7 +470,7 @@
               }
             },
             "required": [
-              "control"
+              "mqttTopicName"
             ]
           }
         }
@@ -497,7 +487,7 @@
     }
   },
   "properties": {
-    "generalConfigVersion": {
+    "configVersion": {
       "type": "integer",
       "title": "Config version",
       "minimum": 1,
@@ -528,7 +518,8 @@
   "translations": {
     "en": {
       "generalScenarioName": "Scenario name",
-      "generalControlDescription": "In format: Device/Control",
+      "generalMqttTopicNameTitle": "MQTT topic name",
+      "generalMqttTopicNameDescription": "In format: Device/Control",
       "enable_title": "Turn on the scenario",
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "id_prefix_title": "MQTT id of the device",
@@ -536,12 +527,10 @@
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
-      "inControls_control_title": "MQTT-topic",
       "inControls_behaviorType_title": "Trigger logic",
       "outControls_arr_title": "Actions",
       "outControls_obj_title": "Action",
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
-      "outControls_control_title": "MQTT-topic",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_title": "Value",
       "outControls_actionValue_description": "If necessary",
@@ -553,7 +542,6 @@
       "darkroomMotionSensorsArrTitle": "Motion sensors",
       "darkroomMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
       "darkroomMotionSensorsObjTitle": "Motion sensor",
-      "darkroomMotionSensorsObjControlTitle": "MQTT-topic",
       "darkroomMotionSensorsEnumValNum": "Value numeric",
       "darkroomMotionSensorsEnumBool": "Boolean",
       "darkroomMotionSensorsEnumString": "String: 'true', 'false'",
@@ -561,15 +549,14 @@
       "darkroomOpeningSensorsArrTitle": "Opening sensors",
       "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
       "darkroomOpeningSensorsObjTitle": "Opening sensor",
-      "darkroomOpeningSensorsObjControlTitle": "MQTT-topic",
       "darkroomLightDevicesArrTitle": "Light devices",
       "darkroomLightDevicesArrDescription": "This list of light devices will be enabled sequentially when the automation is triggered.",
-      "darkroomLightDevicesObjTitle": "Light device",
-      "darkroomLightDevicesObjControlTitle": "MQTT-topic"
+      "darkroomLightDevicesObjTitle": "Light device"
     },
     "ru": {
       "generalScenarioName": "Название сценария",
-      "generalControlDescription": "В формате: Устройство/Контрол",
+      "generalMqttTopicNameTitle": "Имя MQTT топика",
+      "generalMqttTopicNameDescription": "В формате: Устройство/Контрол",
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
@@ -580,12 +567,10 @@
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
-      "inControls_control_title": "MQTT-топик",
       "inControls_behaviorType_title": "Логика срабатывания",
       "outControls_arr_title": "Действия",
       "outControls_obj_title": "Действие",
       "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации.",
-      "outControls_control_title": "MQTT-топик",
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_title": "Значение",
       "outControls_actionValue_description": "Если необходимо",
@@ -607,7 +592,6 @@
       "darkroomMotionSensorsArrTitle": "Датчики движения",
       "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движени будет запускать автоматизацию.",
       "darkroomMotionSensorsObjTitle": "Датчик движения",
-      "darkroomMotionSensorsObjControlTitle": "MQTT-топик",
       "darkroomMotionSensorsEnumValNum": "Числовое значение",
       "darkroomMotionSensorsEnumBool": "Булево значение",
       "darkroomMotionSensorsEnumString": "Строка: 'true', 'false'",
@@ -615,11 +599,9 @@
       "darkroomOpeningSensorsArrTitle": "Датчики открытия",
       "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
       "darkroomOpeningSensorsObjTitle": "Датчик открытия",
-      "darkroomOpeningSensorsObjControlTitle": "MQTT-топик",
       "darkroomLightDevicesArrTitle": "Устройства освещения",
       "darkroomLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
-      "darkroomLightDevicesObjTitle": "Устройство освещения",
-      "darkroomLightDevicesObjControlTitle": "MQTT-топик"
+      "darkroomLightDevicesObjTitle": "Устройство освещения"
     }
   }
 }

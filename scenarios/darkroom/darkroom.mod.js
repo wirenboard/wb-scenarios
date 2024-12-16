@@ -89,7 +89,7 @@ function init(idPrefix,
 
   // Добавляем обработчики для датчиков, связанных с виртуальным устройством
   for (var i = 0; i < motionSensors.length; i++) {
-    var curMqttControl = motionSensors[i].control;
+    var curMqttControl = motionSensors[i].mqttTopicName;
     var cellName = "motion_sensor_" + i;
     if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "value", "Motion:")) {
       log.error("Failed to add motion sensor control for " + curMqttControl);
@@ -97,7 +97,7 @@ function init(idPrefix,
   }
 
   for (var i = 0; i < openingSensors.length; i++) {
-    var curMqttControl = openingSensors[i].control;
+    var curMqttControl = openingSensors[i].mqttTopicName;
     var cellName = "opening_sensor_" + i;
     if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "Opening:")) {
       log.error("Failed to add opening sensor control for " + curMqttControl);
@@ -105,7 +105,7 @@ function init(idPrefix,
   }
 
   for (var i = 0; i < lightDevices.length; i++) {
-    var curMqttControl = lightDevices[i].control;
+    var curMqttControl = lightDevices[i].mqttTopicName;
     var cellName = "light_sensor_" + i;
     if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "Light:")) {
       log.error("Failed to add light device control for " + curMqttControl);
@@ -124,9 +124,9 @@ function init(idPrefix,
   function setStateAllLightDevices(state) {
     for (var i = 0; i < lightDevices.length; i++) {
       var ld = lightDevices[i];
-      if (ld && ld.control && typeof ld.control === 'string') {
-        log.debug("Setting light device '" + ld.control + "' state to: " + (state ? "ON" : "OFF"));
-        dev[ld.control] = state ? true : false;
+      if (ld && ld.mqttTopicName && typeof ld.mqttTopicName === 'string') {
+        log.debug("Setting light device '" + ld.mqttTopicName + "' state to: " + (state ? "ON" : "OFF"));
+        dev[ld.mqttTopicName] = state ? true : false;
       }
     }
   }
@@ -164,7 +164,7 @@ function init(idPrefix,
       // Найдем сенсор в списке по cellName
       var matchedSensor = null;
       for (var i = 0; i < motionSensors.length; i++) {
-        if (motionSensors[i].control === (devName + '/' + cellName)) {
+        if (motionSensors[i].mqttTopicName === (devName + '/' + cellName)) {
           matchedSensor = motionSensors[i];
           break;
         }
@@ -187,7 +187,7 @@ function init(idPrefix,
       }
 
       if (sensorTriggered) {
-        log.debug("Motion detected on sensor " + matchedSensor.control);
+        log.debug("Motion detected on sensor " + matchedSensor.mqttTopicName);
         setStateAllLightDevices(true);
         setLightOffTimer(delayByMotionSensors * 1000);
       }
@@ -208,11 +208,11 @@ function init(idPrefix,
   // Предварительно извлекаем имена контролов
   var motionSensorsControlNames = [];
   for (var i = 0; i < motionSensors.length; i++) {
-    motionSensorsControlNames.push(motionSensors[i].control);
+    motionSensorsControlNames.push(motionSensors[i].mqttTopicName);
   }
   var openingSensorsControlNames = [];
   for (var i = 0; i < openingSensors.length; i++) {
-    openingSensorsControlNames.push(openingSensors[i].control);
+    openingSensorsControlNames.push(openingSensors[i].mqttTopicName);
   }
 
   // Создаем правило для датчиков движения
