@@ -383,7 +383,8 @@
               }
             },
             "required": [
-              "mqttTopicName"
+              "mqttTopicName",
+              "sensorDataType"
             ]
           }
         },
@@ -467,10 +468,39 @@
                 },
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "outControls_behaviorType_title",
+                "enum": [
+                  "setEnable",
+                  "setValueNumeric"
+                ],
+                "default": "setEnable",
+                "options": {
+                  "enum_titles": [
+                    "Enable (switch)",
+                    "Set Numeric Value"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "outControls_actionValue_title",
+                "description": "outControls_actionValue_description",
+                "default": 0,
+                "options": {
+                  "dependencies": {
+                    "behaviorType": ["setValueNumeric"]
+                  }
+                }
               }
             },
             "required": [
-              "mqttTopicName"
+              "mqttTopicName",
+              "behaviorType"
             ]
           }
         }

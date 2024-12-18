@@ -13,6 +13,7 @@
  */
 
 var vdHelpers = require("virtual-device-helpers.mod");
+var aTable = require("darkroom-handling-actions.mod");
 
 /**
  * Инициализирует виртуальное устройство и определяет правило для работы
@@ -115,19 +116,39 @@ function init(idPrefix,
   // Переменная для хранения ID таймера выключения света
   var lightOffTimerId = null;
   // Время в будущем, когда таймер должен сработать
+  // @todo:vg Доделать
   var timerEndTime = null;
 
   // Текущая задержка, меняется в зависимости от последнего сработавшего типа датчика
   var currentDelayMs = delayByMotionSensors * 1000;
 
-  // Включение/выключение всех световых устройств
-  function setStateAllLightDevices(state) {
-    for (var i = 0; i < lightDevices.length; i++) {
-      var ld = lightDevices[i];
-      if (ld && ld.mqttTopicName && typeof ld.mqttTopicName === 'string') {
-        log.debug("Setting light device '" + ld.mqttTopicName + "' state to: " + (state ? "ON" : "OFF"));
-        dev[ld.mqttTopicName] = state ? true : false;
+  /**Включение/выключение всех устройств в массиве согласно указанному типу поведения
+   * @param {Array} actionControlsArr - Массив контролов с указанием типа поведения и значений
+   * @param {boolean} state - Состояние для применения (true - разрешить, false - сбросить)
+   */
+  function setValueAllDevicesByBehavior(actionControlsArr, state) {
+    for (var i = 0; i < actionControlsArr.length; i++) {
+      //@todo:vg добавить проверку топиков выше
+      //проверить сработает ли typeof ld.mqttTopicName === 'string' и что будет в мета
+
+      // Выполняем действия на выходных контролах
+      // Не усложняем проверками так как проверили все заранее в инициализации
+      var curMqttTopicName = actionControlsArr[i].mqttTopicName;
+      var curUserAction = actionControlsArr[i].behaviorType;
+      var curActionValue = actionControlsArr[i].actionValue;
+      var actualValue = dev[curMqttTopicName];
+      var newCtrlValue;
+      if (state === true) {
+        newCtrlValue = aTable.actionsTable[curUserAction].resolver(actualValue, curActionValue);
+      } else {
+        newCtrlValue = aTable.actionsTable[curUserAction].resetter(actualValue, curActionValue);
       }
+      
+      log.debug("Control " + curMqttTopicName + " will updated to state: " + newCtrlValue);
+      // log.debug("Setting light device '" + ld.mqttTopicName + "' state to: " + (state ? "ON" : "OFF"));
+      dev[curMqttTopicName] = newCtrlValue;
+      // dev[ld.mqttTopicName] = state ? true : false;
+      log.debug("Control " + curMqttTopicName + " successfull updated");
     }
   }
 
@@ -141,7 +162,7 @@ function init(idPrefix,
     log.debug("Set new delay: " + (currentDelayMs / 1000) + " sec and set new timer");
     lightOffTimerId = setTimeout(function () {
       log.debug("No activity in the last " + (currentDelayMs / 1000) + " sec, turn lights off");
-      setStateAllLightDevices(false);
+      setValueAllDevicesByBehavior(lightDevices, false);
       lightOffTimerId = null;
     }, currentDelayMs);
   }
@@ -188,7 +209,7 @@ function init(idPrefix,
 
       if (sensorTriggered) {
         log.debug("Motion detected on sensor " + matchedSensor.mqttTopicName);
-        setStateAllLightDevices(true);
+        setValueAllDevicesByBehavior(lightDevices, true);
         setLightOffTimer(delayByMotionSensors * 1000);
       }
     }
@@ -197,7 +218,7 @@ function init(idPrefix,
       // Для датчика открытия считаем, что любое изменение на "открыто" запускает таймер
       if (newValue === true) {
         log.debug("Opening detected on sensor " + devName + "/" + cellName);
-        setStateAllLightDevices(true);
+        setValueAllDevicesByBehavior(lightDevices, true);
         setLightOffTimer(delayByOpeningSensors * 1000);
       }
     }
