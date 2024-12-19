@@ -43,6 +43,28 @@ function addLinkedControlRO(srcMqttControl,
   return true;
 }
 
+/**
+ * Добавляет RO (read-only) контрол типа текст.
+ * Используется для отделения групп топиков в виртуальном девайсе.
+ */
+
+function addGroupTitleRO(vDevObj,
+                         vDevName,
+                         cellBaseName,
+                         cellTitleRu,
+                         cellTitleEn) {
+  vDevObj.addControl(cellBaseName, {
+                     title: {
+                       en: ">  " + cellTitleEn + ":",
+                       ru: ">  " + cellTitleRu + ":"
+                     },
+                     type: "text",
+                     readonly: true,
+                     value: ""});
+
+  return true;
+}
+
 exports.addLinkedControlRO = function (srcMqttControl,
                                        vDevObj,
                                        vDevName,
@@ -55,5 +77,18 @@ exports.addLinkedControlRO = function (srcMqttControl,
                                cellBaseName,
                                cellType,
                                titlePrefix);
+  return res;
+};
+
+exports.addGroupTitleRO = function (vDevObj,
+                                    vDevName,
+                                    cellBaseName,
+                                    cellTitleRu,
+                                    cellTitleEn) {
+  var res = addGroupTitleRO(vDevObj,
+                            vDevName,
+                            cellBaseName,
+                            cellTitleRu,
+                            cellTitleEn);
   return res;
 };

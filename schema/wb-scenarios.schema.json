@@ -357,14 +357,12 @@
                 "title": "Sensor Data Type",
                 "enum": [
                   "valueNumericMotSensor",
-                  "boolMotSensor",
-                  "stringMotSensor"
+                  "boolMotSensor"
                 ],
                 "options": {
                   "enum_titles": [
                     "darkroomMotionSensorsEnumValNum",
-                    "darkroomMotionSensorsEnumBool",
-                    "darkroomMotionSensorsEnumString"
+                    "darkroomMotionSensorsEnumBool"
                   ]
                 },
                 "default": "valueNumericMotSensor",
@@ -573,8 +571,7 @@
       "darkroomMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
       "darkroomMotionSensorsObjTitle": "Motion sensor",
       "darkroomMotionSensorsEnumValNum": "Value numeric",
-      "darkroomMotionSensorsEnumBool": "Boolean",
-      "darkroomMotionSensorsEnumString": "String: 'true', 'false'",
+      "darkroomMotionSensorsEnumBool": "Boolean / String: 'true', 'false'",
       "darkroomMotionSensorsObjThresholdTitle": "Threshold motion level",
       "darkroomOpeningSensorsArrTitle": "Opening sensors",
       "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
@@ -623,8 +620,7 @@
       "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движени будет запускать автоматизацию.",
       "darkroomMotionSensorsObjTitle": "Датчик движения",
       "darkroomMotionSensorsEnumValNum": "Числовое значение",
-      "darkroomMotionSensorsEnumBool": "Булево значение",
-      "darkroomMotionSensorsEnumString": "Строка: 'true', 'false'",
+      "darkroomMotionSensorsEnumBool": "Булево значение / Строка: 'true', 'false'",
       "darkroomMotionSensorsObjThresholdTitle": "Пороговый уровень движения",
       "darkroomOpeningSensorsArrTitle": "Датчики открытия",
       "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",

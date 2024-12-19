@@ -61,10 +61,13 @@ function readAndValidateScenariosConfig(configPath, reqGeneralCfgVer) {
     log.error("Error: 'configVersion' does not exist in the configuration.");
     return null;
   }
+  log.debug("'configVersion' exist in the configuration.");
+
   if (config.configVersion !== reqGeneralCfgVer) {
     log.error("Global config version mismatch. Expected version: " + reqGeneralCfgVer + ", but got: " + config.configVersion);
     return null;
   }
+  log.debug("Global config version is valid.");
 
   // Проверяем существование поля, тип массив, что не пуст
   if (!config.hasOwnProperty('scenarios')) {
@@ -83,6 +86,7 @@ function readAndValidateScenariosConfig(configPath, reqGeneralCfgVer) {
     return null;
   }
 
+  log.debug("Config 'scenarios' array is correct.");
   return listAllScenarios;
 }
 

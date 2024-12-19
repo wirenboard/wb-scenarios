@@ -66,6 +66,7 @@ function initializeScenario(scenario) {
 }
 
 function main() {
+  log.debug("Start initialisation darkroom scenario.");
   var listAllScenarios = scGenHelpers.readAndValidateScenariosConfig(CONFIG_PATH,
                                                                 REQUIRED_GENERAL_CFG_VER);
   if (!listAllScenarios) return;

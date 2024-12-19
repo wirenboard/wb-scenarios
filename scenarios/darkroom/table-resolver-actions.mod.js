@@ -48,13 +48,13 @@ function resetValueNumeric(actualValue, actionValue) {
 var actionsTable = {
   'setEnable': {
     reqCtrlTypes: ['switch'],
-    resolver: setEnable,
-    resetter: resetEnable
+    launchResolver: setEnable,
+    resetResolver: resetEnable
   },
   'setValueNumeric': {
     reqCtrlTypes: ['value'],
-    resolver: setValueNumeric,
-    resetter: resetValueNumeric
+    launchResolver: setValueNumeric,
+    resetResolver: resetValueNumeric
   }
 };
 

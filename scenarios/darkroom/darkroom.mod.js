@@ -13,7 +13,7 @@
  */
 
 var vdHelpers = require("virtual-device-helpers.mod");
-var aTable = require("darkroom-handling-actions.mod");
+var aTable = require("table-resolver-actions.mod");
 
 /**
  * Инициализирует виртуальное устройство и определяет правило для работы
@@ -42,6 +42,11 @@ function init(idPrefix,
               openingSensors,
               lightDevices) {
 
+  if (delayByMotionSensors <= 0) {
+    log.error("Invalid delayByMotionSensors: must be a positive number.");
+    return false;
+  }
+
   var isAllArrays = (!Array.isArray(motionSensors) || !Array.isArray(openingSensors) || !Array.isArray(lightDevices));
   if (isAllArrays) {
     log.error("Darkroom initialization error: motionSensors, openingSensors, and lightDevices must be arrays.");
@@ -69,6 +74,7 @@ function init(idPrefix,
   log.debug("  - lightDevices: '" + JSON.stringify(lightDevices) + "'");
 
   var genVirtualDeviceName = "wbsc_" + idPrefix;
+  var genRuleNameMotionInProgress = "wbru_" + "motionInProgress_" + idPrefix;
   var genRuleNameMotion = "wbru_" + "motion_" + idPrefix;
   var genRuleNameOpening = "wbru_" + "opening_" + idPrefix;
 
@@ -76,9 +82,28 @@ function init(idPrefix,
                                   title: deviceTitle,
                                   cells: {
                                     active: {
-                                      title: {en: 'Activate scenario rule', ru: 'Активировать правило сценария'},
+                                      title: {en: 'Activate rule', ru: 'Активировать правило'},
                                       type: "switch",
                                       value: true
+                                    },
+                                    analazeTitle: {
+                                      title: {en: '>  Progress info:', ru: '>  Информация о выполнении:'},
+                                      type: "text",
+                                      value: "",
+                                      readonly: true,
+                                    },
+                                    motionInProgress: {
+                                      title: {en: 'Motion in progress', ru: 'Движение в процессе'},
+                                      type: "switch",
+                                      value: false,
+                                      readonly: true,
+                                    },
+                                    // Текущая задержка, меняется в зависимости от последнего сработавшего типа датчика
+                                    curDisableLightTimerInSec: {
+                                      title: {en: 'Disable timer (seconds)', ru: 'Таймер отключения (seconds)'},
+                                      type: "value",
+                                      value: 0,
+                                      readonly: true,
                                     },
                                   }
                                 });
@@ -89,26 +114,47 @@ function init(idPrefix,
   log.debug("Virtual device '" + deviceTitle + "' created successfully");
 
   // Добавляем обработчики для датчиков, связанных с виртуальным устройством
+  // @note: Если топик не существует в момент создания связи - то он не добавится
+  //        в виртуальное устройство - это актуально при создании сценариев с
+  //        использованием других сценариев и других виртуальных устройств
+  //        если реальные устройства создаются и существуют постоянно - то
+  //        wb-rules не гарантирует порядок инициализации виртуальных устройств
+  // @fixme: попробовать это как то поправить
+  vdHelpers.addGroupTitleRO(vDevObj,
+                            genVirtualDeviceName,
+                            "motionSensorsTitle",
+                            "Датчики движения",
+                            "Motion sensors");
   for (var i = 0; i < motionSensors.length; i++) {
     var curMqttControl = motionSensors[i].mqttTopicName;
     var cellName = "motion_sensor_" + i;
-    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "value", "Motion:")) {
+    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "value", "")) {
       log.error("Failed to add motion sensor control for " + curMqttControl);
     }
   }
 
+  vdHelpers.addGroupTitleRO(vDevObj,
+    genVirtualDeviceName,
+    "openingSensorsTitle",
+    "Датчики открытия",
+    "Opening sensors");
   for (var i = 0; i < openingSensors.length; i++) {
     var curMqttControl = openingSensors[i].mqttTopicName;
     var cellName = "opening_sensor_" + i;
-    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "Opening:")) {
+    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "")) {
       log.error("Failed to add opening sensor control for " + curMqttControl);
     }
   }
 
+  vdHelpers.addGroupTitleRO(vDevObj,
+    genVirtualDeviceName,
+    "lightDevicesTitle",
+    "Устройства освещения",
+    "Light devices");
   for (var i = 0; i < lightDevices.length; i++) {
     var curMqttControl = lightDevices[i].mqttTopicName;
     var cellName = "light_sensor_" + i;
-    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "Light:")) {
+    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "")) {
       log.error("Failed to add light device control for " + curMqttControl);
     }
   }
@@ -118,9 +164,6 @@ function init(idPrefix,
   // Время в будущем, когда таймер должен сработать
   // @todo:vg Доделать
   var timerEndTime = null;
-
-  // Текущая задержка, меняется в зависимости от последнего сработавшего типа датчика
-  var currentDelayMs = delayByMotionSensors * 1000;
 
   /**Включение/выключение всех устройств в массиве согласно указанному типу поведения
    * @param {Array} actionControlsArr - Массив контролов с указанием типа поведения и значений
@@ -139,9 +182,9 @@ function init(idPrefix,
       var actualValue = dev[curMqttTopicName];
       var newCtrlValue;
       if (state === true) {
-        newCtrlValue = aTable.actionsTable[curUserAction].resolver(actualValue, curActionValue);
+        newCtrlValue = aTable.actionsTable[curUserAction].launchResolver(actualValue, curActionValue);
       } else {
-        newCtrlValue = aTable.actionsTable[curUserAction].resetter(actualValue, curActionValue);
+        newCtrlValue = aTable.actionsTable[curUserAction].resetResolver(actualValue, curActionValue);
       }
       
       log.debug("Control " + curMqttTopicName + " will updated to state: " + newCtrlValue);
@@ -152,19 +195,60 @@ function init(idPrefix,
     }
   }
 
+  function resetLightOffTimer() {
+    lightOffTimerId = null;
+    dev[genVirtualDeviceName + "/curDisableLightTimerInSec"] = 0;
+  }
+
   // Функция обновления таймера:
   // @todo: Не устанавливать новую задержку, если текущее оставшееся время больше
   function setLightOffTimer(newDelayMs) {
-    currentDelayMs = newDelayMs;
+    dev[genVirtualDeviceName + "/curDisableLightTimerInSec"] = newDelayMs / 1000;
     if (lightOffTimerId) {
       clearTimeout(lightOffTimerId);
     }
-    log.debug("Set new delay: " + (currentDelayMs / 1000) + " sec and set new timer");
+    log.debug("Set new delay: " + (newDelayMs / 1000) + " sec and set new timer");
     lightOffTimerId = setTimeout(function () {
-      log.debug("No activity in the last " + (currentDelayMs / 1000) + " sec, turn lights off");
+      log.debug("No activity in the last " + (newDelayMs / 1000) + " sec, turn lights off");
       setValueAllDevicesByBehavior(lightDevices, false);
-      lightOffTimerId = null;
-    }, currentDelayMs);
+      resetLightOffTimer();
+    }, newDelayMs);
+  }
+
+  /**
+   * Проверка состояния всех датчиков
+   */
+  function checkAllMotionSensorsInactive() {
+    // Проверяем, все ли датчики движения находятся в пассивном состоянии
+    for (var i = 0; i < motionSensors.length; i++) {
+      var sensorState = dev[motionSensors[i].mqttTopicName];
+      if (sensorState === true || sensorState === "true") {
+        return false; // Если хотя бы один датчик активен, возвращаем false
+      }
+    }
+    return true; // Все датчики пассивны
+  }
+  
+
+  // Функция которая следит за датчиками движения и устанавливает статус свича
+  // в виртуальном девайсе сценария
+  // Этот свич нужен для двух целей:
+  //   - Необходим для запуска таймера в конце детектирования движения
+  //   - Полезен для отладки и слежением за состоянием сценария в реальном времени
+  function motionInProgressSetter(newValue, devName, cellName) {
+    // log.debug("~ Motion status changed");
+
+    if (newValue === true) {
+      // log.debug("~ Motion detected - enable light and remove old timer!");
+      if (lightOffTimerId) {
+        clearTimeout(lightOffTimerId);
+      }
+      resetLightOffTimer();
+      setValueAllDevicesByBehavior(lightDevices, true);
+    } else {
+      // log.debug("~ Motion end detected - set timer for disable light!");
+      setLightOffTimer(delayByMotionSensors * 1000);
+    }
   }
 
   // Обработчик, вызываемый при срабатывании датчиков движения и открытия
@@ -199,25 +283,48 @@ function init(idPrefix,
        *   - string - что новая строка 'true'
        */
       var sensorTriggered = false;
-      if (matchedSensor.sensorDataType === "valueNumericMotSensor" && typeof newValue === "number" && newValue >= matchedSensor.thresholdMotionLevel) {
-        sensorTriggered = true;
-      } else if (matchedSensor.sensorDataType === "boolMotSensor" && newValue === true) {
-        sensorTriggered = true;
-      } else if (matchedSensor.sensorDataType === "stringMotSensor" && newValue === "true") {
-        sensorTriggered = true;
+      if (matchedSensor.sensorDataType === "valueNumericMotSensor") {
+            if (newValue >= matchedSensor.thresholdMotionLevel) {
+              // log.debug("Motion start on sensor " + matchedSensor.mqttTopicName);
+              sensorTriggered = true;
+            } else if (newValue < matchedSensor.thresholdMotionLevel) {
+              // log.debug("Motion stop on sensor " + matchedSensor.mqttTopicName);
+              sensorTriggered = false;
+            }
+      } else if (matchedSensor.sensorDataType === "boolMotSensor") {
+        if (newValue === true) {
+          // log.debug("Motion sensor type - bool");
+          sensorTriggered = true;
+        } else if (newValue === "true") {
+          // log.debug("Motion sensor type - string");
+          sensorTriggered = true;
+        } else if (newValue === false || newValue === "false") {
+          // log.debug("Motion sensor type correct and disabled");
+          sensorTriggered = false;
+        } else {
+          // log.error("Motion sensor have not correct value: '" + newValue + "'");
+          sensorTriggered = false;
+        }
       }
 
-      if (sensorTriggered) {
-        log.debug("Motion detected on sensor " + matchedSensor.mqttTopicName);
-        setValueAllDevicesByBehavior(lightDevices, true);
-        setLightOffTimer(delayByMotionSensors * 1000);
+      if (sensorTriggered === true) {
+        // log.debug("Motion detected on sensor " + matchedSensor.mqttTopicName);
+        dev[genVirtualDeviceName + "/motionInProgress"] = true;
+      } else if (sensorTriggered === false) {
+
+        if (checkAllMotionSensorsInactive()) {
+          // log.debug("~ All motion sensors inactive");
+          dev[genVirtualDeviceName + "/motionInProgress"] = false;
+        } else {
+          // log.debug("~ Some motion sensors are still active - keeping lights on.");
+        }
       }
     }
 
     if (sensorType === 'opening') {
       // Для датчика открытия считаем, что любое изменение на "открыто" запускает таймер
       if (newValue === true) {
-        log.debug("Opening detected on sensor " + devName + "/" + cellName);
+        // log.debug("Opening detected on sensor " + devName + "/" + cellName);
         setValueAllDevicesByBehavior(lightDevices, true);
         setLightOffTimer(delayByOpeningSensors * 1000);
       }
@@ -236,12 +343,28 @@ function init(idPrefix,
     openingSensorsControlNames.push(openingSensors[i].mqttTopicName);
   }
 
+  // Создаем правило следящее за движением
+  // Оно нужно для приведения всех датчиков движения к одному типу switch
+  //   - Тип датчиков value приведется к типу switch
+  //   - Тип датчиков switch не изменится
+  var ruleIdMotionInProgress = defineRule(genRuleNameMotionInProgress, {
+                             whenChanged: [genVirtualDeviceName + "/motionInProgress"],             
+                             then: function (newValue, devName, cellName) {
+                              motionInProgressSetter(newValue, devName, cellName);
+                            }
+                            });
+  if (!ruleIdMotionInProgress) {
+    log.error("Error: WB-rule '" + genRuleNameMotionInProgress + "' not created.");
+    return false;
+  }
+  log.debug("WB-rule with IdNum '" + genRuleNameMotionInProgress + "' was successfully created");
+
   // Создаем правило для датчиков движения
   var ruleIdMotion = defineRule(genRuleNameMotion, {
                              whenChanged: motionSensorsControlNames,
                              then: function (newValue, devName, cellName) {
                                sensorTriggeredHandler(newValue, devName, cellName, 'motion');
-                             }                        
+                             }
                              });
   if (!ruleIdMotion) {
     log.error("Error: WB-rule '" + genRuleNameMotion + "' not created.");
