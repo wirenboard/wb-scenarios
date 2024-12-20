@@ -314,13 +314,95 @@
           "options": {
             "grid_columns": 12
           }
-        },    
+        },
+        "delayBlockAfterSwitch": {
+          "type": "number",
+          "title": "Длительность включения света после использования выключателя (сек)",
+          "default": 3600,
+          "propertyOrder": 6,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "lightDevices": {
+          "type": "array",
+          "title": "darkroomLightDevicesArrTitle",
+          "_title_note": "When options-> compact: true - this title not shown",
+          "description": "darkroomLightDevicesArrDescription",
+          "minItems": 1,
+          "propertyOrder": 7,
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "darkroomLightDevicesObjTitle",
+            "type": "object",
+            "properties": {
+              "mqttTopicName": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "generalMqttTopicNameTitle",
+                "description": "generalMqttTopicNameDescription",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "error_regexp_patternmessage",
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "outControls_behaviorType_title",
+                "enum": [
+                  "setEnable",
+                  "setValueNumeric"
+                ],
+                "default": "setEnable",
+                "options": {
+                  "enum_titles": [
+                    "Enable (switch)",
+                    "Set Numeric Value"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "outControls_actionValue_title",
+                "description": "outControls_actionValue_description",
+                "default": 0,
+                "options": {
+                  "dependencies": {
+                    "behaviorType": ["setValueNumeric"]
+                  }
+                }
+              }
+            },
+            "required": [
+              "mqttTopicName",
+              "behaviorType"
+            ]
+          }
+        },
         "motionSensors": {
           "type": "array",
           "title": "darkroomMotionSensorsArrTitle",
           "_title_note": "When options-> compact: true - this title not shown",
           "description": "darkroomMotionSensorsArrDescription",
-          "propertyOrder": 6,
+          "propertyOrder": 8,
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -391,7 +473,7 @@
           "title": "darkroomOpeningSensorsArrTitle",
           "_title_note": "When options-> compact: true - this title not shown",
           "description": "darkroomOpeningSensorsArrDescription",
-          "propertyOrder": 7,
+          "propertyOrder": 9,
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -422,20 +504,36 @@
                 },
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "inControls_behaviorType_title",
+                "enum": [
+                  "whenDisabled",
+                  "whenEnabled"
+                ],
+                "default": "whenEnabled",
+                "options": {
+                  "enum_titles": [
+                    "When Disabled",
+                    "When Enabled"
+                  ]
+                }
               }
             },
             "required": [
-              "mqttTopicName"
+              "mqttTopicName",
+              "behaviorType"
             ]
           }
         },
-        "lightDevices": {
+        "lightSwitches": {
           "type": "array",
-          "title": "darkroomLightDevicesArrTitle",
+          "title": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"https://static.thenounproject.com/png/206671-512.png\" height=\"30\">  Выключатели</p>",
           "_title_note": "When options-> compact: true - this title not shown",
-          "description": "darkroomLightDevicesArrDescription",
-          "minItems": 1,
-          "propertyOrder": 8,
+          "description": "Выключатели без фиксации - нужно указывать MQTT топики счетчиков",
+          "propertyOrder": 10,
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -448,7 +546,7 @@
             }
           },
           "items": {
-            "title": "darkroomLightDevicesObjTitle",
+            "title": "Выключатель",
             "type": "object",
             "properties": {
               "mqttTopicName": {
@@ -466,39 +564,10 @@
                 },
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
-              },
-              "behaviorType": {
-                "type": "string",
-                "propertyOrder": 2,
-                "title": "outControls_behaviorType_title",
-                "enum": [
-                  "setEnable",
-                  "setValueNumeric"
-                ],
-                "default": "setEnable",
-                "options": {
-                  "enum_titles": [
-                    "Enable (switch)",
-                    "Set Numeric Value"
-                  ]
-                }
-              },
-              "actionValue": {
-                "type": "number",
-                "propertyOrder": 3,
-                "title": "outControls_actionValue_title",
-                "description": "outControls_actionValue_description",
-                "default": 0,
-                "options": {
-                  "dependencies": {
-                    "behaviorType": ["setValueNumeric"]
-                  }
-                }
               }
             },
             "required": [
-              "mqttTopicName",
-              "behaviorType"
+              "mqttTopicName"
             ]
           }
         }
@@ -567,16 +636,16 @@
       "darkroomScenarioDescription": "The script allows you to control dark room",
       "darkroomDelayByMotionSensorsTitle": "Turn-off delay when motion sensors are triggered (seconds)",
       "darkroomDelayByOpeningSensorsTitle": "Turn-off delay when opening sensors are triggered (seconds)",
-      "darkroomMotionSensorsArrTitle": "Motion sensors",
+      "darkroomMotionSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"https://img.freepik.com/premium-vector/motion-sensor-symbol-icon-vector-illustration-design_757387-6116.jpg\" height=\"30\">  Motion sensors</p>",
       "darkroomMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
       "darkroomMotionSensorsObjTitle": "Motion sensor",
       "darkroomMotionSensorsEnumValNum": "Value numeric",
       "darkroomMotionSensorsEnumBool": "Boolean / String: 'true', 'false'",
       "darkroomMotionSensorsObjThresholdTitle": "Threshold motion level",
-      "darkroomOpeningSensorsArrTitle": "Opening sensors",
+      "darkroomOpeningSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToh5Yo-jszylsY2GN6Mlh56KSBR-b2lKQreQ&s\" height=\"30\">  Opening sensors</p>",
       "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
       "darkroomOpeningSensorsObjTitle": "Opening sensor",
-      "darkroomLightDevicesArrTitle": "Light devices",
+      "darkroomLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"https://cdn-icons-png.freepik.com/512/95/95148.png\" height=\"30\">  Light devices</p>",
       "darkroomLightDevicesArrDescription": "This list of light devices will be enabled sequentially when the automation is triggered.",
       "darkroomLightDevicesObjTitle": "Light device"
     },
@@ -616,16 +685,16 @@
       "darkroomScenarioDescription": "Сценарий позволяет управлять темной комнатой",
       "darkroomDelayByMotionSensorsTitle": "Задержка отключения при срабатывании датчиков движения (секунды)",
       "darkroomDelayByOpeningSensorsTitle": "Задержка отключения при срабатывании датчиков открытия (секунды)",
-      "darkroomMotionSensorsArrTitle": "Датчики движения",
+      "darkroomMotionSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"https://img.freepik.com/premium-vector/motion-sensor-symbol-icon-vector-illustration-design_757387-6116.jpg\" height=\"30\">  Датчики движения</p>",
       "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движени будет запускать автоматизацию.",
       "darkroomMotionSensorsObjTitle": "Датчик движения",
       "darkroomMotionSensorsEnumValNum": "Числовое значение",
       "darkroomMotionSensorsEnumBool": "Булево значение / Строка: 'true', 'false'",
       "darkroomMotionSensorsObjThresholdTitle": "Пороговый уровень движения",
-      "darkroomOpeningSensorsArrTitle": "Датчики открытия",
+      "darkroomOpeningSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToh5Yo-jszylsY2GN6Mlh56KSBR-b2lKQreQ&s\" height=\"30\">  Датчики открытия</p>",
       "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
       "darkroomOpeningSensorsObjTitle": "Датчик открытия",
-      "darkroomLightDevicesArrTitle": "Устройства освещения",
+      "darkroomLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"https://cdn-icons-png.freepik.com/512/95/95148.png\" height=\"30\">  Устройства освещения</p>",
       "darkroomLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
       "darkroomLightDevicesObjTitle": "Устройство освещения"
     }
