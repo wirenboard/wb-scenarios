@@ -532,7 +532,7 @@
           "type": "array",
           "title": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"https://static.thenounproject.com/png/206671-512.png\" height=\"30\">  Выключатели</p>",
           "_title_note": "When options-> compact: true - this title not shown",
-          "description": "Выключатели без фиксации - нужно указывать MQTT топики счетчиков",
+          "description": "Выключатели - можно указывать любой тип топика. Срабатывает по изменению - включает свет на установленную выше задержку игнорируя другие датчики.",
           "propertyOrder": 10,
           "_format": "table",
           "options": {
