@@ -53,9 +53,11 @@ function initializeScenario(scenario) {
                                    scenario.name,
                                    scenario.delayByMotionSensors,
                                    scenario.delayByOpeningSensors,
+                                   scenario.delayBlockAfterSwitch,
+                                   scenario.lightDevices,
                                    scenario.motionSensors,
                                    scenario.openingSensors,
-                                   scenario.lightDevices)
+                                   scenario.lightSwitches)
 
   if (!isInitSucess) {
     log.error("Error: Init operation aborted for scenario with 'idPrefix': " + scenario.id_prefix);

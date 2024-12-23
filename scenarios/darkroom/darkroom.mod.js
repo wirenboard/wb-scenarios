@@ -13,7 +13,8 @@
  */
 
 var vdHelpers = require("virtual-device-helpers.mod");
-var aTable = require("table-resolver-actions.mod");
+var aTable = require("registry-action-resolvers.mod");
+var eventModule = require("registry-event-processing.mod");
 
 /**
  * Инициализирует виртуальное устройство и определяет правило для работы
@@ -38,18 +39,23 @@ function init(idPrefix,
               deviceTitle,
               delayByMotionSensors,
               delayByOpeningSensors,
+              delayBlockAfterSwitch,
+              lightDevices,
               motionSensors,
               openingSensors,
-              lightDevices) {
+              lightSwitches) {
 
   if (delayByMotionSensors <= 0) {
     log.error("Invalid delayByMotionSensors: must be a positive number.");
     return false;
   }
 
-  var isAllArrays = (!Array.isArray(motionSensors) || !Array.isArray(openingSensors) || !Array.isArray(lightDevices));
-  if (isAllArrays) {
-    log.error("Darkroom initialization error: motionSensors, openingSensors, and lightDevices must be arrays.");
+  var isAllArrays =  (Array.isArray(lightDevices) &&
+                      Array.isArray(motionSensors) &&
+                      Array.isArray(openingSensors) &&
+                      Array.isArray(lightSwitches));
+  if (!isAllArrays) {
+    log.error("Darkroom initialization error: lightDevices, motionSensors, openingSensors, and lightSwitches must be arrays.");
     return false;
   }
 
@@ -64,19 +70,34 @@ function init(idPrefix,
     log.error("Darkroom initialization error: no motion or opening sensors specified.");
     return false;
   }
+
+  var isLightSwitchesEmpty = (lightSwitches.length === 0);
+  if (isLightSwitchesEmpty) {
+    log.debug("Darkroom initialization error: no wall switches specified.");
+    return false;
+  }
+
+
   // @todo: Добавить проверку типов контролов - чтобы не запускать инит с типом датчика строка где обрабатывается только цифра
 
   log.debug("Darkroom initialization start with the following parameters:");
   log.debug("  - delayByMotionSensors: '" + JSON.stringify(delayByMotionSensors) + "'");
   log.debug("  - delayByOpeningSensors: '" + JSON.stringify(delayByOpeningSensors) + "'");
+  log.debug("  - delayBlockAfterSwitch: '" + JSON.stringify(delayBlockAfterSwitch) + "'");
+  log.debug("  - lightDevices: '" + JSON.stringify(lightDevices) + "'");
   log.debug("  - motionSensors: '" + JSON.stringify(motionSensors) + "'");
   log.debug("  - openingSensors: '" + JSON.stringify(openingSensors) + "'");
-  log.debug("  - lightDevices: '" + JSON.stringify(lightDevices) + "'");
+  log.debug("  - lightSwitches: '" + JSON.stringify(lightSwitches) + "'");
 
-  var genVirtualDeviceName = "wbsc_" + idPrefix;
-  var genRuleNameMotionInProgress = "wbru_" + "motionInProgress_" + idPrefix;
-  var genRuleNameMotion = "wbru_" + "motion_" + idPrefix;
-  var genRuleNameOpening = "wbru_" + "opening_" + idPrefix;
+  var delimeter = "_";
+  var scenarioPrefix = "wbsc";
+  var rulePrefix = "wbru";
+  var genVirtualDeviceName = scenarioPrefix + delimeter + idPrefix + delimeter;
+  var genRuleNameMotionInProgress = rulePrefix + delimeter + "motionInProgress" + delimeter + idPrefix + delimeter;
+  var genRuleNameLogicDisabledByWallSwitch = rulePrefix + delimeter + "logicDisabledByWallSwitch" + delimeter + idPrefix + delimeter;
+  var genRuleNameMotion = rulePrefix + delimeter + "motion" + delimeter + idPrefix + delimeter;
+  var genRuleNameOpening = rulePrefix + delimeter + "opening" + delimeter + idPrefix + delimeter;
+  var genRuleNameSwitches = rulePrefix + delimeter + "switches" + delimeter + idPrefix + delimeter;
 
   var vDevObj = defineVirtualDevice(genVirtualDeviceName, {
                                   title: deviceTitle,
@@ -98,9 +119,22 @@ function init(idPrefix,
                                       value: false,
                                       readonly: true,
                                     },
+                                    logicDisabledByWallSwitch: {
+                                      title: {en: 'Disabled by switch', ru: 'Отключена выключателем'},
+                                      type: "switch",
+                                      value: false,
+                                      readonly: true,
+                                    },
                                     // Текущая задержка, меняется в зависимости от последнего сработавшего типа датчика
                                     curDisableLightTimerInSec: {
-                                      title: {en: 'Disable timer (seconds)', ru: 'Таймер отключения (seconds)'},
+                                      title: {en: 'Disable timer (seconds)', ru: 'Таймер отключения (секунды)'},
+                                      type: "value",
+                                      value: 0,
+                                      readonly: true,
+                                    },
+                                    // Текущая задержка отключенной логики
+                                    curDisabledLogicTimerInSec: {
+                                      title: {en: 'Disabled logic timer (seconds)', ru: 'Таймер отключенной логики (секунды)'},
                                       type: "value",
                                       value: 0,
                                       readonly: true,
@@ -120,6 +154,19 @@ function init(idPrefix,
   //        если реальные устройства создаются и существуют постоянно - то
   //        wb-rules не гарантирует порядок инициализации виртуальных устройств
   // @fixme: попробовать это как то поправить
+  vdHelpers.addGroupTitleRO(vDevObj,
+    genVirtualDeviceName,
+    "lightDevicesTitle",
+    "Устройства освещения",
+    "Light devices");
+  for (var i = 0; i < lightDevices.length; i++) {
+    var curMqttControl = lightDevices[i].mqttTopicName;
+    var cellName = "light_sensor_" + i;
+    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "")) {
+      log.error("Failed to add light device control for " + curMqttControl);
+    }
+  }
+
   vdHelpers.addGroupTitleRO(vDevObj,
                             genVirtualDeviceName,
                             "motionSensorsTitle",
@@ -148,19 +195,22 @@ function init(idPrefix,
 
   vdHelpers.addGroupTitleRO(vDevObj,
     genVirtualDeviceName,
-    "lightDevicesTitle",
-    "Устройства освещения",
-    "Light devices");
-  for (var i = 0; i < lightDevices.length; i++) {
-    var curMqttControl = lightDevices[i].mqttTopicName;
-    var cellName = "light_sensor_" + i;
+    "lightSwitchesTitle",
+    "Выключатели света",
+    "Light switches");
+  for (var i = 0; i < lightSwitches.length; i++) {
+    var curMqttControl = lightSwitches[i].mqttTopicName;
+    var cellName = "light_switch_" + i;
     if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "")) {
-      log.error("Failed to add light device control for " + curMqttControl);
+      log.error("Failed to add light switch control for " + curMqttControl);
     }
   }
 
+  var eventRegistry = eventModule.createRegistryForEvents();
   // Переменная для хранения ID таймера выключения света
   var lightOffTimerId = null;
+  // Переменная для хранения ID таймера выключения логики сценария
+  var logicEnableTimerId = null;
   // Время в будущем, когда таймер должен сработать
   // @todo:vg Доделать
   var timerEndTime = null;
@@ -200,6 +250,11 @@ function init(idPrefix,
     dev[genVirtualDeviceName + "/curDisableLightTimerInSec"] = 0;
   }
 
+  function resetLogicEnableTimer() {
+    logicEnableTimerId = null;
+    dev[genVirtualDeviceName + "/curDisabledLogicTimerInSec"] = 0;
+  }
+
   // Функция обновления таймера:
   // @todo: Не устанавливать новую задержку, если текущее оставшееся время больше
   function setLightOffTimer(newDelayMs) {
@@ -212,6 +267,19 @@ function init(idPrefix,
       log.debug("No activity in the last " + (newDelayMs / 1000) + " sec, turn lights off");
       setValueAllDevicesByBehavior(lightDevices, false);
       resetLightOffTimer();
+    }, newDelayMs);
+  }
+
+  function setLogicEnableTimer(newDelayMs) {
+    dev[genVirtualDeviceName + "/curDisabledLogicTimerInSec"] = newDelayMs / 1000;
+    if (logicEnableTimerId) {
+      clearTimeout(logicEnableTimerId);
+    }
+    log.debug("Set new delay: " + (newDelayMs / 1000) + " sec and set new timer");
+    logicEnableTimerId = setTimeout(function () {
+      log.debug("No activity in the last " + (newDelayMs / 1000) + " sec, turn logic on");
+      dev[genVirtualDeviceName + "/logicDisabledByWallSwitch"] = false;
+      resetLogicEnableTimer();
     }, newDelayMs);
   }
 
@@ -251,6 +319,69 @@ function init(idPrefix,
     }
   }
 
+  function logicDisabledByWallSwitchSetter(newValue, devName, cellName) {
+    if (lightOffTimerId) {
+      clearTimeout(lightOffTimerId);
+    }
+    if (logicEnableTimerId) {
+      clearTimeout(logicEnableTimerId);
+    }
+    if (newValue === true) {
+      resetLightOffTimer();
+      setValueAllDevicesByBehavior(lightDevices, true);
+      setLightOffTimer(delayBlockAfterSwitch * 1000);
+
+      resetLogicEnableTimer();
+      setLogicEnableTimer(delayBlockAfterSwitch * 1000);
+    } else {
+      resetLightOffTimer();
+      setValueAllDevicesByBehavior(lightDevices, false);
+
+      resetLogicEnableTimer();
+    }
+  }
+
+  function lightSwitchUsed(newValue, devName, cellName) {
+    // Для выключателей считаем, что любое изменение (не важно какое)
+    // - Меняет состояние переключателя отключения логики сценария
+    log.debug("Использован выключатель");
+    var curValue = dev[genVirtualDeviceName + "/logicDisabledByWallSwitch"];
+    dev[genVirtualDeviceName + "/logicDisabledByWallSwitch"] = !curValue;
+  }
+
+  function openingSensorTriggered(newValue, devName, cellName) {
+    // Тригерит только изменение выбранное пользователем
+    // log.debug("Opening detected on sensor " + devName + "/" + cellName);
+    setValueAllDevicesByBehavior(lightDevices, true);
+    setLightOffTimer(delayByOpeningSensors * 1000);
+  }
+
+  // Предварительно извлекаем имена контролов
+  var motionSensorsControlNames = [];
+  for (var i = 0; i < motionSensors.length; i++) {
+    motionSensorsControlNames.push(motionSensors[i].mqttTopicName);
+  }
+  var openingSensorsControlNames = [];
+  for (var i = 0; i < openingSensors.length; i++) {
+    openingSensorsControlNames.push(openingSensors[i].mqttTopicName);
+  }
+  var lightSwitchesControlNames = [];
+  for (var i = 0; i < lightSwitches.length; i++) {
+    lightSwitchesControlNames.push(lightSwitches[i].mqttTopicName);
+  }
+
+
+
+  // @todo:vg осталось переделать кроме свичей еще датчики
+  eventRegistry.registerSingleEvent(genVirtualDeviceName + "/logicDisabledByWallSwitch",
+                                    "whenChange",
+                                    logicDisabledByWallSwitchSetter);
+  eventRegistry.registerMultipleEvents(lightSwitchesControlNames,
+                                       "whenChange",
+                                       lightSwitchUsed);
+  eventRegistry.registerMultipleEventsWithBehavior(openingSensors,
+                                                   openingSensorTriggered);
+
   // Обработчик, вызываемый при срабатывании датчиков движения и открытия
   function sensorTriggeredHandler(newValue, devName, cellName, sensorType) {
     // log.debug("Handler started for WB-rule: '" + genRuleNameMotion + "'");
@@ -260,10 +391,17 @@ function init(idPrefix,
     // log.debug("  - sensorType: '" + sensorType + "'");
   
     var isActive = dev[genVirtualDeviceName + "/active"];
-    if (!isActive) {
+    if (isActive === false) {
       // log.debug("Darkroom is disabled in virtual device - doing nothing");
       return true;
     }
+
+    var isSwitchUsed = dev[genVirtualDeviceName + "/logicDisabledByWallSwitch"];
+    if (isSwitchUsed === true) {
+      // log.debug("Darkroom is disabled after used wall switch - doing nothing");
+      return true;
+    }
+
 
     if (sensorType === 'motion') {
       // Найдем сенсор в списке по cellName
@@ -321,43 +459,13 @@ function init(idPrefix,
       }
     }
 
-    if (sensorType === 'opening') {
-      // Для датчика открытия считаем, что любое изменение на "открыто" запускает таймер
-      if (newValue === true) {
-        // log.debug("Opening detected on sensor " + devName + "/" + cellName);
-        setValueAllDevicesByBehavior(lightDevices, true);
-        setLightOffTimer(delayByOpeningSensors * 1000);
-      }
+    // @note: Через реестр событий пока работают два типа датчиков
+    if (sensorType === 'opening' || sensorType === 'switches') {
+      eventRegistry.processEvent(devName + '/' + cellName, newValue);
     }
 
     return true;
   }
-
-  // Предварительно извлекаем имена контролов
-  var motionSensorsControlNames = [];
-  for (var i = 0; i < motionSensors.length; i++) {
-    motionSensorsControlNames.push(motionSensors[i].mqttTopicName);
-  }
-  var openingSensorsControlNames = [];
-  for (var i = 0; i < openingSensors.length; i++) {
-    openingSensorsControlNames.push(openingSensors[i].mqttTopicName);
-  }
-
-  // Создаем правило следящее за движением
-  // Оно нужно для приведения всех датчиков движения к одному типу switch
-  //   - Тип датчиков value приведется к типу switch
-  //   - Тип датчиков switch не изменится
-  var ruleIdMotionInProgress = defineRule(genRuleNameMotionInProgress, {
-                             whenChanged: [genVirtualDeviceName + "/motionInProgress"],             
-                             then: function (newValue, devName, cellName) {
-                              motionInProgressSetter(newValue, devName, cellName);
-                            }
-                            });
-  if (!ruleIdMotionInProgress) {
-    log.error("Error: WB-rule '" + genRuleNameMotionInProgress + "' not created.");
-    return false;
-  }
-  log.debug("WB-rule with IdNum '" + genRuleNameMotionInProgress + "' was successfully created");
 
   // Создаем правило для датчиков движения
   var ruleIdMotion = defineRule(genRuleNameMotion, {
@@ -385,7 +493,52 @@ function init(idPrefix,
   }
   log.debug("WB-rule with IdNum '" + ruleIdOpening + "' was successfully created");
 
-  log.debug("Darkroom initialization completed successfully");
+  // Создаем правило для выключателей света
+  var ruleIdSwitches = defineRule(genRuleNameSwitches, {
+                              whenChanged: lightSwitchesControlNames,
+                              then: function (newValue, devName, cellName) {
+                                sensorTriggeredHandler(newValue, devName, cellName, 'switches');
+                              }
+                            });
+    if (!ruleIdSwitches) {
+    log.error("Error: WB-rule '" + genRuleNameSwitches + "' not created.");
+    return false;
+    }
+    log.debug("WB-rule with IdNum '" + ruleIdSwitches + "' was successfully created");
+
+    log.debug("Darkroom initialization completed successfully");
+
+
+  // Создаем правило следящее за движением
+  // Оно нужно для приведения всех датчиков движения к одному типу switch
+  //   - Тип датчиков value приведется к типу switch
+  //   - Тип датчиков switch не изменится
+  var ruleIdMotionInProgress = defineRule(genRuleNameMotionInProgress, {
+                             whenChanged: [genVirtualDeviceName + "/motionInProgress"],             
+                             then: function (newValue, devName, cellName) {
+                              motionInProgressSetter(newValue, devName, cellName);
+                            }
+                            });
+  if (!ruleIdMotionInProgress) {
+    log.error("Error: WB-rule '" + genRuleNameMotionInProgress + "' not created.");
+    return false;
+  }
+  log.debug("WB-rule with IdNum '" + genRuleNameMotionInProgress + "' was successfully created");
+
+  // Правило следящее за отключением логики сценария
+  var ruleIdLogicDisabledByWallSwitch = defineRule(genRuleNameLogicDisabledByWallSwitch, {
+                             whenChanged: [genVirtualDeviceName + "/logicDisabledByWallSwitch"],             
+                             then: function (newValue, devName, cellName) {
+                              logicDisabledByWallSwitchSetter(newValue, devName, cellName);
+                            }
+                            });
+  if (!ruleIdLogicDisabledByWallSwitch) {
+    log.error("Error: WB-rule '" + genRuleNameLogicDisabledByWallSwitch + "' not created.");
+    return false;
+  }
+  log.debug("WB-rule with IdNum '" + genRuleNameLogicDisabledByWallSwitch + "' was successfully created");
+
+
   return true;
 }
 
@@ -393,15 +546,19 @@ exports.init = function (idPrefix,
                          deviceTitle,
                          delayByMotionSensors,
                          delayByOpeningSensors,
+                         delayBlockAfterSwitch,
+                         lightDevices,
                          motionSensors,
                          openingSensors,
-                         lightDevices) {
+                         lightSwitches) {
   var res = init(idPrefix,
-             deviceTitle,
-             delayByMotionSensors,
-             delayByOpeningSensors,
-             motionSensors,
-             openingSensors,
-             lightDevices);
+                 deviceTitle,
+                 delayByMotionSensors,
+                 delayByOpeningSensors,
+                 delayBlockAfterSwitch,
+                 lightDevices,
+                 motionSensors,
+                 openingSensors,
+                 lightSwitches);
   return res;
 };
