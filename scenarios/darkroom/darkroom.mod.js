@@ -65,29 +65,25 @@ function init(idPrefix,
     return false;
   }
 
-  var isAllSensorsEmpty = (motionSensors.length === 0 && openingSensors.length === 0);
-  if (isAllSensorsEmpty) {
-    log.error("Darkroom initialization error: no motion or opening sensors specified.");
+  // Проверяем что хотябы один тип триггера заполнен
+  var isAllTriggersEmpty = (motionSensors.length === 0 &&
+                            openingSensors.length === 0 &&
+                            lightSwitches.length === 0);
+  if (isAllTriggersEmpty) {
+    log.error("Darkroom initialization error: no motion, opening sensors and wall switches specified.");
     return false;
   }
-
-  var isLightSwitchesEmpty = (lightSwitches.length === 0);
-  if (isLightSwitchesEmpty) {
-    log.debug("Darkroom initialization error: no wall switches specified.");
-    return false;
-  }
-
 
   // @todo: Добавить проверку типов контролов - чтобы не запускать инит с типом датчика строка где обрабатывается только цифра
 
-  log.debug("Darkroom initialization start with the following parameters:");
-  log.debug("  - delayByMotionSensors: '" + JSON.stringify(delayByMotionSensors) + "'");
-  log.debug("  - delayByOpeningSensors: '" + JSON.stringify(delayByOpeningSensors) + "'");
-  log.debug("  - delayBlockAfterSwitch: '" + JSON.stringify(delayBlockAfterSwitch) + "'");
-  log.debug("  - lightDevices: '" + JSON.stringify(lightDevices) + "'");
-  log.debug("  - motionSensors: '" + JSON.stringify(motionSensors) + "'");
-  log.debug("  - openingSensors: '" + JSON.stringify(openingSensors) + "'");
-  log.debug("  - lightSwitches: '" + JSON.stringify(lightSwitches) + "'");
+  // log.debug("Darkroom initialization start with the following parameters:");
+  // log.debug("  - delayByMotionSensors: '" + JSON.stringify(delayByMotionSensors) + "'");
+  // log.debug("  - delayByOpeningSensors: '" + JSON.stringify(delayByOpeningSensors) + "'");
+  // log.debug("  - delayBlockAfterSwitch: '" + JSON.stringify(delayBlockAfterSwitch) + "'");
+  // log.debug("  - lightDevices: '" + JSON.stringify(lightDevices) + "'");
+  // log.debug("  - motionSensors: '" + JSON.stringify(motionSensors) + "'");
+  // log.debug("  - openingSensors: '" + JSON.stringify(openingSensors) + "'");
+  // log.debug("  - lightSwitches: '" + JSON.stringify(lightSwitches) + "'");
 
   var delimeter = "_";
   var scenarioPrefix = "wbsc";
@@ -142,7 +138,7 @@ function init(idPrefix,
                                   }
                                 });
   if (!vDevObj) {
-    log.debug("Error: Virtual device '" + deviceTitle + "' not created.");
+    log.error("Error: Virtual device '" + deviceTitle + "' not created.");
     return false;
   }
   log.debug("Virtual device '" + deviceTitle + "' created successfully");
@@ -237,11 +233,9 @@ function init(idPrefix,
         newCtrlValue = aTable.actionsTable[curUserAction].resetResolver(actualValue, curActionValue);
       }
       
-      log.debug("Control " + curMqttTopicName + " will updated to state: " + newCtrlValue);
-      // log.debug("Setting light device '" + ld.mqttTopicName + "' state to: " + (state ? "ON" : "OFF"));
+      // log.debug("Control " + curMqttTopicName + " will updated to state: " + newCtrlValue);
       dev[curMqttTopicName] = newCtrlValue;
-      // dev[ld.mqttTopicName] = state ? true : false;
-      log.debug("Control " + curMqttTopicName + " successfull updated");
+      // log.debug("Control " + curMqttTopicName + " successfull updated");
     }
   }
 
@@ -262,9 +256,9 @@ function init(idPrefix,
     if (lightOffTimerId) {
       clearTimeout(lightOffTimerId);
     }
-    log.debug("Set new delay: " + (newDelayMs / 1000) + " sec and set new timer");
+    // log.debug("Set new delay: " + (newDelayMs / 1000) + " sec and set new timer");
     lightOffTimerId = setTimeout(function () {
-      log.debug("No activity in the last " + (newDelayMs / 1000) + " sec, turn lights off");
+      // log.debug("No activity in the last " + (newDelayMs / 1000) + " sec, turn lights off");
       setValueAllDevicesByBehavior(lightDevices, false);
       resetLightOffTimer();
     }, newDelayMs);
@@ -275,9 +269,9 @@ function init(idPrefix,
     if (logicEnableTimerId) {
       clearTimeout(logicEnableTimerId);
     }
-    log.debug("Set new delay: " + (newDelayMs / 1000) + " sec and set new timer");
+    // log.debug("Set new delay: " + (newDelayMs / 1000) + " sec and set new timer");
     logicEnableTimerId = setTimeout(function () {
-      log.debug("No activity in the last " + (newDelayMs / 1000) + " sec, turn logic on");
+      // log.debug("No activity in the last " + (newDelayMs / 1000) + " sec, turn logic on");
       dev[genVirtualDeviceName + "/logicDisabledByWallSwitch"] = false;
       resetLogicEnableTimer();
     }, newDelayMs);
@@ -344,7 +338,7 @@ function init(idPrefix,
   function lightSwitchUsed(newValue, devName, cellName) {
     // Для выключателей считаем, что любое изменение (не важно какое)
     // - Меняет состояние переключателя отключения логики сценария
-    log.debug("Использован выключатель");
+    // log.debug("Использован выключатель");
     var curValue = dev[genVirtualDeviceName + "/logicDisabledByWallSwitch"];
     dev[genVirtualDeviceName + "/logicDisabledByWallSwitch"] = !curValue;
   }
@@ -501,8 +495,8 @@ function init(idPrefix,
                               }
                             });
     if (!ruleIdSwitches) {
-    log.error("Error: WB-rule '" + genRuleNameSwitches + "' not created.");
-    return false;
+      log.error("Error: WB-rule '" + genRuleNameSwitches + "' not created.");
+      return false;
     }
     log.debug("WB-rule with IdNum '" + ruleIdSwitches + "' was successfully created");
 
@@ -523,7 +517,7 @@ function init(idPrefix,
     log.error("Error: WB-rule '" + genRuleNameMotionInProgress + "' not created.");
     return false;
   }
-  log.debug("WB-rule with IdNum '" + genRuleNameMotionInProgress + "' was successfully created");
+  // log.debug("WB-rule with IdNum '" + genRuleNameMotionInProgress + "' was successfully created");
 
   // Правило следящее за отключением логики сценария
   var ruleIdLogicDisabledByWallSwitch = defineRule(genRuleNameLogicDisabledByWallSwitch, {
@@ -536,7 +530,7 @@ function init(idPrefix,
     log.error("Error: WB-rule '" + genRuleNameLogicDisabledByWallSwitch + "' not created.");
     return false;
   }
-  log.debug("WB-rule with IdNum '" + genRuleNameLogicDisabledByWallSwitch + "' was successfully created");
+  // log.debug("WB-rule with IdNum '" + genRuleNameLogicDisabledByWallSwitch + "' was successfully created");
 
 
   return true;
