@@ -105,7 +105,7 @@ function init(idPrefix,
                                       readonly: true,
                                     },
                                     processErrorAlarm: {
-                                      title: {en: 'Error - see log', ru: 'Error - see log'},
+                                      title: {en: 'Error - see log', ru: 'Ошибка - смотрите лог'},
                                       type: "alarm",
                                       value: false,
                                       readonly: true,

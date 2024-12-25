@@ -214,7 +214,7 @@
               "actionValue": {
                 "type": "number",
                 "propertyOrder": 3,
-                "title": "outControls_actionValue_title",
+                "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
                 "default": 0
               }
@@ -381,7 +381,7 @@
               "actionValue": {
                 "type": "number",
                 "propertyOrder": 3,
-                "title": "outControls_actionValue_title",
+                "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
                 "default": 0,
                 "options": {
@@ -436,7 +436,7 @@
               },
               "behaviorType": {
                 "type": "string",
-                "title": "darkroomMotionSensorsObjBehaviorTypeTitle",
+                "title": "generalBehaviorTypeTitle",
                 "enum": [
                   "whileValueHigherThanThreshold",
                   "whenEnabled"
@@ -444,7 +444,7 @@
                 "options": {
                   "enum_titles": [
                     "darkroomMotionSensorsEnumWhileValue",
-                    "darkroomMotionSensorsEnumWhenEnabled"
+                    "When Enabled"
                   ]
                 },
                 "default": "whileValueHigherThanThreshold",
@@ -452,7 +452,7 @@
               },
               "actionValue": {
                 "type": "number",
-                "title": "darkroomMotionSensorsObjActionValueTitle",
+                "title": "generalActionValueTitle",
                 "default": 170,
                 "propertyOrder": 3,
                 "options": {
@@ -618,6 +618,7 @@
       "generalMqttTopicNameTitle": "MQTT topic name",
       "generalMqttTopicNameDescription": "In format: Device/Control",
       "generalBehaviorTypeTitle": "Trigger logic",
+      "generalActionValueTitle": "Value",
       "generalErrorRegexpPatternMessage": "Value must be valid",
       "generalEnumSetValue": "Set Value",
       "enable_title": "Turn on the scenario",
@@ -631,7 +632,6 @@
       "outControls_obj_title": "Action",
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_behaviorType_title": "Action logic",
-      "outControls_actionValue_title": "Value",
       "outControls_actionValue_description": "If necessary",
       "darkroomScenarioName": "Dark room",
       "darkroomScenarioDescription": "This scenario is suitable for managing lighting in bathrooms, hallways,<br>storage rooms, and other spaces where light is used briefly, and manual<br>switching is inconvenient. Using motion sensors and opening sensors,<br>the light turns on automatically when entering the room and turns off<br>after a set time once it is empty.",
@@ -644,10 +644,7 @@
       "darkroomMotionSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-motion-sensor.png\" height=\"30\">  Motion sensors</p>",
       "darkroomMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
       "darkroomMotionSensorsObjTitle": "Motion sensor",
-      "darkroomMotionSensorsObjBehaviorTypeTitle": "Sensor type",
-      "darkroomMotionSensorsEnumWhileValue": "Value numeric",
-      "darkroomMotionSensorsEnumWhenEnabled": "Discrete value",
-      "darkroomMotionSensorsObjActionValueTitle": "Threshold motion level",
+      "darkroomMotionSensorsEnumWhileValue": "When exceeding",
       "darkroomOpeningSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-opening-sensor.png\" height=\"30\">  Opening sensors</p>",
       "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
       "darkroomOpeningSensorsObjTitle": "Opening sensor",
@@ -662,6 +659,7 @@
       "generalMqttTopicNameTitle": "Имя MQTT топика",
       "generalMqttTopicNameDescription": "В формате: Устройство/Контрол",
       "generalBehaviorTypeTitle": "Логика срабатывания",
+      "generalActionValueTitle": "Значение",
       "generalErrorRegexpPatternMessage": "Значение должно быть корректным",
       "generalEnumSetValue": "Установить значение",
       "Automation scenarios": "Сценарии автоматизации",
@@ -678,12 +676,12 @@
       "outControls_obj_title": "Действие",
       "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации.",
       "outControls_behaviorType_title": "Логика действия",
-      "outControls_actionValue_title": "Значение",
       "outControls_actionValue_description": "Если необходимо",
       "Devices control": "Управление устройствами",
       "When Change": "Когда изменится",
       "When Disabled (switch)": "Когда отключилось (для переключателей)",
       "When Enabled (switch)": "Когда включилось (для переключателей)",
+      "When Enabled": "Когда включилось",
       "Toggle (switch)": "Переключить (для переключателей)",
       "Enable (switch)": "Включить (для переключателей)",
       "Disable (switch)": "Выключить (для переключателей)",
@@ -700,10 +698,8 @@
       "darkroomMotionSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-motion-sensor.png\" height=\"30\">  Датчики движения</p>",
       "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движения будет запускать автоматизацию.",
       "darkroomMotionSensorsObjTitle": "Датчик движения",
-      "darkroomMotionSensorsObjBehaviorTypeTitle": "Тип датчика",
-      "darkroomMotionSensorsEnumWhileValue": "Числовое значение",
+      "darkroomMotionSensorsEnumWhileValue": "При превышении",
       "darkroomMotionSensorsEnumWhenEnabled": "Дискретное значение",
-      "darkroomMotionSensorsObjActionValueTitle": "Пороговый уровень движения",
       "darkroomOpeningSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-opening-sensor.png\" height=\"30\">  Датчики открытия</p>",
       "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
       "darkroomOpeningSensorsObjTitle": "Датчик открытия",
