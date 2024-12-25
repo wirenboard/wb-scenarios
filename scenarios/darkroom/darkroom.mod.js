@@ -292,28 +292,7 @@ function init(idPrefix,
   }
   
 
-  // Функция которая следит за датчиками движения и устанавливает статус свича
-  // в виртуальном девайсе сценария
-  // Этот свич нужен для двух целей:
-  //   - Необходим для запуска таймера в конце детектирования движения
-  //   - Полезен для отладки и слежением за состоянием сценария в реальном времени
-  function motionInProgressSetter(newValue, devName, cellName) {
-    // log.debug("~ Motion status changed");
-
-    if (newValue === true) {
-      // log.debug("~ Motion detected - enable light and remove old timer!");
-      if (lightOffTimerId) {
-        clearTimeout(lightOffTimerId);
-      }
-      resetLightOffTimer();
-      setValueAllDevicesByBehavior(lightDevices, true);
-    } else {
-      // log.debug("~ Motion end detected - set timer for disable light!");
-      setLightOffTimer(delayByMotionSensors * 1000);
-    }
-  }
-
-  function logicDisabledByWallSwitchSetter(newValue, devName, cellName) {
+  function logicDisabledCb(newValue) {
     if (lightOffTimerId) {
       clearTimeout(lightOffTimerId);
     }
@@ -335,7 +314,7 @@ function init(idPrefix,
     }
   }
 
-  function lightSwitchUsed(newValue, devName, cellName) {
+  function lightSwitchUsedCb(newValue) {
     // Для выключателей считаем, что любое изменение (не важно какое)
     // - Меняет состояние переключателя отключения логики сценария
     // log.debug("Использован выключатель");
@@ -343,7 +322,7 @@ function init(idPrefix,
     dev[genVirtualDeviceName + "/logicDisabledByWallSwitch"] = !curValue;
   }
 
-  function openingSensorTriggered(newValue, devName, cellName) {
+  function openingSensorTriggeredCb(newValue) {
     // Тригерит только изменение выбранное пользователем
     // log.debug("Opening detected on sensor " + devName + "/" + cellName);
     setValueAllDevicesByBehavior(lightDevices, true);
@@ -364,17 +343,36 @@ function init(idPrefix,
     lightSwitchesControlNames.push(lightSwitches[i].mqttTopicName);
   }
 
-
-
   // @todo:vg осталось переделать кроме свичей еще датчики
   eventRegistry.registerSingleEvent(genVirtualDeviceName + "/logicDisabledByWallSwitch",
                                     "whenChange",
-                                    logicDisabledByWallSwitchSetter);
+                                    logicDisabledCb);
   eventRegistry.registerMultipleEvents(lightSwitchesControlNames,
                                        "whenChange",
-                                       lightSwitchUsed);
+                                       lightSwitchUsedCb);
   eventRegistry.registerMultipleEventsWithBehavior(openingSensors,
-                                                   openingSensorTriggered);
+                                                   openingSensorTriggeredCb);
+
+  // Функция которая следит за датчиками движения и устанавливает статус свича
+  // в виртуальном девайсе сценария
+  // Этот свич нужен для двух целей:
+  //   - Необходим для запуска таймера в конце детектирования движения
+  //   - Полезен для отладки и слежением за состоянием сценария в реальном времени
+  function motionInProgressHandler(newValue, devName, cellName) {
+    // log.debug("~ Motion status changed");
+
+    if (newValue === true) {
+      // log.debug("~ Motion detected - enable light and remove old timer!");
+      if (lightOffTimerId) {
+        clearTimeout(lightOffTimerId);
+      }
+      resetLightOffTimer();
+      setValueAllDevicesByBehavior(lightDevices, true);
+    } else {
+      // log.debug("~ Motion end detected - set timer for disable light!");
+      setLightOffTimer(delayByMotionSensors * 1000);
+    }
+  }
 
   // Обработчик, вызываемый при срабатывании датчиков движения и открытия
   function sensorTriggeredHandler(newValue, devName, cellName, sensorType) {
@@ -454,11 +452,20 @@ function init(idPrefix,
     }
 
     // @note: Через реестр событий пока работают два типа датчиков
-    if (sensorType === 'opening' || sensorType === 'switches') {
+    if (sensorType === 'opening') {
       eventRegistry.processEvent(devName + '/' + cellName, newValue);
     }
 
     return true;
+  }
+
+  function switchTriggeredHandler(newValue, devName, cellName) {
+    eventRegistry.processEvent(devName + '/' + cellName, newValue);
+  }
+
+  
+  function logicDisabledBySwitchHandler(newValue, devName, cellName) {
+    eventRegistry.processEvent(devName + '/' + cellName, newValue);
   }
 
   // Создаем правило для датчиков движения
@@ -491,7 +498,7 @@ function init(idPrefix,
   var ruleIdSwitches = defineRule(genRuleNameSwitches, {
                               whenChanged: lightSwitchesControlNames,
                               then: function (newValue, devName, cellName) {
-                                sensorTriggeredHandler(newValue, devName, cellName, 'switches');
+                                switchTriggeredHandler(newValue, devName, cellName);
                               }
                             });
     if (!ruleIdSwitches) {
@@ -510,7 +517,7 @@ function init(idPrefix,
   var ruleIdMotionInProgress = defineRule(genRuleNameMotionInProgress, {
                              whenChanged: [genVirtualDeviceName + "/motionInProgress"],             
                              then: function (newValue, devName, cellName) {
-                              motionInProgressSetter(newValue, devName, cellName);
+                              motionInProgressHandler(newValue, devName, cellName);
                             }
                             });
   if (!ruleIdMotionInProgress) {
@@ -523,7 +530,7 @@ function init(idPrefix,
   var ruleIdLogicDisabledByWallSwitch = defineRule(genRuleNameLogicDisabledByWallSwitch, {
                              whenChanged: [genVirtualDeviceName + "/logicDisabledByWallSwitch"],             
                              then: function (newValue, devName, cellName) {
-                              logicDisabledByWallSwitchSetter(newValue, devName, cellName);
+                              logicDisabledBySwitchHandler(newValue, devName, cellName);
                             }
                             });
   if (!ruleIdLogicDisabledByWallSwitch) {
