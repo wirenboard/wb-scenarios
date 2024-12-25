@@ -45,11 +45,6 @@ function init(idPrefix,
               openingSensors,
               lightSwitches) {
 
-  if (delayByMotionSensors <= 0) {
-    log.error("Invalid delayByMotionSensors: must be a positive number.");
-    return false;
-  }
-
   var isAllArrays =  (Array.isArray(lightDevices) &&
                       Array.isArray(motionSensors) &&
                       Array.isArray(openingSensors) &&
@@ -58,32 +53,6 @@ function init(idPrefix,
     log.error("Darkroom initialization error: lightDevices, motionSensors, openingSensors, and lightSwitches must be arrays.");
     return false;
   }
-
-  var isLightDevicesEmpty = (lightDevices.length === 0);
-  if (isLightDevicesEmpty) {
-    log.error("Darkroom initialization error: no light devices specified.");
-    return false;
-  }
-
-  // Проверяем что хотябы один тип триггера заполнен
-  var isAllTriggersEmpty = (motionSensors.length === 0 &&
-                            openingSensors.length === 0 &&
-                            lightSwitches.length === 0);
-  if (isAllTriggersEmpty) {
-    log.error("Darkroom initialization error: no motion, opening sensors and wall switches specified.");
-    return false;
-  }
-
-  // @todo: Добавить проверку типов контролов - чтобы не запускать инит с типом датчика строка где обрабатывается только цифра
-
-  // log.debug("Darkroom initialization start with the following parameters:");
-  // log.debug("  - delayByMotionSensors: '" + JSON.stringify(delayByMotionSensors) + "'");
-  // log.debug("  - delayByOpeningSensors: '" + JSON.stringify(delayByOpeningSensors) + "'");
-  // log.debug("  - delayBlockAfterSwitch: '" + JSON.stringify(delayBlockAfterSwitch) + "'");
-  // log.debug("  - lightDevices: '" + JSON.stringify(lightDevices) + "'");
-  // log.debug("  - motionSensors: '" + JSON.stringify(motionSensors) + "'");
-  // log.debug("  - openingSensors: '" + JSON.stringify(openingSensors) + "'");
-  // log.debug("  - lightSwitches: '" + JSON.stringify(lightSwitches) + "'");
 
   var delimeter = "_";
   var scenarioPrefix = "wbsc";
@@ -135,6 +104,12 @@ function init(idPrefix,
                                       value: 0,
                                       readonly: true,
                                     },
+                                    processErrorAlarm: {
+                                      title: {en: 'Error - see log', ru: 'Error - see log'},
+                                      type: "alarm",
+                                      value: false,
+                                      readonly: true,
+                                    },
                                   }
                                 });
   if (!vDevObj) {
@@ -142,6 +117,45 @@ function init(idPrefix,
     return false;
   }
   log.debug("Virtual device '" + deviceTitle + "' created successfully");
+
+  // Данный метод можно использовать только после инициализации
+  // минимального виртуального устройства
+  function setError(errorString) {
+    log.error("Rule error:" + errorString)
+    dev[genVirtualDeviceName + "/processErrorAlarm"] = true;
+  }
+
+  if (delayByMotionSensors <= 0) {
+    setError("Invalid delayByMotionSensors: must be a positive number.");
+    return false;
+  }
+
+  var isLightDevicesEmpty = (lightDevices.length === 0);
+  if (isLightDevicesEmpty) {
+    setError("Darkroom initialization error: no light devices specified.");
+    return false;
+  }
+
+  // Проверяем что хотябы один тип триггера заполнен
+  var isAllTriggersEmpty = (motionSensors.length === 0 &&
+                            openingSensors.length === 0 &&
+                            lightSwitches.length === 0);
+  if (isAllTriggersEmpty) {
+    setError("Darkroom initialization error: no motion, opening sensors and wall switches specified.");
+    return false;
+  }
+
+  // @todo: Добавить проверку типов контролов - чтобы не запускать инит с типом датчика строка где обрабатывается только цифра
+
+  // log.debug("Darkroom initialization start with the following parameters:");
+  // log.debug("  - delayByMotionSensors: '" + JSON.stringify(delayByMotionSensors) + "'");
+  // log.debug("  - delayByOpeningSensors: '" + JSON.stringify(delayByOpeningSensors) + "'");
+  // log.debug("  - delayBlockAfterSwitch: '" + JSON.stringify(delayBlockAfterSwitch) + "'");
+  // log.debug("  - lightDevices: '" + JSON.stringify(lightDevices) + "'");
+  // log.debug("  - motionSensors: '" + JSON.stringify(motionSensors) + "'");
+  // log.debug("  - openingSensors: '" + JSON.stringify(openingSensors) + "'");
+  // log.debug("  - lightSwitches: '" + JSON.stringify(lightSwitches) + "'");
+
 
   // Добавляем обработчики для датчиков, связанных с виртуальным устройством
   // @note: Если топик не существует в момент создания связи - то он не добавится
@@ -159,7 +173,7 @@ function init(idPrefix,
     var curMqttControl = lightDevices[i].mqttTopicName;
     var cellName = "light_sensor_" + i;
     if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "")) {
-      log.error("Failed to add light device control for " + curMqttControl);
+      setError("Failed to add light device control for " + curMqttControl);
     }
   }
 
@@ -172,7 +186,7 @@ function init(idPrefix,
     var curMqttControl = motionSensors[i].mqttTopicName;
     var cellName = "motion_sensor_" + i;
     if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "")) {
-      log.error("Failed to add motion sensor control for " + curMqttControl);
+      setError("Failed to add motion sensor control for " + curMqttControl);
     }
   }
 
@@ -185,7 +199,7 @@ function init(idPrefix,
     var curMqttControl = openingSensors[i].mqttTopicName;
     var cellName = "opening_sensor_" + i;
     if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "")) {
-      log.error("Failed to add opening sensor control for " + curMqttControl);
+      setError("Failed to add opening sensor control for " + curMqttControl);
     }
   }
 
@@ -198,7 +212,7 @@ function init(idPrefix,
     var curMqttControl = lightSwitches[i].mqttTopicName;
     var cellName = "light_switch_" + i;
     if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "")) {
-      log.error("Failed to add light switch control for " + curMqttControl);
+      setError("Failed to add light switch control for " + curMqttControl);
     }
   }
 
@@ -432,7 +446,7 @@ function init(idPrefix,
           // log.debug("Motion sensor type correct and disabled");
           sensorTriggered = false;
         } else {
-          // log.error("Motion sensor have not correct value: '" + newValue + "'");
+          // setError("Motion sensor have not correct value: '" + newValue + "'");
           sensorTriggered = false;
         }
       }
@@ -476,7 +490,7 @@ function init(idPrefix,
                              }
                              });
   if (!ruleIdMotion) {
-    log.error("Error: WB-rule '" + genRuleNameMotion + "' not created.");
+    setError("WB-rule '" + genRuleNameMotion + "' not created.");
     return false;
   }
   log.debug("WB-rule with IdNum '" + ruleIdMotion + "' was successfully created");
@@ -489,7 +503,7 @@ function init(idPrefix,
                              }
                              });
   if (!ruleIdOpening) {
-    log.error("Error: WB-rule '" + genRuleNameOpening + "' not created.");
+    setError("WB-rule '" + genRuleNameOpening + "' not created.");
     return false;
   }
   log.debug("WB-rule with IdNum '" + ruleIdOpening + "' was successfully created");
@@ -502,7 +516,7 @@ function init(idPrefix,
                               }
                             });
     if (!ruleIdSwitches) {
-      log.error("Error: WB-rule '" + genRuleNameSwitches + "' not created.");
+      setError("WB-rule '" + genRuleNameSwitches + "' not created.");
       return false;
     }
     log.debug("WB-rule with IdNum '" + ruleIdSwitches + "' was successfully created");
@@ -521,7 +535,7 @@ function init(idPrefix,
                             }
                             });
   if (!ruleIdMotionInProgress) {
-    log.error("Error: WB-rule '" + genRuleNameMotionInProgress + "' not created.");
+    setError("WB-rule '" + genRuleNameMotionInProgress + "' not created.");
     return false;
   }
   // log.debug("WB-rule with IdNum '" + genRuleNameMotionInProgress + "' was successfully created");
@@ -534,7 +548,7 @@ function init(idPrefix,
                             }
                             });
   if (!ruleIdLogicDisabledByWallSwitch) {
-    log.error("Error: WB-rule '" + genRuleNameLogicDisabledByWallSwitch + "' not created.");
+    setError("WB-rule '" + genRuleNameLogicDisabledByWallSwitch + "' not created.");
     return false;
   }
   // log.debug("WB-rule with IdNum '" + genRuleNameLogicDisabledByWallSwitch + "' was successfully created");
