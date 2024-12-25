@@ -158,7 +158,7 @@ function init(idPrefix,
   for (var i = 0; i < lightDevices.length; i++) {
     var curMqttControl = lightDevices[i].mqttTopicName;
     var cellName = "light_sensor_" + i;
-    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "")) {
+    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "")) {
       log.error("Failed to add light device control for " + curMqttControl);
     }
   }
@@ -171,7 +171,7 @@ function init(idPrefix,
   for (var i = 0; i < motionSensors.length; i++) {
     var curMqttControl = motionSensors[i].mqttTopicName;
     var cellName = "motion_sensor_" + i;
-    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "value", "")) {
+    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "")) {
       log.error("Failed to add motion sensor control for " + curMqttControl);
     }
   }
@@ -184,7 +184,7 @@ function init(idPrefix,
   for (var i = 0; i < openingSensors.length; i++) {
     var curMqttControl = openingSensors[i].mqttTopicName;
     var cellName = "opening_sensor_" + i;
-    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "")) {
+    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "")) {
       log.error("Failed to add opening sensor control for " + curMqttControl);
     }
   }
@@ -197,7 +197,7 @@ function init(idPrefix,
   for (var i = 0; i < lightSwitches.length; i++) {
     var curMqttControl = lightSwitches[i].mqttTopicName;
     var cellName = "light_switch_" + i;
-    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "switch", "")) {
+    if (!vdHelpers.addLinkedControlRO(curMqttControl, vDevObj, genVirtualDeviceName, cellName, "")) {
       log.error("Failed to add light switch control for " + curMqttControl);
     }
   }

@@ -21,12 +21,12 @@ function addLinkedControlRO(srcMqttControl,
                             vDevObj,
                             vDevName,
                             cellBaseName,
-                            cellType,
                             titlePrefix) {
   var cellTitle = titlePrefix + " " + srcMqttControl;
+  var srcControlType = dev[srcMqttControl + "#type"];
   vDevObj.addControl(cellBaseName, {
     title: cellTitle,
-    type: cellType,
+    type: srcControlType,
     readonly: true,
     value: dev[srcMqttControl]
   });
@@ -69,13 +69,11 @@ exports.addLinkedControlRO = function (srcMqttControl,
                                        vDevObj,
                                        vDevName,
                                        cellBaseName,
-                                       cellType,
                                        titlePrefix) {
   var res = addLinkedControlRO(srcMqttControl,
                                vDevObj,
                                vDevName,
                                cellBaseName,
-                               cellType,
                                titlePrefix);
   return res;
 };
