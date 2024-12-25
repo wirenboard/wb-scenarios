@@ -104,12 +104,6 @@ function init(idPrefix,
                                       value: 0,
                                       readonly: true,
                                     },
-                                    processErrorAlarm: {
-                                      title: {en: 'Error - see log', ru: 'Ошибка - смотрите лог'},
-                                      type: "alarm",
-                                      value: false,
-                                      readonly: true,
-                                    },
                                   }
                                 });
   if (!vDevObj) {
@@ -122,7 +116,10 @@ function init(idPrefix,
   // минимального виртуального устройства
   function setError(errorString) {
     log.error("Rule error:" + errorString)
-    dev[genVirtualDeviceName + "/processErrorAlarm"] = true;
+    vdHelpers.addAlarm(vDevObj,
+                       "processErrorAlarm",
+                       "Ошибка - смотрите лог",
+                       "Error - see log");
   }
 
   if (delayByMotionSensors <= 0) {

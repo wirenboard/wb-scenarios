@@ -65,6 +65,22 @@ function addGroupTitleRO(vDevObj,
   return true;
 }
 
+function addAlarm(vDevObj,
+                  cellBaseName,
+                  cellTitleRu,
+                  cellTitleEn) {
+  vDevObj.addControl(cellBaseName, {
+                        title: {
+                          en: cellTitleEn,
+                          ru: cellTitleRu
+                        },
+                        type: "alarm",
+                        readonly: true,
+                        value: true});
+
+  return true;
+}
+
 exports.addLinkedControlRO = function (srcMqttControl,
                                        vDevObj,
                                        vDevName,
@@ -88,5 +104,16 @@ exports.addGroupTitleRO = function (vDevObj,
                             cellBaseName,
                             cellTitleRu,
                             cellTitleEn);
+  return res;
+};
+
+exports.addAlarm = function (vDevObj,
+                             cellBaseName,
+                             cellTitleRu,
+                             cellTitleEn) {
+  var res = addAlarm(vDevObj,
+                     cellBaseName,
+                     cellTitleRu,
+                     cellTitleEn);
   return res;
 };
