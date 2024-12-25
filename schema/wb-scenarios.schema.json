@@ -83,7 +83,7 @@
           "propertyOrder": 3,
           "options": {
             "grid_columns": 12,
-            "patternmessage": "error_regexp_patternmessage"
+            "patternmessage": "generalErrorRegexpPatternMessage"
           }
         },
         "inControls": {
@@ -116,7 +116,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
-                "patternmessage": "error_regexp_patternmessage",
+                "patternmessage": "generalErrorRegexpPatternMessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -127,7 +127,7 @@
               "behaviorType": {
                 "type": "string",
                 "propertyOrder": 2,
-                "title": "inControls_behaviorType_title",
+                "title": "generalBehaviorTypeTitle",
                 "enum": [
                   "whenChange",
                   "whenDisabled",
@@ -179,7 +179,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
-                  "patternmessage": "error_regexp_patternmessage",
+                  "patternmessage": "generalErrorRegexpPatternMessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -205,7 +205,7 @@
                     "Toggle (switch)",
                     "Enable (switch)",
                     "Disable (switch)",
-                    "Set Value",
+                    "generalEnumSetValue",
                     "Increase Value By",
                     "Decrease Value By"
                   ]
@@ -294,7 +294,7 @@
           "propertyOrder": 3,
           "options": {
             "grid_columns": 12,
-            "patternmessage": "error_regexp_patternmessage"
+            "patternmessage": "generalErrorRegexpPatternMessage"
           }
         },
         "delayByMotionSensors": {
@@ -317,7 +317,7 @@
         },
         "delayBlockAfterSwitch": {
           "type": "number",
-          "title": "Длительность включения света после использования выключателя (сек)",
+          "title": "darkroomdelayBlockAfterSwitch",
           "default": 3600,
           "propertyOrder": 6,
           "options": {
@@ -354,7 +354,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
-                  "patternmessage": "error_regexp_patternmessage",
+                  "patternmessage": "generalErrorRegexpPatternMessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -374,7 +374,7 @@
                 "options": {
                   "enum_titles": [
                     "Enable (switch)",
-                    "Set Numeric Value"
+                    "generalEnumSetValue"
                   ]
                 }
               },
@@ -426,7 +426,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
-                  "patternmessage": "error_regexp_patternmessage",
+                  "patternmessage": "generalErrorRegexpPatternMessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -434,37 +434,37 @@
                 "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
                 "minLength": 3
               },
-              "sensorDataType": {
+              "behaviorType": {
                 "type": "string",
-                "title": "Sensor Data Type",
+                "title": "darkroomMotionSensorsObjBehaviorTypeTitle",
                 "enum": [
-                  "valueNumericMotSensor",
-                  "boolMotSensor"
+                  "whileValueHigherThanThreshold",
+                  "whenEnabled"
                 ],
                 "options": {
                   "enum_titles": [
-                    "darkroomMotionSensorsEnumValNum",
-                    "darkroomMotionSensorsEnumBool"
+                    "darkroomMotionSensorsEnumWhileValue",
+                    "darkroomMotionSensorsEnumWhenEnabled"
                   ]
                 },
-                "default": "valueNumericMotSensor",
+                "default": "whileValueHigherThanThreshold",
                 "propertyOrder": 2
               },
-              "thresholdMotionLevel": {
+              "actionValue": {
                 "type": "number",
-                "title": "darkroomMotionSensorsObjThresholdTitle",
+                "title": "darkroomMotionSensorsObjActionValueTitle",
                 "default": 170,
                 "propertyOrder": 3,
                 "options": {
                   "dependencies": {
-                    "sensorDataType": ["valueNumericMotSensor"]
+                    "behaviorType": ["whileValueHigherThanThreshold"]
                   }
                 }
               }
             },
             "required": [
               "mqttTopicName",
-              "sensorDataType"
+              "behaviorType"
             ]
           }
         },
@@ -497,7 +497,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
-                  "patternmessage": "error_regexp_patternmessage",
+                  "patternmessage": "generalErrorRegexpPatternMessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -508,7 +508,7 @@
               "behaviorType": {
                 "type": "string",
                 "propertyOrder": 2,
-                "title": "inControls_behaviorType_title",
+                "title": "generalBehaviorTypeTitle",
                 "enum": [
                   "whenDisabled",
                   "whenEnabled"
@@ -516,8 +516,8 @@
                 "default": "whenEnabled",
                 "options": {
                   "enum_titles": [
-                    "When Disabled",
-                    "When Enabled"
+                    "darkroomOpeningSensorsEnumWhenDisabled",
+                    "darkroomOpeningSensorsEnumWhenEnabled"
                   ]
                 }
               }
@@ -532,7 +532,7 @@
           "type": "array",
           "title": "darkroomLightSwitchesArrTitle",
           "_title_note": "When options-> compact: true - this title not shown",
-          "description": "Выключатели - можно указывать любой тип топика. Срабатывает по изменению - включает свет на установленную выше задержку игнорируя другие датчики.",
+          "description": "darkroomLightSwitchesArrDescription",
           "propertyOrder": 10,
           "_format": "table",
           "options": {
@@ -546,7 +546,7 @@
             }
           },
           "items": {
-            "title": "Выключатель",
+            "title": "darkroomLightSwitchesObjTitle",
             "type": "object",
             "properties": {
               "mqttTopicName": {
@@ -557,7 +557,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
-                  "patternmessage": "error_regexp_patternmessage",
+                  "patternmessage": "generalErrorRegexpPatternMessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -617,6 +617,9 @@
       "generalScenarioName": "Scenario name",
       "generalMqttTopicNameTitle": "MQTT topic name",
       "generalMqttTopicNameDescription": "In format: Device/Control",
+      "generalBehaviorTypeTitle": "Trigger logic",
+      "generalErrorRegexpPatternMessage": "Value must be valid",
+      "generalEnumSetValue": "Set Value",
       "enable_title": "Turn on the scenario",
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "id_prefix_title": "MQTT id of the device",
@@ -624,36 +627,43 @@
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
-      "inControls_behaviorType_title": "Trigger logic",
       "outControls_arr_title": "Actions",
       "outControls_obj_title": "Action",
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_title": "Value",
       "outControls_actionValue_description": "If necessary",
-      "error_regexp_patternmessage": "Value must be valid",
       "darkroomScenarioName": "Dark room",
-      "darkroomScenarioDescription": "The script allows you to control dark room",
+      "darkroomScenarioDescription": "This scenario is suitable for managing lighting in bathrooms, hallways,<br>storage rooms, and other spaces where light is used briefly, and manual<br>switching is inconvenient. Using motion sensors and opening sensors,<br>the light turns on automatically when entering the room and turns off<br>after a set time once it is empty.",
       "darkroomDelayByMotionSensorsTitle": "Turn-off delay when motion sensors are triggered (seconds)",
       "darkroomDelayByOpeningSensorsTitle": "Turn-off delay when opening sensors are triggered (seconds)",
+      "darkroomdelayBlockAfterSwitch": "Turn-on delay for the light and scenario logic execution after using the switch (seconds)",
       "darkroomLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-devices.png\" height=\"30\">  Light devices</p>",
       "darkroomLightDevicesArrDescription": "This list of light devices will be enabled sequentially when the automation is triggered.",
       "darkroomLightDevicesObjTitle": "Light device",
       "darkroomMotionSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-motion-sensor.png\" height=\"30\">  Motion sensors</p>",
       "darkroomMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
       "darkroomMotionSensorsObjTitle": "Motion sensor",
-      "darkroomMotionSensorsEnumValNum": "Value numeric",
-      "darkroomMotionSensorsEnumBool": "Boolean / String: 'true', 'false'",
-      "darkroomMotionSensorsObjThresholdTitle": "Threshold motion level",
+      "darkroomMotionSensorsObjBehaviorTypeTitle": "Sensor type",
+      "darkroomMotionSensorsEnumWhileValue": "Value numeric",
+      "darkroomMotionSensorsEnumWhenEnabled": "Discrete value",
+      "darkroomMotionSensorsObjActionValueTitle": "Threshold motion level",
       "darkroomOpeningSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-opening-sensor.png\" height=\"30\">  Opening sensors</p>",
       "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
       "darkroomOpeningSensorsObjTitle": "Opening sensor",
-      "darkroomLightSwitchesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Light switches</p>"
+      "darkroomOpeningSensorsEnumWhenDisabled": "When disabled",
+      "darkroomOpeningSensorsEnumWhenEnabled": "When ebabled",
+      "darkroomLightSwitchesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Light switches</p>",
+      "darkroomLightSwitchesArrDescription": "When the switch is pressed, the light turns on, and automatic light control is paused.<br>The control logic is automatically restored after a set time or upon pressing the switch again.",
+      "darkroomLightSwitchesObjTitle": "Switch"
     },
     "ru": {
       "generalScenarioName": "Название сценария",
       "generalMqttTopicNameTitle": "Имя MQTT топика",
       "generalMqttTopicNameDescription": "В формате: Устройство/Контрол",
+      "generalBehaviorTypeTitle": "Логика срабатывания",
+      "generalErrorRegexpPatternMessage": "Значение должно быть корректным",
+      "generalEnumSetValue": "Установить значение",
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
@@ -664,14 +674,12 @@
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
-      "inControls_behaviorType_title": "Логика срабатывания",
       "outControls_arr_title": "Действия",
       "outControls_obj_title": "Действие",
       "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации.",
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_title": "Значение",
       "outControls_actionValue_description": "Если необходимо",
-      "error_regexp_patternmessage": "Значение должно быть корректным",
       "Devices control": "Управление устройствами",
       "When Change": "Когда изменится",
       "When Disabled (switch)": "Когда отключилось (для переключателей)",
@@ -679,26 +687,31 @@
       "Toggle (switch)": "Переключить (для переключателей)",
       "Enable (switch)": "Включить (для переключателей)",
       "Disable (switch)": "Выключить (для переключателей)",
-      "Set Value": "Установить значение",
       "Increase Value By": "Увеличить значение на",
       "Decrease Value By": "Уменьшить  значение на",
       "darkroomScenarioName": "Темная комната",
-      "darkroomScenarioDescription": "Сценарий позволяет управлять темной комнатой",
+      "darkroomScenarioDescription": "Сценарий подходит для управления освещением в ванных комнатах, коридорах,<br>кладовках и других помещениях,где свет используется кратковременно, а ручное<br>включение неудобно. Благодаря использованию датчиков движения и датчиков<br>открытия, свет автоматически включается при входе в помещение и выключается<br>через заданное время после того, как оно становится пустым.",
       "darkroomDelayByMotionSensorsTitle": "Задержка отключения при срабатывании датчиков движения (секунды)",
       "darkroomDelayByOpeningSensorsTitle": "Задержка отключения при срабатывании датчиков открытия (секунды)",
+      "darkroomdelayBlockAfterSwitch": "Задержка включения света и логики сценария после использования выключателя (секунды)",
       "darkroomLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-devices.png\" height=\"30\">  Устройства освещения</p>",
       "darkroomLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
       "darkroomLightDevicesObjTitle": "Устройство освещения",
       "darkroomMotionSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-motion-sensor.png\" height=\"30\">  Датчики движения</p>",
-      "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движени будет запускать автоматизацию.",
+      "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движения будет запускать автоматизацию.",
       "darkroomMotionSensorsObjTitle": "Датчик движения",
-      "darkroomMotionSensorsEnumValNum": "Числовое значение",
-      "darkroomMotionSensorsEnumBool": "Булево значение / Строка: 'true', 'false'",
-      "darkroomMotionSensorsObjThresholdTitle": "Пороговый уровень движения",
+      "darkroomMotionSensorsObjBehaviorTypeTitle": "Тип датчика",
+      "darkroomMotionSensorsEnumWhileValue": "Числовое значение",
+      "darkroomMotionSensorsEnumWhenEnabled": "Дискретное значение",
+      "darkroomMotionSensorsObjActionValueTitle": "Пороговый уровень движения",
       "darkroomOpeningSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-opening-sensor.png\" height=\"30\">  Датчики открытия</p>",
       "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
       "darkroomOpeningSensorsObjTitle": "Датчик открытия",
-      "darkroomLightSwitchesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Выключатели света</p>"
+      "darkroomOpeningSensorsEnumWhenDisabled": "Когда отключилось",
+      "darkroomOpeningSensorsEnumWhenEnabled": "Когда включилось",
+      "darkroomLightSwitchesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Выключатели света</p>",
+      "darkroomLightSwitchesArrDescription": "При нажатии выключателя свет включается, а автоматическое управление<br>светом приостанавливается. Логика управления восстанавливается автоматически<br>через заданное время или после повторного нажатия выключателя.",
+      "darkroomLightSwitchesObjTitle": "Выключатель"
     }
   }
 }

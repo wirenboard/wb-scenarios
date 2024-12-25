@@ -421,15 +421,15 @@ function init(idPrefix,
        *   - string - что новая строка 'true'
        */
       var sensorTriggered = false;
-      if (matchedSensor.sensorDataType === "valueNumericMotSensor") {
-            if (newValue >= matchedSensor.thresholdMotionLevel) {
+      if (matchedSensor.behaviorType === "whileValueHigherThanThreshold") {
+            if (newValue >= matchedSensor.actionValue) {
               // log.debug("Motion start on sensor " + matchedSensor.mqttTopicName);
               sensorTriggered = true;
-            } else if (newValue < matchedSensor.thresholdMotionLevel) {
+            } else if (newValue < matchedSensor.actionValue) {
               // log.debug("Motion stop on sensor " + matchedSensor.mqttTopicName);
               sensorTriggered = false;
             }
-      } else if (matchedSensor.sensorDataType === "boolMotSensor") {
+      } else if (matchedSensor.behaviorType === "whenEnabled") {
         if (newValue === true) {
           // log.debug("Motion sensor type - bool");
           sensorTriggered = true;
