@@ -32,7 +32,7 @@ MODULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-modules
 
 # Поиск папок сценариев внутри папки scenarios
 SCENARIO_DIRS := $(wildcard $(SCENARIOS_ROOT)*)
-SRC_MODULE_FILES := $(wildcard dir/*.mod.js)  # Новая строка для поиска файлов в директории `dir`
+SRC_MODULE_FILES := $(wildcard $(SRC_DIR)*.mod.js)
 
 # @note: Потенциально могут быть пробелы и спец символы в именах файлов
 #        или папок - можно сделать проверку перед началом работы
@@ -76,7 +76,7 @@ install:
 	@if [ -z "$(SRC_MODULE_FILES)" ]; then \
 		echo "No .mod.js files found in dir."; \
 	else \
-		$(foreach file,$(DIR_FILES),\
+		$(foreach file,$(SRC_MODULE_FILES),\
 			echo "Copying module file $(file) to $(MODULES_DEST)";\
 			install -Dm644 $(file) -t $(MODULES_DEST);) \
 	fi
