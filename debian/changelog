@@ -1,3 +1,9 @@
+wb-scenarios (1.0.7) stable; urgency=medium
+
+  * feat: implement new scenario for darkroom
+
+ -- Vitalii Gaponov <vitalii.gaponov@wirenboard.com>  Thu, 26 Dec 2024 10:00:00 +0300
+
 wb-scenarios (1.0.6) stable; urgency=medium
 
   * fix: ignored device settings in control scenarios, improves error logging
