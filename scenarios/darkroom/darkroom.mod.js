@@ -262,21 +262,10 @@ function init(idPrefix,
   function buildVirtualDeviceCells() {
     var cells = {
           active: {
-            title: {en: 'Activate rule', ru: 'Активировать правило'},
+            title: {en: 'Activate rule?', ru: 'Активировать правило?'},
             type: "switch",
-            value: true
-          },
-          motionInProgress: {
-            title: {en: 'Motion in progress', ru: 'Движение в процессе'},
-            type: "switch",
-            value: false,
-            readonly: true,
-          },
-          logicDisabledByWallSwitch: {
-            title: {en: 'Disabled by switch', ru: 'Отключена выключателем'},
-            type: "switch",
-            value: false,
-            readonly: true,
+            value: true,
+            order: 1
           },
           // Текущая задержка, меняется в зависимости от последнего сработавшего типа датчика
           curDisableLightTimerInSec: {
@@ -284,6 +273,7 @@ function init(idPrefix,
             type: "value",
             value: 0,
             readonly: true,
+            order: 2
           },
           // Текущая задержка отключенной логики
           curDisabledLogicTimerInSec: {
@@ -291,6 +281,21 @@ function init(idPrefix,
             type: "value",
             value: 0,
             readonly: true,
+            order: 3
+          },
+          motionInProgress: {
+            title: {en: 'Motion in progress', ru: 'Есть движение'},
+            type: "switch",
+            value: false,
+            readonly: true,
+            order: 4
+          },
+          logicDisabledByWallSwitch: {
+            title: {en: 'Disabled manually by switch', ru: 'Отключено ручным выключателем'},
+            type: "switch",
+            value: false,
+            readonly: true,
+            order: 5
           },
         };
     return cells;
