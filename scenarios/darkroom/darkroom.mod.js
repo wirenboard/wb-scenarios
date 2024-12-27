@@ -32,6 +32,7 @@ var eventModule = require("registry-event-processing.mod");
  */
 function init(idPrefix,
               deviceTitle,
+              isDebugEnabled,
               delayByMotionSensors,
               delayByOpeningSensors,
               delayBlockAfterSwitch,
@@ -89,40 +90,58 @@ function init(idPrefix,
   // @todo: Добавить проверку типов контролов - чтобы не запускать init
   //        с типом датчика строка где обрабатывается только цифра
 
-  // Добавляем обработчики для датчиков, связанных с виртуальным устройством
-  // @note: Если топик не существует в момент создания связи - то он не добавится
-  //        в виртуальное устройство - это актуально при создании сценариев с
-  //        использованием других сценариев и других виртуальных устройств
-  //        если реальные устройства создаются и существуют постоянно - то
-  //        wb-rules не гарантирует порядок инициализации виртуальных устройств
-  // @fixme: попробовать это как то поправить
-  vdHelpers.addGroupTitleRO(vDevObj,
-                            genNames.vDevice,
-                            "lightDevicesTitle",
-                            "Устройства освещения",
-                            "Light devices");
-  addLinkedControlsArray(lightDevices, "light_sensor");
+  if(isDebugEnabled === true)
+  {
+    /** Добавляем отображение текущего статуса датчиков связанных
+     * с виртуальным устройством
+     * 
+     * @note: Если топик не существует в момент создания связи - то он не добавится
+     *        в виртуальное устройство - это актуально при создании сценариев с
+     *        использованием других сценариев и других виртуальных устройств
+     *        если реальные устройства создаются и существуют постоянно - то
+     *        wb-rules не гарантирует порядок инициализации виртуальных устройств
+     * @fixme: попробовать это как то поправить
+     */
 
-  vdHelpers.addGroupTitleRO(vDevObj,
-                            genNames.vDevice,
-                            "motionSensorsTitle",
-                            "Датчики движения",
-                            "Motion sensors");
-  addLinkedControlsArray(motionSensors, "motion_sensor");
+    var titlePrefix = "▼  ";
+    var titlePostfix = ":";
 
-  vdHelpers.addGroupTitleRO(vDevObj,
-                            genNames.vDevice,
-                            "openingSensorsTitle",
-                            "Датчики открытия",
-                            "Opening sensors");
-  addLinkedControlsArray(openingSensors, "opening_sensor");
+    vdHelpers.addGroupTitleRO(vDevObj,
+      genNames.vDevice,
+      "debugTitle",
+      "☢ ☢ Debug info ☢ ☢",
+      "☢ ☢ Отладочная информация ☢ ☢");
 
-  vdHelpers.addGroupTitleRO(vDevObj,
-                            genNames.vDevice,
-                            "lightSwitchesTitle",
-                            "Выключатели света",
-                            "Light switches");
-  addLinkedControlsArray(lightSwitches, "light_switch");
+    vdHelpers.addGroupTitleRO(vDevObj,
+                              genNames.vDevice,
+                              "lightDevicesTitle",
+                              titlePrefix + "Устройства освещения" + titlePostfix,
+                              titlePrefix + "Light devices" + titlePostfix);
+    addLinkedControlsArray(lightDevices, "light_sensor");
+
+    vdHelpers.addGroupTitleRO(vDevObj,
+                              genNames.vDevice,
+                              "motionSensorsTitle",
+                              titlePrefix + "Датчики движения" + titlePostfix,
+                              titlePrefix + "Motion sensors" + titlePostfix);
+    addLinkedControlsArray(motionSensors, "motion_sensor");
+
+    vdHelpers.addGroupTitleRO(vDevObj,
+                              genNames.vDevice,
+                              "openingSensorsTitle",
+                              titlePrefix + "Датчики открытия" + titlePostfix,
+                              titlePrefix + "Opening sensors" + titlePostfix);
+    addLinkedControlsArray(openingSensors, "opening_sensor");
+
+    vdHelpers.addGroupTitleRO(vDevObj,
+                              genNames.vDevice,
+                              "lightSwitchesTitle",
+                              titlePrefix + "Выключатели света" + titlePostfix,
+                              titlePrefix + "Light switches" + titlePostfix);
+    addLinkedControlsArray(lightSwitches, "light_switch");
+  } else {
+    log.debug("Debug disabled and have value: '" + isDebugEnabled + "'");
+  }
 
   var eventRegistry = eventModule.createRegistryForEvents();
   // ID таймера выключения света
@@ -246,12 +265,6 @@ function init(idPrefix,
             title: {en: 'Activate rule', ru: 'Активировать правило'},
             type: "switch",
             value: true
-          },
-          analazeTitle: {
-            title: {en: '>  Progress info:', ru: '>  Информация о выполнении:'},
-            type: "text",
-            value: "",
-            readonly: true,
           },
           motionInProgress: {
             title: {en: 'Motion in progress', ru: 'Движение в процессе'},
@@ -540,6 +553,7 @@ function init(idPrefix,
 
 exports.init = function (idPrefix,
                          deviceTitle,
+                         isDebugEnabled,
                          delayByMotionSensors,
                          delayByOpeningSensors,
                          delayBlockAfterSwitch,
@@ -549,6 +563,7 @@ exports.init = function (idPrefix,
                          lightSwitches) {
   var res = init(idPrefix,
                  deviceTitle,
+                 isDebugEnabled,
                  delayByMotionSensors,
                  delayByOpeningSensors,
                  delayBlockAfterSwitch,

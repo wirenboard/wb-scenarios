@@ -55,8 +55,8 @@ function addGroupTitleRO(vDevObj,
                          cellTitleEn) {
   vDevObj.addControl(cellBaseName, {
                      title: {
-                       en: ">  " + cellTitleEn + ":",
-                       ru: ">  " + cellTitleRu + ":"
+                       en: cellTitleEn,
+                       ru: cellTitleRu
                      },
                      type: "text",
                      readonly: true,

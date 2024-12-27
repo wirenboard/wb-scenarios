@@ -28,7 +28,7 @@
         "keep_oneof_values": false,
         "disable_collapse": true,
         "disable_edit_json": true,
-        "disable_properties": true,
+        "disable_properties": false,
         "wb": {
           "disable_panel": true
         }
@@ -51,7 +51,7 @@
           }
         },
         "enable": {
-          "title": "enable_title",
+          "title": "generalScenarioEnableTitle",
           "type": "boolean",
           "default": true,
           "_format": "checkbox",
@@ -240,6 +240,9 @@
       "type": "object",
       "description": "darkroomScenarioDescription",
       "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
       "properties": {
         "componentVersion": {
           "type": "integer",
@@ -262,11 +265,21 @@
           }
         },
         "enable": {
-          "title": "enable_title",
+          "title": "generalScenarioEnableTitle",
           "type": "boolean",
           "default": true,
           "_format": "checkbox",
           "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "isDebugEnabled": {
+          "title": "generalScenarioIsDebugEnabled",
+          "type": "boolean",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 2,
           "options": {
             "grid_columns": 12
           }
@@ -277,7 +290,7 @@
           "default": "Темная комната",
           "minLength": 1,
           "maxLength": 120,
-          "propertyOrder": 2,
+          "propertyOrder": 3,
           "options": {
             "grid_columns": 12
           }
@@ -291,7 +304,7 @@
           "default": "darkroom",
           "minLength": 1,
           "maxLength": 120,
-          "propertyOrder": 3,
+          "propertyOrder": 4,
           "options": {
             "grid_columns": 12,
             "patternmessage": "generalErrorRegexpPatternMessage"
@@ -301,7 +314,7 @@
           "type": "number",
           "title": "darkroomDelayByMotionSensorsTitle",
           "default": 120,
-          "propertyOrder": 4,
+          "propertyOrder": 5,
           "options": {
             "grid_columns": 12
           }
@@ -310,7 +323,7 @@
           "type": "number",
           "title": "darkroomDelayByOpeningSensorsTitle",
           "default": 180,
-          "propertyOrder": 5,
+          "propertyOrder": 6,
           "options": {
             "grid_columns": 12
           }
@@ -319,7 +332,7 @@
           "type": "number",
           "title": "darkroomdelayBlockAfterSwitch",
           "default": 3600,
-          "propertyOrder": 6,
+          "propertyOrder": 7,
           "options": {
             "grid_columns": 12
           }
@@ -330,7 +343,7 @@
           "_title_note": "When options-> compact: true - this title not shown",
           "description": "darkroomLightDevicesArrDescription",
           "minItems": 1,
-          "propertyOrder": 7,
+          "propertyOrder": 8,
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -402,7 +415,7 @@
           "title": "darkroomMotionSensorsArrTitle",
           "_title_note": "When options-> compact: true - this title not shown",
           "description": "darkroomMotionSensorsArrDescription",
-          "propertyOrder": 8,
+          "propertyOrder": 9,
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -473,7 +486,7 @@
           "title": "darkroomOpeningSensorsArrTitle",
           "_title_note": "When options-> compact: true - this title not shown",
           "description": "darkroomOpeningSensorsArrDescription",
-          "propertyOrder": 9,
+          "propertyOrder": 10,
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -533,7 +546,7 @@
           "title": "darkroomLightSwitchesArrTitle",
           "_title_note": "When options-> compact: true - this title not shown",
           "description": "darkroomLightSwitchesArrDescription",
-          "propertyOrder": 10,
+          "propertyOrder": 11,
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -573,13 +586,18 @@
         }
       },
       "required": [
+        "componentVersion",
         "scenarioType",
         "enable",
         "name",
         "id_prefix",
+        "delayByMotionSensors",
+        "delayByOpeningSensors",
+        "delayBlockAfterSwitch",
         "motionSensors",
         "openingSensors",
-        "lightDevices"
+        "lightDevices",
+        "lightSwitches"
       ]
     }
   },
@@ -610,10 +628,13 @@
     }
   },
   "required": [
+    "configVersion",
     "scenarios"
   ],
   "translations": {
     "en": {
+      "generalScenarioEnableTitle": "Turn on the scenario",
+      "generalScenarioIsDebugEnabled": "Turn on the debug",
       "generalScenarioName": "Scenario name",
       "generalMqttTopicNameTitle": "MQTT topic name",
       "generalMqttTopicNameDescription": "In format: Device/Control",
@@ -621,7 +642,6 @@
       "generalActionValueTitle": "Value",
       "generalErrorRegexpPatternMessage": "Value must be valid",
       "generalEnumSetValue": "Set Value",
-      "enable_title": "Turn on the scenario",
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "id_prefix_title": "MQTT id of the device",
       "id_prefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
@@ -655,6 +675,8 @@
       "darkroomLightSwitchesObjTitle": "Switch"
     },
     "ru": {
+      "generalScenarioEnableTitle": "Включить сценарий",
+      "generalScenarioIsDebugEnabled": "Включить отладку",
       "generalScenarioName": "Название сценария",
       "generalMqttTopicNameTitle": "Имя MQTT топика",
       "generalMqttTopicNameDescription": "В формате: Устройство/Контрол",
@@ -665,7 +687,6 @@
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
-      "enable_title": "Включить сценарий",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
       "id_prefix_title": "Идентификатор устройства в MQTT",
       "id_prefix_description": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
