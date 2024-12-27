@@ -45,17 +45,17 @@ var registryEventResolvers = {
   'whenChange': {
     reqCtrlTypes: ['switch', 'value'],
     launchResolver: whenChange,
-    resetResolver: null
+    resetResolver: null   // Не существует противоположного события
   },
   'whenDisabled': {
     reqCtrlTypes: ['switch'],
     launchResolver: whenDisabled,
-    resetResolver: null
+    resetResolver: whenEnabled
   },
   'whenEnabled': {
     reqCtrlTypes: ['switch'],
     launchResolver: whenEnabled,
-    resetResolver: null
+    resetResolver: whenDisabled
   }
 };
 
