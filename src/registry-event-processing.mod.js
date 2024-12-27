@@ -95,9 +95,7 @@ function createRegistryForEvents() {
 
     registerSingleEvent(mqttTopicName, behaviorType, callback);
   }
-   
 
-    // @todo  
   /**
    * Регистрирует события для массива объектов с настройками MQTT-топиков,
    * основываясь на behaviorType
@@ -117,75 +115,77 @@ function createRegistryForEvents() {
   }
   
   /**
-  * Обрабатывает все события для указанного топика, которые произошли
-  *
-  * @param {string} topic - Имя MQTT топика
-  * @param {any} value - Новое значение топика
-  * @returns {Object} - Статус обработки:
-  *                     { 
-  *                       status: "success" | "no_events_registered" | "topic_not_found",
-  *                       message: string
-  *                     }
-  */
-  function processEvent(topic, value) {
-    var topicEvents = registry[topic];
+   * Обрабатывает все события для указанного топика, которые произошли
+   *
+   * @param {string} topic - Имя MQTT топика
+   * @param {any} value - Новое значение топика
+   * @returns {Object} - Статус обработки:
+   *                     { 
+   *                       status: "success" | "no_events_registered" | "topic_not_found",
+   *                       message: string
+   *                     }
+   */
+function processEvent(topic, value) {
+  var res;
+  var topicEvents = registry[topic];
 
-    // Проверяем, существует ли указанный топик приведя к булевому типу
-    var topicExists = !!topicEvents;
-    if (!topicExists) {
-      res = { status: "topic_not_found",
-              message: "Topic '" + topic + "' not found in the registry" };
-      return res;
-    }
-
-    var hasProcessed = false;
-
-    for (var curEventType in topicEvents) {
-      var resolver = eResolvers.registryEventResolvers[curEventType];
-      var isResolverValid = resolver &&
-                            typeof resolver.launchResolver === "function";
-
-      if (!isResolverValid) {
-        log.error("Resolver not found for event type '" + curEventType + "'");
-        continue;
-      }
-
-      var isTriggered = resolver.launchResolver(value);
-      if (!isTriggered) {
-        log.debug(
-          "Resolver rejected event '" + curEventType +
-          "' for topic '" + topic + "'"
-        );
-        continue;
-      }
-      hasProcessed = true;
-
-      var event = topicEvents[curEventType];
-      var isCallbackValid = event && typeof event.callback === "function";
-
-      if (isCallbackValid) {
-        // log.debug(
-        //   "Executing callback for topic '" + topic +
-        //   "', event type '" + curEventType + "'"
-        // );
-        event.callback(value);
-      } else {
-        log.error(
-          "Callback not found for topic '" + topic +
-          "', event type '" + curEventType + "'"
-        );
-      }
-    }
-
-    if (hasProcessed) {
-      res = { status: "success",
-              message: "Events processed successfully" };
-    } else {
-      res = { status: "no_events_registered",
-              message: "No events were processed for the topic" };
-    }
+  // Проверяем, существует ли указанный топик приведя к булевому типу
+  var topicExists = !!topicEvents;
+  if (!topicExists) {
+    res = { status: "topic_not_found",
+            message: "Topic '" + topic + "' not found in the registry" };
     return res;
   }
+
+  var hasProcessed = false;
+
+  for (var curEventType in topicEvents) {
+    var resolver = eResolvers.registryEventResolvers[curEventType];
+    var isResolverValid = resolver &&
+                          typeof resolver.launchResolver === "function";
+
+    if (!isResolverValid) {
+      log.error("Resolver not found for event type '" + curEventType + "'");
+      continue;
+    }
+
+    var isTriggered = resolver.launchResolver(value);
+    if (!isTriggered) {
+      // log.debug(
+      //   "Resolver rejected event '" + curEventType +
+      //   "' for topic '" + topic + "'"
+      // );
+      continue;
+    }
+
+    var eventObj = topicEvents[curEventType];
+    var isCallbackValid = eventObj && typeof eventObj.callback === "function";
+
+    if (isCallbackValid) {
+      // log.debug(
+      //   "Executing callback for topic '" + topic +
+      //   "', event type '" + curEventType + "'"
+      // );
+      eventObj.callback(value);
+      hasProcessed = true;
+    } else {
+      log.error(
+        "Callback not found for topic '" + topic +
+        "', event type '" + curEventType + "'"
+      );
+    }
+  }
+
+  if (hasProcessed) {
+    res = { status: "success",
+            message: "Events processed successfully" };
+    return res;
+  }
+
+  res = { status: "no_events_registered",
+          message: "No events were processed for the topic" };
+  return res;
+}
 
   /**
   * Возвращает отладочное представление реестра
