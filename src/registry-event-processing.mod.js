@@ -121,19 +121,29 @@ function createRegistryForEvents() {
   *
   * @param {string} topic - Имя MQTT топика
   * @param {any} value - Новое значение топика
+  * @returns {Object} - Статус обработки:
+  *                     { 
+  *                       status: "success" | "no_events_registered" | "topic_not_found",
+  *                       message: string
+  *                     }
   */
   function processEvent(topic, value) {
     var topicEvents = registry[topic];
+
+    // Проверяем, существует ли указанный топик приведя к булевому типу
     var topicExists = !!topicEvents;
     if (!topicExists) {
-      log.debug("No events registered for topic '" + topic + "'");
-      return;
+      res = { status: "topic_not_found",
+              message: "Topic '" + topic + "' not found in the registry" };
+      return res;
     }
+
+    var hasProcessed = false;
 
     for (var curEventType in topicEvents) {
       var resolver = eResolvers.registryEventResolvers[curEventType];
-      var isResolverValid = resolver && typeof resolver.launchResolver ===
-        "function";
+      var isResolverValid = resolver &&
+                            typeof resolver.launchResolver === "function";
 
       if (!isResolverValid) {
         log.error("Resolver not found for event type '" + curEventType + "'");
@@ -143,11 +153,12 @@ function createRegistryForEvents() {
       var isTriggered = resolver.launchResolver(value);
       if (!isTriggered) {
         log.debug(
-          "Resolver rejected event '" + curEventType + "' for topic '" + topic
-          + "'"
+          "Resolver rejected event '" + curEventType +
+          "' for topic '" + topic + "'"
         );
         continue;
       }
+      hasProcessed = true;
 
       var event = topicEvents[curEventType];
       var isCallbackValid = event && typeof event.callback === "function";
@@ -160,11 +171,20 @@ function createRegistryForEvents() {
         event.callback(value);
       } else {
         log.error(
-          "Callback not found for topic '" + topic + "', event type '" +
-          curEventType + "'"
+          "Callback not found for topic '" + topic +
+          "', event type '" + curEventType + "'"
         );
       }
     }
+
+    if (hasProcessed) {
+      res = { status: "success",
+              message: "Events processed successfully" };
+    } else {
+      res = { status: "no_events_registered",
+              message: "No events were processed for the topic" };
+    }
+    return res;
   }
 
   /**
