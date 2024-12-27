@@ -157,6 +157,9 @@ function init(idPrefix,
   eventRegistry.registerSingleEvent(genNames.vDevice + "/logicDisabledByWallSwitch",
                                     "whenChange",
                                     logicDisabledCb);
+  eventRegistry.registerSingleEvent(genNames.vDevice + "/lightOn",
+                                    "whenChange",
+                                    lightOnCb);
   eventRegistry.registerMultipleEvents(lightSwitchesControlNames,
                                        "whenChange",
                                        lightSwitchUsedCb);
@@ -217,6 +220,19 @@ function init(idPrefix,
     return false;
   }
   log.debug("WB-rule with IdNum '" + genNames.ruleMotionInProgress + "' was successfully created");
+ 
+  // Правило следящее за состоянием света
+  var ruleIdLightOn = defineRule(genNames.ruleLightOn, {
+                             whenChanged: [genNames.vDevice + "/lightOn"],             
+                             then: function (newValue, devName, cellName) {
+                              lightOnHandler(newValue, devName, cellName);
+                            }
+                            });
+  if (!ruleIdLightOn) {
+    setError("WB-rule '" + genNames.ruleLightOn + "' not created");
+    return false;
+  }
+  log.debug("WB-rule with IdNum '" + genNames.ruleLightOn + "' was successfully created");
 
   // Правило следящее за отключением логики сценария
   var ruleIdLogicDisabledByWallSwitch = defineRule(genNames.ruleLogicDisabledByWallSwitch, {
@@ -248,6 +264,8 @@ function init(idPrefix,
         scenarioPrefix + delimeter + idPrefix,
       ruleMotionInProgress:
         rulePrefix + delimeter + "motionInProgress" + delimeter + idPrefix + delimeter,
+      ruleLightOn:
+        rulePrefix + delimeter + "lightOn" + delimeter + idPrefix + delimeter,
       ruleLogicDisabledByWallSwitch:
         rulePrefix + delimeter + "logicDisabledByWallSwitch" + delimeter + idPrefix + delimeter,
       ruleMotion:
@@ -290,12 +308,19 @@ function init(idPrefix,
             readonly: true,
             order: 4
           },
+          lightOn: {
+            title: {en: 'Light on', ru: 'Освещение включено'},
+            type: "switch",
+            value: false,
+            readonly: true,
+            order: 5
+          },
           logicDisabledByWallSwitch: {
             title: {en: 'Disabled manually by switch', ru: 'Отключено ручным выключателем'},
             type: "switch",
             value: false,
             readonly: true,
-            order: 5
+            order: 6
           },
         };
     return cells;
@@ -373,7 +398,7 @@ function init(idPrefix,
     // log.debug("Set new delay: " + (newDelayMs / 1000) + " sec and set new timer");
     lightOffTimerId = setTimeout(function () {
       // log.debug("No activity in the last " + (newDelayMs / 1000) + " sec, turn lights off");
-      setValueAllDevicesByBehavior(lightDevices, false);
+      dev[genNames.vDevice + "/lightOn"] = false;
       resetLightOffTimer();
     }, newDelayMs);
   }
@@ -413,11 +438,23 @@ function init(idPrefix,
       resetLogicEnableTimer();
     }
     if (newValue === true) {
-      setValueAllDevicesByBehavior(lightDevices, true);
+      dev[genNames.vDevice + "/lightOn"] = true;
       setLightOffTimer(delayBlockAfterSwitch * 1000);
       setLogicEnableTimer(delayBlockAfterSwitch * 1000);
     } else {
+      dev[genNames.vDevice + "/lightOn"] = false;
+    }
+  }
+
+  function lightOnCb(newValue) {
+    if (newValue === true) {
+      // log.debug("Light on");
+      setValueAllDevicesByBehavior(lightDevices, true);
+    } else if (newValue === false) {
+      // log.debug("Light off");
       setValueAllDevicesByBehavior(lightDevices, false);
+    } else {
+      log.error("Light on - have not correct type");
     }
   }
 
@@ -432,7 +469,7 @@ function init(idPrefix,
   function openingSensorTriggeredCb(newValue) {
     // Тригерит только изменение выбранное пользователем
     // log.debug("Opening detected on sensor " + devName + "/" + cellName);
-    setValueAllDevicesByBehavior(lightDevices, true);
+    dev[genNames.vDevice + "/lightOn"] = true;
     setLightOffTimer(delayByOpeningSensors * 1000);
   }
 
@@ -459,7 +496,7 @@ function init(idPrefix,
         clearTimeout(lightOffTimerId);
       }
       resetLightOffTimer();
-      setValueAllDevicesByBehavior(lightDevices, true);
+      dev[genNames.vDevice + "/lightOn"] = true;
     } else {
       // log.debug("~ Motion end detected - set timer for disable light!");
       setLightOffTimer(delayByMotionSensors * 1000);
@@ -550,6 +587,9 @@ function init(idPrefix,
     eventRegistry.processEvent(devName + '/' + cellName, newValue);
   }
 
+  function lightOnHandler(newValue, devName, cellName) {
+    eventRegistry.processEvent(devName + '/' + cellName, newValue);
+  }
   
   function logicDisabledBySwitchHandler(newValue, devName, cellName) {
     eventRegistry.processEvent(devName + '/' + cellName, newValue);

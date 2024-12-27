@@ -153,13 +153,10 @@ function createRegistryForEvents() {
       var isCallbackValid = event && typeof event.callback === "function";
 
       if (isCallbackValid) {
-        log.debug(
-          "Executing callback for topic '" +
-          topic +
-          "', event type '" +
-          curEventType +
-          "'"
-        );
+        // log.debug(
+        //   "Executing callback for topic '" + topic +
+        //   "', event type '" + curEventType + "'"
+        // );
         event.callback(value);
       } else {
         log.error(
