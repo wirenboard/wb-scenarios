@@ -1,5 +1,6 @@
 /**
- * @file Модуль обработки реестра регистрируемых событий
+ * @file Модуль с реестром регистрируемых событий и методами
+ *       для его обработки
  * 
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
@@ -10,16 +11,15 @@ var eResolvers = require('registry-event-resolvers.mod');
 /**
 * Создание нового реестра событий
 *
-* @returns {Object} - Объект с методами для работы с реестром событий
+* @returns {Object} - Объект с реестром событий и методами для работы с ним
 */
 function createRegistryForEvents() {
-  // Локальная структура объекта для хранения событий
   var registry = {};
 
   /**
   * Регистрирует событие для одного MQTT топика
   *
-  * @param {string} topic - Имя MQTT топика
+  * @param {string} topic - Имя MQTT-топика вида "device/control"
   * @param {string} eventType - Тип события
   * @param {function} mainCallback - Обратный вызов для события
   */
@@ -32,32 +32,36 @@ function createRegistryForEvents() {
     // Смотрим что в реестре событий есть описание указанного EventType
     var eventInfo = eResolvers.registryEventResolvers[eventType];
     if (!eventInfo) {
-      log.error('Unknown eventType "' + eventType + '". Cannot register opposite');
+      log.error(
+        'Неизвестный eventType "' + eventType + '".' +
+        'Не возможно зарегистрировать данное событие');
       return;
     }
 
     if (!registry[topic]) {
       registry[topic] = {};
     }
-  
+
     if (registry[topic][eventType]) {
       log.error(
-        'Event "' + eventType + '" for topic "' + topic + '" is already registered. Will overwrite the callback'
+        'Событие "' + eventType + '" для топика "' + topic + '"' +
+        'уже зарегистрировано. Callback будет перезаписан'
       );
-    }    
+    }
 
     // Сохраняем колбэк в объекте события
     registry[topic][eventType] = { callback: mainCallback };
 
     log.debug(
-      'Event registered: topic="' + topic + '", type="' + eventType + '"'
+      'Событие зарегистрировано: topic="' + topic + '",' +
+      'type="' + eventType + '"'
     );
   }
 
   /**
    * Регистрирует противоположное событие для одного MQTT топика
    * 
-   * @param {string} topic - Имя MQTT-топика
+   * @param {string} topic - Имя MQTT-топика вида "device/control"
    * @param {string} eventType - Тип основного события (например, 'whenEnabled')
    * @param {Function} oppositeCallback - Колбэк для противоположного события
    */
@@ -70,36 +74,46 @@ function createRegistryForEvents() {
     // Смотрим что в реестре событий есть описание указанного EventType
     var eventInfo = eResolvers.registryEventResolvers[eventType];
     if (!eventInfo) {
-      log.error('Unknown eventType "' + eventType + '". Cannot register opposite');
+      log.error(
+        'Неизвестный eventType "' + eventType + '".' +
+        'Невозможно зарегистрировать противоположное событие'
+      );
       return;
     }
 
     // Берём имя «противоположного» события
     var oppEventName = eventInfo.resetResolverName;
     if (!oppEventName) {
-      log.error("Event '" + eventType + "' does not have a resetResolverName. No opposite event can be registered.");
+      log.error(
+        'Событие "' + eventType + '" не имеет resetResolverName.' +
+        'Невозможно зарегистрировать противоположное событие'
+      );
       return;
     }
 
     // Проверяем, действительно ли oppEventName существует в реестре
     if (!eResolvers.registryEventResolvers[oppEventName]) {
       log.error(
-        "Opposite event name '" + oppEventName +
-        "' not found in registryEventResolvers. Cannot register opposite."
+        'Имя противоположного события "' + oppEventName + '" ' +
+        'не найдено в registryEventResolvers.' +
+        'Невозможно зарегистрировать противоположное событие'
       );
       return;
     }
 
     // Регистрируем «противоположное» событие
     registerSingleEvent(topic, oppEventName, oppositeCallback);
-    log.debug("Opposite event registered: '" + oppEventName + "' for base '" + eventType + "'");
+    log.debug(
+      'Противоположное событие с именем "' + oppEventName + '"' +
+      'зарегистрировано для базового события "' + eventType + '"'
+    );
   }
 
   /**
    * Регистрирует основное и сразу противоположное событие для заданного топика.
    *
-   * @param {string} topic - Имя MQTT-топика
-   * @param {string} eventType - Тип основного события (например, "whenEnabled")
+   * @param {string} topic - Имя MQTT-топика вида "device/control"
+   * @param {string} eventType - Тип основного события (например, 'whenEnabled')
    * @param {function} mainCallback - Обратный вызов для события
    * @param {Function} oppositeCallback - Колбэк для противоположного события
    */
@@ -121,16 +135,18 @@ function createRegistryForEvents() {
   function registerMultipleEvents(topics, eventType, callback) {
     if (!Array.isArray(topics)) {
       log.error(
-        "Topics must be an array of strings, current is: '" + typeof topics + "'"
+        'Параметр "topics" должен быть массивом строк,' +
+        'но текущий тип: "' + typeof topics + '"'
       );
       return;
     }
 
     for (var i = 0; i < topics.length; i++) {
       var topic = topics[i];
-      if (typeof topic !== "string") {
+      if (typeof topic !== 'string') {
         log.error(
-          "Invalid topic at index " + i + ": must be a string. Skipping."
+          'Пропуск не корректного топика, индекс "' + i + '":' +
+          'должен быть строкой.'
         );
         continue;
       }
@@ -148,19 +164,21 @@ function createRegistryForEvents() {
   function registerSingleEventWithBehavior(topicWithBehavior, callback) {
     var mqttTopicName = topicWithBehavior.mqttTopicName;
     var behaviorType = topicWithBehavior.behaviorType;
-  
+
     if (!mqttTopicName || !behaviorType) {
       log.error(
-        "Invalid topic data. mqttTopicName and behaviorType are required"
+        'Не корректные данные объекта топика. ' +
+        'mqttTopicName и behaviorType должны быть заданы'
       );
       return;
     }
-  
+
     // Проверка существования такого типа behaviorType в реестре событий
     var eventResolver = eResolvers.registryEventResolvers[behaviorType];
     if (!eventResolver) {
       log.error(
-        "Unknown behaviorType '" + behaviorType + "'. Event not registered now"
+        'Неизвестный behaviorType "' + behaviorType + '".' +
+        'Такое событие еще не зарегистрированно в регистре описания событий'
       );
       return;
     }
@@ -182,7 +200,8 @@ function createRegistryForEvents() {
 
     if (!mqttTopicName || !behaviorType) {
       log.error(
-        "Invalid topic data. mqttTopicName and behaviorType are required"
+        'Не корректные данные объекта топика. ' +
+        'mqttTopicName и behaviorType должны быть заданы'
       );
       return;
     }
@@ -191,7 +210,8 @@ function createRegistryForEvents() {
     var eventResolver = eResolvers.registryEventResolvers[behaviorType];
     if (!eventResolver) {
       log.error(
-        "Unknown behaviorType '" + behaviorType + "'. Event not registered now"
+        'Неизвестный behaviorType "' + behaviorType + '".' +
+        'Такое событие еще не зарегистрированно в регистре описания событий'
       );
       return;
     }
@@ -209,13 +229,13 @@ function createRegistryForEvents() {
    */
   function registerMultipleEventsWithBehavior(topicsWithBehavior, mainCallback) {
     if (!Array.isArray(topicsWithBehavior)) {
-      log.error("TopicsWithBehavior must be an array.");
+      log.error('TopicsWithBehavior должен быть массивом');
       return;
     }
 
     for (var i = 0; i < topicsWithBehavior.length; i++) {
       registerSingleEventWithBehavior(topicsWithBehavior[i], mainCallback);
-    }  
+    }
   }
 
   /**
@@ -228,7 +248,7 @@ function createRegistryForEvents() {
    */
   function registerMultipleEventsWithBehaviorOpposite(topicsWithBehavior, mainCallback, oppCallback) {
     if (!Array.isArray(topicsWithBehavior)) {
-      log.error("topicsWithBehavior must be an array.");
+      log.error('topicsWithBehavior должен быть массивом');
       return;
     }
 
@@ -240,75 +260,81 @@ function createRegistryForEvents() {
   /**
    * Обрабатывает все события для указанного топика, которые произошли
    *
-   * @param {string} topic - Имя MQTT топика
+   * @param {string} topic - Имя MQTT-топика вида "device/control"
    * @param {any} value - Новое значение топика
    * @returns {Object} - Статус обработки:
    *                     { 
-   *                       status: "success" | "no_events_registered" | "topic_not_found",
+   *                       status: 'success' | 'no_events_registered' | 'topic_not_found',
    *                       message: string
    *                     }
    */
-function processEvent(topic, value) {
-  var res;
-  var topicEvents = registry[topic];
+  function processEvent(topic, value) {
+    var res;
+    var topicEvents = registry[topic];
 
-  // Проверяем, существует ли указанный топик приведя к булевому типу
-  var topicExists = !!topicEvents;
-  if (!topicExists) {
-    res = { status: "topic_not_found",
-            message: "Topic '" + topic + "' not found in the registry" };
+    // Проверяем, существует ли указанный топик приведя к булевому типу
+    var topicExists = !!topicEvents;
+    if (!topicExists) {
+      res = {
+        status: 'topic_not_found',
+        message: 'Топик "' + topic + '" не найден в регистре'
+      };
+      return res;
+    }
+
+    var hasProcessed = false;
+
+    for (var curEventType in topicEvents) {
+      var resolver = eResolvers.registryEventResolvers[curEventType];
+      var isResolverValid = resolver &&
+        typeof resolver.launchResolver === 'function';
+
+      if (!isResolverValid) {
+        log.error('Для события "' + curEventType + '" не найден Resolver');
+        continue;
+      }
+
+      var isTriggered = resolver.launchResolver(value);
+      if (!isTriggered) {
+        // log.debug(
+        //   'Resolver "' + curEventType + 'не подтвердил событие'
+        //   '" для топика "' + topic + '"'
+        // );
+        continue;
+      }
+
+      var eventObj = topicEvents[curEventType];
+      var isCallbackValid = eventObj && typeof eventObj.callback === 'function';
+
+      if (isCallbackValid) {
+        // log.debug(
+        //   'Выполнение callback для топика "' + topic +
+        //   '", тип события "' + curEventType + '"'
+        // );
+        eventObj.callback(value);
+        hasProcessed = true;
+      } else {
+        log.error(
+          'Callback не найден для топика "' + topic +
+          '", тип события "' + curEventType + '"'
+        );
+      }
+    }
+
+    if (hasProcessed) {
+      res = {
+        status: 'success',
+        message: 'Событие обработано успешно'
+      };
+      return res;
+    }
+
+    res = {
+      status: 'no_events_registered',
+      message: 'Нет обрабатываемых событий для данного топика'
+    };
     return res;
   }
-
-  var hasProcessed = false;
-
-  for (var curEventType in topicEvents) {
-    var resolver = eResolvers.registryEventResolvers[curEventType];
-    var isResolverValid = resolver &&
-                          typeof resolver.launchResolver === "function";
-
-    if (!isResolverValid) {
-      log.error("Resolver not found for event type '" + curEventType + "'");
-      continue;
-    }
-
-    var isTriggered = resolver.launchResolver(value);
-    if (!isTriggered) {
-      // log.debug(
-      //   "Resolver rejected event '" + curEventType +
-      //   "' for topic '" + topic + "'"
-      // );
-      continue;
-    }
-
-    var eventObj = topicEvents[curEventType];
-    var isCallbackValid = eventObj && typeof eventObj.callback === "function";
-
-    if (isCallbackValid) {
-      // log.debug(
-      //   "Executing callback for topic '" + topic +
-      //   "', event type '" + curEventType + "'"
-      // );
-      eventObj.callback(value);
-      hasProcessed = true;
-    } else {
-      log.error(
-        "Callback not found for topic '" + topic +
-        "', event type '" + curEventType + "'"
-      );
-    }
-  }
-
-  if (hasProcessed) {
-    res = { status: "success",
-            message: "Events processed successfully" };
-    return res;
-  }
-
-  res = { status: "no_events_registered",
-          message: "No events were processed for the topic" };
-  return res;
-}
 
   /**
   * Возвращает отладочное представление реестра
@@ -323,8 +349,8 @@ function processEvent(topic, value) {
         // Анонимные функции отображаются просто как {} - чтобы было понятнее
         // обработаем явно вывод имени функции
         debugView[topic][curEventType] = {
-          callbackName: registry[topic][curEventType].callback.name + "()" ||
-            "anonymous()"
+          callbackName: registry[topic][curEventType].callback.name + '()' ||
+            'anonymous()'
         };
       }
     }
