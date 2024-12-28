@@ -5,7 +5,7 @@
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
-var eResolvers = require("registry-event-resolvers.mod");
+var eResolvers = require('registry-event-resolvers.mod');
 
 /**
 * Создание нового реестра событий
@@ -21,22 +21,94 @@ function createRegistryForEvents() {
   *
   * @param {string} topic - Имя MQTT топика
   * @param {string} eventType - Тип события
-  * @param {function} callback - Обратный вызов для события
+  * @param {function} mainCallback - Обратный вызов для события
   */
-  function registerSingleEvent(topic, eventType, callback) {
-    if (typeof callback !== "function") {
-      log.error("Callback must be a function.");
+  function registerSingleEvent(topic, eventType, mainCallback) {
+    if (typeof mainCallback !== 'function') {
+      log.error('Callback должен быть функцией');
+      return;
+    }
+
+    // Смотрим что в реестре событий есть описание указанного EventType
+    var eventInfo = eResolvers.registryEventResolvers[eventType];
+    if (!eventInfo) {
+      log.error('Unknown eventType "' + eventType + '". Cannot register opposite');
       return;
     }
 
     if (!registry[topic]) {
       registry[topic] = {};
     }
+  
+    if (registry[topic][eventType]) {
+      log.error(
+        'Event "' + eventType + '" for topic "' + topic + '" is already registered. Will overwrite the callback'
+      );
+    }    
 
-    registry[topic][eventType] = { callback: callback };
+    // Сохраняем колбэк в объекте события
+    registry[topic][eventType] = { callback: mainCallback };
+
     log.debug(
-      "Event registered: topic='" + topic + "', type='" + eventType + "'"
+      'Event registered: topic="' + topic + '", type="' + eventType + '"'
     );
+  }
+
+  /**
+   * Регистрирует противоположное событие для одного MQTT топика
+   * 
+   * @param {string} topic - Имя MQTT-топика
+   * @param {string} eventType - Тип основного события (например, 'whenEnabled')
+   * @param {Function} oppositeCallback - Колбэк для противоположного события
+   */
+  function registerOppositeEvent(topic, eventType, oppositeCallback) {
+    if (typeof oppositeCallback !== 'function') {
+      log.error('Callback должен быть функцией');
+      return;
+    }
+
+    // Смотрим что в реестре событий есть описание указанного EventType
+    var eventInfo = eResolvers.registryEventResolvers[eventType];
+    if (!eventInfo) {
+      log.error('Unknown eventType "' + eventType + '". Cannot register opposite');
+      return;
+    }
+
+    // Берём имя «противоположного» события
+    var oppEventName = eventInfo.resetResolverName;
+    if (!oppEventName) {
+      log.error("Event '" + eventType + "' does not have a resetResolverName. No opposite event can be registered.");
+      return;
+    }
+
+    // Проверяем, действительно ли oppEventName существует в реестре
+    if (!eResolvers.registryEventResolvers[oppEventName]) {
+      log.error(
+        "Opposite event name '" + oppEventName +
+        "' not found in registryEventResolvers. Cannot register opposite."
+      );
+      return;
+    }
+
+    // Регистрируем «противоположное» событие
+    registerSingleEvent(topic, oppEventName, oppositeCallback);
+    log.debug("Opposite event registered: '" + oppEventName + "' for base '" + eventType + "'");
+  }
+
+  /**
+   * Регистрирует основное и сразу противоположное событие для заданного топика.
+   *
+   * @param {string} topic - Имя MQTT-топика
+   * @param {string} eventType - Тип основного события (например, "whenEnabled")
+   * @param {function} mainCallback - Обратный вызов для события
+   * @param {Function} oppositeCallback - Колбэк для противоположного события
+   */
+  function registerBothEvents(topic, eventType, mainCallback, oppositeCallback) {
+    // Сначала регистрируем основное
+    registerSingleEvent(topic, eventType, mainCallback);
+
+    // Затем регистрируем противоположное
+    registerOppositeEvent(topic, eventType, oppositeCallback);
   }
 
   /**
@@ -49,7 +121,7 @@ function createRegistryForEvents() {
   function registerMultipleEvents(topics, eventType, callback) {
     if (!Array.isArray(topics)) {
       log.error(
-        "Topics must be an array strings, curent is: '" + typeof topic + "'"
+        "Topics must be an array of strings, current is: '" + typeof topics + "'"
       );
       return;
     }
@@ -79,12 +151,12 @@ function createRegistryForEvents() {
   
     if (!mqttTopicName || !behaviorType) {
       log.error(
-        "Invalid topic data. mqttTopicName and behaviorType are required."
+        "Invalid topic data. mqttTopicName and behaviorType are required"
       );
       return;
     }
   
-    // Проверка существования такого типа события в регистре событий
+    // Проверка существования такого типа behaviorType в реестре событий
     var eventResolver = eResolvers.registryEventResolvers[behaviorType];
     if (!eventResolver) {
       log.error(
@@ -97,23 +169,74 @@ function createRegistryForEvents() {
   }
 
   /**
-   * Регистрирует события для массива объектов с настройками MQTT-топиков,
-   * основываясь на behaviorType
+   * Регистрирует основное И противоположное событие для одного объекта с настройками,
+   * основываясь на behaviorType.
    *
-   * @param {Array} topicsWithBehavior  - Массив топиков с настройками поведения
-   * @param {function} callback - Обратный вызов для событий
+   * @param {Object} topicWithBehavior - Объект вида { mqttTopicName: string, behaviorType: string }
+   * @param {Function} mainCallback - Колбэк для основного события
+   * @param {Function} oppCallback - Колбэк для противоположного события
    */
-  function registerMultipleEventsWithBehavior(topicsWithBehavior, callback) {
+  function registerSingleEventWithBehaviorOpposite(topicWithBehavior, mainCallback, oppCallback) {
+    var mqttTopicName = topicWithBehavior.mqttTopicName;
+    var behaviorType = topicWithBehavior.behaviorType;
+
+    if (!mqttTopicName || !behaviorType) {
+      log.error(
+        "Invalid topic data. mqttTopicName and behaviorType are required"
+      );
+      return;
+    }
+
+    // Проверка существования такого типа behaviorType в реестре событий
+    var eventResolver = eResolvers.registryEventResolvers[behaviorType];
+    if (!eventResolver) {
+      log.error(
+        "Unknown behaviorType '" + behaviorType + "'. Event not registered now"
+      );
+      return;
+    }
+
+    // Вызываем уже имеющуюся функцию, которая регистрирует основное + противоположное
+    registerBothEvents(mqttTopicName, behaviorType, mainCallback, oppCallback);
+  }
+
+  /**
+   * Регистрирует для массива объектов с настройками MQTT-топиков основное
+   * событие, основываясь на behaviorType
+   *
+   * @param {Array} topicsWithBehavior - Массив топиков с настройками поведения
+   * @param {function} mainCallback - Колбэк для основного события
+   */
+  function registerMultipleEventsWithBehavior(topicsWithBehavior, mainCallback) {
     if (!Array.isArray(topicsWithBehavior)) {
       log.error("TopicsWithBehavior must be an array.");
       return;
     }
 
     for (var i = 0; i < topicsWithBehavior.length; i++) {
-      registerSingleEventWithBehavior(topicsWithBehavior[i], callback);
+      registerSingleEventWithBehavior(topicsWithBehavior[i], mainCallback);
     }  
   }
-  
+
+  /**
+   * Регистрирует для массива объектов с настройками MQTT-топиков и основное,
+   * и противоположное событие, основываясь на behaviorType
+   *
+   * @param {Array} topicsWithBehavior - Массив топиков с настройками поведения
+   * @param {Function} mainCallback - Колбэк для основного события
+   * @param {Function} oppCallback - Колбэк для противоположного события
+   */
+  function registerMultipleEventsWithBehaviorOpposite(topicsWithBehavior, mainCallback, oppCallback) {
+    if (!Array.isArray(topicsWithBehavior)) {
+      log.error("topicsWithBehavior must be an array.");
+      return;
+    }
+
+    for (var i = 0; i < topicsWithBehavior.length; i++) {
+      registerSingleEventWithBehaviorOpposite(topicsWithBehavior[i], mainCallback, oppCallback);
+    }
+  }
+
   /**
    * Обрабатывает все события для указанного топика, которые произошли
    *
@@ -208,12 +331,25 @@ function processEvent(topic, value) {
     return debugView;
   }
 
+  // Возвращаем набор методов наружу
   return {
+    // Базовые методы
     registerSingleEvent: registerSingleEvent,
+    registerOppositeEvent: registerOppositeEvent,
+    registerBothEvents: registerBothEvents,
+
+    // Для массивов топиков
     registerMultipleEvents: registerMultipleEvents,
+
+    // Для topicWithBehavior
     registerSingleEventWithBehavior: registerSingleEventWithBehavior,
     registerMultipleEventsWithBehavior: registerMultipleEventsWithBehavior,
+    registerMultipleEventsWithBehaviorOpposite: registerMultipleEventsWithBehaviorOpposite,
+
+    // Обработка приходящих значений
     processEvent: processEvent,
+
+    // Отладка
     getRegistryDebugView: getRegistryDebugView
   };
 }
