@@ -205,7 +205,7 @@ main();
 ```
 
 
-### С wb-rules
+### Вместе с wb-rules
 
 ```javascript
 ```
