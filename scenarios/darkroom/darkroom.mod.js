@@ -157,14 +157,18 @@ function init(idPrefix,
   eventRegistry.registerSingleEvent(genNames.vDevice + "/logicDisabledByWallSwitch",
                                     "whenChange",
                                     logicDisabledCb);
+  eventRegistry.registerSingleEvent(genNames.vDevice + "/doorOpen",
+                                    "whenChange",
+                                    doorOpenCb);
   eventRegistry.registerSingleEvent(genNames.vDevice + "/lightOn",
                                     "whenChange",
                                     lightOnCb);
   eventRegistry.registerMultipleEvents(lightSwitchesControlNames,
                                        "whenChange",
                                        lightSwitchUsedCb);
-  eventRegistry.registerMultipleEventsWithBehavior(openingSensors,
-                                                   openingSensorTriggeredCb);
+  eventRegistry.registerMultipleEventsWithBehaviorOpposite(openingSensors,
+                                                           openingSensorTriggeredLaunchCb,
+                                                           openingSensorTriggeredResetCb);
 
   // Создаем правило для датчиков движения
   var ruleIdMotion = defineRule(genNames.ruleMotion, {
@@ -221,6 +225,19 @@ function init(idPrefix,
   }
   log.debug("WB-rule with IdNum '" + genNames.ruleMotionInProgress + "' was successfully created");
  
+  // Правило следящее за состоянием дверей
+  var ruleIdDoorOpen = defineRule(genNames.ruleDoorOpen, {
+                             whenChanged: [genNames.vDevice + "/doorOpen"],             
+                             then: function (newValue, devName, cellName) {
+                              doorOpenHandler(newValue, devName, cellName);
+                            }
+                            });
+  if (!ruleIdDoorOpen) {
+    setError("WB-rule '" + genNames.ruleDoorOpen + "' not created");
+    return false;
+  }
+  log.debug("WB-rule with IdNum '" + genNames.ruleDoorOpen + "' was successfully created");
+ 
   // Правило следящее за состоянием света
   var ruleIdLightOn = defineRule(genNames.ruleLightOn, {
                              whenChanged: [genNames.vDevice + "/lightOn"],             
@@ -264,6 +281,8 @@ function init(idPrefix,
         scenarioPrefix + delimeter + idPrefix,
       ruleMotionInProgress:
         rulePrefix + delimeter + "motionInProgress" + delimeter + idPrefix + delimeter,
+      ruleDoorOpen:
+        rulePrefix + delimeter + "doorOpen" + delimeter + idPrefix + delimeter,
       ruleLightOn:
         rulePrefix + delimeter + "lightOn" + delimeter + idPrefix + delimeter,
       ruleLogicDisabledByWallSwitch:
@@ -308,19 +327,26 @@ function init(idPrefix,
             readonly: true,
             order: 4
           },
+          doorOpen: {
+            title: {en: 'Door open', ru: 'Дверь открыта'},
+            type: "switch",
+            value: false,
+            // readonly: true,
+            order: 5
+          },
           lightOn: {
             title: {en: 'Light on', ru: 'Освещение включено'},
             type: "switch",
             value: false,
-            readonly: true,
-            order: 5
+            // readonly: true,
+            order: 6
           },
           logicDisabledByWallSwitch: {
             title: {en: 'Disabled manually by switch', ru: 'Отключено ручным выключателем'},
             type: "switch",
             value: false,
             readonly: true,
-            order: 6
+            order: 7
           },
         };
     return cells;
@@ -416,11 +442,103 @@ function init(idPrefix,
     }, newDelayMs);
   }
 
+  /**
+   * Проверка - находится ли датчик в активном состоянии
+   *   У разных типов контролов будет разная логика определения
+   *   "активного" состояния:
+   *     - value - больше трешхолда
+   *     - bool - что новое значение true
+   *     - string - что новая строка 'true'
+   *     - ... другие типы можно добавить при необходимости, например 0 и 1 и тд
+   * @param {Object} sensorWithBehavior - Объект датчика (содержит behaviorType, actionValue и другие свойства)
+   * @param {any} newValue - Текущее состояние датчика
+   * @returns {boolean} - true, если датчик активен, иначе false
+   */
+  function isMotionSensorActiveByBehavior(sensorWithBehavior, newValue) {
+    var sensorTriggered = false;
+    if (sensorWithBehavior.behaviorType === "whileValueHigherThanThreshold") {
+          if (newValue >= sensorWithBehavior.actionValue) {
+            // log.debug("Motion start on sensor " + sensorWithBehavior.mqttTopicName);
+            sensorTriggered = true;
+          } else if (newValue < sensorWithBehavior.actionValue) {
+            // log.debug("Motion stop on sensor " + sensorWithBehavior.mqttTopicName);
+            sensorTriggered = false;
+          }
+    } else if (sensorWithBehavior.behaviorType === "whenEnabled") {
+      if (newValue === true) {
+        // log.debug("Motion sensor type - bool");
+        sensorTriggered = true;
+      } else if (newValue === "true") {
+        // log.debug("Motion sensor type - string");
+        sensorTriggered = true;
+      } else if (newValue === false || newValue === "false") {
+        // log.debug("Motion sensor type correct and disabled");
+        sensorTriggered = false;
+      } else {
+        setError("Motion sensor have not correct value: '" + newValue + "'");
+        sensorTriggered = false;
+      }
+    } else {
+      log.error("Unknown behavior type for sensor: " + sensorWithBehavior.mqttTopicName);
+      sensorTriggered = false; // Считаем неизвестное поведение неактивным
+    }
+    return sensorTriggered;
+  }
+
+  /**
+   * Проверяет, активен ли датчик открытия (дверь открыта или закрыта) на основе поведения
+   *
+   * @param {Object} sensorWithBehavior - Объект датчика (содержит behaviorType и другие свойства)
+   * @param {any} newValue - Текущее состояние датчика
+   * @returns {boolean} - true, если датчик активен (дверь открыта), иначе false
+   */
+  function isOpeningSensorOpenedByBehavior(sensorWithBehavior, newValue) {
+    if (sensorWithBehavior.behaviorType === "whenDisabled") {
+      /**
+       * Датчик нормально замкнутый:
+       *   - При закрытой двери - нормальное состояние true
+       *   - Когда дверь открыта - разомкнут, состояние false
+       */
+      return newValue === false || newValue === "false";
+    } else if (sensorWithBehavior.behaviorType === "whenEnabled") {
+      /**
+       * Датчик нормально разомкнутый:
+       *   - При закрытой двери - нормальное состояние false
+       *   - Когда дверь открыта - замыкается, состояние true
+       */
+      return newValue === true || newValue === "true";
+    } else {
+      log.error("Unknown behavior type for sensor: " + sensorWithBehavior.mqttTopicName);
+      return false; // Считаем неизвестное поведение неактивным
+    }
+  }
+
+  /**
+   * Проверяет, все ли датчики открытия замкнуты (двери закрыты)
+   *
+   * @returns {boolean} - true, если все датчики показывают, что двери закрыты, иначе false
+   */
+  function checkAllOpeningSensorsClose() {
+    for (var i = 0; i < openingSensors.length; i++) {
+      var curSensor = openingSensors[i];
+      var curSensorState = dev[curSensor.mqttTopicName];
+
+      // Проверяем активность датчика с учетом его поведения
+      var isOpen = isOpeningSensorOpenedByBehavior(curSensor, curSensorState);
+      if (isOpen === true) {
+        // Если хотя бы один датчик активен (дверь открыта), возвращаем false
+        return false;
+      }
+    }
+    return true; // Все датчики пассивны (двери закрыты)
+  }  
+
   function checkAllMotionSensorsInactive() {
     // Проверяем, все ли датчики движения находятся в пассивном состоянии
     for (var i = 0; i < motionSensors.length; i++) {
-      var sensorState = dev[motionSensors[i].mqttTopicName];
-      if (sensorState === true || sensorState === "true") {
+      var curSensorState = dev[motionSensors[i].mqttTopicName];
+      isActive = isMotionSensorActiveByBehavior(motionSensors[i], curSensorState);
+      if (isActive === true) {
         return false; // Если хотя бы один датчик активен, возвращаем false
       }
     }
@@ -446,6 +564,18 @@ function init(idPrefix,
     }
   }
 
+  function doorOpenCb(newValue) {
+    if (newValue === true) {
+      log.debug("Minimum one door is open");
+      dev[genNames.vDevice + "/lightOn"] = true;
+      setLightOffTimer(delayByOpeningSensors * 1000);
+    } else if (newValue === false) {
+      log.debug("All doors is close");
+    } else {
+      log.error("Door status - have not correct type");
+    }
+  }
+
   function lightOnCb(newValue) {
     if (newValue === true) {
       // log.debug("Light on");
@@ -466,11 +596,23 @@ function init(idPrefix,
     dev[genNames.vDevice + "/logicDisabledByWallSwitch"] = !curValue;
   }
 
-  function openingSensorTriggeredCb(newValue) {
+  function openingSensorTriggeredLaunchCb(newValue) {
     // Тригерит только изменение выбранное пользователем
     // log.debug("Opening detected on sensor " + devName + "/" + cellName);
-    dev[genNames.vDevice + "/lightOn"] = true;
-    setLightOffTimer(delayByOpeningSensors * 1000);
+    log.debug("Одна из дверей открыта");
+    dev[genNames.vDevice + "/doorOpen"] = true;
+  }
+
+  function openingSensorTriggeredResetCb(newValue) {
+    // Тригерит только противоположное действие
+    // log.debug("Opening detected on sensor " + devName + "/" + cellName);
+    log.debug("Одна из дверей закрыта");
+    if (checkAllOpeningSensorsClose()) {
+      // log.debug("~ All opening sensors inactive");
+      dev[genNames.vDevice + "/doorOpen"] = false;
+    } else {
+      // log.debug("~ Some opening sensors are still active - do nothing");
+    }
   }
 
   //Извлечение имен контролов (mqttTopicName) из массива
@@ -518,7 +660,6 @@ function init(idPrefix,
       return true;
     }
 
-
     if (sensorType === 'motion') {
       // Найдем сенсор в списке по cellName
       var matchedSensor = null;
@@ -530,37 +671,9 @@ function init(idPrefix,
       }
       if (!matchedSensor) return false;
 
-      /**
-       * Нужно убедиться что сейчас произошло событие - триггер:
-       *   - value - больше трешхолда
-       *   - bool - что новое значение true
-       *   - string - что новая строка 'true'
-       */
-      var sensorTriggered = false;
-      if (matchedSensor.behaviorType === "whileValueHigherThanThreshold") {
-            if (newValue >= matchedSensor.actionValue) {
-              // log.debug("Motion start on sensor " + matchedSensor.mqttTopicName);
-              sensorTriggered = true;
-            } else if (newValue < matchedSensor.actionValue) {
-              // log.debug("Motion stop on sensor " + matchedSensor.mqttTopicName);
-              sensorTriggered = false;
-            }
-      } else if (matchedSensor.behaviorType === "whenEnabled") {
-        if (newValue === true) {
-          // log.debug("Motion sensor type - bool");
-          sensorTriggered = true;
-        } else if (newValue === "true") {
-          // log.debug("Motion sensor type - string");
-          sensorTriggered = true;
-        } else if (newValue === false || newValue === "false") {
-          // log.debug("Motion sensor type correct and disabled");
-          sensorTriggered = false;
-        } else {
-          setError("Motion sensor have not correct value: '" + newValue + "'");
-          sensorTriggered = false;
-        }
-      }
-
+      // Нужно убедиться что произошло именно событие являющееся тригером:
+      var sensorTriggered = isMotionSensorActiveByBehavior(matchedSensor, newValue)
+      log.debug('sensorTriggered = ' + sensorTriggered)
       if (sensorTriggered === true) {
         // log.debug("Motion detected on sensor " + matchedSensor.mqttTopicName);
         dev[genNames.vDevice + "/motionInProgress"] = true;
@@ -575,16 +688,22 @@ function init(idPrefix,
       }
     }
 
-    // @note: Через реестр событий пока работают два типа датчиков
     if (sensorType === 'opening') {
-      eventRegistry.processEvent(devName + '/' + cellName, newValue);
+      var res = eventRegistry.processEvent(devName + '/' + cellName, newValue);
+      log.debug("opening res = " + JSON.stringify(res));
     }
 
     return true;
   }
 
   function switchTriggeredHandler(newValue, devName, cellName) {
-    eventRegistry.processEvent(devName + '/' + cellName, newValue);
+    var res = eventRegistry.processEvent(devName + '/' + cellName, newValue);
+    log.debug("switchTriggeredHandler res = " + JSON.stringify(res));
+  }
+
+  function doorOpenHandler(newValue, devName, cellName) {
+    var res = eventRegistry.processEvent(devName + '/' + cellName, newValue);
+    log.debug("doorOpenHandler res = " + JSON.stringify(res));
   }
 
   function lightOnHandler(newValue, devName, cellName) {

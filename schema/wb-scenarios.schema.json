@@ -381,7 +381,7 @@
                 "title": "outControls_behaviorType_title",
                 "enum": [
                   "setEnable",
-                  "setValueNumeric"
+                  "setValueNumericInput"
                 ],
                 "default": "setEnable",
                 "options": {
@@ -399,7 +399,7 @@
                 "default": 0,
                 "options": {
                   "dependencies": {
-                    "behaviorType": ["setValueNumeric"]
+                    "behaviorType": ["setValueNumericInput"]
                   }
                 }
               }
@@ -522,6 +522,7 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "generalBehaviorTypeTitle",
+                "description": "darkroomOpeningSensorsBehaviorTypeDescription",
                 "enum": [
                   "whenDisabled",
                   "whenEnabled"
@@ -668,6 +669,7 @@
       "darkroomOpeningSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-opening-sensor.png\" height=\"30\">  Opening sensors</p>",
       "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
       "darkroomOpeningSensorsObjTitle": "Opening sensor",
+      "darkroomOpeningSensorsBehaviorTypeDescription": "Door opening event",
       "darkroomOpeningSensorsEnumWhenDisabled": "When disabled",
       "darkroomOpeningSensorsEnumWhenEnabled": "When ebabled",
       "darkroomLightSwitchesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Light switches</p>",
@@ -724,6 +726,7 @@
       "darkroomOpeningSensorsArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-opening-sensor.png\" height=\"30\">  Датчики открытия</p>",
       "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
       "darkroomOpeningSensorsObjTitle": "Датчик открытия",
+      "darkroomOpeningSensorsBehaviorTypeDescription": "Событие при открытии двери",
       "darkroomOpeningSensorsEnumWhenDisabled": "Когда отключилось",
       "darkroomOpeningSensorsEnumWhenEnabled": "Когда включилось",
       "darkroomLightSwitchesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Выключатели света</p>",
