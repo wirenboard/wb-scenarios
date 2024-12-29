@@ -68,12 +68,11 @@ function init(
     delayByOpeningSensors > 0 &&
     delayBlockAfterSwitch > 0;
   if (!isAllDelayValid) {
-
     // prettier-ignore
     var curDelays = 
       '[' + delayByMotionSensors + '], ' + 
       '[' + delayByOpeningSensors + '], ' +
-      '[' + delayBlockAfterSwitch + ']'
+      '[' + delayBlockAfterSwitch + ']';
 
     setError('Invalid delay - must be a positive number ' + curDelays);
     return false;
@@ -93,7 +92,7 @@ function init(
   if (isAllTriggersEmpty) {
     setError(
       'Darkroom initialization error: no motion, ' +
-      'opening sensors and wall switches specified'
+        'opening sensors and wall switches specified'
     );
     return false;
   }
@@ -101,68 +100,16 @@ function init(
   // @todo: Добавить проверку типов контролов - чтобы не запускать init
   //        с типом датчика строка где обрабатывается только цифра
 
+  log.debug('All checks pass successfuly!');
   if (isDebugEnabled === true) {
-    /** Добавляем отображение текущего статуса датчиков связанных
-     * с виртуальным устройством
-     *
-     * @note: Если топик не существует в момент создания связи - то он не добавится
-     *        в виртуальное устройство - это актуально при создании сценариев с
-     *        использованием других сценариев и других виртуальных устройств
-     *        если реальные устройства создаются и существуют постоянно - то
-     *        wb-rules не гарантирует порядок инициализации виртуальных устройств
-     * @fixme: попробовать это как то поправить
-     */
-
-    var titlePrefix = '▼  ';
-    var titlePostfix = ':';
-
-    vdHelpers.addGroupTitleRO(
-      vDevObj,
-      genNames.vDevice,
-      'debugTitle',
-      '☢ ☢ Debug info ☢ ☢',
-      '☢ ☢ Отладочная информация ☢ ☢'
-    );
-
-    vdHelpers.addGroupTitleRO(
-      vDevObj,
-      genNames.vDevice,
-      'lightDevicesTitle',
-      titlePrefix + 'Устройства освещения' + titlePostfix,
-      titlePrefix + 'Light devices' + titlePostfix
-    );
-    addLinkedControlsArray(lightDevices, 'light_sensor');
-
-    vdHelpers.addGroupTitleRO(
-      vDevObj,
-      genNames.vDevice,
-      'motionSensorsTitle',
-      titlePrefix + 'Датчики движения' + titlePostfix,
-      titlePrefix + 'Motion sensors' + titlePostfix
-    );
-    addLinkedControlsArray(motionSensors, 'motion_sensor');
-
-    vdHelpers.addGroupTitleRO(
-      vDevObj,
-      genNames.vDevice,
-      'openingSensorsTitle',
-      titlePrefix + 'Датчики открытия' + titlePostfix,
-      titlePrefix + 'Opening sensors' + titlePostfix
-    );
-    addLinkedControlsArray(openingSensors, 'opening_sensor');
-
-    vdHelpers.addGroupTitleRO(
-      vDevObj,
-      genNames.vDevice,
-      'lightSwitchesTitle',
-      titlePrefix + 'Выключатели света' + titlePostfix,
-      titlePrefix + 'Light switches' + titlePostfix
-    );
-    addLinkedControlsArray(lightSwitches, 'light_switch');
+    // Нужна задержка чтобы успели создаться все используемые нами девайсы
+    // ДО того как мы будем создавать связь на них
+    setTimeout(addAllLinkedDevicesToVd, 1000)
   } else {
     log.debug('Debug disabled and have value: "' + isDebugEnabled + '"');
   }
 
+  log.debug('Start rules creation');
   var eventRegistry = eventModule.createRegistryForEvents();
   var lightOffTimerId = null;
   var logicEnableTimerId = null;
@@ -411,10 +358,17 @@ function init(
     return cells;
   }
 
+  /**
+   * Добавляет к виртуальному устройству список связанных виртуальных
+   * контролов, которые полезны для отслеживания состояния связанных
+   * с данным виртуальным устройством контролов
+   */
   function addLinkedControlsArray(arrayOfControls, cellPrefix) {
+    log.debug('  - Start add ' + cellPrefix + ' ctrl. Array lenght {}', arrayOfControls.length);
     for (var i = 0; i < arrayOfControls.length; i++) {
       var curMqttControl = arrayOfControls[i].mqttTopicName;
       var cellName = cellPrefix + '_' + i;
+      log.debug('    ... Processing ' + cellName + ' ctrl');
       var vdControlCreated = vdHelpers.addLinkedControlRO(
         curMqttControl,
         vDevObj,
@@ -424,11 +378,84 @@ function init(
       );
       if (!vdControlCreated) {
         setError(
-          'Failed to add ' + cellPrefix + ' control for ' + curMqttControl
+          '  - Failed to add ' + cellPrefix + ' ctrl for ' + curMqttControl
         );
       }
+      log.debug(
+        '  - Success add ' + cellPrefix + ' ctrl for ' + curMqttControl
+      );
     }
   }
+
+  function addAllLinkedDevicesToVd() {
+    /** Добавляем отображение текущего статуса датчиков связанных
+     * с виртуальным устройством
+     *
+     * @note: Если топик не существует в момент создания связи - то он не добавится
+     *        в виртуальное устройство - это актуально при создании сценариев с
+     *        использованием других сценариев и других виртуальных устройств
+     *        если реальные устройства создаются и существуют постоянно - то
+     *        wb-rules не гарантирует порядок инициализации виртуальных устройств
+     * @fixme: попробовать это как то поправить
+     */
+    log.debug('Debug enabled - create additional controls in VD');
+
+    var titlePrefix = '▼  ';
+    var titlePostfix = ':';
+
+    vdHelpers.addGroupTitleRO(
+      vDevObj,
+      genNames.vDevice,
+      'debugTitle',
+      '☢ ☢ Debug info ☢ ☢',
+      '☢ ☢ Отладочная информация ☢ ☢'
+    );
+
+    if(lightDevices.length > 0) {
+      vdHelpers.addGroupTitleRO(
+        vDevObj,
+        genNames.vDevice,
+        'lightDevicesTitle',
+        titlePrefix + 'Устройства освещения' + titlePostfix,
+        titlePrefix + 'Light devices' + titlePostfix
+      );
+      addLinkedControlsArray(lightDevices, 'light_sensor');
+    }
+
+    if(motionSensors.length > 0) {
+      vdHelpers.addGroupTitleRO(
+        vDevObj,
+        genNames.vDevice,
+        'motionSensorsTitle',
+        titlePrefix + 'Датчики движения' + titlePostfix,
+        titlePrefix + 'Motion sensors' + titlePostfix
+      );
+      addLinkedControlsArray(motionSensors, 'motion_sensor');
+    }
+
+    if(openingSensors.length > 0) {
+      vdHelpers.addGroupTitleRO(
+        vDevObj,
+        genNames.vDevice,
+        'openingSensorsTitle',
+        titlePrefix + 'Датчики открытия' + titlePostfix,
+        titlePrefix + 'Opening sensors' + titlePostfix
+      );
+      addLinkedControlsArray(openingSensors, 'opening_sensor');
+    }
+
+    if(lightSwitches.length > 0) {
+      vdHelpers.addGroupTitleRO(
+        vDevObj,
+        genNames.vDevice,
+        'lightSwitchesTitle',
+        titlePrefix + 'Выключатели света' + titlePostfix,
+        titlePrefix + 'Light switches' + titlePostfix
+      );
+      addLinkedControlsArray(lightSwitches, 'light_switch');
+    }
+  }
+
 
   // Данный метод можно использовать только после инициализации
   // минимального виртуального устройства
@@ -657,11 +684,11 @@ function init(
 
   function doorOpenCb(newValue) {
     if (newValue === true) {
-      log.debug('Minimum one door is open');
+      // log.debug('Minimum one door is open');
       dev[genNames.vDevice + '/lightOn'] = true;
       setLightOffTimer(delayByOpeningSensors * 1000);
     } else if (newValue === false) {
-      log.debug('All doors is close');
+      // log.debug('All doors is close');
     } else {
       log.error('Door status - have not correct type');
     }
@@ -690,14 +717,14 @@ function init(
   function openingSensorTriggeredLaunchCb(newValue) {
     // Тригерит только изменение выбранное пользователем
     // log.debug('Opening detected on sensor ' + devName + '/' + cellName);
-    log.debug('Одна из дверей открыта');
+    // log.debug('Одна из дверей открыта');
     dev[genNames.vDevice + '/doorOpen'] = true;
   }
 
   function openingSensorTriggeredResetCb(newValue) {
     // Тригерит только противоположное действие
     // log.debug('Opening detected on sensor ' + devName + '/' + cellName);
-    log.debug('Одна из дверей закрыта');
+    // log.debug('Одна из дверей закрыта');
     if (checkAllOpeningSensorsClose()) {
       // log.debug('~ All opening sensors inactive');
       dev[genNames.vDevice + '/doorOpen'] = false;
@@ -766,7 +793,7 @@ function init(
         matchedSensor,
         newValue
       );
-      log.debug('sensorTriggered = ' + sensorTriggered);
+      // log.debug('sensorTriggered = ' + sensorTriggered);
       if (sensorTriggered === true) {
         // log.debug('Motion detected on sensor ' + matchedSensor.mqttTopicName);
         dev[genNames.vDevice + '/motionInProgress'] = true;
