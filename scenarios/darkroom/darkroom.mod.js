@@ -493,6 +493,43 @@ function init(
     );
   }
 
+  /**
+   * Обновляет оставшееся время до отключения света каждую секунду
+   */
+  function updateRemainingLightOffTime() {
+    var remainingTime = dev[genNames.vDevice + '/remainingTimeToLightOffInSec'];
+    if (remainingTime > 0) {
+      dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = remainingTime - 1;
+      setTimeout(updateRemainingLightOffTime, 1000);
+    }
+  }
+
+  /**
+   * Запускает таймер отключения света
+   * @param {number} newDelayMs - Задержка в миллисекундах
+   */
+  function startLightOffTimer(newDelayMs) {
+    // dev[genNames.vDevice + '/curDisableLightTimerInSec'] = newDelayMs / 1000;
+    dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelayMs / 1000;
+
+    // if (lightOffTimerId) {
+    //   clearTimeout(lightOffTimerId);
+    // }
+
+    updateRemainingLightOffTime();
+
+    // lightOffTimerId = setTimeout(turnOffLights, newDelayMs);
+  }
+
+
+  // /**
+  //  * Выключает освещение
+  //  */
+  // function turnOffLights() {
+  //   setValueAllDevicesByBehavior(lightDevices, false);
+  //   resetLightOffTimer();
+  // }
+
   /**Включение/выключение всех устройств в массиве согласно указанному типу поведения
    * @param {Array} actionControlsArr Массив контролов с указанием
    *     типа поведения и значений
@@ -551,6 +588,9 @@ function init(
       dev[genNames.vDevice + '/lightOn'] = false;
       resetLightOffTimer();
     }, newDelayMs);
+
+    // @todo: удалить все выше
+    startLightOffTimer(newDelayMs);
   }
 
   function setLogicEnableTimer(newDelayMs) {
