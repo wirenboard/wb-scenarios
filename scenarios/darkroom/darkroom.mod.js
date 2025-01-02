@@ -300,49 +300,73 @@ function init(
         value: true,
         order: 1,
       },
-      // Текущая задержка, меняется в зависимости от последнего
-      // сработавшего типа датчика
-      curDisableLightTimerInSec: {
+      remainingTimeToLightOffInSec: {
         title: {
-          en: 'Disable timer (seconds)',
-          ru: 'Таймер отключения (секунды)',
+          en: 'Light off in',
+          ru: 'Отключение света через',
         },
+        units: 's',
         type: 'value',
         value: 0,
         readonly: true,
         order: 2,
       },
-      // Текущая задержка отключенной логики
-      curDisabledLogicTimerInSec: {
+      remainingTimeToLogicEnableInSec: {
         title: {
-          en: 'Disabled logic timer (seconds)',
-          ru: 'Таймер отключенной логики (секунды)',
+          en: 'Automation activation in',
+          ru: 'Активация автоматики через',
         },
+        units: 's',
         type: 'value',
         value: 0,
         readonly: true,
         order: 3,
+      },
+      // Текущая задержка, меняется в зависимости от последнего
+      // сработавшего типа датчика
+      curDisableLightTimerInSec: {
+        title: {
+          en: 'Disable timer',
+          ru: 'Таймер отключения',
+        },
+        units: 's',
+        type: 'value',
+        value: 0,
+        readonly: true,
+        order: 4,
+      },
+      // Текущая задержка отключенной логики
+      curDisabledLogicTimerInSec: {
+        title: {
+          en: 'Disabled logic timer',
+          ru: 'Таймер отключенной логики',
+        },
+        units: 's',
+        type: 'value',
+        value: 0,
+        readonly: true,
+        order: 5,
       },
       motionInProgress: {
         title: { en: 'Motion in progress', ru: 'Есть движение' },
         type: 'switch',
         value: false,
         readonly: true,
-        order: 4,
+        order: 6,
       },
       doorOpen: {
         title: { en: 'Door open', ru: 'Дверь открыта' },
         type: 'switch',
         value: false,
         // readonly: true,
-        order: 5,
+        order: 7,
       },
       lightOn: {
         title: { en: 'Light on', ru: 'Освещение включено' },
         type: 'switch',
         value: false,
         // readonly: true,
-        order: 6,
+        order: 8,
       },
       logicDisabledByWallSwitch: {
         title: {
@@ -352,7 +376,7 @@ function init(
         type: 'switch',
         value: false,
         readonly: true,
-        order: 7,
+        order: 9,
       },
     };
     return cells;
