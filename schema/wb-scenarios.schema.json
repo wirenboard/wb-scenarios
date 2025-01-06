@@ -277,7 +277,7 @@
         "isDebugEnabled": {
           "title": "generalScenarioIsDebugEnabled",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "_format": "checkbox",
           "propertyOrder": 2,
           "options": {
