@@ -51,7 +51,7 @@
           }
         },
         "enable": {
-          "title": "generalScenarioEnableTitle",
+          "title": "generalScenarioGenerateRuleTitle",
           "type": "boolean",
           "default": true,
           "_format": "checkbox",
@@ -265,7 +265,7 @@
           }
         },
         "enable": {
-          "title": "generalScenarioEnableTitle",
+          "title": "generalScenarioGenerateRuleTitle",
           "type": "boolean",
           "default": true,
           "_format": "checkbox",
@@ -634,7 +634,7 @@
   ],
   "translations": {
     "en": {
-      "generalScenarioEnableTitle": "Turn on the scenario",
+      "generalScenarioGenerateRuleTitle": "Create a rule for the script",
       "generalScenarioIsDebugEnabled": "Turn on the debug",
       "generalScenarioName": "Scenario name",
       "generalMqttTopicNameTitle": "MQTT topic name",
@@ -677,7 +677,7 @@
       "darkroomLightSwitchesObjTitle": "Switch"
     },
     "ru": {
-      "generalScenarioEnableTitle": "Включить сценарий",
+      "generalScenarioGenerateRuleTitle": "Сгенерировать правило",
       "generalScenarioIsDebugEnabled": "Включить отладку",
       "generalScenarioName": "Название сценария",
       "generalMqttTopicNameTitle": "Имя MQTT топика",
