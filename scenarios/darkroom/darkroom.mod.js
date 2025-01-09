@@ -192,7 +192,7 @@ function init(
   var ruleIdSwitches = defineRule(genNames.ruleSwitches, {
     whenChanged: lightSwitchesControlNames,
     then: function (newValue, devName, cellName) {
-      switchTriggeredHandler(newValue, devName, cellName);
+      eventRegistry.processEvent(devName + '/' + cellName, newValue);
     },
   });
   if (!ruleIdSwitches) {
@@ -227,7 +227,7 @@ function init(
   var ruleIdDoorOpen = defineRule(genNames.ruleDoorOpen, {
     whenChanged: [genNames.vDevice + '/doorOpen'],
     then: function (newValue, devName, cellName) {
-      doorOpenHandler(newValue, devName, cellName);
+      eventRegistry.processEvent(devName + '/' + cellName, newValue);
     },
   });
   if (!ruleIdDoorOpen) {
@@ -244,7 +244,7 @@ function init(
   var ruleIdLightOn = defineRule(genNames.ruleLightOn, {
     whenChanged: [genNames.vDevice + '/lightOn'],
     then: function (newValue, devName, cellName) {
-      lightOnHandler(newValue, devName, cellName);
+      eventRegistry.processEvent(devName + '/' + cellName, newValue);
     },
   });
   if (!ruleIdLightOn) {
@@ -263,7 +263,7 @@ function init(
     {
       whenChanged: [genNames.vDevice + '/logicDisabledByWallSwitch'],
       then: function (newValue, devName, cellName) {
-        logicDisabledBySwitchHandler(newValue, devName, cellName);
+        eventRegistry.processEvent(devName + '/' + cellName, newValue);
       },
     }
   );
@@ -285,7 +285,7 @@ function init(
     {
       whenChanged: [genNames.vDevice + '/remainingTimeToLightOffInSec'],
       then: function (newValue, devName, cellName) {
-        remainingTimeToLightOffHandler(newValue, devName, cellName);
+        eventRegistry.processEvent(devName + '/' + cellName, newValue);
       },
     }
   );
@@ -307,7 +307,7 @@ function init(
     {
       whenChanged: [genNames.vDevice + '/remainingTimeToLogicEnableInSec'],
       then: function (newValue, devName, cellName) {
-        remainingTimeToLogicEnableHandler(newValue, devName, cellName);
+        eventRegistry.processEvent(devName + '/' + cellName, newValue);
       },
     }
   );
@@ -372,7 +372,45 @@ function init(
         readonly: true,
         order: 2,
       },
-      remainingTimeToLogicEnableInSec: {
+      lightOn: {
+        title: { en: 'Light on', ru: 'Освещение включено' },
+        type: 'switch',
+        value: false,
+        readonly: true,
+        order: 6,
+      },
+    };
+
+    // Условное добавление полей в зависимости от конфигурации
+    if (motionSensors.length > 0) {
+      cells.motionInProgress = {
+        title: {
+          en: 'Motion in progress',
+          ru: 'Есть движение'
+        },
+        type: 'switch',
+        value: false,
+        readonly: true,
+        order: 4,
+      };
+    }
+
+
+    if(openingSensors.length > 0) {
+      cells.doorOpen = {
+        title: {
+          en: 'Door open',
+          ru: 'Дверь открыта'
+        },
+        type: 'switch',
+        value: false,
+        readonly: true,
+        order: 5,
+      };
+    }
+
+    if (lightSwitches.length > 0) {
+      cells.remainingTimeToLogicEnableInSec = {
         title: {
           en: 'Automation activation in',
           ru: 'Активация автоматики через',
@@ -382,29 +420,9 @@ function init(
         value: 0,
         readonly: true,
         order: 3,
-      },
-      motionInProgress: {
-        title: { en: 'Motion in progress', ru: 'Есть движение' },
-        type: 'switch',
-        value: false,
-        readonly: true,
-        order: 6,
-      },
-      doorOpen: {
-        title: { en: 'Door open', ru: 'Дверь открыта' },
-        type: 'switch',
-        value: false,
-        // readonly: true,
-        order: 7,
-      },
-      lightOn: {
-        title: { en: 'Light on', ru: 'Освещение включено' },
-        type: 'switch',
-        value: false,
-        // readonly: true,
-        order: 8,
-      },
-      logicDisabledByWallSwitch: {
+      };
+
+      cells.logicDisabledByWallSwitch = {
         title: {
           en: 'Disabled manually by switch',
           ru: 'Отключено ручным выключателем',
@@ -412,9 +430,10 @@ function init(
         type: 'switch',
         value: false,
         readonly: true,
-        order: 9,
-      },
-    };
+        order: 7,
+      };
+    }
+
     return cells;
   }
 
@@ -485,7 +504,7 @@ function init(
     });
 
     if(lightDevices.length > 0) {
-      addLinkedControlsArray(lightDevices, 'light_sensor');
+      addLinkedControlsArray(lightDevices, 'light_device');
     }
 
     if(motionSensors.length > 0) {
@@ -772,6 +791,8 @@ function init(
     } else {
       dev[genNames.vDevice + '/lightOn'] = false;
     }
+
+    return true;
   }
 
   function doorOpenCb(newValue) {
@@ -784,6 +805,8 @@ function init(
     } else {
       log.error('Door status - have not correct type');
     }
+
+    return true;
   }
 
   function lightOnCb(newValue) {
@@ -796,9 +819,22 @@ function init(
     } else {
       log.error('Light on - have not correct type');
     }
+
+    return true;
   }
 
   function remainingTimeToLightOffCb(newValue) {
+    /**
+     * Значение таймера отключения света может стать нулем в двух случаях:
+     * 1 - Таймер дошел до конца без новых внешних воздействи
+     * 2 - Таймер был обнулен так как движение снова появилось
+     */
+    curMotionStatus = dev[genNames.vDevice + '/motionInProgress'];
+    if (newValue === 0 && curMotionStatus === true) {
+      /* Ничего не делаем если при движении обнулился таймер */
+      return true;
+    }
+
     if (newValue === 0) {
       turnOffLightsByTimeout();
     } else if (newValue >= 1) {
@@ -808,8 +844,10 @@ function init(
       }
       lightOffTimerId = setTimeout(updateRemainingLightOffTime, 1000);
     } else {
-      log.error('Remaining time to light enable - have not correct type');
+      log.error('Remaining time to light enable: have not correct value:' + newValue);
     }
+
+    return true;
   }
 
   function remainingTimeToLogicEnableCb(newValue) {
@@ -822,8 +860,10 @@ function init(
       }
       logicEnableTimerId = setTimeout(updateRemainingLogicEnableTime, 1000);
     } else {
-      log.error('Remaining time to logic enable - have not correct type');
+      log.error('Remaining time to logic enable: have not correct value:' + newValue);
     }
+
+    return true;
   }
 
   function lightSwitchUsedCb(newValue) {
@@ -832,6 +872,8 @@ function init(
     // log.debug('Использован выключатель');
     var curValue = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
     dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = !curValue;
+
+    return true;
   }
 
   function openingSensorTriggeredLaunchCb(newValue) {
@@ -839,6 +881,8 @@ function init(
     // log.debug('Opening detected on sensor ' + devName + '/' + cellName);
     // log.debug('Одна из дверей открыта');
     dev[genNames.vDevice + '/doorOpen'] = true;
+
+    return true;
   }
 
   function openingSensorTriggeredResetCb(newValue) {
@@ -851,6 +895,8 @@ function init(
     } else {
       // log.debug('~ Some opening sensors are still active - do nothing');
     }
+
+    return true;
   }
 
   //Извлечение имен контролов (mqttTopicName) из массива
@@ -937,33 +983,6 @@ function init(
 
     return true;
   }
-
-  function switchTriggeredHandler(newValue, devName, cellName) {
-    var res = eventRegistry.processEvent(devName + '/' + cellName, newValue);
-    log.debug('switchTriggeredHandler res = ' + JSON.stringify(res));
-  }
-
-  function doorOpenHandler(newValue, devName, cellName) {
-    var res = eventRegistry.processEvent(devName + '/' + cellName, newValue);
-    log.debug('doorOpenHandler res = ' + JSON.stringify(res));
-  }
-
-  function lightOnHandler(newValue, devName, cellName) {
-    eventRegistry.processEvent(devName + '/' + cellName, newValue);
-  }
-
-  function logicDisabledBySwitchHandler(newValue, devName, cellName) {
-    eventRegistry.processEvent(devName + '/' + cellName, newValue);
-  }
-
-  function remainingTimeToLightOffHandler(newValue, devName, cellName) {
-    eventRegistry.processEvent(devName + '/' + cellName, newValue);
-  }
-
-  function remainingTimeToLogicEnableHandler(newValue, devName, cellName) {
-    eventRegistry.processEvent(devName + '/' + cellName, newValue);
-  }
-
 }
 
 exports.init = function (
