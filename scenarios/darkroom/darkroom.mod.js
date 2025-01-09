@@ -130,6 +130,11 @@ function init(
     doorOpenCb
   );
   eventRegistry.registerSingleEvent(
+    genNames.vDevice + '/remainingTimeToLightOffInSec',
+    'whenChange',
+    remainingTimeToLightOffCb
+  );
+  eventRegistry.registerSingleEvent(
     genNames.vDevice + '/lightOn',
     'whenChange',
     lightOnCb
@@ -266,6 +271,29 @@ function init(
       '" was successfully created'
   );
 
+  // Правило следящее за изменением значения задержки до выключения света
+  var ruleIdRemainingTimeToLightOffInSec = defineRule(
+    genNames.ruleRemainingTimeToLightOffInSec,
+    {
+      whenChanged: [genNames.vDevice + '/remainingTimeToLightOffInSec'],
+      then: function (newValue, devName, cellName) {
+        remainingTimeToLightOffHandler(newValue, devName, cellName);
+      },
+    }
+  );
+  if (!ruleIdRemainingTimeToLightOffInSec) {
+    setError(
+      'WB-rule "' + genNames.ruleRemainingTimeToLightOffInSec + '" not created'
+    );
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      genNames.ruleRemainingTimeToLightOffInSec +
+      '" was successfully created'
+  );
+
+
   log.debug('Darkroom initialization completed successfully');
   return true;
 
@@ -286,6 +314,8 @@ function init(
       ruleLightOn: rulePrefix + 'lightOn' + postfix,
       ruleLogicDisabledByWallSwitch:
         rulePrefix + 'logicDisabledByWallSwitch' + postfix,
+      ruleRemainingTimeToLightOffInSec:
+        rulePrefix + 'remainingTimeToLightOffInSec' + postfix,
       ruleMotion: rulePrefix + 'motion' + postfix,
       ruleOpening: rulePrefix + 'opening' + postfix,
       ruleSwitches: rulePrefix + 'switches' + postfix,
@@ -422,7 +452,8 @@ function init(
      *        wb-rules не гарантирует порядок инициализации виртуальных устройств
      * @fixme: попробовать это как то поправить
      */
-    log.debug('Debug enabled - create additional controls in VD');
+    log.debug('Debug enabled:');
+    log.debug('- START create additional controls in VD');
 
     var titlePrefix = '▼  ';
     var titlePostfix = ':';
@@ -478,6 +509,7 @@ function init(
       );
       addLinkedControlsArray(lightSwitches, 'light_switch');
     }
+    log.debug('- STOP create additional controls in VD');
   }
 
 
@@ -494,13 +526,13 @@ function init(
   }
 
   /**
-   * Обновляет оставшееся время до отключения света каждую секунду
+   * Обновляет содержашееся в контроле цифру оставшегося времени
+   * до отключения света каждую секунду
    */
   function updateRemainingLightOffTime() {
     var remainingTime = dev[genNames.vDevice + '/remainingTimeToLightOffInSec'];
-    if (remainingTime > 0) {
+    if (remainingTime >= 1) {
       dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = remainingTime - 1;
-      setTimeout(updateRemainingLightOffTime, 1000);
     }
   }
 
@@ -509,26 +541,20 @@ function init(
    * @param {number} newDelayMs - Задержка в миллисекундах
    */
   function startLightOffTimer(newDelayMs) {
-    // dev[genNames.vDevice + '/curDisableLightTimerInSec'] = newDelayMs / 1000;
-    dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelayMs / 1000;
+    var newDelaySec = newDelayMs / 1000;
+    dev[genNames.vDevice + '/curDisableLightTimerInSec'] = newDelaySec;
+    dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
 
-    // if (lightOffTimerId) {
-    //   clearTimeout(lightOffTimerId);
-    // }
-
-    updateRemainingLightOffTime();
-
-    // lightOffTimerId = setTimeout(turnOffLights, newDelayMs);
+    // @note: timer started when you set new value in timer control
   }
 
-
-  // /**
-  //  * Выключает освещение
-  //  */
-  // function turnOffLights() {
-  //   setValueAllDevicesByBehavior(lightDevices, false);
-  //   resetLightOffTimer();
-  // }
+  /**
+   * Выключает освещение
+   */
+  function turnOffLightsByTimeout() {
+    dev[genNames.vDevice + '/lightOn'] = false;
+    resetLightOffTimer();
+  }
 
   /**Включение/выключение всех устройств в массиве согласно указанному типу поведения
    * @param {Array} actionControlsArr Массив контролов с указанием
@@ -569,28 +595,12 @@ function init(
   function resetLightOffTimer() {
     lightOffTimerId = null;
     dev[genNames.vDevice + '/curDisableLightTimerInSec'] = 0;
+    dev[genNames.vDevice + "/remainingTimeToLightOffInSec"] = 0;
   }
 
   function resetLogicEnableTimer() {
     logicEnableTimerId = null;
     dev[genNames.vDevice + '/curDisabledLogicTimerInSec'] = 0;
-  }
-
-  // Функция обновления таймера:
-  function setLightOffTimer(newDelayMs) {
-    dev[genNames.vDevice + '/curDisableLightTimerInSec'] = newDelayMs / 1000;
-    if (lightOffTimerId) {
-      clearTimeout(lightOffTimerId);
-    }
-    // log.debug('Set new delay: ' + (newDelayMs / 1000) + ' sec and set new timer');
-    lightOffTimerId = setTimeout(function () {
-      // log.debug('No activity in the last ' + (newDelayMs / 1000) + ' sec, turn lights off');
-      dev[genNames.vDevice + '/lightOn'] = false;
-      resetLightOffTimer();
-    }, newDelayMs);
-
-    // @todo: удалить все выше
-    startLightOffTimer(newDelayMs);
   }
 
   function setLogicEnableTimer(newDelayMs) {
@@ -739,7 +749,7 @@ function init(
     }
     if (newValue === true) {
       dev[genNames.vDevice + '/lightOn'] = true;
-      setLightOffTimer(delayBlockAfterSwitch * 1000);
+      startLightOffTimer(delayBlockAfterSwitch * 1000);
       setLogicEnableTimer(delayBlockAfterSwitch * 1000);
     } else {
       dev[genNames.vDevice + '/lightOn'] = false;
@@ -750,7 +760,7 @@ function init(
     if (newValue === true) {
       // log.debug('Minimum one door is open');
       dev[genNames.vDevice + '/lightOn'] = true;
-      setLightOffTimer(delayByOpeningSensors * 1000);
+      startLightOffTimer(delayByOpeningSensors * 1000);
     } else if (newValue === false) {
       // log.debug('All doors is close');
     } else {
@@ -767,6 +777,22 @@ function init(
       setValueAllDevicesByBehavior(lightDevices, false);
     } else {
       log.error('Light on - have not correct type');
+    }
+  }
+
+  function remainingTimeToLightOffCb(newValue) {
+    if (newValue === 0) {
+      log.debug('Remaining time to light off = 0');
+      turnOffLightsByTimeout();
+    } else if (newValue >= 1) {
+      log.debug('Remaining time to logic enable = ' + newValue);
+      // Recharge timer
+      if (lightOffTimerId) {
+        clearTimeout(lightOffTimerId);
+      }
+      lightOffTimerId = setTimeout(updateRemainingLightOffTime, 1000);
+    } else {
+      log.error('Remaining time to logic enable - have not correct type');
     }
   }
 
@@ -823,7 +849,7 @@ function init(
       dev[genNames.vDevice + '/lightOn'] = true;
     } else {
       // log.debug('~ Motion end detected - set timer for disable light!');
-      setLightOffTimer(delayByMotionSensors * 1000);
+      startLightOffTimer(delayByMotionSensors * 1000);
     }
   }
 
@@ -899,6 +925,11 @@ function init(
   function logicDisabledBySwitchHandler(newValue, devName, cellName) {
     eventRegistry.processEvent(devName + '/' + cellName, newValue);
   }
+
+  function remainingTimeToLightOffHandler(newValue, devName, cellName) {
+    eventRegistry.processEvent(devName + '/' + cellName, newValue);
+  }
+
 }
 
 exports.init = function (
