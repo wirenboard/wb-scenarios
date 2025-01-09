@@ -106,6 +106,7 @@ function init(
   if (isDebugEnabled === true) {
     // Нужна задержка чтобы успели создаться все используемые нами девайсы
     // ДО того как мы будем создавать связь на них
+    // Значение 100мс бывает мало, поэтому установлено 1000мс = 1с
     setTimeout(addAllLinkedDevicesToVd, 1000)
   } else {
     log.debug('Debug disabled and have value: "' + isDebugEnabled + '"');
@@ -382,31 +383,6 @@ function init(
         readonly: true,
         order: 3,
       },
-      // Текущая задержка, меняется в зависимости от последнего
-      // сработавшего типа датчика
-      curDisableLightTimerInSec: {
-        title: {
-          en: 'Disable timer',
-          ru: 'Таймер отключения',
-        },
-        units: 's',
-        type: 'value',
-        value: 0,
-        readonly: true,
-        order: 4,
-      },
-      // Текущая задержка отключенной логики
-      curDisabledLogicTimerInSec: {
-        title: {
-          en: 'Disabled logic timer',
-          ru: 'Таймер отключенной логики',
-        },
-        units: 's',
-        type: 'value',
-        value: 0,
-        readonly: true,
-        order: 5,
-      },
       motionInProgress: {
         title: { en: 'Motion in progress', ru: 'Есть движение' },
         type: 'switch',
@@ -448,11 +424,9 @@ function init(
    * с данным виртуальным устройством контролов
    */
   function addLinkedControlsArray(arrayOfControls, cellPrefix) {
-    log.debug('  - Start add ' + cellPrefix + ' ctrl. Array lenght {}', arrayOfControls.length);
     for (var i = 0; i < arrayOfControls.length; i++) {
       var curMqttControl = arrayOfControls[i].mqttTopicName;
       var cellName = cellPrefix + '_' + i;
-      log.debug('    ... Processing ' + cellName + ' ctrl');
       var vdControlCreated = vdHelpers.addLinkedControlRO(
         curMqttControl,
         vDevObj,
@@ -462,11 +436,11 @@ function init(
       );
       if (!vdControlCreated) {
         setError(
-          '  - Failed to add ' + cellPrefix + ' ctrl for ' + curMqttControl
+          'Failed to add ' + cellPrefix + ' ctrl for ' + curMqttControl
         );
       }
       log.debug(
-        '  - Success add ' + cellPrefix + ' ctrl for ' + curMqttControl
+        'Success add ' + cellPrefix + ' ctrl for ' + curMqttControl
       );
     }
   }
@@ -482,64 +456,49 @@ function init(
      *        wb-rules не гарантирует порядок инициализации виртуальных устройств
      * @fixme: попробовать это как то поправить
      */
-    log.debug('Debug enabled:');
-    log.debug('- START create additional controls in VD');
 
-    var titlePrefix = '▼  ';
-    var titlePostfix = ':';
+    // Текущая задержка, меняется в зависимости от последнего
+    // сработавшего типа датчика
+    vDevObj.addControl('curValDisableLightTimerInSec', {
+      title: {
+        en: 'Dbg: Disable timer',
+        ru: 'Dbg: Таймер отключения',
+      },
+      units: 's',
+      type: 'value',
+      value: 0,
+      readonly: true,
+      value: '',
+    });
 
-    vdHelpers.addGroupTitleRO(
-      vDevObj,
-      genNames.vDevice,
-      'debugTitle',
-      '☢ ☢ Debug info ☢ ☢',
-      '☢ ☢ Отладочная информация ☢ ☢'
-    );
+    // Текущая задержка отключенной логики
+    vDevObj.addControl('curValDisabledLogicTimerInSec', {
+      title: {
+        en: 'Dbg: Disabled logic timer',
+        ru: 'Dbg: Таймер отключенной логики',
+      },
+      units: 's',
+      type: 'value',
+      value: 0,
+      readonly: true,
+      value: '',
+    });
 
     if(lightDevices.length > 0) {
-      vdHelpers.addGroupTitleRO(
-        vDevObj,
-        genNames.vDevice,
-        'lightDevicesTitle',
-        titlePrefix + 'Устройства освещения' + titlePostfix,
-        titlePrefix + 'Light devices' + titlePostfix
-      );
       addLinkedControlsArray(lightDevices, 'light_sensor');
     }
 
     if(motionSensors.length > 0) {
-      vdHelpers.addGroupTitleRO(
-        vDevObj,
-        genNames.vDevice,
-        'motionSensorsTitle',
-        titlePrefix + 'Датчики движения' + titlePostfix,
-        titlePrefix + 'Motion sensors' + titlePostfix
-      );
       addLinkedControlsArray(motionSensors, 'motion_sensor');
     }
 
     if(openingSensors.length > 0) {
-      vdHelpers.addGroupTitleRO(
-        vDevObj,
-        genNames.vDevice,
-        'openingSensorsTitle',
-        titlePrefix + 'Датчики открытия' + titlePostfix,
-        titlePrefix + 'Opening sensors' + titlePostfix
-      );
       addLinkedControlsArray(openingSensors, 'opening_sensor');
     }
 
     if(lightSwitches.length > 0) {
-      vdHelpers.addGroupTitleRO(
-        vDevObj,
-        genNames.vDevice,
-        'lightSwitchesTitle',
-        titlePrefix + 'Выключатели света' + titlePostfix,
-        titlePrefix + 'Light switches' + titlePostfix
-      );
       addLinkedControlsArray(lightSwitches, 'light_switch');
     }
-    log.debug('- STOP create additional controls in VD');
   }
 
 
@@ -582,9 +541,11 @@ function init(
    */
   function startLightOffTimer(newDelayMs) {
     var newDelaySec = newDelayMs / 1000;
-    dev[genNames.vDevice + '/curDisableLightTimerInSec'] = newDelaySec;
     dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
 
+    if (isDebugEnabled === true) {
+      dev[genNames.vDevice + '/curValDisableLightTimerInSec'] = newDelaySec;
+    }
     // @note: Таймер автоматически запускает обратный отсчет при установке
     //        нового значения в контрол таймера.
   }
@@ -595,9 +556,11 @@ function init(
    */
   function startLogicEnableTimer(newDelayMs) {
     var newDelaySec = newDelayMs / 1000;
-    dev[genNames.vDevice + '/curDisabledLogicTimerInSec'] = newDelaySec;
     dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = newDelaySec;
 
+    if (isDebugEnabled === true) {
+      dev[genNames.vDevice + '/curValDisabledLogicTimerInSec'] = newDelaySec;
+    }
     // @note: Таймер автоматически запускает обратный отсчет при установке
     //        нового значения в контрол таймера
   }
@@ -656,14 +619,20 @@ function init(
 
   function resetLightOffTimer() {
     lightOffTimerId = null;
-    dev[genNames.vDevice + '/curDisableLightTimerInSec'] = 0;
     dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = 0;
+
+    if (isDebugEnabled === true) {
+      dev[genNames.vDevice + '/curValDisableLightTimerInSec'] = 0;
+    }
   }
 
   function resetLogicEnableTimer() {
     logicEnableTimerId = null;
-    dev[genNames.vDevice + '/curDisabledLogicTimerInSec'] = 0;
     dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = 0;
+
+    if (isDebugEnabled === true) {
+      dev[genNames.vDevice + '/curValDisabledLogicTimerInSec'] = 0;
+    }
   }
 
   /**
@@ -831,10 +800,8 @@ function init(
 
   function remainingTimeToLightOffCb(newValue) {
     if (newValue === 0) {
-      log.debug('Remaining time to light off = 0');
       turnOffLightsByTimeout();
     } else if (newValue >= 1) {
-      log.debug('Remaining time to logic enable = ' + newValue);
       // Recharge timer
       if (lightOffTimerId) {
         clearTimeout(lightOffTimerId);
@@ -847,10 +814,8 @@ function init(
 
   function remainingTimeToLogicEnableCb(newValue) {
     if (newValue === 0) {
-      log.debug('Remaining time to logic enable = 0');
       enableLogicByTimeout();
     } else if (newValue >= 1) {
-      log.debug('Remaining time to logic enable = ' + newValue);
       // Recharge timer
       if (logicEnableTimerId) {
         clearTimeout(logicEnableTimerId);
