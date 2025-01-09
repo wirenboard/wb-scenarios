@@ -58,10 +58,16 @@ var eventRegistry = eventModule.createEventRegistry();
 ```javascript
 function lightEnabled(value) {
   log.debug('Light enabled with value: ' + value);
+
+  /* Обязательно вернуть true если все хорошо */
+  return true;
 }
 
 function lightDisabled(value) {
   log.debug('Light disabled with value:' + value);
+
+  /* Обязательно вернуть true если все хорошо */
+  return true;
 }
 
 eventRegistry.registerEvent('home/light', 'whenEnabled', lightEnabled);
@@ -80,6 +86,37 @@ eventRegistry.registerEvent('home/light', 'whenDisabled', lightDisabled);
 eventRegistry.processEvent('home/light', true);
 ```
 
+Для проверки результата обработки можно получить итог обработки:
+```javascript
+var res = eventRegistry.processEvent(devName + '/' + cellName, newValue);
+log.debug('doorOpenHandler res = ' + JSON.stringify(res));
+```
+
+Выведет в случае успеха:
+```javascript
+doorOpenHandler res = {"status":"processed_success","message":"Событие обработано успешно"}
+```
+
+В случае если не будет найдено обработчиков или из коллбека вернется некорректное значение
+```javascript
+doorOpenHandler res = {"status":"no_events_registered","message":"Нет обрабатываемых событий для данного топика"}
+```
+
+Это значит что был найден как топик, так и соответствующее событие
+для обработки, а так же вызван обработчик события.
+
+Возможные варианты статусов такие:
+```javascript
+status: 'processed_success' | 'processed_with_issue' | 'no_events_registered' | 'topic_not_found'
+```
+
+Данный функционал обработки результата будет полезен для выявления обратных
+событий - например если вы зарегистрировали событие на обработку только
+whenEnabled - и ваш контрол имеет тип bool - то вы сможете понять на сколько
+часто происходит обратное событие.
+
+Либо вы можете возвращать какую либо ошибку в случае ошибки в назначенном
+коллбеке, например выход за границы установленных значений.
 
 ### 4. Отладка
 
