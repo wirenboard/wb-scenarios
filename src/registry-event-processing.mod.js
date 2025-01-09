@@ -264,7 +264,7 @@ function createRegistryForEvents() {
    * @param {any} value - Новое значение топика
    * @returns {Object} - Статус обработки:
    *                     { 
-   *                       status: 'success' | 'no_events_registered' | 'topic_not_found',
+   *                       status: 'processed_success' | 'processed_with_issue' | 'no_events_registered' | 'topic_not_found',
    *                       message: string
    *                     }
    */
@@ -306,12 +306,15 @@ function createRegistryForEvents() {
       var eventObj = topicEvents[curEventType];
       var isCallbackValid = eventObj && typeof eventObj.callback === 'function';
 
+      /* Статус возврата из коллбека */
+      var cbRetStatus = true;
+
       if (isCallbackValid) {
         // log.debug(
         //   'Выполнение callback для топика "' + topic +
         //   '", тип события "' + curEventType + '"'
         // );
-        eventObj.callback(value);
+        cbRetStatus = eventObj.callback(value);
         hasProcessed = true;
       } else {
         log.error(
@@ -321,10 +324,16 @@ function createRegistryForEvents() {
       }
     }
 
-    if (hasProcessed) {
+    if (hasProcessed === true && cbRetStatus === true) {
       res = {
-        status: 'success',
+        status: 'processed_success',
         message: 'Событие обработано успешно'
+      };
+      return res;
+    } else if (hasProcessed === true && cbRetStatus === false) {
+      res = {
+        status: 'processed_with_issue',
+        message: 'Событие обработано, но callback вернул ошибку'
       };
       return res;
     }
