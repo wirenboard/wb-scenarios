@@ -356,7 +356,7 @@ function init(
   function buildVirtualDeviceCells() {
     var cells = {
       active: {
-        title: { en: 'Activate rule?', ru: 'Активировать правило?' },
+        title: { en: 'Enable rule', ru: 'Включить правило' },
         type: 'switch',
         value: true,
         order: 1,
