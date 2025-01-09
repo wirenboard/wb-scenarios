@@ -13,7 +13,6 @@
  * @returns {boolean} Возвращает true, если контрол существует, иначе false
  */
 function isControlExists(controlName) {
-  log.debug('      ... START try check controlName = ' + controlName);
   var isExist = (dev[controlName] !== null)
   if (!isExist) {
     log.error(
@@ -22,7 +21,6 @@ function isControlExists(controlName) {
     );
     return false;
   }
-  log.debug('Control: ' + controlName + ' | Value: ' + dev[controlName]);
   return true;
 }
 
@@ -44,15 +42,12 @@ function addLinkedControlRO(
   cellBaseName,
   titlePrefix
 ) {
-  log.debug('      ... srcMqttControl = ' + srcMqttControl);
   if(!isControlExists(srcMqttControl)) return false;
   var cellTitle = titlePrefix + ' ' + srcMqttControl;
   var srcControlType = dev[srcMqttControl + '#type'];
-  
-  log.debug('      ... srcControlValue = ' + dev[srcMqttControl]);
-  log.debug('      ... srcControlType = ' + srcControlType);
+
   vDevObj.addControl(cellBaseName, {
-    title: cellTitle,
+    title: cellTitle, // Титл автогенерируемый из имени топика, поэтому без RU
     type: srcControlType,
     readonly: true,
     value: dev[srcMqttControl],
@@ -63,7 +58,6 @@ function addLinkedControlRO(
   defineRule(ruleName, {
     whenChanged: srcMqttControl,
     then: function (newValue, devName, cellName) {
-      // log.debug('srcMqttControl "' + srcMqttControl + '" changed to: ' + newValue);
       dev[vDevName + '/' + cellBaseName] = newValue;
     },
   });
