@@ -16,6 +16,8 @@ var eventModule = require('registry-event-processing.mod');
  *     виртуального устройства и правила
  * @param {string} deviceTitle Имя виртуального девайса указанное
  *     пользователем
+ * @param {boolean} isDebugEnabled Включение дополнительного отображения
+ *     состояния всех подключенных устройств в виртуальном девайсе
  * @param {number} delayByMotionSensors Задержка выключения света после
  *     срабатывания любого из датчиков движения (сек)
  * @param {number} delayByOpeningSensors Задержка выключения света после
@@ -133,6 +135,11 @@ function init(
     genNames.vDevice + '/remainingTimeToLightOffInSec',
     'whenChange',
     remainingTimeToLightOffCb
+  );
+  eventRegistry.registerSingleEvent(
+    genNames.vDevice + '/remainingTimeToLogicEnableInSec',
+    'whenChange',
+    remainingTimeToLogicEnableCb
   );
   eventRegistry.registerSingleEvent(
     genNames.vDevice + '/lightOn',
@@ -293,6 +300,27 @@ function init(
       '" was successfully created'
   );
 
+  // Правило следящее за изменением значения задержки до включения логики сценария
+  var ruleIdRemainingTimeToLogicEnableInSec = defineRule(
+    genNames.ruleRemainingTimeToLogicEnableInSec,
+    {
+      whenChanged: [genNames.vDevice + '/remainingTimeToLogicEnableInSec'],
+      then: function (newValue, devName, cellName) {
+        remainingTimeToLogicEnableHandler(newValue, devName, cellName);
+      },
+    }
+  );
+  if (!ruleIdRemainingTimeToLogicEnableInSec) {
+    setError(
+      'WB-rule "' + genNames.ruleRemainingTimeToLogicEnableInSec + '" not created'
+    );
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      genNames.ruleRemainingTimeToLogicEnableInSec +
+      '" was successfully created'
+  );
 
   log.debug('Darkroom initialization completed successfully');
   return true;
@@ -316,6 +344,8 @@ function init(
         rulePrefix + 'logicDisabledByWallSwitch' + postfix,
       ruleRemainingTimeToLightOffInSec:
         rulePrefix + 'remainingTimeToLightOffInSec' + postfix,
+      ruleRemainingTimeToLogicEnableInSec:
+        rulePrefix + 'remainingTimeToLogicEnableInSec' + postfix,
       ruleMotion: rulePrefix + 'motion' + postfix,
       ruleOpening: rulePrefix + 'opening' + postfix,
       ruleSwitches: rulePrefix + 'switches' + postfix,
@@ -537,6 +567,16 @@ function init(
   }
 
   /**
+   * Обновляет оставшееся время до активации логики каждую секунду
+   */
+  function updateRemainingLogicEnableTime() {
+    var remainingTime = dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'];
+    if (remainingTime >= 1) {
+      dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = remainingTime - 1;
+    }
+  }
+
+  /**
    * Запускает таймер отключения света
    * @param {number} newDelayMs - Задержка в миллисекундах
    */
@@ -545,7 +585,21 @@ function init(
     dev[genNames.vDevice + '/curDisableLightTimerInSec'] = newDelaySec;
     dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
 
-    // @note: timer started when you set new value in timer control
+    // @note: Таймер автоматически запускает обратный отсчет при установке
+    //        нового значения в контрол таймера.
+  }
+
+  /**
+   * Запускает таймер включения логики
+   * @param {number} newDelayMs - Задержка в миллисекундах
+   */
+  function startLogicEnableTimer(newDelayMs) {
+    var newDelaySec = newDelayMs / 1000;
+    dev[genNames.vDevice + '/curDisabledLogicTimerInSec'] = newDelaySec;
+    dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = newDelaySec;
+
+    // @note: Таймер автоматически запускает обратный отсчет при установке
+    //        нового значения в контрол таймера
   }
 
   /**
@@ -554,6 +608,14 @@ function init(
   function turnOffLightsByTimeout() {
     dev[genNames.vDevice + '/lightOn'] = false;
     resetLightOffTimer();
+  }
+
+  /**
+   * Включает логику сценария
+   */
+  function enableLogicByTimeout() {
+    dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
+    resetLogicEnableTimer();
   }
 
   /**Включение/выключение всех устройств в массиве согласно указанному типу поведения
@@ -595,26 +657,13 @@ function init(
   function resetLightOffTimer() {
     lightOffTimerId = null;
     dev[genNames.vDevice + '/curDisableLightTimerInSec'] = 0;
-    dev[genNames.vDevice + "/remainingTimeToLightOffInSec"] = 0;
+    dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = 0;
   }
 
   function resetLogicEnableTimer() {
     logicEnableTimerId = null;
     dev[genNames.vDevice + '/curDisabledLogicTimerInSec'] = 0;
-  }
-
-  function setLogicEnableTimer(newDelayMs) {
-    dev[genNames.vDevice + '/curDisabledLogicTimerInSec'] =
-      newDelayMs / 1000;
-    if (logicEnableTimerId) {
-      clearTimeout(logicEnableTimerId);
-    }
-    // log.debug('Set new delay: ' + (newDelayMs / 1000) + ' sec and set new timer');
-    logicEnableTimerId = setTimeout(function () {
-      // log.debug('No activity in the last ' + (newDelayMs / 1000) + ' sec, turn logic on');
-      dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
-      resetLogicEnableTimer();
-    }, newDelayMs);
+    dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = 0;
   }
 
   /**
@@ -750,7 +799,7 @@ function init(
     if (newValue === true) {
       dev[genNames.vDevice + '/lightOn'] = true;
       startLightOffTimer(delayBlockAfterSwitch * 1000);
-      setLogicEnableTimer(delayBlockAfterSwitch * 1000);
+      startLogicEnableTimer(delayBlockAfterSwitch * 1000);
     } else {
       dev[genNames.vDevice + '/lightOn'] = false;
     }
@@ -791,6 +840,22 @@ function init(
         clearTimeout(lightOffTimerId);
       }
       lightOffTimerId = setTimeout(updateRemainingLightOffTime, 1000);
+    } else {
+      log.error('Remaining time to light enable - have not correct type');
+    }
+  }
+
+  function remainingTimeToLogicEnableCb(newValue) {
+    if (newValue === 0) {
+      log.debug('Remaining time to logic enable = 0');
+      enableLogicByTimeout();
+    } else if (newValue >= 1) {
+      log.debug('Remaining time to logic enable = ' + newValue);
+      // Recharge timer
+      if (logicEnableTimerId) {
+        clearTimeout(logicEnableTimerId);
+      }
+      logicEnableTimerId = setTimeout(updateRemainingLogicEnableTime, 1000);
     } else {
       log.error('Remaining time to logic enable - have not correct type');
     }
@@ -927,6 +992,10 @@ function init(
   }
 
   function remainingTimeToLightOffHandler(newValue, devName, cellName) {
+    eventRegistry.processEvent(devName + '/' + cellName, newValue);
+  }
+
+  function remainingTimeToLogicEnableHandler(newValue, devName, cellName) {
     eventRegistry.processEvent(devName + '/' + cellName, newValue);
   }
 
