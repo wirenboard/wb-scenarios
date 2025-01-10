@@ -310,15 +310,6 @@
             "patternmessage": "generalErrorRegexpPatternMessage"
           }
         },
-        "delayBlockAfterSwitch": {
-          "type": "number",
-          "title": "darkroomdelayBlockAfterSwitch",
-          "default": 3600,
-          "propertyOrder": 7,
-          "options": {
-            "grid_columns": 12
-          }
-        },
         "lightDevices": {
           "type": "array",
           "title": "darkroomLightDevicesArrTitle",
@@ -567,46 +558,67 @@
           }
         },
         "lightSwitches": {
-          "type": "array",
-          "title": "darkroomLightSwitchesArrTitle",
-          "_title_note": "When options-> compact: true - this title not shown",
-          "description": "darkroomLightSwitchesArrDescription",
-          "propertyOrder": 11,
-          "_format": "table",
+          "type": "object",
+          "title": "darkroomLightSwitchesTitle",
+          "propertyOrder": 5,
           "options": {
             "disable_collapse": true,
-            "grid_columns": 12,
-            "array_controls_top": true,
-            "disable_array_delete_last_row": true,
-            "disable_array_reorder": true,
-            "wb": {
-              "disable_panel": true
-            }
+            "disable_edit_json": true,
+            "disable_properties": true
           },
-          "items": {
-            "title": "darkroomLightSwitchesObjTitle",
-            "type": "object",
-            "properties": {
-              "mqttTopicName": {
-                "type": "string",
-                "propertyOrder": 1,
-                "title": "generalMqttTopicNameTitle",
-                "description": "generalMqttTopicNameDescription",
-                "pattern": "^[^/+#]+/[^/+#]+$",
-                "_format": "wb-autocomplete",
-                "options": {
-                  "patternmessage": "generalErrorRegexpPatternMessage",
-                  "wb": {
-                    "data": "devices"
-                  }
-                },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
-                "minLength": 3
+          "properties": {
+            "delayToLightOffAndEnable": {
+              "type": "number",
+              "title": "darkroomLightSwitchesDelayTitle",
+              "default": 3600,
+              "propertyOrder": 7,
+              "options": {
+                "grid_columns": 12
               }
             },
-            "required": [
-              "mqttTopicName"
-            ]
+            "sensorObjects": {
+              "type": "array",
+              "title": "generalSensorArrTitle",
+              "_title_note": "When options-> compact: true - this title not shown",
+              "description": "darkroomLightSwitchesArrDescription",
+              "propertyOrder": 11,
+              "_format": "table",
+              "options": {
+                "disable_collapse": true,
+                "grid_columns": 12,
+                "array_controls_top": true,
+                "disable_array_delete_last_row": true,
+                "disable_array_reorder": true,
+                "wb": {
+                  "disable_panel": true
+                }
+              },
+              "items": {
+                "title": "darkroomLightSwitchesObjTitle",
+                "type": "object",
+                "properties": {
+                  "mqttTopicName": {
+                    "type": "string",
+                    "propertyOrder": 1,
+                    "title": "generalMqttTopicNameTitle",
+                    "description": "generalMqttTopicNameDescription",
+                    "pattern": "^[^/+#]+/[^/+#]+$",
+                    "_format": "wb-autocomplete",
+                    "options": {
+                      "patternmessage": "generalErrorRegexpPatternMessage",
+                      "wb": {
+                        "data": "devices"
+                      }
+                    },
+                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "minLength": 3
+                  }
+                },
+                "required": [
+                  "mqttTopicName"
+                ]
+              }
+            }
           }
         }
       },
@@ -616,7 +628,6 @@
         "enable",
         "name",
         "id_prefix",
-        "delayBlockAfterSwitch",
         "motionSensors",
         "openingSensors",
         "lightDevices",
@@ -665,7 +676,7 @@
       "generalActionValueTitle": "Value",
       "generalErrorRegexpPatternMessage": "Value must be valid",
       "generalEnumSetValue": "Set Value",
-      "generalSensorArrTitle": "Sensor list",
+      "generalSensorArrTitle": "Elements list",
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "id_prefix_title": "MQTT id of the device",
       "id_prefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
@@ -679,7 +690,6 @@
       "outControls_actionValue_description": "If necessary",
       "darkroomScenarioName": "Dark room",
       "darkroomScenarioDescription": "This scenario is suitable for managing lighting in bathrooms, hallways,<br>storage rooms, and other spaces where light is used briefly, and manual<br>switching is inconvenient. Using motion sensors and opening sensors,<br>the light turns on automatically when entering the room and turns off<br>after a set time once it is empty.",
-      "darkroomdelayBlockAfterSwitch": "Turn-on delay for the light and scenario logic execution after using the switch (seconds)",
       "darkroomLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-devices.png\" height=\"30\">  Light devices</p>",
       "darkroomLightDevicesArrDescription": "This list of light devices will be enabled sequentially when the automation is triggered.",
       "darkroomLightDevicesObjTitle": "Light device",
@@ -695,7 +705,8 @@
       "darkroomOpeningSensorsBehaviorTypeDescription": "Door opening event",
       "darkroomOpeningSensorsEnumWhenDisabled": "When disabled",
       "darkroomOpeningSensorsEnumWhenEnabled": "When ebabled",
-      "darkroomLightSwitchesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Light switches</p>",
+      "darkroomLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Light switches</p>",
+      "darkroomLightSwitchesDelayTitle": "Turn-off delay for the light and turn-off scenario logic execution after using the switch (seconds)",
       "darkroomLightSwitchesArrDescription": "When the switch is pressed, the light turns on, and automatic light control is paused.<br>The control logic is automatically restored after a set time or upon pressing the switch again.",
       "darkroomLightSwitchesObjTitle": "Switch"
     },
@@ -709,7 +720,7 @@
       "generalActionValueTitle": "Значение",
       "generalErrorRegexpPatternMessage": "Значение должно быть корректным",
       "generalEnumSetValue": "Установить значение",
-      "generalSensorArrTitle": "Список датчиков",
+      "generalSensorArrTitle": "Список элементов",
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
@@ -736,7 +747,6 @@
       "Decrease Value By": "Уменьшить  значение на",
       "darkroomScenarioName": "Темная комната",
       "darkroomScenarioDescription": "Сценарий подходит для управления освещением в ванных комнатах, коридорах,<br>кладовках и других помещениях,где свет используется кратковременно, а ручное<br>включение неудобно. Благодаря использованию датчиков движения и датчиков<br>открытия, свет автоматически включается при входе в помещение и выключается<br>через заданное время после того, как оно становится пустым.",
-      "darkroomdelayBlockAfterSwitch": "Задержка включения света и логики сценария после использования выключателя (секунды)",
       "darkroomLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-devices.png\" height=\"30\">  Устройства освещения</p>",
       "darkroomLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
       "darkroomLightDevicesObjTitle": "Устройство освещения",
@@ -753,7 +763,8 @@
       "darkroomOpeningSensorsBehaviorTypeDescription": "Событие при открытии двери",
       "darkroomOpeningSensorsEnumWhenDisabled": "Когда отключилось",
       "darkroomOpeningSensorsEnumWhenEnabled": "Когда включилось",
-      "darkroomLightSwitchesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Выключатели света</p>",
+      "darkroomLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Выключатели света</p>",
+      "darkroomLightSwitchesDelayTitle": "Задержка отключения света и включения логики сценария после использования выключателя (секунды)",
       "darkroomLightSwitchesArrDescription": "При нажатии выключателя свет включается, а автоматическое управление<br>светом приостанавливается. Логика управления восстанавливается автоматически<br>через заданное время или после повторного нажатия выключателя.",
       "darkroomLightSwitchesObjTitle": "Выключатель"
     }

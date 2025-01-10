@@ -54,11 +54,11 @@ function initializeScenario(scenario) {
                                    scenario.isDebugEnabled,
                                    scenario.motionSensors.delayToLightOff,
                                    scenario.openingSensors.delayToLightOff,
-                                   scenario.delayBlockAfterSwitch,
+                                   scenario.lightSwitches.delayToLightOffAndEnable ,
                                    scenario.lightDevices,
                                    scenario.motionSensors.sensorObjects,
                                    scenario.openingSensors.sensorObjects,
-                                   scenario.lightSwitches)
+                                   scenario.lightSwitches.sensorObjects)
 
   if (!isInitSucess) {
     log.error("Error: Init operation aborted for scenario with 'idPrefix': " + scenario.id_prefix);
