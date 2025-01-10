@@ -355,7 +355,7 @@ function init(
 
   function buildVirtualDeviceCells() {
     var cells = {
-      active: {
+      ruleEnabled: {
         title: { en: 'Enable rule', ru: 'Включить правило' },
         type: 'switch',
         value: true,
@@ -931,7 +931,7 @@ function init(
 
   // Обработчик, вызываемый при срабатывании датчиков движения и открытия
   function sensorTriggeredHandler(newValue, devName, cellName, sensorType) {
-    var isActive = dev[genNames.vDevice + '/active'];
+    var isActive = dev[genNames.vDevice + '/ruleEnabled'];
     if (isActive === false) {
       // log.debug('Darkroom is disabled in virtual device - doing nothing');
       return true;
