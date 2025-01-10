@@ -316,7 +316,7 @@
           "_title_note": "When options-> compact: true - this title not shown",
           "description": "darkroomLightDevicesArrDescription",
           "minItems": 1,
-          "propertyOrder": 8,
+          "propertyOrder": 5,
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -386,7 +386,7 @@
         "motionSensors": {
           "type": "object",
           "title": "darkroomMotionSensorsTitle",
-          "propertyOrder": 5,
+          "propertyOrder": 6,
           "options": {
             "disable_collapse": true,
             "disable_edit_json": true,
@@ -407,7 +407,7 @@
               "title": "generalSensorArrTitle",
               "_title_note": "When options-> compact: true - this title not shown",
               "description": "darkroomMotionSensorsArrDescription",
-              "propertyOrder": 9,
+              "propertyOrder": 2,
               "_format": "table",
               "options": {
                 "disable_collapse": true,
@@ -478,7 +478,7 @@
         "openingSensors": {
           "type": "object",
           "title": "darkroomOpeningSensorsTitle",
-          "propertyOrder": 5,
+          "propertyOrder": 7,
           "options": {
             "disable_collapse": true,
             "disable_edit_json": true,
@@ -489,7 +489,7 @@
               "type": "number",
               "title": "darkroomOpeningSensorsDelayTitle",
               "default": 180,
-              "propertyOrder": 6,
+              "propertyOrder": 1,
               "options": {
                 "grid_columns": 12
               }
@@ -499,7 +499,7 @@
               "title": "generalSensorArrTitle",
               "_title_note": "When options-> compact: true - this title not shown",
               "description": "darkroomOpeningSensorsArrDescription",
-              "propertyOrder": 10,
+              "propertyOrder": 2,
               "_format": "table",
               "options": {
                 "disable_collapse": true,
@@ -560,7 +560,7 @@
         "lightSwitches": {
           "type": "object",
           "title": "darkroomLightSwitchesTitle",
-          "propertyOrder": 5,
+          "propertyOrder": 8,
           "options": {
             "disable_collapse": true,
             "disable_edit_json": true,
@@ -571,7 +571,7 @@
               "type": "number",
               "title": "darkroomLightSwitchesDelayTitle",
               "default": 3600,
-              "propertyOrder": 7,
+              "propertyOrder": 1,
               "options": {
                 "grid_columns": 12
               }
@@ -581,7 +581,7 @@
               "title": "generalSensorArrTitle",
               "_title_note": "When options-> compact: true - this title not shown",
               "description": "darkroomLightSwitchesArrDescription",
-              "propertyOrder": 11,
+              "propertyOrder": 2,
               "_format": "table",
               "options": {
                 "disable_collapse": true,
