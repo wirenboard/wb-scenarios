@@ -52,11 +52,11 @@ function initializeScenario(scenario) {
   var isInitSucess = darkroom.init(scenario.id_prefix,
                                    scenario.name,
                                    scenario.isDebugEnabled,
-                                   scenario.delayByMotionSensors,
+                                   scenario.motionSensors.delayToLightOff,
                                    scenario.delayByOpeningSensors,
                                    scenario.delayBlockAfterSwitch,
                                    scenario.lightDevices,
-                                   scenario.motionSensors,
+                                   scenario.motionSensors.sensorObjects,
                                    scenario.openingSensors,
                                    scenario.lightSwitches)
 
