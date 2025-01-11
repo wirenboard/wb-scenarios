@@ -20,7 +20,7 @@ SRC_DIR := src/
 
 # Целевые пути
 CONFIG_DEST := $(DESTDIR)/etc
-IMAGE_DEST := $(DESTDIR)/var/www/images
+IMAGE_DEST := $(DESTDIR)/var/www/images/wb-scenarios
 SCHEMA_DEST := $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas
 # Используем системный путь до скриптов /usr/share/wb-rules-system/rules
 # так как /etc/wb-rules/* должно использоваться для пользовательских скриптов
