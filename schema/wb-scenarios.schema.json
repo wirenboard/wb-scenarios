@@ -579,12 +579,25 @@
             "disable_properties": true
           },
           "properties": {
+            "isDelayEnabled": {
+              "title": "lightControlLightSwitchesEnableDelayTitle",
+              "type": "boolean",
+              "default": false,
+              "_format": "checkbox",
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 12
+              }
+            },
             "delayToLightOffAndEnable": {
               "type": "number",
               "title": "lightControlLightSwitchesDelayTitle",
               "default": 3600,
-              "propertyOrder": 1,
+              "propertyOrder": 2,
               "options": {
+                "dependencies": {
+                  "isDelayEnabled": true
+                },
                 "grid_columns": 12
               }
             },
@@ -593,7 +606,7 @@
               "title": "generalSensorArrTitle",
               "_title_note": "When options-> compact: true - this title not shown",
               "description": "lightControlLightSwitchesArrDescription",
-              "propertyOrder": 2,
+              "propertyOrder": 3,
               "_format": "table",
               "options": {
                 "disable_collapse": true,
@@ -718,6 +731,7 @@
       "lightControlOpeningSensorsEnumWhenDisabled": "When disabled",
       "lightControlOpeningSensorsEnumWhenEnabled": "When ebabled",
       "lightControlLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-switch.png\" height=\"30\">  Light switches</p>",
+      "lightControlLightSwitchesEnableDelayTitle": "Enable automatic shutdown of lights and automation logic with a delay",
       "lightControlLightSwitchesDelayTitle": "Turn-off delay for the light and turn-off scenario logic execution after using the switch (seconds)",
       "lightControlLightSwitchesArrDescription": "When the switch is pressed, the light turns on, and automatic light control is paused.<br>The control logic is automatically restored after a set time or upon pressing the switch again.",
       "lightControlLightSwitchesObjTitle": "Switch"
@@ -776,6 +790,7 @@
       "lightControlOpeningSensorsEnumWhenDisabled": "Когда отключилось",
       "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
       "lightControlLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-switch.png\" height=\"30\">  Выключатели света</p>",
+      "lightControlLightSwitchesEnableDelayTitle": "Включить автоматическое отключение света и логики автоматизации с задержкой",
       "lightControlLightSwitchesDelayTitle": "Задержка отключения света и включения логики сценария после использования выключателя (секунды)",
       "lightControlLightSwitchesArrDescription": "При нажатии выключателя свет включается, а автоматическое управление<br>светом приостанавливается. Логика управления восстанавливается автоматически<br>через заданное время или после повторного нажатия выключателя.",
       "lightControlLightSwitchesObjTitle": "Выключатель"

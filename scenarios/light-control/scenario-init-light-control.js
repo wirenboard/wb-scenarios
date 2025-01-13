@@ -54,6 +54,7 @@ function initializeScenario(scenario) {
                                    scenario.isDebugEnabled,
                                    scenario.motionSensors.delayToLightOff,
                                    scenario.openingSensors.delayToLightOff,
+                                   scenario.lightSwitches.isDelayEnabled,
                                    scenario.lightSwitches.delayToLightOffAndEnable ,
                                    scenario.lightDevices.sensorObjects,
                                    scenario.motionSensors.sensorObjects,

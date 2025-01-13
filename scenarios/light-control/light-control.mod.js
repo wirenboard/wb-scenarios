@@ -12,7 +12,8 @@ var eventModule = require('registry-event-processing.mod');
 
 /**
  * Инициализирует виртуальное устройство и определяет правило для управления
- * светом
+ * и автоматизацией в зависимости от пользовательских настроек
+ * 
  * @param {string} idPrefix Префикс сценария, используемый для идентификации
  *     виртуального устройства и правила
  * @param {string} deviceTitle Имя виртуального девайса указанное
@@ -23,6 +24,12 @@ var eventModule = require('registry-event-processing.mod');
  *     срабатывания любого из датчиков движения (сек)
  * @param {number} delayByOpeningSensors Задержка выключения света после
  *     срабатывания любого из датчиков открытия (сек)
+ * @param {boolean} isDelayEnabledAfterSwitch Включение/выключение наличия
+ *     задержки после ручного нажатия выключателя:
+ *     - false: Задержка не используется.
+ *       Свет выкл и автоматизация вкл только при повторном нажатии
+ *     - true: Активирует задержку.
+ *       Свет выкл и автоматизация вкл автоматически через данное время
  * @param {number} delayBlockAfterSwitch Задержка (сек) блокировки логики
  *после ручного переключения света
  * @param {Array} lightDevices Массив управляемых устройств освещения
@@ -37,6 +44,7 @@ function init(
   isDebugEnabled,
   delayByMotionSensors,
   delayByOpeningSensors,
+  isDelayEnabledAfterSwitch,
   delayBlockAfterSwitch,
   lightDevices,
   motionSensors,
@@ -69,7 +77,7 @@ function init(
   var isAllDelayValid =
     delayByMotionSensors > 0 &&
     delayByOpeningSensors > 0 &&
-    delayBlockAfterSwitch > 0;
+    (isDelayEnabledAfterSwitch === false || delayBlockAfterSwitch > 0);
   if (!isAllDelayValid) {
     // prettier-ignore
     var curDelays = 
@@ -775,7 +783,14 @@ function init(
     return true; // Все датчики пассивны
   }
 
-  // Обработчик выключения логики автоматики при использовании выключателя
+  /**
+   * Обработчик выключения логики автоматики при использовании выключателя
+   *
+   * @param {boolean} newValue Новое значение состояния логики автоматики:
+   *     true - включает логику и запускает таймеры (если разрешено)
+   *     false - выключает логику и отключает свет.
+   * @returns {boolean} Callback возвращает true при успехе
+   */
   function logicDisabledCb(newValue) {
     if (lightOffTimerId) {
       clearTimeout(lightOffTimerId);
@@ -785,14 +800,18 @@ function init(
       clearTimeout(logicEnableTimerId);
       resetLogicEnableTimer();
     }
-    if (newValue === true) {
-      dev[genNames.vDevice + '/lightOn'] = true;
-      startLightOffTimer(delayBlockAfterSwitch * 1000);
-      startLogicEnableTimer(delayBlockAfterSwitch * 1000);
-    } else {
+
+    if (newValue === false) {
       dev[genNames.vDevice + '/lightOn'] = false;
+      return true;
     }
 
+    // Если значение true, включаем свет
+    dev[genNames.vDevice + '/lightOn'] = true;
+    if (isDelayEnabledAfterSwitch === true) {
+      startLightOffTimer(delayBlockAfterSwitch * 1000);
+      startLogicEnableTimer(delayBlockAfterSwitch * 1000);
+    }
     return true;
   }
 
@@ -992,6 +1011,7 @@ exports.init = function (
   isDebugEnabled,
   delayByMotionSensors,
   delayByOpeningSensors,
+  isDelayEnabledAfterSwitch,
   delayBlockAfterSwitch,
   lightDevices,
   motionSensors,
@@ -1004,6 +1024,7 @@ exports.init = function (
     isDebugEnabled,
     delayByMotionSensors,
     delayByOpeningSensors,
+    isDelayEnabledAfterSwitch,
     delayBlockAfterSwitch,
     lightDevices,
     motionSensors,
