@@ -311,76 +311,88 @@
           }
         },
         "lightDevices": {
-          "type": "array",
-          "title": "lightControlLightDevicesArrTitle",
-          "_title_note": "When options-> compact: true - this title not shown",
-          "description": "lightControlLightDevicesArrDescription",
-          "minItems": 1,
-          "propertyOrder": 5,
-          "_format": "table",
+          "type": "object",
+          "title": "lightControlLightDevicesTitle",
+          "propertyOrder": 6,
           "options": {
             "disable_collapse": true,
-            "grid_columns": 12,
-            "array_controls_top": true,
-            "disable_array_delete_last_row": true,
-            "disable_array_reorder": true,
-            "wb": {
-              "disable_panel": true
-            }
+            "disable_edit_json": true,
+            "disable_properties": true
           },
-          "items": {
-            "title": "lightControlLightDevicesObjTitle",
-            "type": "object",
-            "properties": {
-              "mqttTopicName": {
-                "type": "string",
-                "propertyOrder": 1,
-                "title": "generalMqttTopicNameTitle",
-                "description": "generalMqttTopicNameDescription",
-                "pattern": "^[^/+#]+/[^/+#]+$",
-                "_format": "wb-autocomplete",
-                "options": {
-                  "patternmessage": "generalErrorRegexpPatternMessage",
-                  "wb": {
-                    "data": "devices"
+          "properties": {
+            "sensorObjects": {
+              "type": "array",
+              "title": "generalSensorArrTitle",
+              "_title_note": "When options-> compact: true - this title not shown",
+              "description": "lightControlLightDevicesArrDescription",
+              "minItems": 1,
+              "propertyOrder": 5,
+              "_format": "table",
+              "options": {
+                "disable_collapse": true,
+                "grid_columns": 12,
+                "array_controls_top": true,
+                "disable_array_delete_last_row": true,
+                "disable_array_reorder": true,
+                "wb": {
+                  "disable_panel": true
+                }
+              },
+              "items": {
+                "title": "lightControlLightDevicesObjTitle",
+                "type": "object",
+                "properties": {
+                  "mqttTopicName": {
+                    "type": "string",
+                    "propertyOrder": 1,
+                    "title": "generalMqttTopicNameTitle",
+                    "description": "generalMqttTopicNameDescription",
+                    "pattern": "^[^/+#]+/[^/+#]+$",
+                    "_format": "wb-autocomplete",
+                    "options": {
+                      "patternmessage": "generalErrorRegexpPatternMessage",
+                      "wb": {
+                        "data": "devices"
+                      }
+                    },
+                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "minLength": 3
+                  },
+                  "behaviorType": {
+                    "type": "string",
+                    "propertyOrder": 2,
+                    "title": "outControls_behaviorType_title",
+                    "enum": [
+                      "setEnable",
+                      "setValueNumericInput"
+                    ],
+                    "default": "setEnable",
+                    "options": {
+                      "enum_titles": [
+                        "Enable (switch)",
+                        "generalEnumSetValue"
+                      ]
+                    }
+                  },
+                  "actionValue": {
+                    "type": "number",
+                    "propertyOrder": 3,
+                    "title": "generalActionValueTitle",
+                    "description": "outControls_actionValue_description",
+                    "default": 0,
+                    "options": {
+                      "dependencies": {
+                        "behaviorType": ["setValueNumericInput"]
+                      }
+                    }
                   }
                 },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
-                "minLength": 3
-              },
-              "behaviorType": {
-                "type": "string",
-                "propertyOrder": 2,
-                "title": "outControls_behaviorType_title",
-                "enum": [
-                  "setEnable",
-                  "setValueNumericInput"
-                ],
-                "default": "setEnable",
-                "options": {
-                  "enum_titles": [
-                    "Enable (switch)",
-                    "generalEnumSetValue"
-                  ]
-                }
-              },
-              "actionValue": {
-                "type": "number",
-                "propertyOrder": 3,
-                "title": "generalActionValueTitle",
-                "description": "outControls_actionValue_description",
-                "default": 0,
-                "options": {
-                  "dependencies": {
-                    "behaviorType": ["setValueNumericInput"]
-                  }
-                }
+                "required": [
+                  "mqttTopicName",
+                  "behaviorType"
+                ]
               }
-            },
-            "required": [
-              "mqttTopicName",
-              "behaviorType"
-            ]
+            }
           }
         },
         "motionSensors": {
@@ -628,9 +640,9 @@
         "enable",
         "name",
         "id_prefix",
+        "lightDevices",
         "motionSensors",
         "openingSensors",
-        "lightDevices",
         "lightSwitches"
       ]
     }
@@ -690,7 +702,7 @@
       "outControls_actionValue_description": "If necessary",
       "lightControlScenarioName": "Light control",
       "lightControlScenarioDescription": "This scenario is suitable for managing lighting in bathrooms, hallways,<br>storage rooms, and other spaces where light is used briefly, and manual<br>switching is inconvenient. Using motion sensors and opening sensors,<br>the light turns on automatically when entering the room and turns off<br>after a set time once it is empty.",
-      "lightControlLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-light-control-light-devices.png\" height=\"30\">  Light devices</p>",
+      "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-light-control-light-devices.png\" height=\"30\">  Light devices</p>",
       "lightControlLightDevicesArrDescription": "This list of light devices will be enabled sequentially when the automation is triggered.",
       "lightControlLightDevicesObjTitle": "Light device",
       "lightControlMotionSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-light-control-motion-sensor.png\" height=\"30\">  Motion sensors</p>",
@@ -747,7 +759,7 @@
       "Decrease Value By": "Уменьшить  значение на",
       "lightControlScenarioName": "Управление светом",
       "lightControlScenarioDescription": "Сценарий подходит для управления освещением в ванных комнатах, коридорах,<br>кладовках и других помещениях,где свет используется кратковременно, а ручное<br>включение неудобно. Благодаря использованию датчиков движения и датчиков<br>открытия, свет автоматически включается при входе в помещение и выключается<br>через заданное время после того, как оно становится пустым.",
-      "lightControlLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-light-control-light-devices.png\" height=\"30\">  Устройства освещения</p>",
+      "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-light-control-light-devices.png\" height=\"30\">  Устройства освещения</p>",
       "lightControlLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
       "lightControlLightDevicesObjTitle": "Устройство освещения",
       "lightControlMotionSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-light-control-motion-sensor.png\" height=\"30\">  Датчики движения</p>",
