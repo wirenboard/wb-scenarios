@@ -36,10 +36,10 @@ var CONFIG_PATH = "/etc/wb-scenarios.conf";
  * Строка типа сценария для поиска в массиве конфигов всех сценариев
  * @type {string}
  */
-var SCENARIO_TYPE = "darkroom";
+var SCENARIO_TYPE = "lightControl";
 
 var scGenHelpers = require("scenarios-general-helpers.mod");
-var darkroom = require("darkroom.mod");
+var lightControl = require("darkroom.mod");
 
 /**
  * Инициализирует сценарий с использованием указанных настроек
@@ -49,7 +49,7 @@ var darkroom = require("darkroom.mod");
 function initializeScenario(scenario) {
   log.debug("Processing scenario: " + JSON.stringify(scenario));
 
-  var isInitSucess = darkroom.init(scenario.id_prefix,
+  var isInitSucess = lightControl.init(scenario.id_prefix,
                                    scenario.name,
                                    scenario.isDebugEnabled,
                                    scenario.motionSensors.delayToLightOff,
@@ -69,7 +69,7 @@ function initializeScenario(scenario) {
 }
 
 function main() {
-  log.debug("Start initialisation darkroom scenario.");
+  log.debug("Start initialisation light control scenario.");
   var listAllScenarios = scGenHelpers.readAndValidateScenariosConfig(CONFIG_PATH,
                                                                 REQUIRED_GENERAL_CFG_VER);
   if (!listAllScenarios) return;

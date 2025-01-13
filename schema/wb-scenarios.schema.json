@@ -20,7 +20,7 @@
           "$ref": "#/definitions/devicesControl"
         },
         {
-          "$ref": "#/definitions/darkroom"
+          "$ref": "#/definitions/lightControl"
         }
       ],
       "_format": "wb-multiple",
@@ -235,10 +235,10 @@
         "outControls"
       ]
     },
-    "darkroom": {
-      "title": "darkroomScenarioName",
+    "lightControl": {
+      "title": "lightControlScenarioName",
       "type": "object",
-      "description": "darkroomScenarioDescription",
+      "description": "lightControlScenarioDescription",
       "_format": "grid",
       "options": {
         "display_required_only": true
@@ -257,9 +257,9 @@
         "scenarioType": {
           "type": "string",
           "enum": [
-            "darkroom"
+            "lightControl"
           ],
-          "default": "darkroom",
+          "default": "lightControl",
           "options": {
             "hidden": true
           }
@@ -301,7 +301,7 @@
           "description": "id_prefix_description",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
-          "default": "darkroom",
+          "default": "lightControl",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 4,
@@ -312,9 +312,9 @@
         },
         "lightDevices": {
           "type": "array",
-          "title": "darkroomLightDevicesArrTitle",
+          "title": "lightControlLightDevicesArrTitle",
           "_title_note": "When options-> compact: true - this title not shown",
-          "description": "darkroomLightDevicesArrDescription",
+          "description": "lightControlLightDevicesArrDescription",
           "minItems": 1,
           "propertyOrder": 5,
           "_format": "table",
@@ -329,7 +329,7 @@
             }
           },
           "items": {
-            "title": "darkroomLightDevicesObjTitle",
+            "title": "lightControlLightDevicesObjTitle",
             "type": "object",
             "properties": {
               "mqttTopicName": {
@@ -385,7 +385,7 @@
         },
         "motionSensors": {
           "type": "object",
-          "title": "darkroomMotionSensorsTitle",
+          "title": "lightControlMotionSensorsTitle",
           "propertyOrder": 6,
           "options": {
             "disable_collapse": true,
@@ -395,7 +395,7 @@
           "properties": {
             "delayToLightOff": {
               "type": "number",
-              "title": "darkroomMotionSensorsDelayTitle",
+              "title": "lightControlMotionSensorsDelayTitle",
               "default": 120,
               "propertyOrder": 1,
               "options": {
@@ -406,7 +406,7 @@
               "type": "array",
               "title": "generalSensorArrTitle",
               "_title_note": "When options-> compact: true - this title not shown",
-              "description": "darkroomMotionSensorsArrDescription",
+              "description": "lightControlMotionSensorsArrDescription",
               "propertyOrder": 2,
               "_format": "table",
               "options": {
@@ -421,7 +421,7 @@
               },
               "items": {
                 "type": "object",
-                "title": "darkroomMotionSensorsObjTitle",
+                "title": "lightControlMotionSensorsObjTitle",
                 "properties": {
                   "mqttTopicName": {
                     "type": "string",
@@ -448,7 +448,7 @@
                     ],
                     "options": {
                       "enum_titles": [
-                        "darkroomMotionSensorsEnumWhileValue",
+                        "lightControlMotionSensorsEnumWhileValue",
                         "When Enabled"
                       ]
                     },
@@ -477,7 +477,7 @@
         },
         "openingSensors": {
           "type": "object",
-          "title": "darkroomOpeningSensorsTitle",
+          "title": "lightControlOpeningSensorsTitle",
           "propertyOrder": 7,
           "options": {
             "disable_collapse": true,
@@ -487,7 +487,7 @@
           "properties": {
             "delayToLightOff": {
               "type": "number",
-              "title": "darkroomOpeningSensorsDelayTitle",
+              "title": "lightControlOpeningSensorsDelayTitle",
               "default": 180,
               "propertyOrder": 1,
               "options": {
@@ -498,7 +498,7 @@
               "type": "array",
               "title": "generalSensorArrTitle",
               "_title_note": "When options-> compact: true - this title not shown",
-              "description": "darkroomOpeningSensorsArrDescription",
+              "description": "lightControlOpeningSensorsArrDescription",
               "propertyOrder": 2,
               "_format": "table",
               "options": {
@@ -512,7 +512,7 @@
                 }
               },
               "items": {
-                "title": "darkroomOpeningSensorsObjTitle",
+                "title": "lightControlOpeningSensorsObjTitle",
                 "type": "object",
                 "properties": {
                   "mqttTopicName": {
@@ -535,7 +535,7 @@
                     "type": "string",
                     "propertyOrder": 2,
                     "title": "generalBehaviorTypeTitle",
-                    "description": "darkroomOpeningSensorsBehaviorTypeDescription",
+                    "description": "lightControlOpeningSensorsBehaviorTypeDescription",
                     "enum": [
                       "whenDisabled",
                       "whenEnabled"
@@ -543,8 +543,8 @@
                     "default": "whenEnabled",
                     "options": {
                       "enum_titles": [
-                        "darkroomOpeningSensorsEnumWhenDisabled",
-                        "darkroomOpeningSensorsEnumWhenEnabled"
+                        "lightControlOpeningSensorsEnumWhenDisabled",
+                        "lightControlOpeningSensorsEnumWhenEnabled"
                       ]
                     }
                   }
@@ -559,7 +559,7 @@
         },
         "lightSwitches": {
           "type": "object",
-          "title": "darkroomLightSwitchesTitle",
+          "title": "lightControlLightSwitchesTitle",
           "propertyOrder": 8,
           "options": {
             "disable_collapse": true,
@@ -569,7 +569,7 @@
           "properties": {
             "delayToLightOffAndEnable": {
               "type": "number",
-              "title": "darkroomLightSwitchesDelayTitle",
+              "title": "lightControlLightSwitchesDelayTitle",
               "default": 3600,
               "propertyOrder": 1,
               "options": {
@@ -580,7 +580,7 @@
               "type": "array",
               "title": "generalSensorArrTitle",
               "_title_note": "When options-> compact: true - this title not shown",
-              "description": "darkroomLightSwitchesArrDescription",
+              "description": "lightControlLightSwitchesArrDescription",
               "propertyOrder": 2,
               "_format": "table",
               "options": {
@@ -594,7 +594,7 @@
                 }
               },
               "items": {
-                "title": "darkroomLightSwitchesObjTitle",
+                "title": "lightControlLightSwitchesObjTitle",
                 "type": "object",
                 "properties": {
                   "mqttTopicName": {
@@ -688,27 +688,27 @@
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
-      "darkroomScenarioName": "Dark room",
-      "darkroomScenarioDescription": "This scenario is suitable for managing lighting in bathrooms, hallways,<br>storage rooms, and other spaces where light is used briefly, and manual<br>switching is inconvenient. Using motion sensors and opening sensors,<br>the light turns on automatically when entering the room and turns off<br>after a set time once it is empty.",
-      "darkroomLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-darkroom-light-devices.png\" height=\"30\">  Light devices</p>",
-      "darkroomLightDevicesArrDescription": "This list of light devices will be enabled sequentially when the automation is triggered.",
-      "darkroomLightDevicesObjTitle": "Light device",
-      "darkroomMotionSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-darkroom-motion-sensor.png\" height=\"30\">  Motion sensors</p>",
-      "darkroomMotionSensorsDelayTitle": "Turn-off light delay after movement stops (seconds)",
-      "darkroomMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
-      "darkroomMotionSensorsObjTitle": "Motion sensor",
-      "darkroomMotionSensorsEnumWhileValue": "When exceeding",
-      "darkroomOpeningSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-darkroom-opening-sensor.png\" height=\"30\">  Opening sensors</p>",
-      "darkroomOpeningSensorsDelayTitle": "Turn-off light delay when opening sensors are triggered (seconds)",
-      "darkroomOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
-      "darkroomOpeningSensorsObjTitle": "Opening sensor",
-      "darkroomOpeningSensorsBehaviorTypeDescription": "Door opening event",
-      "darkroomOpeningSensorsEnumWhenDisabled": "When disabled",
-      "darkroomOpeningSensorsEnumWhenEnabled": "When ebabled",
-      "darkroomLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-darkroom-light-switch.png\" height=\"30\">  Light switches</p>",
-      "darkroomLightSwitchesDelayTitle": "Turn-off delay for the light and turn-off scenario logic execution after using the switch (seconds)",
-      "darkroomLightSwitchesArrDescription": "When the switch is pressed, the light turns on, and automatic light control is paused.<br>The control logic is automatically restored after a set time or upon pressing the switch again.",
-      "darkroomLightSwitchesObjTitle": "Switch"
+      "lightControlScenarioName": "Light control",
+      "lightControlScenarioDescription": "This scenario is suitable for managing lighting in bathrooms, hallways,<br>storage rooms, and other spaces where light is used briefly, and manual<br>switching is inconvenient. Using motion sensors and opening sensors,<br>the light turns on automatically when entering the room and turns off<br>after a set time once it is empty.",
+      "lightControlLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-devices.png\" height=\"30\">  Light devices</p>",
+      "lightControlLightDevicesArrDescription": "This list of light devices will be enabled sequentially when the automation is triggered.",
+      "lightControlLightDevicesObjTitle": "Light device",
+      "lightControlMotionSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-motion-sensor.png\" height=\"30\">  Motion sensors</p>",
+      "lightControlMotionSensorsDelayTitle": "Turn-off light delay when motion sensors are triggered (seconds)",
+      "lightControlMotionSensorsArrDescription": "Any of the motion sensors listed here will trigger the automation.",
+      "lightControlMotionSensorsObjTitle": "Motion sensor",
+      "lightControlMotionSensorsEnumWhileValue": "When exceeding",
+      "lightControlOpeningSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-opening-sensor.png\" height=\"30\">  Opening sensors</p>",
+      "lightControlOpeningSensorsDelayTitle": "Turn-off light delay when opening sensors are triggered (seconds)",
+      "lightControlOpeningSensorsArrDescription": "Any of the opening sensors listed here will trigger the automation.",
+      "lightControlOpeningSensorsObjTitle": "Opening sensor",
+      "lightControlOpeningSensorsBehaviorTypeDescription": "Door opening event",
+      "lightControlOpeningSensorsEnumWhenDisabled": "When disabled",
+      "lightControlOpeningSensorsEnumWhenEnabled": "When ebabled",
+      "lightControlLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Light switches</p>",
+      "lightControlLightSwitchesDelayTitle": "Turn-off delay for the light and turn-off scenario logic execution after using the switch (seconds)",
+      "lightControlLightSwitchesArrDescription": "When the switch is pressed, the light turns on, and automatic light control is paused.<br>The control logic is automatically restored after a set time or upon pressing the switch again.",
+      "lightControlLightSwitchesObjTitle": "Switch"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Сгенерировать правило",
@@ -745,28 +745,28 @@
       "Disable (switch)": "Выключить (для переключателей)",
       "Increase Value By": "Увеличить значение на",
       "Decrease Value By": "Уменьшить  значение на",
-      "darkroomScenarioName": "Темная комната",
-      "darkroomScenarioDescription": "Сценарий подходит для управления освещением в ванных комнатах, коридорах,<br>кладовках и других помещениях,где свет используется кратковременно, а ручное<br>включение неудобно. Благодаря использованию датчиков движения и датчиков<br>открытия, свет автоматически включается при входе в помещение и выключается<br>через заданное время после того, как оно становится пустым.",
-      "darkroomLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-darkroom-light-devices.png\" height=\"30\">  Устройства освещения</p>",
-      "darkroomLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
-      "darkroomLightDevicesObjTitle": "Устройство освещения",
-      "darkroomMotionSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-darkroom-motion-sensor.png\" height=\"30\">  Датчики движения</p>",
-      "darkroomMotionSensorsDelayTitle": "Задержка отключения света после окончания движения (секунды)",
-      "darkroomMotionSensorsArrDescription": "Любой из указанных здесь датчиков движения будет запускать автоматизацию.",
-      "darkroomMotionSensorsObjTitle": "Датчик движения",
-      "darkroomMotionSensorsEnumWhileValue": "При превышении",
-      "darkroomMotionSensorsEnumWhenEnabled": "Дискретное значение",
-      "darkroomOpeningSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-darkroom-opening-sensor.png\" height=\"30\">  Датчики открытия</p>",
-      "darkroomOpeningSensorsDelayTitle": "Задержка отключения света при срабатывании датчиков открытия (секунды)",
-      "darkroomOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
-      "darkroomOpeningSensorsObjTitle": "Датчик открытия",
-      "darkroomOpeningSensorsBehaviorTypeDescription": "Событие при открытии двери",
-      "darkroomOpeningSensorsEnumWhenDisabled": "Когда отключилось",
-      "darkroomOpeningSensorsEnumWhenEnabled": "Когда включилось",
-      "darkroomLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-darkroom-light-switch.png\" height=\"30\">  Выключатели света</p>",
-      "darkroomLightSwitchesDelayTitle": "Задержка отключения света и включения логики сценария после использования выключателя (секунды)",
-      "darkroomLightSwitchesArrDescription": "При нажатии выключателя свет включается, а автоматическое управление<br>светом приостанавливается. Логика управления восстанавливается автоматически<br>через заданное время или после повторного нажатия выключателя.",
-      "darkroomLightSwitchesObjTitle": "Выключатель"
+      "lightControlScenarioName": "Управление светом",
+      "lightControlScenarioDescription": "Сценарий подходит для управления освещением в ванных комнатах, коридорах,<br>кладовках и других помещениях,где свет используется кратковременно, а ручное<br>включение неудобно. Благодаря использованию датчиков движения и датчиков<br>открытия, свет автоматически включается при входе в помещение и выключается<br>через заданное время после того, как оно становится пустым.",
+      "lightControlLightDevicesArrTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-devices.png\" height=\"30\">  Устройства освещения</p>",
+      "lightControlLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
+      "lightControlLightDevicesObjTitle": "Устройство освещения",
+      "lightControlMotionSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-motion-sensor.png\" height=\"30\">  Датчики движения</p>",
+      "lightControlMotionSensorsDelayTitle": "Задержка отключения света при срабатывании датчиков движения (секунды)",
+      "lightControlMotionSensorsArrDescription": "Любой из указанных здесь датчиков движения будет запускать автоматизацию.",
+      "lightControlMotionSensorsObjTitle": "Датчик движения",
+      "lightControlMotionSensorsEnumWhileValue": "При превышении",
+      "lightControlMotionSensorsEnumWhenEnabled": "Дискретное значение",
+      "lightControlOpeningSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-opening-sensor.png\" height=\"30\">  Датчики открытия</p>",
+      "lightControlOpeningSensorsDelayTitle": "Задержка отключения света при срабатывании датчиков открытия (секунды)",
+      "lightControlOpeningSensorsArrDescription": "Любой из указанных здесь датчиков открытия будет запускать автоматизацию.",
+      "lightControlOpeningSensorsObjTitle": "Датчик открытия",
+      "lightControlOpeningSensorsBehaviorTypeDescription": "Событие при открытии двери",
+      "lightControlOpeningSensorsEnumWhenDisabled": "Когда отключилось",
+      "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
+      "lightControlLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/scenario-darkroom-light-switch.png\" height=\"30\">  Выключатели света</p>",
+      "lightControlLightSwitchesDelayTitle": "Задержка отключения света и включения логики сценария после использования выключателя (секунды)",
+      "lightControlLightSwitchesArrDescription": "При нажатии выключателя свет включается, а автоматическое управление<br>светом приостанавливается. Логика управления восстанавливается автоматически<br>через заданное время или после повторного нажатия выключателя.",
+      "lightControlLightSwitchesObjTitle": "Выключатель"
     }
   }
 }
