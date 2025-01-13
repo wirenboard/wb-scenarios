@@ -1,5 +1,6 @@
 /**
- * @file Модуль для инициализации алгоритма темной комнаты (darkroom)
+ * @file Модуль для инициализации алгоритма управления светом в общем
+ *     и темной комнатой (darkroom) в частности
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
@@ -10,8 +11,8 @@ var aTable = require('registry-action-resolvers.mod');
 var eventModule = require('registry-event-processing.mod');
 
 /**
- * Инициализирует виртуальное устройство и определяет правило для работы
- * 'темной комнаты'
+ * Инициализирует виртуальное устройство и определяет правило для управления
+ * светом
  * @param {string} idPrefix Префикс сценария, используемый для идентификации
  *     виртуального устройства и правила
  * @param {string} deviceTitle Имя виртуального девайса указанное
@@ -49,7 +50,7 @@ function init(
     Array.isArray(lightSwitches);
   if (!isAllArrays) {
     log.error(
-      'Darkroom initialization error: lightDevices, motionSensors, openingSensors, and lightSwitches must be arrays'
+      'Light-control initialization error: lightDevices, motionSensors, openingSensors, and lightSwitches must be arrays'
     );
     return false;
   }
@@ -82,7 +83,7 @@ function init(
 
   var isLightDevicesEmpty = lightDevices.length === 0;
   if (isLightDevicesEmpty) {
-    setError('Darkroom initialization error: no light devices specified');
+    setError('Light-control initialization error: no light devices specified');
     return false;
   }
 
@@ -93,7 +94,7 @@ function init(
     lightSwitches.length === 0;
   if (isAllTriggersEmpty) {
     setError(
-      'Darkroom initialization error: no motion, ' +
+      'Light-control initialization error: no motion, ' +
         'opening sensors and wall switches specified'
     );
     return false;
@@ -323,7 +324,7 @@ function init(
       '" was successfully created'
   );
 
-  log.debug('Darkroom initialization completed successfully');
+  log.debug('Light-control initialization completed successfully');
   return true;
 
   // ======================================================
@@ -933,13 +934,13 @@ function init(
   function sensorTriggeredHandler(newValue, devName, cellName, sensorType) {
     var isActive = dev[genNames.vDevice + '/ruleEnabled'];
     if (isActive === false) {
-      // log.debug('Darkroom is disabled in virtual device - doing nothing');
+      // log.debug('Light-control is disabled in virtual device - doing nothing');
       return true;
     }
 
     var isSwitchUsed = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
     if (isSwitchUsed === true) {
-      // log.debug('Darkroom is disabled after used wall switch - doing nothing');
+      // log.debug('Light-control is disabled after used wall switch - doing nothing');
       return true;
     }
 

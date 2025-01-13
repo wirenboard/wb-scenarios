@@ -39,7 +39,7 @@ var CONFIG_PATH = "/etc/wb-scenarios.conf";
 var SCENARIO_TYPE = "lightControl";
 
 var scGenHelpers = require("scenarios-general-helpers.mod");
-var lightControl = require("darkroom.mod");
+var lightControl = require("light-control.mod");
 
 /**
  * Инициализирует сценарий с использованием указанных настроек
