@@ -1,4 +1,4 @@
-# Руководство по модулю топик менеджера (topicmgr)
+# Руководство по модулю топик менеджера (tm, topic manager)
 
 ## Общее описание
 
@@ -10,10 +10,10 @@
 топиков обработчики конкретных событий, типа whenEnabled, whenDisabled и тд.
 
 Структура решения поддерживает расширения и состоит из нескольких файлов:
-- topicmgr-main.js - базовый модуль который содержить только базовый объект
-- topicmgr-event-main.js - расширение для событий
-- topicmgr-event-resolvers.js - резолверы для событий
-- topicmgr-history-main.js - расширение для истории событий
+- tm-main.mod.js - базовый модуль который содержить только базовый объект
+- tm-event-main.mod.js - расширение для событий
+- tm-event-resolvers.mod.js - резолверы для событий
+- tm-history-main.mod.js - расширение для истории событий (@todo)
 
 
 ## Структура регистра топиков
@@ -54,14 +54,14 @@
 
 ```
 // 1. Подключаем базовый модуль и расширения
-var topicmgrMain = require("./topicmgr-main.mod");
-var topicmgrEvent = require("./topicmgr-event-main.mod");
+var tmMain = require("./tm-main.mod");
+var tmEvent = require("./tm-event-main.mod");
 
 // 2. Создаём инстанс topicManager
-var topicMgr = topicmgrMain.createTopicManager();
+var tm = tmMain.createTopicManager();
 
 // 3. Добавляем расширения
-topicMgr.installPlugin(topicmgrEvent);  // подключаем event-функции
+tm.installPlugin(tmEvent);  // подключаем event-функции
 ```
 
 Каждый плагин должен иметь
