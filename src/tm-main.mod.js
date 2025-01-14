@@ -16,7 +16,106 @@ function TopicManager() {
 
   // Хранилище установленных плагинов
   this.installedPlugins = [];
+
+  // Обработчики обновления топиков
+  this.pluginsProcessorsChain = [];
 }
+
+/**
+ * Вставка процессора в цепочку с учетом приоритета
+ * 
+ * @param {Array} processorsChain  Цепочка процессоров
+ *     (массив объектов { fn, priority })
+ * @param {Object} processorEntry Объект процессора { fn, priority }
+ */
+function insertProcessorIntoChain(processorsChain , processorEntry) {
+  var insertIndex = -1;
+
+  // Ищем подходящее место для вставки
+  for (var i = 0; i < processorsChain.length; i++) {
+    // Если приоритет нового процессора выше текущего в цепочке
+    if (processorEntry.priority > processorsChain[i].priority) {
+      insertIndex = i;
+      break;
+    }
+  }
+
+  // Если место не найдено, добавляем процессор в конец
+  if (insertIndex === -1) {
+    processorsChain.push(processorEntry);
+  } else {
+    // Иначе вставляем процессор в найденное место
+    processorsChain.splice(insertIndex, 0, processorEntry);
+  }
+}
+
+
+/**
+ * Добавление процессора в цепочку
+ * 
+ * @param {Function} processor Функция процессора, добавляемая в цепочку
+ * @param {number} [priority=0] (Опционально) Приоритет процессора
+ *     (чем выше, тем раньше он будет вызван)
+ */
+TopicManager.prototype.addProcessor = function (processor, priority) {
+  var isValidProcessor = typeof processor === 'function';
+  if (!isValidProcessor) {
+    log.error('Invalid processor - must be a function');
+    return false;
+  }
+
+  // Создаем объект для процессора с приоритетом по умолчанию если не указан
+  var processorEntry = {
+    fn: processor,
+    priority: priority || 0
+  };
+  insertProcessorIntoChain(this.pluginsProcessorsChain, processorEntry);
+
+  log.debug('Processor added with priority:', processorEntry.priority);
+  return true;
+};
+
+/**
+ * Удаление обработчика из цепочки
+ * 
+ * @param {Function} processor Функция процессора которую нужно удалить
+ */
+TopicManager.prototype.removeProcessor = function (processor) {
+  var index = -1;
+  for (var i = 0; i < this.pluginsProcessorsChain.length; i++) {
+    if (this.pluginsProcessorsChain[i].fn === processor) {
+      index = i;
+      break;
+    }
+  }
+
+  if (index !== -1) {
+    this.pluginsProcessorsChain.splice(index, 1);
+    log.debug('Processor removed');
+  } else {
+    log.warn('Processor not found');
+  }
+};
+
+/**
+ * Обработка события
+ * 
+ * @param {string} topic - Имя топика
+ * @param {*} newValue - Новое значение топика
+ */
+TopicManager.prototype.runProcessors = function (topic, newValue) {
+  log.debug('Processing event for topic:', topic, 'with value:', newValue);
+
+  if (this.pluginsProcessorsChain.length === 0) {
+    log.debug('No processors in the chain');
+    return;
+  }
+
+  // Прогоняем через все обработчики в цепочке
+  for (var i = 0; i < this.pluginsProcessorsChain.length; i++) {
+    this.pluginsProcessorsChain[i].fn(topic, newValue);
+  }
+};
 
 /**
  * Метод для подключения плагинов к объекту TopicManager
@@ -27,7 +126,6 @@ function TopicManager() {
  * @returns {boolean} Успешность установки плагина
  */
 TopicManager.prototype.installPlugin = function (plugin, options) {
-
   var isValidPlugin = plugin && typeof plugin.install === 'function';
   var hasValidName = plugin.name && typeof plugin.name === 'string';
   var isAlreadyInstalled = this.installedPlugins.indexOf(plugin.name) !== -1;
@@ -54,11 +152,18 @@ TopicManager.prototype.installPlugin = function (plugin, options) {
 };
 
 /**
+ * Проверка объекта на пустоту
+ */
+function isEmptyObject(obj) {
+  return Object.keys(obj).length === 0;
+}
+
+/**
  * Отладочный вывод текущего реестра
  */
 TopicManager.prototype.printRegistry = function () {
   log.debug('=== Current Registry State ===');
-  var isRegistryEmpty = Object.keys(this.registry).length === 0;
+  var isRegistryEmpty = isEmptyObject(this.registry);
   if (isRegistryEmpty) {
     log.debug('Registry is empty');
   } else {
