@@ -313,7 +313,7 @@
         "lightDevices": {
           "type": "object",
           "title": "lightControlLightDevicesTitle",
-          "propertyOrder": 6,
+          "propertyOrder": 5,
           "options": {
             "disable_collapse": true,
             "disable_edit_json": true,
@@ -326,7 +326,7 @@
               "_title_note": "When options-> compact: true - this title not shown",
               "description": "lightControlLightDevicesArrDescription",
               "minItems": 1,
-              "propertyOrder": 5,
+              "propertyOrder": 1,
               "_format": "table",
               "options": {
                 "disable_collapse": true,
@@ -395,10 +395,87 @@
             }
           }
         },
+        "lightSwitches": {
+          "type": "object",
+          "title": "lightControlLightSwitchesTitle",
+          "propertyOrder": 6,
+          "options": {
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "isDelayEnabled": {
+              "title": "lightControlLightSwitchesEnableDelayTitle",
+              "type": "boolean",
+              "default": false,
+              "_format": "checkbox",
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 12
+              }
+            },
+            "delayToLightOffAndEnable": {
+              "type": "number",
+              "title": "lightControlLightSwitchesDelayTitle",
+              "default": 3600,
+              "propertyOrder": 2,
+              "options": {
+                "dependencies": {
+                  "isDelayEnabled": true
+                },
+                "grid_columns": 12
+              }
+            },
+            "sensorObjects": {
+              "type": "array",
+              "title": "generalSensorArrTitle",
+              "_title_note": "When options-> compact: true - this title not shown",
+              "description": "lightControlLightSwitchesArrDescription",
+              "propertyOrder": 3,
+              "_format": "table",
+              "options": {
+                "disable_collapse": true,
+                "grid_columns": 12,
+                "array_controls_top": true,
+                "disable_array_delete_last_row": true,
+                "disable_array_reorder": true,
+                "wb": {
+                  "disable_panel": true
+                }
+              },
+              "items": {
+                "title": "lightControlLightSwitchesObjTitle",
+                "type": "object",
+                "properties": {
+                  "mqttTopicName": {
+                    "type": "string",
+                    "propertyOrder": 1,
+                    "title": "generalMqttTopicNameTitle",
+                    "description": "generalMqttTopicNameDescription",
+                    "pattern": "^[^/+#]+/[^/+#]+$",
+                    "_format": "wb-autocomplete",
+                    "options": {
+                      "patternmessage": "generalErrorRegexpPatternMessage",
+                      "wb": {
+                        "data": "devices"
+                      }
+                    },
+                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "minLength": 3
+                  }
+                },
+                "required": [
+                  "mqttTopicName"
+                ]
+              }
+            }
+          }
+        },
         "motionSensors": {
           "type": "object",
           "title": "lightControlMotionSensorsTitle",
-          "propertyOrder": 6,
+          "propertyOrder": 7,
           "options": {
             "disable_collapse": true,
             "disable_edit_json": true,
@@ -490,7 +567,7 @@
         "openingSensors": {
           "type": "object",
           "title": "lightControlOpeningSensorsTitle",
-          "propertyOrder": 7,
+          "propertyOrder": 8,
           "options": {
             "disable_collapse": true,
             "disable_edit_json": true,
@@ -564,83 +641,6 @@
                 "required": [
                   "mqttTopicName",
                   "behaviorType"
-                ]
-              }
-            }
-          }
-        },
-        "lightSwitches": {
-          "type": "object",
-          "title": "lightControlLightSwitchesTitle",
-          "propertyOrder": 8,
-          "options": {
-            "disable_collapse": true,
-            "disable_edit_json": true,
-            "disable_properties": true
-          },
-          "properties": {
-            "isDelayEnabled": {
-              "title": "lightControlLightSwitchesEnableDelayTitle",
-              "type": "boolean",
-              "default": false,
-              "_format": "checkbox",
-              "propertyOrder": 1,
-              "options": {
-                "grid_columns": 12
-              }
-            },
-            "delayToLightOffAndEnable": {
-              "type": "number",
-              "title": "lightControlLightSwitchesDelayTitle",
-              "default": 3600,
-              "propertyOrder": 2,
-              "options": {
-                "dependencies": {
-                  "isDelayEnabled": true
-                },
-                "grid_columns": 12
-              }
-            },
-            "sensorObjects": {
-              "type": "array",
-              "title": "generalSensorArrTitle",
-              "_title_note": "When options-> compact: true - this title not shown",
-              "description": "lightControlLightSwitchesArrDescription",
-              "propertyOrder": 3,
-              "_format": "table",
-              "options": {
-                "disable_collapse": true,
-                "grid_columns": 12,
-                "array_controls_top": true,
-                "disable_array_delete_last_row": true,
-                "disable_array_reorder": true,
-                "wb": {
-                  "disable_panel": true
-                }
-              },
-              "items": {
-                "title": "lightControlLightSwitchesObjTitle",
-                "type": "object",
-                "properties": {
-                  "mqttTopicName": {
-                    "type": "string",
-                    "propertyOrder": 1,
-                    "title": "generalMqttTopicNameTitle",
-                    "description": "generalMqttTopicNameDescription",
-                    "pattern": "^[^/+#]+/[^/+#]+$",
-                    "_format": "wb-autocomplete",
-                    "options": {
-                      "patternmessage": "generalErrorRegexpPatternMessage",
-                      "wb": {
-                        "data": "devices"
-                      }
-                    },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
-                    "minLength": 3
-                  }
-                },
-                "required": [
-                  "mqttTopicName"
                 ]
               }
             }
