@@ -30,16 +30,16 @@ var REQUIRED_SCENARIO_CFG_VER = 1;
  * Строка абсолютного пути расположения файла конфигурации сценариев
  * @type {string}
  */
-var CONFIG_PATH = "/etc/wb-scenarios.conf";
+var CONFIG_PATH = '/etc/wb-scenarios.conf';
 
 /**
  * Строка типа сценария для поиска в массиве конфигов всех сценариев
  * @type {string}
  */
-var SCENARIO_TYPE = "lightControl";
+var SCENARIO_TYPE = 'lightControl';
 
-var scGenHelpers = require("scenarios-general-helpers.mod");
-var lightControl = require("light-control.mod");
+var scGenHelpers = require('scenarios-general-helpers.mod');
+var lightControl = require('light-control.mod');
 
 /**
  * Инициализирует сценарий с использованием указанных настроек
@@ -47,7 +47,7 @@ var lightControl = require("light-control.mod");
  * @returns {void}
  */
 function initializeScenario(scenario) {
-  log.debug("Processing scenario: " + JSON.stringify(scenario));
+  log.debug('Processing scenario: ' + JSON.stringify(scenario));
 
   var isInitSucess = lightControl.init(scenario.id_prefix,
                                    scenario.name,
@@ -62,15 +62,15 @@ function initializeScenario(scenario) {
                                    scenario.lightSwitches.sensorObjects)
 
   if (!isInitSucess) {
-    log.error("Error: Init operation aborted for scenario with 'idPrefix': " + scenario.id_prefix);
+    log.error('Error: Init operation aborted for scenario with "idPrefix": ' + scenario.id_prefix);
     return;
   }
 
-  log.debug("Initialization successful for: " + scenario.name);
+  log.debug('Initialization successful for: ' + scenario.name);
 }
 
 function main() {
-  log.debug("Start initialisation light control scenario.");
+  log.debug('Start initialisation light control scenario.');
   var listAllScenarios = scGenHelpers.readAndValidateScenariosConfig(CONFIG_PATH,
                                                                 REQUIRED_GENERAL_CFG_VER);
   if (!listAllScenarios) return;
@@ -79,12 +79,12 @@ function main() {
                                                                 SCENARIO_TYPE,
                                                                 REQUIRED_SCENARIO_CFG_VER);
   if (matchedScenarios.length === 0) {
-    log.debug("No valid and active scenarios of type '" + SCENARIO_TYPE + "' found.");
+    log.debug('No valid and active scenarios of type "' + SCENARIO_TYPE + '" found');
     return;
   }
   
-  log.debug("Number of matched scenarios: " + JSON.stringify(matchedScenarios.length));
-  log.debug("Matched scenarios JSON: " + JSON.stringify(matchedScenarios));
+  log.debug('Number of matched scenarios: ' + JSON.stringify(matchedScenarios.length));
+  log.debug('Matched scenarios JSON: ' + JSON.stringify(matchedScenarios));
 
   for (var i = 0; i < matchedScenarios.length; i++) {
     initializeScenario(matchedScenarios[i]);
