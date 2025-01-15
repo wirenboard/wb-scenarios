@@ -421,9 +421,6 @@
               "default": 3600,
               "propertyOrder": 2,
               "options": {
-                "dependencies": {
-                  "isDelayEnabled": true
-                },
                 "grid_columns": 12
               }
             },
@@ -776,6 +773,11 @@
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Устройства освещения</p>",
       "lightControlLightDevicesArrDescription": "Этот список устройств освещения будет включен последовательно при запуске автоматизации.",
       "lightControlLightDevicesObjTitle": "Устройство освещения",
+      "lightControlLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-switch.png\" height=\"30\">  Выключатели света</p>",
+      "lightControlLightSwitchesEnableDelayTitle": "Включить автоматическое отключение света и логики автоматизации с задержкой",
+      "lightControlLightSwitchesDelayTitle": "Задержка отключения света и включения логики сценария после использования выключателя (секунды)",
+      "lightControlLightSwitchesArrDescription": "При нажатии выключателя свет включается, а автоматическое управление<br>светом приостанавливается. Логика управления восстанавливается автоматически<br>через заданное время или после повторного нажатия выключателя.",
+      "lightControlLightSwitchesObjTitle": "Выключатель",
       "lightControlMotionSensorsTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-motion-sensor.png\" height=\"30\">  Датчики движения</p>",
       "lightControlMotionSensorsDelayTitle": "Задержка отключения света после окончания движения (секунды)",
       "lightControlMotionSensorsArrDescription": "Любой из указанных здесь датчиков движения будет запускать автоматизацию.",
@@ -788,12 +790,7 @@
       "lightControlOpeningSensorsObjTitle": "Датчик открытия",
       "lightControlOpeningSensorsBehaviorTypeDescription": "Событие при открытии двери",
       "lightControlOpeningSensorsEnumWhenDisabled": "Когда отключилось",
-      "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
-      "lightControlLightSwitchesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-switch.png\" height=\"30\">  Выключатели света</p>",
-      "lightControlLightSwitchesEnableDelayTitle": "Включить автоматическое отключение света и логики автоматизации с задержкой",
-      "lightControlLightSwitchesDelayTitle": "Задержка отключения света и включения логики сценария после использования выключателя (секунды)",
-      "lightControlLightSwitchesArrDescription": "При нажатии выключателя свет включается, а автоматическое управление<br>светом приостанавливается. Логика управления восстанавливается автоматически<br>через заданное время или после повторного нажатия выключателя.",
-      "lightControlLightSwitchesObjTitle": "Выключатель"
+      "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось"
     }
   }
 }
