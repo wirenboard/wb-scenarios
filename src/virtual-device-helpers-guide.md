@@ -32,5 +32,23 @@ var vdHelpers = require('virtual-device-helpers.mod');
 ```
 
 Внешний вид:
+![Внешний вид заголовков](virtual-device-helpers-title.png)
 
-![Внешний вид заголовков](emulate-title-from-topics.png)
+
+Динамическое добавление аларма к виртуальному девайсу
+```
+var vdHelpers = require('virtual-device-helpers.mod');
+
+...
+var vDevObj = defineVirtualDevice(...)
+
+vdHelpers.addAlarm(
+  vDevObj,
+  'processErrorAlarm',
+  'Ошибка - смотрите лог',
+  'Error - see log'
+);
+```
+
+Внешний вид:
+![Внешний вид alarm](virtual-device-helpers-alarm.png)
