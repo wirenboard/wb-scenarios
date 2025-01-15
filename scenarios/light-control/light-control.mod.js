@@ -534,14 +534,10 @@ function init(
   // минимального виртуального устройства
   function setError(errorString) {
     log.error('ERROR Init: ' + errorString);
-    var topicName = '';
-    
-    topicName = genNames.vDevice + '/ruleEnabled';
-    dev[topicName + '#error'] = 'Error-see log';
-    topicName = genNames.vDevice + '/remainingTimeToLightOffInSec';
-    dev[topicName + '#error'] = 'Error-see log';
-    topicName = genNames.vDevice + '/lightOn';
-    dev[topicName + '#error'] = 'Error-see log';
+
+    vDevObj.controlsList().forEach(function(ctrl) {
+      ctrl.setError('Error-see log')
+    });
   }
 
   /**
