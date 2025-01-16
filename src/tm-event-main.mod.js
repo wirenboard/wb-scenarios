@@ -39,7 +39,11 @@ function install(manager, options) {
     if (!manager.registry[topic]) {
       manager.registry[topic] = {};
     }
-    var topicEvents = manager.registry[topic];
+    if (!manager.registry[topic].events) {
+      manager.registry[topic].events = {};
+    }
+    
+    var topicEvents = manager.registry[topic].events;
     
     if (topicEvents[eventType]) {
       log.warn(
@@ -287,8 +291,8 @@ function install(manager, options) {
     var results = [];
 
     // Проверяем, существует ли указанный топик приведя к булевому типу
-    var topicEvents = manager.registry[topic];
-    var topicExists = !!topicEvents;
+    var topicObj = manager.registry[topic];
+    var topicExists = !!topicObj;
     if (!topicExists) {
       res = {
         status: 'topic_not_found',
@@ -298,7 +302,7 @@ function install(manager, options) {
       return res;
     }
 
-
+    var topicEvents = manager.registry[topic].events;
     var hasProcessed = false;
     var cbRes;
     // Обрабатываем каждое зарегистрированное событие для топика
