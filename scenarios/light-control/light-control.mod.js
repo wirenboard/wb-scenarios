@@ -9,7 +9,6 @@
 var vdHelpers = require('virtual-device-helpers.mod');
 var aTable = require('registry-action-resolvers.mod');
 
-// var eventModule = require('registry-event-processing.mod');
 var TopicManager = require('tm-main.mod').TopicManager;
 var eventPlugin = require('tm-event-main.mod').eventPlugin;
 var historyPlugin = require('tm-history-main.mod').historyPlugin;
@@ -180,7 +179,7 @@ function init(
     openingSensorTriggeredResetCb
   );
 
-  tm.initRulesForAllTopics();
+  tm.initRulesForAllTopics('light_control_rule_' + idPrefix);
 
   // Создаем правило для датчиков движения
   var ruleIdMotion = defineRule(genNames.ruleMotion, {
