@@ -12,7 +12,10 @@ var aTable = require('registry-action-resolvers.mod');
 // var eventModule = require('registry-event-processing.mod');
 var TopicManager = require('tm-main.mod').TopicManager;
 var eventPlugin = require('tm-event-main.mod').eventPlugin;
+var historyPlugin = require('tm-history-main.mod').historyPlugin;
+
 var tm = new TopicManager();
+tm.installPlugin(historyPlugin);
 tm.installPlugin(eventPlugin);
 
 /**
