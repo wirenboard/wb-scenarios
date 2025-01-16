@@ -122,21 +122,29 @@ TopicManager.prototype.runProcessors = function (topic, newValue) {
 
 /**
  * Создание и запуск правила для всех зарегистрированных топиков
- * Создает одно правило для обработки всех зарегистрированных топиков
+ * Создаёт одно правило для обработки всех зарегистрированных топиков
+ *
+ * @param {string} ruleName Имя правила
  */
-TopicManager.prototype.initRulesForAllTopics = function () {
-  var RULE_NAME = 'TM_AllTopicsRule';
+TopicManager.prototype.initRulesForAllTopics = function (ruleName) {
+  var ruleNameType = typeof ruleName;
+  if (ruleNameType !== 'string') {
+    log.error(
+      'Имя правила (ruleName) должно быть строкой, а сейчас:' + ruleNameType
+    );
+    return false;
+  }
 
   // Сбор всех зарегистрированных топиков
   var topics = Object.keys(this.registry);
   if (topics.length === 0) {
-    log.warn('No topics registered. Rule initialization skipped.');
+    log.warn('Нет зарегистрированных топиков. Правило не создано.');
     return false;
   }
 
   // Создаем правило
   this.ruleId = defineRule(
-    RULE_NAME, {
+    ruleName, {
     whenChanged: topics,
     then: function (newValue, devName, cellName) {
       var topic = devName + '/' + cellName;
@@ -146,11 +154,11 @@ TopicManager.prototype.initRulesForAllTopics = function () {
   });
 
   if (!this.ruleId) {
-    log.error('Failed to create the rule:', RULE_NAME);
+    log.error('Failed to create the rule:', ruleName);
     return false;
   }
 
-  log.debug('Rule "' + RULE_NAME + '" successfully created with ID:', this.ruleId);
+  log.debug('Rule "' + ruleName + '" successfully created with ID:', this.ruleId);
   return true;
 };
 
