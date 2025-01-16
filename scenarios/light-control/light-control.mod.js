@@ -8,7 +8,12 @@
 
 var vdHelpers = require('virtual-device-helpers.mod');
 var aTable = require('registry-action-resolvers.mod');
-var eventModule = require('registry-event-processing.mod');
+
+// var eventModule = require('registry-event-processing.mod');
+var TopicManager = require('tm-main.mod').TopicManager;
+var eventPlugin = require('tm-event-main.mod').eventPlugin;
+var tm = new TopicManager();
+tm.installPlugin(eventPlugin);
 
 /**
  * Инициализирует виртуальное устройство и определяет правило для управления
@@ -122,7 +127,6 @@ function init(
   }
 
   log.debug('Start rules creation');
-  var eventRegistry = eventModule.createRegistryForEvents();
   var lightOffTimerId = null;
   var logicEnableTimerId = null;
 
@@ -131,32 +135,32 @@ function init(
   var openingSensorsControlNames = extractControlNames(openingSensors);
   var lightSwitchesControlNames = extractControlNames(lightSwitches);
 
-  eventRegistry.registerSingleEvent(
+   tm.registerSingleEvent(
     genNames.vDevice + '/logicDisabledByWallSwitch',
     'whenChange',
     logicDisabledCb
   );
-  eventRegistry.registerSingleEvent(
+   tm.registerSingleEvent(
     genNames.vDevice + '/doorOpen',
     'whenChange',
     doorOpenCb
   );
-  eventRegistry.registerSingleEvent(
+   tm.registerSingleEvent(
     genNames.vDevice + '/remainingTimeToLightOffInSec',
     'whenChange',
     remainingTimeToLightOffCb
   );
-  eventRegistry.registerSingleEvent(
+   tm.registerSingleEvent(
     genNames.vDevice + '/remainingTimeToLogicEnableInSec',
     'whenChange',
     remainingTimeToLogicEnableCb
   );
-  eventRegistry.registerSingleEvent(
+   tm.registerSingleEvent(
     genNames.vDevice + '/lightOn',
     'whenChange',
     lightOnCb
   );
-  eventRegistry.registerMultipleEvents(
+   tm.registerMultipleEvents(
     lightSwitchesControlNames,
     'whenChange',
     lightSwitchUsedCb
@@ -167,7 +171,7 @@ function init(
    * разную логику срабатывания - поэтому регистрируем два противоположных
    * обработчика.
    */
-  eventRegistry.registerMultipleEventsWithBehaviorOpposite(
+   tm.registerMultipleEventsWithBehaviorOpposite(
     openingSensors,
     openingSensorTriggeredLaunchCb,
     openingSensorTriggeredResetCb
@@ -207,7 +211,7 @@ function init(
   var ruleIdSwitches = defineRule(genNames.ruleSwitches, {
     whenChanged: lightSwitchesControlNames,
     then: function (newValue, devName, cellName) {
-      eventRegistry.processEvent(devName + '/' + cellName, newValue);
+       tm.processEvent(devName + '/' + cellName, newValue);
     },
   });
   if (!ruleIdSwitches) {
@@ -242,7 +246,7 @@ function init(
   var ruleIdDoorOpen = defineRule(genNames.ruleDoorOpen, {
     whenChanged: [genNames.vDevice + '/doorOpen'],
     then: function (newValue, devName, cellName) {
-      eventRegistry.processEvent(devName + '/' + cellName, newValue);
+       tm.processEvent(devName + '/' + cellName, newValue);
     },
   });
   if (!ruleIdDoorOpen) {
@@ -259,7 +263,7 @@ function init(
   var ruleIdLightOn = defineRule(genNames.ruleLightOn, {
     whenChanged: [genNames.vDevice + '/lightOn'],
     then: function (newValue, devName, cellName) {
-      eventRegistry.processEvent(devName + '/' + cellName, newValue);
+       tm.processEvent(devName + '/' + cellName, newValue);
     },
   });
   if (!ruleIdLightOn) {
@@ -278,7 +282,7 @@ function init(
     {
       whenChanged: [genNames.vDevice + '/logicDisabledByWallSwitch'],
       then: function (newValue, devName, cellName) {
-        eventRegistry.processEvent(devName + '/' + cellName, newValue);
+         tm.processEvent(devName + '/' + cellName, newValue);
       },
     }
   );
@@ -300,7 +304,7 @@ function init(
     {
       whenChanged: [genNames.vDevice + '/remainingTimeToLightOffInSec'],
       then: function (newValue, devName, cellName) {
-        eventRegistry.processEvent(devName + '/' + cellName, newValue);
+         tm.processEvent(devName + '/' + cellName, newValue);
       },
     }
   );
@@ -322,7 +326,7 @@ function init(
     {
       whenChanged: [genNames.vDevice + '/remainingTimeToLogicEnableInSec'],
       then: function (newValue, devName, cellName) {
-        eventRegistry.processEvent(devName + '/' + cellName, newValue);
+         tm.processEvent(devName + '/' + cellName, newValue);
       },
     }
   );
@@ -1002,7 +1006,7 @@ function init(
     }
 
     if (sensorType === 'opening') {
-      var res = eventRegistry.processEvent(
+      var res =  tm.processEvent(
         devName + '/' + cellName,
         newValue
       );
