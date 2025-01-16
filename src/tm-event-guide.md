@@ -7,7 +7,7 @@
 использованием реестров событий и резолверов. Он объединяет функционал:
 - Регистрации событий и их обработчиков
 - Проверки условий срабатывания событий через резолверы
-- Обработки событий с вызовом обратных вызовов
+- Обработки событий с вызовом обратных вызовов (callback функций)
 
 Модуль полностью совместим с ES5 и легко интегрируется в скрипты описания
 wb-rules
@@ -73,6 +73,21 @@ function lightDisabled(value) {
 eventRegistry.registerEvent('home/light', 'whenEnabled', lightEnabled);
 eventRegistry.registerEvent('home/light', 'whenDisabled', lightDisabled);
 ```
+
+Обратите внимание - если зарегистрировать несколько разных событий
+на один топик и в один момент произойдут оба изменения - то вызовутся все
+обработчики.
+
+Например - можно зарегистрировать три обработчика на один топик:
+
+```javascript
+tm.registerSingleEvent('topic1', 'whenEnabled', cbFuncEnbaled)
+tm.registerSingleEvent('topic1', 'whenDisabled', cbFuncDisabled)
+tm.registerSingleEvent('topic1', 'whenChange', cbFuncChanged)
+```
+
+В этом случае - вместе с cbFuncEnbaled и cbFuncDisabled каждый раз будет
+вызываться еще и cbFuncChanged.
 
 ### 3. Обработка событий
 
@@ -154,6 +169,12 @@ log.debug(JSON.stringify(debugInfo, null, 2));
 2. **Реестр событий**:
 - Создаётся с помощью фабрики `createEventRegistry`
 - Управляет регистрацией и обработкой событий
+
+Главный файл содержит два главных метода
+- registerSingleEvent() - базовый метод регистрирующий коллбек для
+  определенного топика и типа события
+- processEvent() - используется для поиска нужного коллбека по топику и типу
+  события
 
 ---
 
