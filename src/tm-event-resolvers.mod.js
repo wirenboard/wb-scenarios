@@ -1,5 +1,6 @@
 /**
- * @file Модуль таблицы регистрируемых событий над контролами
+ * @file tm-event-resolvers.mod.js
+ * @description Модуль таблицы регистрируемых событий над контролами
  * 
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
@@ -62,23 +63,30 @@ var registryEventResolvers = {
   }
 };
 
-// Вычисляем для всех типов действий resetResolver на основе resetResolverName
+/**
+ * Автоматическое заполнение resetResolver
+ * 
+ * После базового заполнения структуры резолверов нужно вычислить
+ * resetResolver для всех типов действий  на основе resetResolverName
+ * и заполнить это поле
+ */
 Object.keys(registryEventResolvers).forEach(function (key) {
-  log.debug('+ Обработка ключа "' + key + '"');
-  
-  if (!registryEventResolvers[key].resetResolverName) {
-    log.debug('resetResolverName для действия "' + key + '" не установлен');
+  var resolver = registryEventResolvers[key];
+  if (!resolver.resetResolverName) {
+    log.warning(
+      'resetResolverName для действия "' +
+      key + '" не установлен'
+    );
     return;
   }
-  if (!registryEventResolvers[registryEventResolvers[key].resetResolverName]) {
-    log.debug('Ошибка: resetResolverName для действия "' +
-      key + '" указан, но отсутствует в реестре действий');
+  if (!registryEventResolvers[resolver.resetResolverName]) {
+    log.warning(
+      'Ошибка: resetResolverName для действия "' +
+      key + '" указан, но отсутствует в реестре действий'
+    );
     return;
   }
-  log.debug('  - Текущее значение "' + registryEventResolvers[key].resetResolver + '"');
-  log.debug('  - Установка "' + registryEventResolvers[registryEventResolvers[key].resetResolverName].launchResolver + '"');
-  registryEventResolvers[key].resetResolver = registryEventResolvers[registryEventResolvers[key].resetResolverName].launchResolver;
-  log.debug('  - Новое значение "' + registryEventResolvers[key].resetResolver + '"');
+  resolver.resetResolver = registryEventResolvers[resolver.resetResolverName].launchResolver;
 });
 
 exports.registryEventResolvers = registryEventResolvers;
