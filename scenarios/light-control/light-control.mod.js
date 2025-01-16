@@ -177,6 +177,8 @@ function init(
     openingSensorTriggeredResetCb
   );
 
+  tm.initRulesForAllTopics();
+
   // Создаем правило для датчиков движения
   var ruleIdMotion = defineRule(genNames.ruleMotion, {
     whenChanged: motionSensorsControlNames,
@@ -207,21 +209,6 @@ function init(
     'WB-rule with IdNum "' + ruleIdOpening + '" was successfully created'
   );
 
-  // Создаем правило для выключателей света
-  var ruleIdSwitches = defineRule(genNames.ruleSwitches, {
-    whenChanged: lightSwitchesControlNames,
-    then: function (newValue, devName, cellName) {
-       tm.processEvent(devName + '/' + cellName, newValue);
-    },
-  });
-  if (!ruleIdSwitches) {
-    setError('WB-rule "' + genNames.ruleSwitches + '" not created');
-    return false;
-  }
-  log.debug(
-    'WB-rule with IdNum "' + ruleIdSwitches + '" was successfully created'
-  );
-
   // Создаем правило следящее за движением
   // Оно нужно для приведения всех датчиков движения к одному типу switch
   //   - Тип датчиков value приведется к типу switch
@@ -239,84 +226,6 @@ function init(
   log.debug(
     'WB-rule with IdNum "' +
       genNames.ruleMotionInProgress +
-      '" was successfully created'
-  );
-
-  // Правило следящее за состоянием дверей
-  var ruleIdDoorOpen = defineRule(genNames.ruleDoorOpen, {
-    whenChanged: [genNames.vDevice + '/doorOpen'],
-    then: function (newValue, devName, cellName) {
-       tm.processEvent(devName + '/' + cellName, newValue);
-    },
-  });
-  if (!ruleIdDoorOpen) {
-    setError('WB-rule "' + genNames.ruleDoorOpen + '" not created');
-    return false;
-  }
-  log.debug(
-    'WB-rule with IdNum "' +
-      genNames.ruleDoorOpen +
-      '" was successfully created'
-  );
-
-  // Правило следящее за состоянием света
-  var ruleIdLightOn = defineRule(genNames.ruleLightOn, {
-    whenChanged: [genNames.vDevice + '/lightOn'],
-    then: function (newValue, devName, cellName) {
-       tm.processEvent(devName + '/' + cellName, newValue);
-    },
-  });
-  if (!ruleIdLightOn) {
-    setError('WB-rule "' + genNames.ruleLightOn + '" not created');
-    return false;
-  }
-  log.debug(
-    'WB-rule with IdNum "' +
-      genNames.ruleLightOn +
-      '" was successfully created'
-  );
-
-  // Правило следящее за отключением логики сценария
-  var ruleIdLogicDisabledByWallSwitch = defineRule(
-    genNames.ruleLogicDisabledByWallSwitch,
-    {
-      whenChanged: [genNames.vDevice + '/logicDisabledByWallSwitch'],
-      then: function (newValue, devName, cellName) {
-         tm.processEvent(devName + '/' + cellName, newValue);
-      },
-    }
-  );
-  if (!ruleIdLogicDisabledByWallSwitch) {
-    setError(
-      'WB-rule "' + genNames.ruleLogicDisabledByWallSwitch + '" not created'
-    );
-    return false;
-  }
-  log.debug(
-    'WB-rule with IdNum "' +
-      genNames.ruleLogicDisabledByWallSwitch +
-      '" was successfully created'
-  );
-
-  // Правило следящее за изменением значения задержки до выключения света
-  var ruleIdRemainingTimeToLightOffInSec = defineRule(
-    genNames.ruleRemainingTimeToLightOffInSec,
-    {
-      whenChanged: [genNames.vDevice + '/remainingTimeToLightOffInSec'],
-      then: function (newValue, devName, cellName) {
-         tm.processEvent(devName + '/' + cellName, newValue);
-      },
-    }
-  );
-  if (!ruleIdRemainingTimeToLightOffInSec) {
-    setError(
-      'WB-rule "' + genNames.ruleRemainingTimeToLightOffInSec + '" not created'
-    );
-    return false;
-  }
-  log.debug(
-    'WB-rule with IdNum "' +
-      genNames.ruleRemainingTimeToLightOffInSec +
       '" was successfully created'
   );
 

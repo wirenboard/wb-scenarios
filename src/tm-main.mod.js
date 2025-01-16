@@ -19,6 +19,9 @@ function TopicManager() {
 
   // Обработчики обновления топиков
   this.pluginsProcessorsChain = [];
+
+  // Id созданного правила WB-rules
+  this.ruleId;
 }
 
 /**
@@ -98,7 +101,7 @@ TopicManager.prototype.removeProcessor = function (processor) {
 };
 
 /**
- * Обработка события
+ * Обработка данных всеми плагинами
  * 
  * @param {string} topic - Имя топика
  * @param {*} newValue - Новое значение топика
@@ -116,6 +119,41 @@ TopicManager.prototype.runProcessors = function (topic, newValue) {
     this.pluginsProcessorsChain[i].fn(topic, newValue);
   }
 };
+
+/**
+ * Создание и запуск правила для всех зарегистрированных топиков
+ * Создает одно правило для обработки всех зарегистрированных топиков
+ */
+TopicManager.prototype.initRulesForAllTopics = function () {
+  var RULE_NAME = 'TM_AllTopicsRule';
+
+  // Сбор всех зарегистрированных топиков
+  var topics = Object.keys(this.registry);
+  if (topics.length === 0) {
+    log.warn('No topics registered. Rule initialization skipped.');
+    return false;
+  }
+
+  // Создаем правило
+  this.ruleId = defineRule(
+    RULE_NAME, {
+    whenChanged: topics,
+    then: function (newValue, devName, cellName) {
+      var topic = devName + '/' + cellName;
+      log.debug('Triggered for topic:', topic, 'with value:', newValue);
+      this.runProcessors(topic, newValue);
+    }.bind(this),
+  });
+
+  if (!this.ruleId) {
+    log.error('Failed to create the rule:', RULE_NAME);
+    return false;
+  }
+
+  log.debug('Rule "' + RULE_NAME + '" successfully created with ID:', this.ruleId);
+  return true;
+};
+
 
 /**
  * Метод для подключения плагинов к объекту TopicManager
