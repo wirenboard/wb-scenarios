@@ -45,6 +45,9 @@
 
 ## Пример использования в правилах WB-rules
 
+В данном примере при выключении топика `wall_switch_9/enabled` выполнится
+функция `cbFuncDisabled()` в которой мы можем получить доступ к истории топика
+
 ```javascript
 var TopicManager = require('tm-main.mod').TopicManager;
 var eventPlugin = require('tm-event-main.mod').eventPlugin;
@@ -56,17 +59,24 @@ tm.installPlugin(eventPlugin);
 
 function cbFuncDisabled(newValue) {
   log.debug('Run cbFuncDisabled() with newValue=' + newValue);
-  log.debug('Value history: ' + JSON.stringify(tm.getHistory()));
+
+  valHistory = tm.getHistory('wall_switch_9/enabled');
+  log.debug('Value history: ' + JSON.stringify(valHistory, null, 2));
+  
+  log.debug('Prev value: "' + tm.getPrevValue('wall_switch_9/enabled') + '"');
   return true;
 }
+
 
 function main() {
   // Регистрация событий
   tm.registerSingleEvent('wall_switch_9/enabled', 'whenDisabled', cbFuncDisabled);
-  
-  // Генерация я запуск правила для начала работы
+
+  // Генерация и запуск правила для начала работы
   tm.initRulesForAllTopics('GenRuleName');
 }
+
+main();
 ```
 
 ## Структура реестра топиков
