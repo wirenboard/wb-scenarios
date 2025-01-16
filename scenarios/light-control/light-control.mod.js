@@ -161,6 +161,12 @@ function init(
     'whenChange',
     lightSwitchUsedCb
   );
+
+  /**
+   * Для датчиков открытия пользователь может выбрать у каждого датчика
+   * разную логику срабатывания - поэтому регистрируем два противоположных
+   * обработчика.
+   */
   eventRegistry.registerMultipleEventsWithBehaviorOpposite(
     openingSensors,
     openingSensorTriggeredLaunchCb,
@@ -529,9 +535,12 @@ function init(
     }
   }
 
-
-  // Данный метод можно использовать только после инициализации
-  // минимального виртуального устройства
+  /**
+   * Установка ошибки
+   * 
+   * @note Данный метод можно использовать только после инициализации
+   *     минимального виртуального устройства
+   */
   function setError(errorString) {
     log.error('ERROR Init: ' + errorString);
 
@@ -541,7 +550,7 @@ function init(
   }
 
   /**
-   * Обновляет содержашееся в контроле цифру оставшегося времени
+   * Обновление содержашейся в контроле цифры оставшегося времени
    * до отключения света каждую секунду
    */
   function updateRemainingLightOffTime() {
@@ -552,7 +561,8 @@ function init(
   }
 
   /**
-   * Обновляет оставшееся время до активации логики каждую секунду
+   * Обновление содержашейся в контроле цифры оставшегося времени
+   * до активации логики каждую секунду
    */
   function updateRemainingLogicEnableTime() {
     var remainingTime = dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'];
@@ -562,7 +572,7 @@ function init(
   }
 
   /**
-   * Запускает таймер отключения света
+   * Запуск таймера отключения света
    * @param {number} newDelayMs - Задержка в миллисекундах
    */
   function startLightOffTimer(newDelayMs) {
