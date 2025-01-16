@@ -16,11 +16,11 @@ function install(manager, options) {
   /**
    * Регистрирует событие для одного MQTT топика
    * 
-   * @param {string} topic Имя MQTT-топика (вид "device/control")
+   * @param {string} topicName Имя MQTT-топика (вид "device/control")
    * @param {string} eventType Тип события
    * @param {function} mainCallback Обратный вызов вызываемый при событии
    */
-  function registerSingleEvent(topic, eventType, mainCallback) {
+  function registerSingleEvent(topicName, eventType, mainCallback) {
     if (typeof mainCallback !== 'function') {
       log.error('Callback должен быть функцией');
       return;
@@ -36,18 +36,18 @@ function install(manager, options) {
       return;
     }
 
-    if (!manager.registry[topic]) {
-      manager.registry[topic] = {};
+    if (!manager.registry[topicName]) {
+      manager.registry[topicName] = {};
     }
-    if (!manager.registry[topic].events) {
-      manager.registry[topic].events = {};
+    if (!manager.registry[topicName].events) {
+      manager.registry[topicName].events = {};
     }
     
-    var topicEvents = manager.registry[topic].events;
+    var topicEvents = manager.registry[topicName].events;
     
     if (topicEvents[eventType]) {
       log.warn(
-        'Событие "' + eventType + '" для топика "' + topic + '"' +
+        'Событие "' + eventType + '" для топика "' + topicName + '"' +
         'уже зарегистрировано. Callback будет перезаписан'
       );
     }
@@ -56,7 +56,7 @@ function install(manager, options) {
     topicEvents[eventType] = { callback: mainCallback };
 
     log.debug(
-      'Событие зарегистрировано: topic="' + topic + '",' +
+      'Событие зарегистрировано: topic="' + topicName + '",' +
       'type="' + eventType + '"'
     );
   }
@@ -64,11 +64,11 @@ function install(manager, options) {
   /**
    * Регистрирует противоположное событие для одного MQTT топика
    * 
-   * @param {string} topic Имя MQTT-топика вида "device/control"
+   * @param {string} topicName Имя MQTT-топика вида "device/control"
    * @param {string} eventType Тип основного события (например, 'whenEnabled')
    * @param {Function} oppositeCallback Колбэк для противоположного события
    */
-  function registerOppositeEvent(topic, eventType, oppositeCallback) {
+  function registerOppositeEvent(topicName, eventType, oppositeCallback) {
     if (typeof oppositeCallback !== 'function') {
       log.error('Callback должен быть функцией');
       return;
@@ -105,7 +105,7 @@ function install(manager, options) {
     }
 
     // Регистрируем «противоположное» событие
-    registerSingleEvent(topic, oppEventName, oppositeCallback);
+    registerSingleEvent(topicName, oppEventName, oppositeCallback);
     log.debug(
       'Противоположное событие с именем "' + oppEventName + '"' +
       'зарегистрировано для базового события "' + eventType + '"'
@@ -115,17 +115,17 @@ function install(manager, options) {
   /**
    * Регистрирует сразу основное и противоположное событие для топика
    *
-   * @param {string} topic Имя MQTT-топика вида "device/control"
+   * @param {string} topicName Имя MQTT-топика вида "device/control"
    * @param {string} eventType Тип основного события (например, 'whenEnabled')
    * @param {function} mainCallback Колбэк для события
    * @param {Function} oppositeCallback Колбэк для противоположного события
    */
-  function registerBothEvents(topic, eventType, mainCallback, oppositeCallback) {
+  function registerBothEvents(topicName, eventType, mainCallback, oppositeCallback) {
     // Сначала регистрируем основное
-    registerSingleEvent(topic, eventType, mainCallback);
+    registerSingleEvent(topicName, eventType, mainCallback);
 
     // Затем регистрируем противоположное
-    registerOppositeEvent(topic, eventType, oppositeCallback);
+    registerOppositeEvent(topicName, eventType, oppositeCallback);
   }
 
 
@@ -146,15 +146,15 @@ function install(manager, options) {
     }
 
     for (var i = 0; i < topics.length; i++) {
-      var topic = topics[i];
-      if (typeof topic !== 'string') {
+      var topicName = topics[i];
+      if (typeof topicName !== 'string') {
         log.error(
           'Пропуск не корректного топика, индекс "' + i + '":' +
           'должен быть строкой.'
         );
         continue;
       }
-      registerSingleEvent(topic, eventType, callback);
+      registerSingleEvent(topicName, eventType, callback);
     }
   }
 
@@ -265,7 +265,7 @@ function install(manager, options) {
    * Поиск и обработка всех зарегистрированных и произошедших событий
    * для указанного топика
    *
-   * @param {string} topic Имя MQTT-топика (вида "device/control")
+   * @param {string} topicName Имя MQTT-топика (вида "device/control")
    * @param {any} newValue Новое значение топика
    * @returns {Object} Статус результата обработки:
    *     Содержит общий статус обработки (status) и если есть сработавшие
@@ -286,23 +286,23 @@ function install(manager, options) {
    *           ]
    *         }
    */
-  function processEvent(topic, newValue) {
+  function processEvent(topicName, newValue) {
     var res;
     var results = [];
 
     // Проверяем, существует ли указанный топик приведя к булевому типу
-    var topicObj = manager.registry[topic];
+    var topicObj = manager.registry[topicName];
     var topicExists = !!topicObj;
     if (!topicExists) {
       res = {
         status: 'topic_not_found',
-        message: 'Топик "' + topic + '" не найден в реестре',
+        message: 'Топик "' + topicName + '" не найден в реестре',
         details: results
       };
       return res;
     }
 
-    var topicEvents = manager.registry[topic].events;
+    var topicEvents = manager.registry[topicName].events;
     var hasProcessed = false;
     var cbRes;
     // Обрабатываем каждое зарегистрированное событие для топика
@@ -324,7 +324,7 @@ function install(manager, options) {
       if (!isTriggered) {
         // log.debug(
         //   'Resolver "' + curEventType + 'не подтвердил событие'
-        //   '" для топика "' + topic + '"'
+        //   '" для топика "' + topicName + '"'
         // );
         continue;
       }
@@ -337,7 +337,7 @@ function install(manager, options) {
       // Вызываем колбэк
       if (isCallbackValid) {
         // log.debug(
-        //   'Выполнение callback для топика "' + topic +
+        //   'Выполнение callback для топика "' + topicName +
         //   '", тип события "' + curEventType + '"'
         // );
         cbRes = eventObj.callback(newValue);
@@ -345,7 +345,7 @@ function install(manager, options) {
         if (cbRes === undefined) {
           retStatus = 'processed_without_res';
           log.warning(
-            'Callback для "' + topic + '" и типа события "' + curEventType +
+            'Callback для "' + topicName + '" и типа события "' + curEventType +
             '" выполнен успешно, но ничего не вернул. Ожидается возврат bool.'
           );
         } else if (cbRes === true) {
@@ -358,7 +358,7 @@ function install(manager, options) {
         retStatus = 'callback_missing';
         log.error(
           'Для события "' + curEventType + '" не найден  Callback."' +
-          ' (topic: "' + topic + '")'
+          ' (topicName: "' + topicName + '")'
         );
       }
 
