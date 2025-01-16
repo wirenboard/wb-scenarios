@@ -37,15 +37,17 @@ function install(manager, options) {
       manager.registry[topic].valHistory = [];
     }
 
-    manager.registry[topic].valHistory.push({
+    var history = manager.registry[topic].valHistory;
+
+    history.push({
       value: newValue,
       timestamp: Date.now()
     });
 
     // Если достигнут лимит — удаляем самую старую запись
-    isLimit = maxLength > 0 && manager.registry[topic].valHistory.length > maxLength;
+    var isLimit = maxLength > 0 && history.length > maxLength;
     if (isLimit === true) {
-      manager.registry[topic].valHistory.shift();
+      history.shift();
     }
   }
 
@@ -67,6 +69,39 @@ function install(manager, options) {
   }
 
   /**
+   * Возвращает значение из истории по индексу
+   * @param {string} topic Имя топика
+   * @param {number} index Индекс: 0 = текущее, -1 = предыдущее, -2 = ещё раньше
+   * @returns {*} Значение (value) или null, если данных нет
+   */
+  function getValueAt(topic, index) {
+    var history = getHistory(topic);
+  
+    // Проверка на некорректный индекс
+    var isIndexCorrect = (index <= 0 && Math.abs(index) <= history.length);
+    if (!isIndexCorrect) {
+      return null;
+    }
+
+    // Преобразуем указанный пользователем индекс в реальный индекс массива
+    arrIndex = (history.length + index) - 1; // - 1 для преобразования в индекс
+
+    // Переходим к значению с конца (0 = последний, -1 = предпоследний и т.д.)
+    var record = history[arrIndex];
+    var retValue = record ? record.value : null;
+    return retValue;
+  }
+
+  /**
+   * Возвращает предыдущее значение (последнее перед текущим)
+   * @param {string} topic Имя топика
+   * @returns {*} Значение (value) или null, если данных недостаточно
+   */
+  function getPrevValue(topic) {
+    return getValueAt(topic, -1);
+  }
+
+  /**
    * Процессор, автоматически вызывающий storeRecord при приходе
    * нового значения (topic, newValue).
    *
@@ -80,9 +115,15 @@ function install(manager, options) {
   // Экспортируем методы в сам manager (для ручного вызова при желании)
   manager.storeRecord = storeRecord;
   manager.getHistory = getHistory;
+  manager.getValueAt = getValueAt;
+  manager.getPrevValue = getPrevValue;
 
-  // Добавляем общий обработчик в цепочку
-  var priority = 3;
+  /**
+   * Добавляем общий обработчик в цепочку
+   * Важно чтобы этот приоритет был выше чем у плагина событий
+   */
+  
+  var priority = 6;
   manager.addProcessor(historyProcessor, priority);
 
   log.debug('History plugin installed, maxLength=' + maxLength);
