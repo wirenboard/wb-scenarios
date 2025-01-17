@@ -1,7 +1,8 @@
 # Руководство по модулю топик менеджера (tm, topic manager)
 
 Важно - базовый модуль топик менеджера не имеет полезного функционала.
-Для добавления полезного функционала нужно подключать соответствующие плагины.
+Для добавления полезного функционала нужно подключать соответствующие плагины
+такие как historyPlugin и eventPlugin
 
 ## Общее описание
 
@@ -57,16 +58,16 @@ var tm = new TopicManager();
 tm.installPlugin(historyPlugin);
 tm.installPlugin(eventPlugin);
 
-function cbFuncDisabled(newValue) {
-  log.debug('Run cbFuncDisabled() with newValue=' + newValue);
-
-  valHistory = tm.getHistory('wall_switch_9/enabled');
-  log.debug('Value history: ' + JSON.stringify(valHistory, null, 2));
-  
-  log.debug('Prev value: "' + tm.getPrevValue('wall_switch_9/enabled') + '"');
+// Более функциональный коллбек с доступом к истории значения с помошью плагина
+// topicObj является расширяемым объектом которому можно добавить другие поля
+function cbFuncDisabled(topicObj) {
+  log.debug('Run cbFuncDisabled()');
+  log.debug('- Topic name: "' + topicObj.name + '"');
+  log.debug('- New value: "' + topicObj.newValue + '"');
+  log.debug('- Prev value: "' + topicObj.prevValue + '"');
+  log.debug('- Value history: ' + JSON.stringify(topicObj.historyValue, null, 2));
   return true;
 }
-
 
 function main() {
   // Регистрация событий
