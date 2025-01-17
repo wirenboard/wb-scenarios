@@ -63,9 +63,9 @@ tm.installPlugin(eventPlugin);
 function cbFuncDisabled(topicObj) {
   log.debug('Run cbFuncDisabled()');
   log.debug('- Topic name: "' + topicObj.name + '"');
-  log.debug('- New value: "' + topicObj.newValue + '"');
-  log.debug('- Prev value: "' + topicObj.prevValue + '"');
-  log.debug('- Value history: ' + JSON.stringify(topicObj.historyValue, null, 2));
+  log.debug('- New value: "' + topicObj.val.new + '"');
+  log.debug('- Prev value: "' + topicObj.val.prev + '"');
+  log.debug('- Value history: ' + JSON.stringify(topicObj.val.history, null, 2));
   return true;
 }
 

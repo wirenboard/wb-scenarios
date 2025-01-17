@@ -340,11 +340,13 @@ function install(manager, options) {
           'Выполнение callback для топика "' + topicName +
           '", тип события "' + curEventType + '"'
         );
-        topicObj = {
+        var topicObj = {
           name: topicName,
-          newValue: newValue,
-          prevValue: manager.getPrevValue(topicName),
-          historyValue: manager.registry[topicName].valHistory
+          val: {
+            new: newValue,
+            prev: manager.getPrevValue(topicName),
+            history: manager.registry[topicName].valHistory
+          }
         }
         cbRes = eventObj.callback(topicObj);
 
