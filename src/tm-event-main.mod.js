@@ -336,11 +336,17 @@ function install(manager, options) {
       var retStatus;
       // Вызываем колбэк
       if (isCallbackValid) {
-        // log.debug(
-        //   'Выполнение callback для топика "' + topicName +
-        //   '", тип события "' + curEventType + '"'
-        // );
-        cbRes = eventObj.callback(newValue);
+        log.debug(
+          'Выполнение callback для топика "' + topicName +
+          '", тип события "' + curEventType + '"'
+        );
+        topicObj = {
+          name: topicName,
+          newValue: newValue,
+          prevValue: manager.getPrevValue(topicName),
+          historyValue: manager.registry[topicName].valHistory
+        }
+        cbRes = eventObj.callback(topicObj);
 
         if (cbRes === undefined) {
           retStatus = 'processed_without_res';

@@ -709,12 +709,12 @@ function init(
   /**
    * Обработчик выключения логики автоматики при использовании выключателя
    *
-   * @param {boolean} newValue Новое значение состояния логики автоматики:
+   * @param {boolean} topicObj.newValue Новое значение состояния логики:
    *     true - включает логику и запускает таймеры (если разрешено)
    *     false - выключает логику и отключает свет.
    * @returns {boolean} Callback возвращает true при успехе
    */
-  function logicDisabledCb(newValue) {
+  function logicDisabledCb(topicObj) {
     if (lightOffTimerId) {
       clearTimeout(lightOffTimerId);
       resetLightOffTimer();
@@ -724,7 +724,7 @@ function init(
       resetLogicEnableTimer();
     }
 
-    if (newValue === false) {
+    if (topicObj.newValue === false) {
       dev[genNames.vDevice + '/lightOn'] = false;
       return true;
     }
@@ -738,12 +738,12 @@ function init(
     return true;
   }
 
-  function doorOpenCb(newValue) {
-    if (newValue === true) {
+  function doorOpenCb(topicObj) {
+    if (topicObj.newValue === true) {
       // log.debug('Minimum one door is open');
       dev[genNames.vDevice + '/lightOn'] = true;
       startLightOffTimer(delayByOpeningSensors * 1000);
-    } else if (newValue === false) {
+    } else if (topicObj.newValue === false) {
       // log.debug('All doors is close');
     } else {
       log.error('Door status - have not correct type');
@@ -752,11 +752,11 @@ function init(
     return true;
   }
 
-  function lightOnCb(newValue) {
-    if (newValue === true) {
+  function lightOnCb(topicObj) {
+    if (topicObj.newValue === true) {
       // log.debug('Light on');
       setValueAllDevicesByBehavior(lightDevices, true);
-    } else if (newValue === false) {
+    } else if (topicObj.newValue === false) {
       // log.debug('Light off');
       setValueAllDevicesByBehavior(lightDevices, false);
     } else {
@@ -766,50 +766,50 @@ function init(
     return true;
   }
 
-  function remainingTimeToLightOffCb(newValue) {
+  function remainingTimeToLightOffCb(topicObj) {
     /**
      * Значение таймера отключения света может стать нулем в двух случаях:
      * 1 - Таймер дошел до конца без новых внешних воздействи
      * 2 - Таймер был обнулен так как движение снова появилось
      */
     curMotionStatus = dev[genNames.vDevice + '/motionInProgress'];
-    if (newValue === 0 && curMotionStatus === true) {
+    if (topicObj.newValue === 0 && curMotionStatus === true) {
       /* Ничего не делаем если при движении обнулился таймер */
       return true;
     }
 
-    if (newValue === 0) {
+    if (topicObj.newValue === 0) {
       turnOffLightsByTimeout();
-    } else if (newValue >= 1) {
+    } else if (topicObj.newValue >= 1) {
       // Recharge timer
       if (lightOffTimerId) {
         clearTimeout(lightOffTimerId);
       }
       lightOffTimerId = setTimeout(updateRemainingLightOffTime, 1000);
     } else {
-      log.error('Remaining time to light enable: have not correct value:' + newValue);
+      log.error('Remaining time to light enable: have not correct value:' + topicObj.newValue);
     }
 
     return true;
   }
 
-  function remainingTimeToLogicEnableCb(newValue) {
-    if (newValue === 0) {
+  function remainingTimeToLogicEnableCb(topicObj) {
+    if (topicObj.newValue === 0) {
       enableLogicByTimeout();
-    } else if (newValue >= 1) {
+    } else if (topicObj.newValue >= 1) {
       // Recharge timer
       if (logicEnableTimerId) {
         clearTimeout(logicEnableTimerId);
       }
       logicEnableTimerId = setTimeout(updateRemainingLogicEnableTime, 1000);
     } else {
-      log.error('Remaining time to logic enable: have not correct value:' + newValue);
+      log.error('Remaining time to logic enable: have not correct value:' + topicObj.newValue);
     }
 
     return true;
   }
 
-  function lightSwitchUsedCb(newValue) {
+  function lightSwitchUsedCb(topicObj) {
     // Для выключателей считаем, что любое изменение (не важно какое)
     // - Меняет состояние переключателя отключения логики сценария
     // log.debug('Использован выключатель');
@@ -819,7 +819,7 @@ function init(
     return true;
   }
 
-  function openingSensorTriggeredLaunchCb(newValue) {
+  function openingSensorTriggeredLaunchCb(topicObj) {
     // Тригерит только изменение выбранное пользователем
     // log.debug('Opening detected on sensor ' + devName + '/' + cellName);
     // log.debug('Одна из дверей открыта');
@@ -828,7 +828,7 @@ function init(
     return true;
   }
 
-  function openingSensorTriggeredResetCb(newValue) {
+  function openingSensorTriggeredResetCb(topicObj) {
     // Тригерит только противоположное действие
     // log.debug('Opening detected on sensor ' + devName + '/' + cellName);
     // log.debug('Одна из дверей закрыта');
