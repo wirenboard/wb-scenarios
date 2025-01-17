@@ -8,30 +8,30 @@
 
 /**
  * Событие активации контрола
- * @param {boolean} newValue - Новое состояние контрола
+ * @param {boolean} topicObj - Новое состояние контрола
  * @returns {boolean} Возвращает true, если контрол включен
  */
-function whenEnabled(newValue) {
-  var isEventTriggered = (newValue === true);
+function whenEnabled(topicObj) {
+  var isEventTriggered = (topicObj.val.new === true);
   return isEventTriggered;
 }
 
 /**
  * Событие деактивации контрола
- * @param {boolean} newValue - Новое состояние контрола
+ * @param {boolean} topicObj - Новое состояние контрола
  * @returns {boolean} Возвращает true, если контрол выключен
  */
-function whenDisabled(newValue) {
-  var isEventTriggered = (newValue === false);
+function whenDisabled(topicObj) {
+  var isEventTriggered = (topicObj.val.new === false);
   return isEventTriggered;
 }
 
 /**
  * Событие изменения состояния контрола
- * @param {any} newValue - Новое состояние контрола
+ * @param {any} topicObj - Новое состояние контрола
  * @returns {boolean} Всегда возвращает true
  */
-function whenChange(newValue) {
+function whenChange(topicObj) {
   var isEventTriggered = true; // Всегда срабатывает при изменении
   return isEventTriggered;
 }

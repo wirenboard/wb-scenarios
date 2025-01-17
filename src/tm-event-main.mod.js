@@ -319,8 +319,16 @@ function install(manager, options) {
         continue;
       }
 
+      var topicObj = {
+        name: topicName,
+        val: {
+          new: newValue,
+          prev: manager.getPrevValue(topicName),
+          history: manager.registry[topicName].valHistory
+        }
+      }
       // Проверяем, сработал ли текущий резолвер события
-      var isTriggered = resolver.launchResolver(newValue);
+      var isTriggered = resolver.launchResolver(topicObj);
       if (!isTriggered) {
         // log.debug(
         //   'Resolver "' + curEventType + 'не подтвердил событие'
@@ -336,18 +344,10 @@ function install(manager, options) {
       var retStatus;
       // Вызываем колбэк
       if (isCallbackValid) {
-        log.debug(
-          'Выполнение callback для топика "' + topicName +
-          '", тип события "' + curEventType + '"'
-        );
-        var topicObj = {
-          name: topicName,
-          val: {
-            new: newValue,
-            prev: manager.getPrevValue(topicName),
-            history: manager.registry[topicName].valHistory
-          }
-        }
+        // log.debug(
+        //   'Выполнение callback для топика "' + topicName +
+        //   '", тип события "' + curEventType + '"'
+        // );
         cbRes = eventObj.callback(topicObj);
 
         if (cbRes === undefined) {
