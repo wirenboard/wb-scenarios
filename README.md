@@ -3,9 +3,10 @@
 Данный репозиторий содержит готовые сценарии которые помогают
 быстрее подключать устройства и связывать их между собой
 
-На данный момент реализованые сценарии:
+На данный момент реализованы сценарии:
 
 - [Управление устройствами](scenarios/devices-control/README.md)
+- [Управление светом](scenarios/light-control/README.md)
 
 ## Установка
 
@@ -21,14 +22,15 @@
 
 ## Разарботчикам
 
-Style guide от ArBnb для js ES5
-https://github.com/airbnb/javascript/tree/es5-deprecated/es5
-
-Linter (ESLint от Microsoft не упомяняется у Airbnb + он требует npm версии старше чем у нас на контроллере используется для движка wb-rules)
-- 
-
-Инструкция по настройке линтера
-
+### Разработка новых сценариев
 
 Для информации о разработке новых сценариев - смотрите
 файл для разработчиков [README](develop/README.md).
+
+### Руководства по стилю
+
+Style guide от Airbnb для js ES5
+https://github.com/airbnb/javascript/tree/es5-deprecated/es5
+
+Style guide от Google для jsdoc
+https://google.github.io/styleguide/jsguide.html#jsdoc
