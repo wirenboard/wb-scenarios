@@ -256,6 +256,8 @@ function init(
   log.debug('Light-control initialization completed successfully');
   return true;
 
+
+  
   // ======================================================
   //                  Определения функций
   // ======================================================
@@ -368,7 +370,7 @@ function init(
   }
 
   /**
-   * Добавляет к виртуальному устройству список связанных виртуальных
+   * Добавление к виртуальному устройству список связанных виртуальных
    * контролов, которые полезны для отслеживания состояния связанных
    * с данным виртуальным устройством контролов
    */
@@ -394,18 +396,18 @@ function init(
     }
   }
 
+  /**
+   * Добавление отображения текущего статуса датчиков связанных
+   * с виртуальным устройством
+   *
+   * @note: Если топик не существует в момент создания связи - то он не добавится
+   *        в виртуальное устройство - это актуально при создании сценариев с
+   *        использованием других сценариев и других виртуальных устройств
+   *        если реальные устройства создаются и существуют постоянно - то
+   *        wb-rules не гарантирует порядок инициализации виртуальных устройств
+   * @fixme: попробовать это как то поправить
+   */
   function addAllLinkedDevicesToVd() {
-    /** Добавляем отображение текущего статуса датчиков связанных
-     * с виртуальным устройством
-     *
-     * @note: Если топик не существует в момент создания связи - то он не добавится
-     *        в виртуальное устройство - это актуально при создании сценариев с
-     *        использованием других сценариев и других виртуальных устройств
-     *        если реальные устройства создаются и существуют постоянно - то
-     *        wb-rules не гарантирует порядок инициализации виртуальных устройств
-     * @fixme: попробовать это как то поправить
-     */
-
     // Текущая задержка, меняется в зависимости от последнего
     // сработавшего типа датчика
     vDevObj.addControl('curValDisableLightTimerInSec', {
@@ -502,8 +504,8 @@ function init(
   }
 
   /**
-   * Запускает таймер включения логики
-   * @param {number} newDelayMs - Задержка в миллисекундах
+   * Запуск таймер включения логики
+   * @param {number} newDelayMs Задержка в миллисекундах
    */
   function startLogicEnableTimer(newDelayMs) {
     var newDelaySec = newDelayMs / 1000;
@@ -517,7 +519,7 @@ function init(
   }
 
   /**
-   * Выключает освещение
+   * Выключение освещения
    */
   function turnOffLightsByTimeout() {
     dev[genNames.vDevice + '/lightOn'] = false;
@@ -525,14 +527,15 @@ function init(
   }
 
   /**
-   * Включает логику сценария
+   * Активация логики сценария
    */
   function enableLogicByTimeout() {
     dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
     resetLogicEnableTimer();
   }
 
-  /**Включение/выключение всех устройств в массиве согласно указанному типу поведения
+  /**
+   * Включение/выключение всех устройств в массиве согласно указанному типу поведения
    * @param {Array} actionControlsArr Массив контролов с указанием
    *     типа поведения и значений
    * @param {boolean} state Состояние для применения
@@ -561,10 +564,7 @@ function init(
           curActionValue
         );
       }
-
-      // log.debug('Control ' + curMqttTopicName + ' will updated to state: ' + newCtrlValue);
       dev[curMqttTopicName] = newCtrlValue;
-      // log.debug('Control ' + curMqttTopicName + ' successfull updated');
     }
   }
 
@@ -604,22 +604,18 @@ function init(
     if (
       sensorWithBehavior.behaviorType === 'whileValueHigherThanThreshold'
     ) {
-      if (newValue >= sensorWithBehavior.actionValue) {
-        // log.debug('Motion start on sensor ' + sensorWithBehavior.mqttTopicName);
+      var isMotionStart = newValue >= sensorWithBehavior.actionValue;
+      if (isMotionStart) {
         sensorTriggered = true;
-      } else if (newValue < sensorWithBehavior.actionValue) {
-        // log.debug('Motion stop on sensor ' + sensorWithBehavior.mqttTopicName);
+      } else {
         sensorTriggered = false;
       }
     } else if (sensorWithBehavior.behaviorType === 'whenEnabled') {
       if (newValue === true) {
-        // log.debug('Motion sensor type - bool');
         sensorTriggered = true;
       } else if (newValue === 'true') {
-        // log.debug('Motion sensor type - string');
         sensorTriggered = true;
       } else if (newValue === false || newValue === 'false') {
-        // log.debug('Motion sensor type correct and disabled');
         sensorTriggered = false;
       } else {
         setError('Motion sensor have not correct value: "' + newValue + '"');
@@ -636,7 +632,8 @@ function init(
   }
 
   /**
-   * Проверяет, активен ли датчик открытия (дверь открыта или закрыта) на основе поведения
+   * Проверка - активен ли датчик открытия (дверь открыта или закрыта)
+   *     на основе поведения
    *
    * @param {Object} sensorWithBehavior Объект датчика
    *     (содержит behaviorType и другие свойства)
@@ -668,7 +665,7 @@ function init(
   }
 
   /**
-   * Проверяет, все ли датчики открытия замкнуты (двери закрыты)
+   * Проверка - все ли датчики открытия замкнуты (двери закрыты)
    *
    * @returns {boolean} true, если все датчики показывают,
    *     что двери закрыты, иначе false
@@ -691,8 +688,13 @@ function init(
     return true; // Все датчики пассивны (двери закрыты)
   }
 
+  /**
+   * Проверка - все ли датчики движения находятся в пассивном состоянии
+   *
+   * @returns {boolean} true, если все датчики показывают,
+   *     что движения нет, иначе false
+   */
   function checkAllMotionSensorsInactive() {
-    // Проверяем, все ли датчики движения находятся в пассивном состоянии
     for (var i = 0; i < motionSensors.length; i++) {
       var curSensorState = dev[motionSensors[i].mqttTopicName];
       var isActive = isMotionSensorActiveByBehavior(
@@ -739,12 +741,14 @@ function init(
   }
 
   function doorOpenCb(topicObj) {
-    if (topicObj.val.new === true) {
-      // log.debug('Minimum one door is open');
+    var isDoorOpened = (topicObj.val.new === true);
+    var isDoorClosed = (topicObj.val.new === false);
+
+    if (isDoorOpened) {
       dev[genNames.vDevice + '/lightOn'] = true;
       startLightOffTimer(delayByOpeningSensors * 1000);
-    } else if (topicObj.val.new === false) {
-      // log.debug('All doors is close');
+    } else if (isDoorClosed) {
+      // Do nothing
     } else {
       log.error('Door status - have not correct type');
     }
@@ -753,11 +757,12 @@ function init(
   }
 
   function lightOnCb(topicObj) {
-    if (topicObj.val.new === true) {
-      // log.debug('Light on');
+    var isLightSwitchedOn = (topicObj.val.new === true)
+    var isLightSwitchedOff = (topicObj.val.new === false)
+
+    if (isLightSwitchedOn) {
       setValueAllDevicesByBehavior(lightDevices, true);
-    } else if (topicObj.val.new === false) {
-      // log.debug('Light off');
+    } else if (isLightSwitchedOff) {
       setValueAllDevicesByBehavior(lightDevices, false);
     } else {
       log.error('Light on - have not correct type');
@@ -812,7 +817,6 @@ function init(
   function lightSwitchUsedCb(topicObj) {
     // Для выключателей считаем, что любое изменение (не важно какое)
     // - Меняет состояние переключателя отключения логики сценария
-    // log.debug('Использован выключатель');
     var curValue = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
     dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = !curValue;
 
@@ -821,8 +825,6 @@ function init(
 
   function openingSensorTriggeredLaunchCb(topicObj) {
     // Тригерит только изменение выбранное пользователем
-    // log.debug('Opening detected on sensor ' + devName + '/' + cellName);
-    // log.debug('Одна из дверей открыта');
     dev[genNames.vDevice + '/doorOpen'] = true;
 
     return true;
@@ -830,13 +832,10 @@ function init(
 
   function openingSensorTriggeredResetCb(topicObj) {
     // Тригерит только противоположное действие
-    // log.debug('Opening detected on sensor ' + devName + '/' + cellName);
-    // log.debug('Одна из дверей закрыта');
     if (checkAllOpeningSensorsClose()) {
-      // log.debug('~ All opening sensors inactive');
       dev[genNames.vDevice + '/doorOpen'] = false;
     } else {
-      // log.debug('~ Some opening sensors are still active - do nothing');
+      // Если некоторые двери еще открыты - то ничего не делаем
     }
 
     return true;
@@ -857,25 +856,25 @@ function init(
   //   - Необходим для запуска таймера в конце детектирования движения
   //   - Полезен для отладки и слежением за состоянием сценария в реальном времени
   function motionInProgressHandler(newValue, devName, cellName) {
-    // log.debug('~ Motion status changed');
+    var isMotionDetected = (newValue === true);
 
-    if (newValue === true) {
-      // log.debug('~ Motion detected - enable light and remove old timer!');
+    if (isMotionDetected) {
       if (lightOffTimerId) {
         clearTimeout(lightOffTimerId);
       }
       resetLightOffTimer();
       dev[genNames.vDevice + '/lightOn'] = true;
     } else {
-      // log.debug('~ Motion end detected - set timer for disable light!');
+      // Detected motion end
       startLightOffTimer(delayByMotionSensors * 1000);
     }
   }
 
   // Обработчик, вызываемый при срабатывании датчиков движения и открытия
   function sensorTriggeredHandler(newValue, devName, cellName, sensorType) {
-    var isActive = dev[genNames.vDevice + '/ruleEnabled'];
-    if (isActive === false) {
+    var isRuleActive = dev[genNames.vDevice + '/ruleEnabled'];
+
+    if (isRuleActive === false) {
       // log.debug('Light-control is disabled in virtual device - doing nothing');
       return true;
     }

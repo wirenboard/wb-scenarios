@@ -55,6 +55,10 @@ var eventPlugin = require('tm-event-main.mod').eventPlugin;
 var historyPlugin = require('tm-history-main.mod').historyPlugin;
 
 var tm = new TopicManager();
+
+// Установка плагинов
+// Обратите внимание что порядок важен
+// так как в eventPlugin.dependencies: ['historyPlugin']
 tm.installPlugin(historyPlugin);
 tm.installPlugin(eventPlugin);
 
