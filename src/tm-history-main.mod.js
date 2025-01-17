@@ -131,5 +131,6 @@ function install(manager, options) {
 
 exports.historyPlugin = {
   name: 'historyPlugin',
-  install: install
+  install: install,
+  dependencies: []
 };

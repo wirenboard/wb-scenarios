@@ -428,5 +428,6 @@ function install(manager, options) {
 
 exports.eventPlugin = {
   name: 'eventPlugin',
-  install: install
+  install: install,
+  dependencies: ['historyPlugin']
 };

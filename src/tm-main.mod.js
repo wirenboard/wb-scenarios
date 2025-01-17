@@ -11,13 +11,13 @@
  * Базовый конструктор TopicManager
  */
 function TopicManager() {
-  // Хранилище топиков и информации о них
+  // Хранилище топиков и метаданных
   this.registry = {};
 
-  // Хранилище установленных плагинов
+  // Установленные плагины (по именам)
   this.installedPlugins = [];
 
-  // Обработчики обновления топиков
+  // Цепочка функций (процессоров) для обработки новых значений топика
   this.pluginsProcessorsChain = [];
 
   // Id созданного правила WB-rules
@@ -189,6 +189,22 @@ TopicManager.prototype.installPlugin = function (plugin, options) {
   if (isAlreadyInstalled) {
     log.error('Plugin is already installed: ' + plugin.name);
     return false;
+  }
+
+  // Проверка зависимостей
+  var isPluginHaveDep = (Array.isArray(plugin.dependencies) && plugin.dependencies.length > 0);
+  if (isPluginHaveDep === true) {
+    for (var i = 0; i < plugin.dependencies.length; i++) {
+      var depName = plugin.dependencies[i];
+      var isDepInstalled = (this.installedPlugins.indexOf(depName) !== -1);
+      if (isDepInstalled === false) {
+        log.error(
+          'Plugin "' + plugin.name + '" depends on "' + depName +
+          '", but it is not installed yet.'
+        );
+        return false;
+      }
+    }
   }
 
   plugin.install(this, options);
