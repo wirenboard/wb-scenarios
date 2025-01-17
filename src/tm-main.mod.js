@@ -107,8 +107,6 @@ TopicManager.prototype.removeProcessor = function (processor) {
  * @param {*} newValue - Новое значение топика
  */
 TopicManager.prototype.runProcessors = function (topic, newValue) {
-  log.debug('Processing event for topic:', topic, 'with value:', newValue);
-
   if (this.pluginsProcessorsChain.length === 0) {
     log.debug('No processors in the chain');
     return;
@@ -148,7 +146,6 @@ TopicManager.prototype.initRulesForAllTopics = function (ruleName) {
     whenChanged: topics,
     then: function (newValue, devName, cellName) {
       var topic = devName + '/' + cellName;
-      log.debug('Triggered for topic:', topic, 'with value:', newValue);
       this.runProcessors(topic, newValue);
     }.bind(this),
   });
