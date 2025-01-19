@@ -716,7 +716,7 @@ function init(
    *     false - выключает логику и отключает свет.
    * @returns {boolean} Callback возвращает true при успехе
    */
-  function logicDisabledCb(topicObj) {
+  function logicDisabledCb(topicObj, eventObj) {
     if (lightOffTimerId) {
       clearTimeout(lightOffTimerId);
       resetLightOffTimer();
@@ -740,7 +740,7 @@ function init(
     return true;
   }
 
-  function doorOpenCb(topicObj) {
+  function doorOpenCb(topicObj, eventObj) {
     var isDoorOpened = (topicObj.val.new === true);
     var isDoorClosed = (topicObj.val.new === false);
 
@@ -756,7 +756,7 @@ function init(
     return true;
   }
 
-  function lightOnCb(topicObj) {
+  function lightOnCb(topicObj, eventObj) {
     var isLightSwitchedOn = (topicObj.val.new === true)
     var isLightSwitchedOff = (topicObj.val.new === false)
 
@@ -771,7 +771,7 @@ function init(
     return true;
   }
 
-  function remainingTimeToLightOffCb(topicObj) {
+  function remainingTimeToLightOffCb(topicObj, eventObj) {
     /**
      * Значение таймера отключения света может стать нулем в двух случаях:
      * 1 - Таймер дошел до конца без новых внешних воздействи
@@ -798,7 +798,7 @@ function init(
     return true;
   }
 
-  function remainingTimeToLogicEnableCb(topicObj) {
+  function remainingTimeToLogicEnableCb(topicObj, eventObj) {
     if (topicObj.val.new === 0) {
       enableLogicByTimeout();
     } else if (topicObj.val.new >= 1) {
@@ -814,7 +814,7 @@ function init(
     return true;
   }
 
-  function lightSwitchUsedCb(topicObj) {
+  function lightSwitchUsedCb(topicObj, eventObj) {
     // Для выключателей считаем, что любое изменение (не важно какое)
     // - Меняет состояние переключателя отключения логики сценария
     var curValue = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
@@ -823,14 +823,14 @@ function init(
     return true;
   }
 
-  function openingSensorTriggeredLaunchCb(topicObj) {
+  function openingSensorTriggeredLaunchCb(topicObj, eventObj) {
     // Тригерит только изменение выбранное пользователем
     dev[genNames.vDevice + '/doorOpen'] = true;
 
     return true;
   }
 
-  function openingSensorTriggeredResetCb(topicObj) {
+  function openingSensorTriggeredResetCb(topicObj, eventObj) {
     // Тригерит только противоположное действие
     if (checkAllOpeningSensorsClose()) {
       dev[genNames.vDevice + '/doorOpen'] = false;

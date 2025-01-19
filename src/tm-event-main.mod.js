@@ -321,7 +321,7 @@ function install(manager, options) {
 
     var topicEvents = topicObj.events;
     var hasProcessed = false;
-    var cbRes;
+
     // Обрабатываем каждое зарегистрированное событие для топика
     for (var curEventType in topicEvents) {
       var resolver = eventResolvers[curEventType];
@@ -340,7 +340,7 @@ function install(manager, options) {
       var eventCfg = eventObj.cfg || {};
       var eventCtx = eventObj.ctx || {};
 
-      var topicObj = {
+      var topicData = {
         name: topicName,
         val: {
           new: newValue,
@@ -349,7 +349,7 @@ function install(manager, options) {
         }
       };
 
-      var isTriggered = resolver.launchResolver(topicObj, eventCfg, eventCtx);
+      var isTriggered = resolver.launchResolver(topicData, eventCfg, eventCtx);
       // Сохраняем контекст - важно если заменили объект полностью а не изменили
       topicEvents[curEventType].ctx = eventCtx;
 
@@ -367,11 +367,14 @@ function install(manager, options) {
       var retStatus;
       // Вызываем колбэк
       if (isCallbackValid) {
-        // log.debug(
-        //   'Выполнение callback для топика "' + topicName +
-        //   '", тип события "' + curEventType + '"'
-        // );
-        cbRes = eventObj.callback(topicObj);
+        var eventData = {
+          type: curEventType,
+          callback: eventObj.callback,
+          cfg: eventCfg,
+          ctx: eventCtx
+        };  
+
+        var cbRes = eventObj.callback(topicData, eventData);
 
         if (cbRes === undefined) {
           retStatus = 'processed_without_res';
