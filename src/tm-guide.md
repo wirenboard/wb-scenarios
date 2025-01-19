@@ -95,6 +95,8 @@ main();
 
 ```javascript
 var topicEvents = manager.registry[topic].events;
+var whenEnabledCallback = topicEvents.['whenEnabled'].config.callback1;
+
 var history = manager.registry[topic].valHistory;
 ```
 
