@@ -84,7 +84,7 @@ function install(manager, options) {
     }
 
     // Преобразуем указанный пользователем индекс в реальный индекс массива
-    arrIndex = (history.length + index) - 1; // - 1 для преобразования в индекс
+    var arrIndex = (history.length + index) - 1; // - 1 для преобразования в индекс
 
     // Переходим к значению с конца (0 = последний, -1 = предпоследний и т.д.)
     var record = history[arrIndex];

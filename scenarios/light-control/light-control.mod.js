@@ -257,7 +257,7 @@ function init(
   return true;
 
 
-  
+
   // ======================================================
   //                  Определения функций
   // ======================================================
@@ -777,7 +777,7 @@ function init(
      * 1 - Таймер дошел до конца без новых внешних воздействи
      * 2 - Таймер был обнулен так как движение снова появилось
      */
-    curMotionStatus = dev[genNames.vDevice + '/motionInProgress'];
+    var curMotionStatus = dev[genNames.vDevice + '/motionInProgress'];
     if (topicObj.val.new === 0 && curMotionStatus === true) {
       /* Ничего не делаем если при движении обнулился таймер */
       return true;

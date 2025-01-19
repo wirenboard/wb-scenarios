@@ -96,7 +96,7 @@ TopicManager.prototype.removeProcessor = function (processor) {
     this.pluginsProcessorsChain.splice(index, 1);
     log.debug('Processor removed');
   } else {
-    log.warn('Processor not found');
+    log.warning('Processor not found');
   }
 };
 
@@ -136,7 +136,7 @@ TopicManager.prototype.initRulesForAllTopics = function (ruleName) {
   // Сбор всех зарегистрированных топиков
   var topics = Object.keys(this.registry);
   if (topics.length === 0) {
-    log.warn('Нет зарегистрированных топиков. Правило не создано.');
+    log.warning('Нет зарегистрированных топиков. Правило не создано.');
     return false;
   }
 
