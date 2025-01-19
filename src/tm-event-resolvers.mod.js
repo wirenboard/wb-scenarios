@@ -11,7 +11,7 @@
  * @param {boolean} topicObj - Новое состояние контрола
  * @returns {boolean} Возвращает true, если контрол включен
  */
-function whenEnabled(topicObj) {
+function whenEnabled(topicObj, cfg, ctx) {
   var isEventTriggered = (topicObj.val.new === true);
   return isEventTriggered;
 }
@@ -21,7 +21,7 @@ function whenEnabled(topicObj) {
  * @param {boolean} topicObj - Новое состояние контрола
  * @returns {boolean} Возвращает true, если контрол выключен
  */
-function whenDisabled(topicObj) {
+function whenDisabled(topicObj, cfg, ctx) {
   var isEventTriggered = (topicObj.val.new === false);
   return isEventTriggered;
 }
@@ -31,7 +31,7 @@ function whenDisabled(topicObj) {
  * @param {any} topicObj - Новое состояние контрола
  * @returns {boolean} Всегда возвращает true
  */
-function whenChange(topicObj) {
+function whenChange(topicObj, cfg, ctx) {
   var isEventTriggered = true; // Всегда срабатывает при изменении
   return isEventTriggered;
 }

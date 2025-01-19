@@ -19,12 +19,16 @@ function install(manager, options) {
    * @param {string} topicName Имя MQTT-топика (вид "device/control")
    * @param {string} eventType Тип события
    * @param {function} mainCallback Обратный вызов вызываемый при событии
+   * @param {Object} [cfg] Конфигурация для запуска резолвера (опционально)
    */
-  function registerSingleEvent(topicName, eventType, mainCallback) {
+  function registerSingleEvent(topicName, eventType, mainCallback, cfg) {
     if (typeof mainCallback !== 'function') {
       log.error('Callback должен быть функцией');
       return;
     }
+
+    // Установка значения по умолчанию для cfg
+    cfg = cfg || {};
 
     // Смотрим что в реестре событий есть описание указанного EventType
     var resolver = eventResolvers[eventType];
@@ -42,18 +46,22 @@ function install(manager, options) {
     if (!manager.registry[topicName].events) {
       manager.registry[topicName].events = {};
     }
-    
+
     var topicEvents = manager.registry[topicName].events;
-    
+
     if (topicEvents[eventType]) {
-      log.warn(
+      log.warning(
         'Событие "' + eventType + '" для топика "' + topicName + '"' +
         'уже зарегистрировано. Callback будет перезаписан'
       );
     }
 
-    // Сохраняем колбэк в объекте события
-    topicEvents[eventType] = { callback: mainCallback };
+    // Сохраняем параметры в объекте события
+    topicEvents[eventType] = {
+      callback: mainCallback,
+      cfg: cfg,
+      ctx: {}
+    };
 
     log.debug(
       'Событие зарегистрировано: topic="' + topicName + '",' +
@@ -68,13 +76,16 @@ function install(manager, options) {
    * @param {string} eventType Тип основного события (например, 'whenEnabled')
    * @param {Function} oppositeCallback Колбэк для противоположного события
    */
-  function registerOppositeEvent(topicName, eventType, oppositeCallback) {
+  function registerOppositeEvent(topicName, eventType, oppositeCallback, cfg) {
     if (typeof oppositeCallback !== 'function') {
       log.error('Callback должен быть функцией');
       return;
     }
 
-    // Смотрим что в реестре событий есть описание указанного EventType
+    // Установка значения по умолчанию для cfg
+    cfg = cfg || {};
+
+    // Проверяем, что в реестре событий есть описание указанного EventType
     var resolver = eventResolvers[eventType];
     if (!resolver) {
       log.error(
@@ -105,7 +116,7 @@ function install(manager, options) {
     }
 
     // Регистрируем «противоположное» событие
-    registerSingleEvent(topicName, oppEventName, oppositeCallback);
+    registerSingleEvent(topicName, oppEventName, oppositeCallback, cfg);
     log.debug(
       'Противоположное событие с именем "' + oppEventName + '"' +
       'зарегистрировано для базового события "' + eventType + '"'
@@ -120,12 +131,12 @@ function install(manager, options) {
    * @param {function} mainCallback Колбэк для события
    * @param {Function} oppositeCallback Колбэк для противоположного события
    */
-  function registerBothEvents(topicName, eventType, mainCallback, oppositeCallback) {
+  function registerBothEvents(topicName, eventType, mainCallback, oppositeCallback, cfg) {
     // Сначала регистрируем основное
-    registerSingleEvent(topicName, eventType, mainCallback);
+    registerSingleEvent(topicName, eventType, mainCallback, cfg);
 
     // Затем регистрируем противоположное
-    registerOppositeEvent(topicName, eventType, oppositeCallback);
+    registerOppositeEvent(topicName, eventType, oppositeCallback, cfg);
   }
 
 
@@ -136,7 +147,7 @@ function install(manager, options) {
    * @param {string} eventType Тип события
    * @param {function} callback Обратный вызов для событий
    */
-  function registerMultipleEvents(topics, eventType, callback) {
+  function registerMultipleEvents(topics, eventType, callback, cfg) {
     if (!Array.isArray(topics)) {
       log.error(
         'Параметр "topics" должен быть массивом строк,' +
@@ -154,7 +165,7 @@ function install(manager, options) {
         );
         continue;
       }
-      registerSingleEvent(topicName, eventType, callback);
+      registerSingleEvent(topicName, eventType, callback, cfg);
     }
   }
 
@@ -168,6 +179,12 @@ function install(manager, options) {
   function registerSingleEventWithBehavior(topicWithBehavior, callback) {
     var mqttTopicName = topicWithBehavior.mqttTopicName;
     var behaviorType = topicWithBehavior.behaviorType;
+
+    var cfg = {};
+    if (topicWithBehavior.actionValue !== undefined) {
+      cfg.actionValue = topicWithBehavior.actionValue;
+    }
+
 
     if (!mqttTopicName || !behaviorType) {
       log.error(
@@ -187,7 +204,7 @@ function install(manager, options) {
       return;
     }
 
-    registerSingleEvent(mqttTopicName, behaviorType, callback);
+    registerSingleEvent(mqttTopicName, behaviorType, callback, cfg);
   }
 
   /**
@@ -302,7 +319,7 @@ function install(manager, options) {
       return res;
     }
 
-    var topicEvents = manager.registry[topicName].events;
+    var topicEvents = topicObj.events;
     var hasProcessed = false;
     var cbRes;
     // Обрабатываем каждое зарегистрированное событие для топика
@@ -319,6 +336,10 @@ function install(manager, options) {
         continue;
       }
 
+      var eventObj = topicEvents[curEventType];
+      var eventCfg = eventObj.cfg || {};
+      var eventCtx = eventObj.ctx || {};
+
       var topicObj = {
         name: topicName,
         val: {
@@ -326,9 +347,12 @@ function install(manager, options) {
           prev: manager.getPrevValue(topicName),
           history: manager.registry[topicName].valHistory
         }
-      }
-      // Проверяем, сработал ли текущий резолвер события
-      var isTriggered = resolver.launchResolver(topicObj);
+      };
+
+      var isTriggered = resolver.launchResolver(topicObj, eventCfg, eventCtx);
+      // Сохраняем контекст - важно если заменили объект полностью а не изменили
+      topicEvents[curEventType].ctx = eventCtx;
+
       if (!isTriggered) {
         // log.debug(
         //   'Resolver "' + curEventType + 'не подтвердил событие'
@@ -337,9 +361,8 @@ function install(manager, options) {
         continue;
       }
 
-      var eventObj = topicEvents[curEventType];
       var isCallbackValid = eventObj &&
-                            typeof eventObj.callback === 'function';
+        typeof eventObj.callback === 'function';
 
       var retStatus;
       // Вызываем колбэк
@@ -379,7 +402,7 @@ function install(manager, options) {
     // Общий статус обработки
     var genStatus;
     var genMessage;
-    var hasFailure = results.some(function(r) { return r.status !== 'success'; });
+    var hasFailure = results.some(function (r) { return r.status !== 'success'; });
     if (hasProcessed === true && hasFailure !== true) {
       genStatus = 'processed_success';
       genMessage = 'Все события обработаны успешно';
