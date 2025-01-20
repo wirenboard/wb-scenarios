@@ -37,6 +37,25 @@ function whenChange(topicObj, cfg, ctx) {
 }
 
 /**
+ * Событие пересечения значением топика заданного значения вверх
+ * @param {any} topicObj - Новое состояние контрола
+ * @returns {boolean} Всегда возвращает true
+ */
+function whenCrossUpper(topicObj, cfg, ctx) {
+  var isPrevTypeNumber = (typeof topicObj.val.prev === 'number');
+  if (isPrevTypeNumber !== true) {
+    // Если prev отсутствует (null) или имеет некорректный тип,
+    // событие не может быть обработано
+    return false;
+  }
+
+  var isEventTriggered = (topicObj.val.new > cfg.actionValue) &&
+                         (topicObj.val.prev <= cfg.actionValue);
+
+  return isEventTriggered;
+}
+
+/**
 * Таблица событий
 * Содержит имя события и соответствующие ему:
 * - Разрешенные типы контрола
@@ -60,6 +79,12 @@ var registryEventResolvers = {
     launchResolver: whenEnabled,
     resetResolverName: 'whenDisabled',
     resetResolver: null // Вычисляется ниже динамически
+  },
+  'whenCrossUpper': {
+    reqCtrlTypes: ['value'],
+    launchResolver: whenCrossUpper,
+    resetResolverName: 'whenCrossUpper',
+    resetResolver: null // @todo: Пока не определен
   }
 };
 
