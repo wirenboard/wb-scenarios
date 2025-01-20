@@ -38,8 +38,9 @@ function whenChange(topicObj, cfg, ctx) {
 
 /**
  * Событие пересечения значением топика заданного значения вверх
- * @param {any} topicObj - Новое состояние контрола
- * @returns {boolean} Всегда возвращает true
+ * @param {any} topicObj - Объект информации о топике
+ * @returns {boolean} Возвращает true в момент когда новое значение топика
+ *     стало больше границы указанной пользователем в cfg.actionValue
  */
 function whenCrossUpper(topicObj, cfg, ctx) {
   var isPrevTypeNumber = (typeof topicObj.val.prev === 'number');
@@ -51,6 +52,26 @@ function whenCrossUpper(topicObj, cfg, ctx) {
 
   var isEventTriggered = (topicObj.val.new > cfg.actionValue) &&
                          (topicObj.val.prev <= cfg.actionValue);
+
+  return isEventTriggered;
+}
+
+/**
+ * Событие пересечения значением топика заданного значения вниз
+ * @param {any} topicObj - Объект информации о топике
+ * @returns {boolean} Возвращает true в момент когда новое значение топика
+ *     стало меньше границы указанной пользователем в cfg.actionValue
+ */
+function whenCrossLower(topicObj, cfg, ctx) {
+  var isPrevTypeNumber = (typeof topicObj.val.prev === 'number');
+  if (isPrevTypeNumber !== true) {
+    // Если prev отсутствует (null) или имеет некорректный тип,
+    // событие не может быть обработано
+    return false;
+  }
+
+  var isEventTriggered = (topicObj.val.new < cfg.actionValue) &&
+                         (topicObj.val.prev >= cfg.actionValue);
 
   return isEventTriggered;
 }
@@ -83,9 +104,16 @@ var registryEventResolvers = {
   'whenCrossUpper': {
     reqCtrlTypes: ['value'],
     launchResolver: whenCrossUpper,
+    resetResolverName: 'whenCrossLower',
+    resetResolver: null // Вычисляется ниже динамически
+  },
+  'whenCrossLower': {
+    reqCtrlTypes: ['value'],
+    launchResolver: whenCrossLower,
     resetResolverName: 'whenCrossUpper',
-    resetResolver: null // @todo: Пока не определен
+    resetResolver: null // Вычисляется ниже динамически
   }
+  // @todo: add whileAbove, whileBelow
 };
 
 /**
