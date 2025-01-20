@@ -63,19 +63,31 @@ tm.installPlugin(historyPlugin);
 tm.installPlugin(eventPlugin);
 
 // Более функциональный коллбек с доступом к истории значения с помошью плагина
-// topicObj является расширяемым объектом которому можно добавить другие поля
-function cbFuncDisabled(topicObj) {
+// "topic" является расширяемым объектом которому можно добавить другие поля
+function cbFuncDisabled(topic, event) {
   log.debug('Run cbFuncDisabled()');
-  log.debug('- Topic name: "' + topicObj.name + '"');
-  log.debug('- New value: "' + topicObj.val.new + '"');
-  log.debug('- Prev value: "' + topicObj.val.prev + '"');
-  log.debug('- Value history: ' + JSON.stringify(topicObj.val.history, null, 2));
+  log.debug('- Topic name: "' + topic.name + '"');
+  log.debug('- New value: "' + topic.val.new + '"');
+  log.debug('- Prev value: "' + topic.val.prev + '"');
+  log.debug('- Value history: ' + JSON.stringify(topic.val.history, null, 2));
+  log.debug('- Event type: "' + event.type + '"');
+  return true;
+}
+
+function cbFuncCrossUpper(topic, event) {
+  log.debug('Run cbFuncCrossUpper()');
+  log.debug('- Topic name: "' + topic.name + '"');
+  log.debug('- New value: "' + topic.val.new + '"');
+  log.debug('- Prev value: "' + topic.val.prev + '"');
+  log.debug('- Value history: ' + JSON.stringify(topic.val.history, null, 2));
+  log.debug('- Event type: "' + event.type + '"');
   return true;
 }
 
 function main() {
-  // Регистрация событий
+  // Регистрация событий - "когда выключится" и "когда пересечет границу вверх"
   tm.registerSingleEvent('wall_switch_9/enabled', 'whenDisabled', cbFuncDisabled);
+  tm.registerSingleEvent('vd-water-meter-1/litres_used_value', 'whenCrossUpper', cbFuncCrossUpper, {actionValue: 5});
 
   // Генерация и запуск правила для начала работы
   tm.initRulesForAllTopics('GenRuleName');
