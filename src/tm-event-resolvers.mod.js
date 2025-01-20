@@ -8,70 +8,70 @@
 
 /**
  * Событие активации контрола
- * @param {boolean} topicObj - Новое состояние контрола
+ * @param {boolean} topic - Новое состояние контрола
  * @returns {boolean} Возвращает true, если контрол включен
  */
-function whenEnabled(topicObj, cfg, ctx) {
-  var isEventTriggered = (topicObj.val.new === true);
+function whenEnabled(topic, cfg, ctx) {
+  var isEventTriggered = (topic.val.new === true);
   return isEventTriggered;
 }
 
 /**
  * Событие деактивации контрола
- * @param {boolean} topicObj - Новое состояние контрола
+ * @param {boolean} topic - Новое состояние контрола
  * @returns {boolean} Возвращает true, если контрол выключен
  */
-function whenDisabled(topicObj, cfg, ctx) {
-  var isEventTriggered = (topicObj.val.new === false);
+function whenDisabled(topic, cfg, ctx) {
+  var isEventTriggered = (topic.val.new === false);
   return isEventTriggered;
 }
 
 /**
  * Событие изменения состояния контрола
- * @param {any} topicObj - Новое состояние контрола
+ * @param {any} topic - Новое состояние контрола
  * @returns {boolean} Всегда возвращает true
  */
-function whenChange(topicObj, cfg, ctx) {
+function whenChange(topic, cfg, ctx) {
   var isEventTriggered = true; // Всегда срабатывает при изменении
   return isEventTriggered;
 }
 
 /**
  * Событие пересечения значением топика заданного значения вверх
- * @param {any} topicObj - Объект информации о топике
+ * @param {any} topic - Объект информации о топике
  * @returns {boolean} Возвращает true в момент когда новое значение топика
  *     стало больше границы указанной пользователем в cfg.actionValue
  */
-function whenCrossUpper(topicObj, cfg, ctx) {
-  var isPrevTypeNumber = (typeof topicObj.val.prev === 'number');
+function whenCrossUpper(topic, cfg, ctx) {
+  var isPrevTypeNumber = (typeof topic.val.prev === 'number');
   if (isPrevTypeNumber !== true) {
     // Если prev отсутствует (null) или имеет некорректный тип,
     // событие не может быть обработано
     return false;
   }
 
-  var isEventTriggered = (topicObj.val.new > cfg.actionValue) &&
-                         (topicObj.val.prev <= cfg.actionValue);
+  var isEventTriggered = (topic.val.new > cfg.actionValue) &&
+                         (topic.val.prev <= cfg.actionValue);
 
   return isEventTriggered;
 }
 
 /**
  * Событие пересечения значением топика заданного значения вниз
- * @param {any} topicObj - Объект информации о топике
+ * @param {any} topic - Объект информации о топике
  * @returns {boolean} Возвращает true в момент когда новое значение топика
  *     стало меньше границы указанной пользователем в cfg.actionValue
  */
-function whenCrossLower(topicObj, cfg, ctx) {
-  var isPrevTypeNumber = (typeof topicObj.val.prev === 'number');
+function whenCrossLower(topic, cfg, ctx) {
+  var isPrevTypeNumber = (typeof topic.val.prev === 'number');
   if (isPrevTypeNumber !== true) {
     // Если prev отсутствует (null) или имеет некорректный тип,
     // событие не может быть обработано
     return false;
   }
 
-  var isEventTriggered = (topicObj.val.new < cfg.actionValue) &&
-                         (topicObj.val.prev >= cfg.actionValue);
+  var isEventTriggered = (topic.val.new < cfg.actionValue) &&
+                         (topic.val.prev >= cfg.actionValue);
 
   return isEventTriggered;
 }
