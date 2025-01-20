@@ -7,8 +7,15 @@
  */
 
 /**
+ * Описание общих параметров:
+ * @param {object} topic Объект информации о топике
+ * @param {object} cfg Объект информации о настройках события
+ * @param {object} ctx Объект контекста куда можно сохранять локальные данные
+ */
+
+/**
  * Событие активации контрола
- * @param {boolean} topic - Новое состояние контрола
+ * @note параметры topic, cfg, ctx - описаны сверху в этом файле
  * @returns {boolean} Возвращает true, если контрол включен
  */
 function whenEnabled(topic, cfg, ctx) {
@@ -18,7 +25,7 @@ function whenEnabled(topic, cfg, ctx) {
 
 /**
  * Событие деактивации контрола
- * @param {boolean} topic - Новое состояние контрола
+ * @note параметры topic, cfg, ctx - описаны сверху в этом файле
  * @returns {boolean} Возвращает true, если контрол выключен
  */
 function whenDisabled(topic, cfg, ctx) {
@@ -28,7 +35,7 @@ function whenDisabled(topic, cfg, ctx) {
 
 /**
  * Событие изменения состояния контрола
- * @param {any} topic - Новое состояние контрола
+ * @note параметры topic, cfg, ctx - описаны сверху в этом файле
  * @returns {boolean} Всегда возвращает true
  */
 function whenChange(topic, cfg, ctx) {
@@ -38,7 +45,7 @@ function whenChange(topic, cfg, ctx) {
 
 /**
  * Событие пересечения значением топика заданного значения вверх
- * @param {any} topic - Объект информации о топике
+ * @note параметры topic, cfg, ctx - описаны сверху в этом файле
  * @returns {boolean} Возвращает true в момент когда новое значение топика
  *     стало больше границы указанной пользователем в cfg.actionValue
  */
@@ -58,7 +65,7 @@ function whenCrossUpper(topic, cfg, ctx) {
 
 /**
  * Событие пересечения значением топика заданного значения вниз
- * @param {any} topic - Объект информации о топике
+ * @note параметры topic, cfg, ctx - описаны сверху в этом файле
  * @returns {boolean} Возвращает true в момент когда новое значение топика
  *     стало меньше границы указанной пользователем в cfg.actionValue
  */
@@ -77,10 +84,12 @@ function whenCrossLower(topic, cfg, ctx) {
 }
 
 /**
-* Таблица событий
+* Таблица описания разных типов событий
 * Содержит имя события и соответствующие ему:
-* - Разрешенные типы контрола
-* - Обработчик
+* - reqCtrlTypes: Разрешенные типы контроллов с которыми может работать событие
+* - launchResolver: Функция резолвера события - решает произошло ли собтие
+* - resetResolverName: Строка имени обратного события
+* - resetResolver: Функция обратного резолвера
 */
 var registryEventResolvers = {
   'whenChange': {
