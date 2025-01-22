@@ -20,17 +20,7 @@
 После этого у вас в пункте `Настройки` -> `Конфигурационные файлы`
 должен появится пункт `Сценарии автоматизации`
 
-## Разарботчикам
-
-### Разработка новых сценариев
+## Разработчикам новых сценариев
 
 Для информации о разработке новых сценариев - смотрите
-файл для разработчиков [README](develop/README.md).
-
-### Руководства по стилю
-
-Style guide от Airbnb для js ES5
-https://github.com/airbnb/javascript/tree/es5-deprecated/es5
-
-Style guide от Google для jsdoc
-https://google.github.io/styleguide/jsguide.html#jsdoc
+файл для разработчиков [`develop/README.md`](develop/README.md).
