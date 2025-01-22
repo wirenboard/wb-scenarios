@@ -1,6 +1,11 @@
 # Пример добавления сценария
 
-Цель данного файла - предоставить пример добавления базового сценария
+***ВНИМАНИЕ:***
+В процессе создания нового сценария вы можете испортить файл конфигурации
+уже имеющихся сценариев - поэтому ОБЯЗАТЕЛЬНО сделайте копию работающего
+конфиг файла!
+
+Цель данного мануала - предоставить пример добавления базового сценария
 для пользователей. Данный сценарий рабочий и уже на базе этого готового
 простого сценария можно создать свой кастомный изменив его логику работы.
 
@@ -46,10 +51,12 @@
 
 ## 1. Добавляем в схему новый сценарий
 
+***Обратите внимание:***
 Мы будем создавать сценарий с именем `linkInToOut` и положим
-его в папку `scenarios\link-in-to-out` - если вы хотите дать своему
-сценарию другое имя - то можете сразу менять имена папок и переменных,
-чтобы не возвращаться к этому потом.
+его в папку `scenarios\link-in-to-out`. Если вы хотите дать своему сценарию
+другое имя - то можете сразу менять имена папок и переменных, чтобы
+не возвращаться к этому потом. Иначе после создания сценария вам прийдется
+довольно много менять в именах файлов и переменных.
 
 ### 1.1. Добавление описания
 
@@ -116,7 +123,7 @@
       "name": {
         "type": "string",
         "title": "generalScenarioName",
-        "default": "Управление нагрузкой",
+        "default": "linkInToOutScenarioNameDefaultValue",
         "minLength": 1,
         "maxLength": 30,
         "propertyOrder": 2,
@@ -231,18 +238,21 @@
   ```
 
 - В конце файла `schema\wb-scenarios.schema.json` находим `"translations": {`
-  И внутри этого блока добавляем все переводы в "en" и "ru"
+  И внутри этого блока добавляем все переводы в "en" и "ru". Поля `"default"`
+  строковых парметров не переводятся - поэтому там нужно написать текстом
+  прямо в поле.
+
   Например:
 
   ```json
   "translations": {
     "en": {
       "linkInToOutScenarioName": "Link in to out",
-      "linkInToOutScenarioDescription": "This scenario provides the ability to directly connect a discrete input to a discrete output",
+      "linkInToOutScenarioDescription": "This scenario provides the ability to directly connect a discrete input to a discrete output"
     },
     "ru": {
       "linkInToOutScenarioName": "Связь входа с выходом",
-      "linkInToOutScenarioDescription": "Данный сценарий предоставляет возможность прямого соединения дискретного входа с дискретным выходом",
+      "linkInToOutScenarioDescription": "Данный сценарий предоставляет возможность прямого соединения дискретного входа с дискретным выходом"
     }
   ```
 
@@ -339,7 +349,7 @@
  *     - Находит все активные сценарии данного типа
  *     - Инициализирует их согласно настройкам, указанным
  *       в каждом сценарии
- * @author Ivan Ivanov <ivan.ivanov@wirenboard.com>           //@todo:Change 1
+ * @author Ivan Ivanov <ivan.ivanov@wirenboard.com>         //@todo:Change 1
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
@@ -369,10 +379,10 @@ var CONFIG_PATH = '/etc/wb-scenarios.conf';
  * Строка типа сценария для поиска в массиве конфигов всех сценариев
  * @type {string}
  */
-var SCENARIO_TYPE_STR = 'linkInToOut';                        //@todo:Change 2
+var SCENARIO_TYPE_STR = 'linkInToOut';                      //@todo:Change 2
 
 var helpers = require('scenarios-general-helpers.mod');
-var linkInToOut = require('link-in-to-out.mod');
+var linkInToOut = require('link-in-to-out.mod');            //@todo:Change 3,4
 
 /**
  * Инициализирует сценарий с использованием указанных настроек
@@ -382,7 +392,7 @@ var linkInToOut = require('link-in-to-out.mod');
 function initializeScenario(scenario) {
   log.debug('Processing scenario: ' + JSON.stringify(scenario));
 
-  var isInitSucess = linkInToOut.init(scenario.id_prefix,     //@todo:Change 3
+  var isInitSucess = linkInToOut.init(scenario.id_prefix,   //@todo:Change 5
                                       scenario.name,
                                       scenario.inControl,
                                       scenario.outControl,
@@ -426,30 +436,6 @@ main();
 
 ```
 
-В простом случае - для модификации файла под новый сценарий достаточно сделать
-три действия (Помечены в коде комментарием вида `//@todo:Change X`):
-
-1) Поменяйте автора в верхнем комментарии
-
-  ```javascript
-   * @author Ivan Ivanov <ivan.ivanov@wirenboard.com>
-  ```
-
-2) Установить тип строки сценария в переменную `SCENARIO_TYPE_STR`
-
-  ```javascript
-  var SCENARIO_TYPE_STR = 'darkroom';
-  ```
-
-3) Внутри функции `initializeScenario()` поправить вызов `init()`
-
-  так чтобы параметры отражали структуру вашей схемы.
-  ```javascript
-  var isInitSucess = darkroom.init(scenario.id_prefix,
-                                  scenario.name,
-                                  ... custom parameters ...)
-  ```
-
 ## 4. Добавляем модуль
 
 Модуль должен содержать только функцию `init()`, внутри которой реализовано
@@ -475,7 +461,7 @@ main();
 
 ```javascript
 /**
- * @file scenario-init-link-in-to-out.js
+ * @file link-in-to-out.mod.js
  * @description Модуль для инициализации алгоритма соединения входа
  *     и выхода (link-in-to-out) на основе указанных пользователем параметров
  *
@@ -693,7 +679,19 @@ defineVirtualDevice(gen_vd_name, {
 
 Поздравляем - вы создали свой первый сценарий!
 
-## 6. Добавить свой кастомный фукнционал
+## 6. Добавить документацию
+
+1) Создать README файл для нового сценария по пути
+   `scenarios\link-in-to-out\README.md`
+   Описание должно содержать:
+   - Внешний вид конфигуратора созданного сценария
+   - Тонкости работы сценария, его логики и тд
+2) Добавить в общий README файл ссылку на реализованный  сценарий
+   - Открыть файл `README.md` находящийся в корне проекта
+   - Добавить в список реализованных сценариев ссылку на файл README
+     конкрентного сценария созданный выше
+
+## 7. Добавить свой кастомный фукнционал
 
 Теперь, когда реализован работающий минимальный сценарий - его можно изменять
 и добавлять тот фунцкионал который нужен именно вам.
@@ -709,24 +707,89 @@ defineVirtualDevice(gen_vd_name, {
    - Добавить новое поле в параметры самой функции init()
 4) В модуле реализовать функционал использующий данные поля
 
-## 7. Переименование
+## 8. Переименование
 
 После того как вы в первый раз создали свой сценарий - можно переименовать
-его - не забудьте поменять:
+его.
+
+Переименование довольно обширное, поэтому будьте осторожны,
+не забудьте поменять:
 
 1) Внутри схемы:
-   - Элементы
-   `linkInToOut` -> `<!customName!>`
+   - Ссылка внутри `"oneOf"`
+   `"$ref": "#/definitions/linkInToOut"` -> `"$ref": "#/definitions/thermostat"`
+
+   - Название - корневой элемент схемы сценария
+   `"linkInToOut": {` -> `"thermostat": {`
+
+   - Элементы схемы сценария в имени которых содержится старое название
+   `linkInToOut` -> `<!customName!>`, например `thermostat`
   
    - Переводы
 
-2) Папку сценария
+2) Проверить работу WEBUI и пофиксить конфиг
+
+  Если вы ранее уже сконфигурировали какие-то сценарии, то после
+  переименования элементов схемы - у вас перестанет открываться конфигуратор.
+  Вы увидете ошибку:
+
+  ```text
+  Ошибка загрузки файла: Invalid config file EditorError
+  ```
+
+  Для решения этой проблеммы вам нужно привести файл конфигурации
+  в соответствие с новой схемой. Это можно сделать тремя способами
+
+- Радикально и быстро не разбираясь удалить все настройки сценариев внутри
+  массива "scenarios": []
+- Удалить только те сценарии из файла конфига которые были изменены
+- Точечно переименовать все поля внутри конфига так, чтобы они
+  соответствоали новым полям в схеме.  
+
+3) Папку сценария
   `scenarios\link-in-to-out` -> `scenarios\<!custom-name!>`
 
-3) Скрипт инициализации
-  `scenario-init-link-in-to-out.js` -> `scenario-init-<!custom-name!>.js`
+4) Файл скрипта инициализации
 
-4) Внутри скрипта инициализации - имя сценария
+   - Имя файла:
+   `scenario-init-link-in-to-out.js` -> `scenario-init-<!custom-name!>.js`
+
+В простом случае - для модификации файла под новый сценарий достаточно сделать
+три действия (Помечены в коде комментарием вида `//@todo:Change X`):
+
+- Поменяйте автора в верхнем комментарии
+
+  ```javascript
+   * @author Ivan Ivanov <ivan.ivanov@wirenboard.com>
+  ```
+
+- Установить тип строки сценария в переменную `SCENARIO_TYPE_STR`
   `var SCENARIO_TYPE_STR = 'linkInToOut';` -> `... = '<!customName!>';`
+  Например:
 
-5) И другие элементы которые имеют старое имя ...
+  ```javascript
+  var SCENARIO_TYPE_STR = 'darkroom';
+  ```
+
+- При подключении модуля поправить имя модуля и имя переменной
+
+  ```javascript
+  var linkInToOut = require('link-in-to-out.mod');
+  ```
+
+- Внутри функции `initializeScenario()` поправить вызов `init()`
+
+  так чтобы параметры отражали структуру вашей схемы.
+
+  ```javascript
+  var isInitSucess = darkroom.init(scenario.id_prefix,
+                                  scenario.name,
+                                  ... custom parameters ...)
+  ```
+
+5) Файл модуля
+
+   - Имя файла:
+   `link-in-to-out.mod.js` -> `<!custom-name!>.mod.js`
+
+6) И другие элементы которые имеют старое имя ...
