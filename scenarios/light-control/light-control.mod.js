@@ -20,7 +20,7 @@ tm.installPlugin(eventPlugin);
 /**
  * Инициализирует виртуальное устройство и определяет правило для управления
  * и автоматизацией в зависимости от пользовательских настроек
- * 
+ *
  * @param {string} idPrefix Префикс сценария, используемый для идентификации
  *     виртуального устройства и правила
  * @param {string} deviceTitle Имя виртуального девайса указанное
@@ -87,8 +87,8 @@ function init(
     (isDelayEnabledAfterSwitch === false || delayBlockAfterSwitch > 0);
   if (!isAllDelayValid) {
     // prettier-ignore
-    var curDelays = 
-      '[' + delayByMotionSensors + '], ' + 
+    var curDelays =
+      '[' + delayByMotionSensors + '], ' +
       '[' + delayByOpeningSensors + '], ' +
       '[' + delayBlockAfterSwitch + ']';
 
@@ -98,7 +98,9 @@ function init(
 
   var isLightDevicesEmpty = lightDevices.length === 0;
   if (isLightDevicesEmpty) {
-    setError('Light-control initialization error: no light devices specified');
+    setError(
+      'Light-control initialization error: no light devices specified'
+    );
     return false;
   }
 
@@ -123,7 +125,7 @@ function init(
     // Нужна задержка чтобы успели создаться все используемые нами девайсы
     // ДО того как мы будем создавать связь на них
     // Значение 100мс бывает мало, поэтому установлено 1000мс = 1с
-    setTimeout(addAllLinkedDevicesToVd, 1000)
+    setTimeout(addAllLinkedDevicesToVd, 1000);
   } else {
     log.debug('Debug disabled and have value: "' + isDebugEnabled + '"');
   }
@@ -137,32 +139,32 @@ function init(
   var openingSensorsControlNames = extractControlNames(openingSensors);
   var lightSwitchesControlNames = extractControlNames(lightSwitches);
 
-   tm.registerSingleEvent(
+  tm.registerSingleEvent(
     genNames.vDevice + '/logicDisabledByWallSwitch',
     'whenChange',
     logicDisabledCb
   );
-   tm.registerSingleEvent(
+  tm.registerSingleEvent(
     genNames.vDevice + '/doorOpen',
     'whenChange',
     doorOpenCb
   );
-   tm.registerSingleEvent(
+  tm.registerSingleEvent(
     genNames.vDevice + '/remainingTimeToLightOffInSec',
     'whenChange',
     remainingTimeToLightOffCb
   );
-   tm.registerSingleEvent(
+  tm.registerSingleEvent(
     genNames.vDevice + '/remainingTimeToLogicEnableInSec',
     'whenChange',
     remainingTimeToLogicEnableCb
   );
-   tm.registerSingleEvent(
+  tm.registerSingleEvent(
     genNames.vDevice + '/lightOn',
     'whenChange',
     lightOnCb
   );
-   tm.registerMultipleEvents(
+  tm.registerMultipleEvents(
     lightSwitchesControlNames,
     'whenChange',
     lightSwitchUsedCb
@@ -173,7 +175,7 @@ function init(
    * разную логику срабатывания - поэтому регистрируем два противоположных
    * обработчика.
    */
-   tm.registerMultipleEventsWithBehaviorOpposite(
+  tm.registerMultipleEventsWithBehaviorOpposite(
     openingSensors,
     openingSensorTriggeredLaunchCb,
     openingSensorTriggeredResetCb
@@ -237,13 +239,15 @@ function init(
     {
       whenChanged: [genNames.vDevice + '/remainingTimeToLogicEnableInSec'],
       then: function (newValue, devName, cellName) {
-         tm.processEvent(devName + '/' + cellName, newValue);
+        tm.processEvent(devName + '/' + cellName, newValue);
       },
     }
   );
   if (!ruleIdRemainingTimeToLogicEnableInSec) {
     setError(
-      'WB-rule "' + genNames.ruleRemainingTimeToLogicEnableInSec + '" not created'
+      'WB-rule "' +
+        genNames.ruleRemainingTimeToLogicEnableInSec +
+        '" not created'
     );
     return false;
   }
@@ -255,8 +259,6 @@ function init(
 
   log.debug('Light-control initialization completed successfully');
   return true;
-
-
 
   // ======================================================
   //                  Определения функций
@@ -318,7 +320,7 @@ function init(
       cells.motionInProgress = {
         title: {
           en: 'Motion in progress',
-          ru: 'Есть движение'
+          ru: 'Есть движение',
         },
         type: 'switch',
         value: false,
@@ -327,12 +329,11 @@ function init(
       };
     }
 
-
-    if(openingSensors.length > 0) {
+    if (openingSensors.length > 0) {
       cells.doorOpen = {
         title: {
           en: 'Door open',
-          ru: 'Дверь открыта'
+          ru: 'Дверь открыта',
         },
         type: 'switch',
         value: false,
@@ -390,9 +391,7 @@ function init(
           'Failed to add ' + cellPrefix + ' ctrl for ' + curMqttControl
         );
       }
-      log.debug(
-        'Success add ' + cellPrefix + ' ctrl for ' + curMqttControl
-      );
+      log.debug('Success add ' + cellPrefix + ' ctrl for ' + curMqttControl);
     }
   }
 
@@ -435,34 +434,34 @@ function init(
       value: '',
     });
 
-    if(lightDevices.length > 0) {
+    if (lightDevices.length > 0) {
       addLinkedControlsArray(lightDevices, 'light_device');
     }
 
-    if(motionSensors.length > 0) {
+    if (motionSensors.length > 0) {
       addLinkedControlsArray(motionSensors, 'motion_sensor');
     }
 
-    if(openingSensors.length > 0) {
+    if (openingSensors.length > 0) {
       addLinkedControlsArray(openingSensors, 'opening_sensor');
     }
 
-    if(lightSwitches.length > 0) {
+    if (lightSwitches.length > 0) {
       addLinkedControlsArray(lightSwitches, 'light_switch');
     }
   }
 
   /**
    * Установка ошибки
-   * 
+   *
    * @note Данный метод можно использовать только после инициализации
    *     минимального виртуального устройства
    */
   function setError(errorString) {
     log.error('ERROR Init: ' + errorString);
 
-    vDevObj.controlsList().forEach(function(ctrl) {
-      ctrl.setError('Error-see log')
+    vDevObj.controlsList().forEach(function (ctrl) {
+      ctrl.setError('Error-see log');
     });
   }
 
@@ -471,9 +470,11 @@ function init(
    * до отключения света каждую секунду
    */
   function updateRemainingLightOffTime() {
-    var remainingTime = dev[genNames.vDevice + '/remainingTimeToLightOffInSec'];
+    var remainingTime =
+      dev[genNames.vDevice + '/remainingTimeToLightOffInSec'];
     if (remainingTime >= 1) {
-      dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = remainingTime - 1;
+      dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] =
+        remainingTime - 1;
     }
   }
 
@@ -482,9 +483,11 @@ function init(
    * до активации логики каждую секунду
    */
   function updateRemainingLogicEnableTime() {
-    var remainingTime = dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'];
+    var remainingTime =
+      dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'];
     if (remainingTime >= 1) {
-      dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = remainingTime - 1;
+      dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] =
+        remainingTime - 1;
     }
   }
 
@@ -741,8 +744,8 @@ function init(
   }
 
   function doorOpenCb(topicObj, eventObj) {
-    var isDoorOpened = (topicObj.val.new === true);
-    var isDoorClosed = (topicObj.val.new === false);
+    var isDoorOpened = topicObj.val.new === true;
+    var isDoorClosed = topicObj.val.new === false;
 
     if (isDoorOpened) {
       dev[genNames.vDevice + '/lightOn'] = true;
@@ -757,8 +760,8 @@ function init(
   }
 
   function lightOnCb(topicObj, eventObj) {
-    var isLightSwitchedOn = (topicObj.val.new === true)
-    var isLightSwitchedOff = (topicObj.val.new === false)
+    var isLightSwitchedOn = topicObj.val.new === true;
+    var isLightSwitchedOff = topicObj.val.new === false;
 
     if (isLightSwitchedOn) {
       setValueAllDevicesByBehavior(lightDevices, true);
@@ -792,7 +795,10 @@ function init(
       }
       lightOffTimerId = setTimeout(updateRemainingLightOffTime, 1000);
     } else {
-      log.error('Remaining time to light enable: have not correct value:' + topicObj.val.new);
+      log.error(
+        'Remaining time to light enable: have not correct value:' +
+          topicObj.val.new
+      );
     }
 
     return true;
@@ -808,7 +814,10 @@ function init(
       }
       logicEnableTimerId = setTimeout(updateRemainingLogicEnableTime, 1000);
     } else {
-      log.error('Remaining time to logic enable: have not correct value:' + topicObj.val.new);
+      log.error(
+        'Remaining time to logic enable: have not correct value:' +
+          topicObj.val.new
+      );
     }
 
     return true;
@@ -856,7 +865,7 @@ function init(
   //   - Необходим для запуска таймера в конце детектирования движения
   //   - Полезен для отладки и слежением за состоянием сценария в реальном времени
   function motionInProgressHandler(newValue, devName, cellName) {
-    var isMotionDetected = (newValue === true);
+    var isMotionDetected = newValue === true;
 
     if (isMotionDetected) {
       if (lightOffTimerId) {
@@ -916,10 +925,7 @@ function init(
     }
 
     if (sensorType === 'opening') {
-      var res =  tm.processEvent(
-        devName + '/' + cellName,
-        newValue
-      );
+      var res = tm.processEvent(devName + '/' + cellName, newValue);
       log.debug('opening res = ' + JSON.stringify(res));
     }
 
