@@ -49,20 +49,25 @@ var lightControl = require('light-control.mod');
 function initializeScenario(scenario) {
   log.debug('Processing scenario: ' + JSON.stringify(scenario));
 
-  var isInitSucess = lightControl.init(scenario.id_prefix,
-                                   scenario.name,
-                                   scenario.isDebugEnabled,
-                                   scenario.motionSensors.delayToLightOff,
-                                   scenario.openingSensors.delayToLightOff,
-                                   scenario.lightSwitches.isDelayEnabled,
-                                   scenario.lightSwitches.delayToLightOffAndEnable ,
-                                   scenario.lightDevices.sensorObjects,
-                                   scenario.motionSensors.sensorObjects,
-                                   scenario.openingSensors.sensorObjects,
-                                   scenario.lightSwitches.sensorObjects)
+  var isInitSucess = lightControl.init(
+    scenario.id_prefix,
+    scenario.name,
+    scenario.isDebugEnabled,
+    scenario.motionSensors.delayToLightOff,
+    scenario.openingSensors.delayToLightOff,
+    scenario.lightSwitches.isDelayEnabled,
+    scenario.lightSwitches.delayToLightOffAndEnable,
+    scenario.lightDevices.sensorObjects,
+    scenario.motionSensors.sensorObjects,
+    scenario.openingSensors.sensorObjects,
+    scenario.lightSwitches.sensorObjects
+  );
 
   if (!isInitSucess) {
-    log.error('Error: Init operation aborted for scenario with "idPrefix": ' + scenario.id_prefix);
+    log.error(
+      'Error: Init operation aborted for scenario with "idPrefix": ' +
+        scenario.id_prefix
+    );
     return;
   }
 
@@ -71,19 +76,27 @@ function initializeScenario(scenario) {
 
 function main() {
   log.debug('Start initialisation light control scenario.');
-  var listAllScenarios = scGenHelpers.readAndValidateScenariosConfig(CONFIG_PATH,
-                                                                REQUIRED_GENERAL_CFG_VER);
+  var listAllScenarios = scGenHelpers.readAndValidateScenariosConfig(
+    CONFIG_PATH,
+    REQUIRED_GENERAL_CFG_VER
+  );
   if (!listAllScenarios) return;
 
-  var matchedScenarios = scGenHelpers.findAllActiveScenariosWithType(listAllScenarios,
-                                                                SCENARIO_TYPE,
-                                                                REQUIRED_SCENARIO_CFG_VER);
+  var matchedScenarios = scGenHelpers.findAllActiveScenariosWithType(
+    listAllScenarios,
+    SCENARIO_TYPE,
+    REQUIRED_SCENARIO_CFG_VER
+  );
   if (matchedScenarios.length === 0) {
-    log.debug('No valid and active scenarios of type "' + SCENARIO_TYPE + '" found');
+    log.debug(
+      'No valid and active scenarios of type "' + SCENARIO_TYPE + '" found'
+    );
     return;
   }
-  
-  log.debug('Number of matched scenarios: ' + JSON.stringify(matchedScenarios.length));
+
+  log.debug(
+    'Number of matched scenarios: ' + JSON.stringify(matchedScenarios.length)
+  );
   log.debug('Matched scenarios JSON: ' + JSON.stringify(matchedScenarios));
 
   for (var i = 0; i < matchedScenarios.length; i++) {
