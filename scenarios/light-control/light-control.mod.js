@@ -21,10 +21,10 @@ tm.installPlugin(eventPlugin);
  * Инициализирует виртуальное устройство и определяет правило для управления
  * и автоматизацией в зависимости от пользовательских настроек
  *
- * @param {string} idPrefix Префикс сценария, используемый для идентификации
- *     виртуального устройства и правила
  * @param {string} deviceTitle Имя виртуального девайса указанное
  *     пользователем
+ * @param {string} idPrefix Префикс сценария, используемый для идентификации
+ *     виртуального устройства и правила
  * @param {boolean} isDebugEnabled Включение дополнительного отображения
  *     состояния всех подключенных устройств в виртуальном девайсе
  * @param {number} delayByMotionSensors Задержка выключения света после
@@ -46,8 +46,8 @@ tm.installPlugin(eventPlugin);
  * @returns {boolean} Результат инициализации (true, если успешно)
  */
 function init(
-  idPrefix,
   deviceTitle,
+  idPrefix,
   isDebugEnabled,
   delayByMotionSensors,
   delayByOpeningSensors,
@@ -934,8 +934,8 @@ function init(
 }
 
 exports.init = function (
-  idPrefix,
   deviceTitle,
+  idPrefix,
   isDebugEnabled,
   delayByMotionSensors,
   delayByOpeningSensors,
@@ -947,8 +947,8 @@ exports.init = function (
   lightSwitches
 ) {
   var res = init(
-    idPrefix,
     deviceTitle,
+    idPrefix,
     isDebugEnabled,
     delayByMotionSensors,
     delayByOpeningSensors,

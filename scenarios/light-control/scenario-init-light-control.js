@@ -50,8 +50,8 @@ function initializeScenario(scenario) {
   log.debug('Processing scenario: ' + JSON.stringify(scenario));
 
   var isInitSucess = lightControl.init(
-    scenario.id_prefix,
     scenario.name,
+    scenario.id_prefix,
     scenario.isDebugEnabled,
     scenario.motionSensors.delayToLightOff,
     scenario.openingSensors.delayToLightOff,
@@ -62,6 +62,14 @@ function initializeScenario(scenario) {
     scenario.openingSensors.sensorObjects,
     scenario.lightSwitches.sensorObjects
   );
+
+  // TODO: refactor func for little qty params
+  // var cfg = {
+  //   id_prefix: scenario.id_prefix
+  //   motionSensors: scenario.motionSensors.delayToLightOff,
+  //   openingSensors: scenario.openingSensors.delayToLightOff,
+  // }
+  // var isInitSucess = lightControl.init(scenario.name, cfg)
 
   if (!isInitSucess) {
     log.error(
