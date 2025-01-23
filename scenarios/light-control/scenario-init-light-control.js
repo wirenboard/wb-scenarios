@@ -50,7 +50,7 @@ function initializeScenario(scenario) {
   log.debug('Processing scenario: ' + JSON.stringify(scenario));
 
   var cfg = {
-    id_prefix: scenario.id_prefix,
+    idPrefix: scenario.id_prefix,
     isDebugEnabled: scenario.isDebugEnabled,
     delayByMotionSensors: scenario.motionSensors.delayToLightOff,
     delayByOpeningSensors: scenario.openingSensors.delayToLightOff,
