@@ -46,6 +46,12 @@ tm.installPlugin(eventPlugin);
  * @returns {boolean} Результат инициализации (true, если успешно)
  */
 function init(deviceTitle, cfg) {
+  var isMissingIdPrefix = typeof cfg.idPrefix === 'undefined';
+  if (isMissingIdPrefix === true) {
+    log.error('Error: cfg.idPrefix is undefined, but must be string');
+    return false;
+  }
+
   var isAllArrays =
     Array.isArray(cfg.lightDevices) &&
     Array.isArray(cfg.motionSensors) &&
@@ -59,6 +65,18 @@ function init(deviceTitle, cfg) {
   }
 
   var genNames = generateNames(cfg.idPrefix);
+
+  log.debug(
+    'Try create virtual device with name: "{}" and id "{}"',
+    deviceTitle,
+    genNames.vDevice
+  );
+  var vdObj = getDevice(genNames.vDevice);
+  if (typeof vdObj !== 'undefined') {
+    log.error('Device with ID "' + genNames.vDevice + '" already exists.');
+    return false;
+  }
+
   var vDevObj = defineVirtualDevice(genNames.vDevice, {
     title: deviceTitle,
     cells: buildVirtualDeviceCells(),
