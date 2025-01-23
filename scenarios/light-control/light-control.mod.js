@@ -23,54 +23,42 @@ tm.installPlugin(eventPlugin);
  *
  * @param {string} deviceTitle Имя виртуального девайса указанное
  *     пользователем
- * @param {string} idPrefix Префикс сценария, используемый для идентификации
+ * @param {string} cfg.idPrefix Префикс сценария, используемый для идентификации
  *     виртуального устройства и правила
- * @param {boolean} isDebugEnabled Включение дополнительного отображения
+ * @param {boolean} cfg.isDebugEnabled Включение дополнительного отображения
  *     состояния всех подключенных устройств в виртуальном девайсе
- * @param {number} delayByMotionSensors Задержка выключения света после
+ * @param {number} cfg.delayByMotionSensors Задержка выключения света после
  *     срабатывания любого из датчиков движения (сек)
- * @param {number} delayByOpeningSensors Задержка выключения света после
+ * @param {number} cfg.delayByOpeningSensors Задержка выключения света после
  *     срабатывания любого из датчиков открытия (сек)
- * @param {boolean} isDelayEnabledAfterSwitch Включение/выключение наличия
+ * @param {boolean} cfg.isDelayEnabledAfterSwitch Включение/выключение наличия
  *     задержки после ручного нажатия выключателя:
  *     - false: Задержка не используется.
  *       Свет выкл и автоматизация вкл только при повторном нажатии
  *     - true: Активирует задержку.
  *       Свет выкл и автоматизация вкл автоматически через данное время
- * @param {number} delayBlockAfterSwitch Задержка (сек) блокировки логики
+ * @param {number} cfg.delayBlockAfterSwitch Задержка (сек) блокировки логики
  *после ручного переключения света
- * @param {Array} lightDevices Массив управляемых устройств освещения
- * @param {Array} motionSensors Массив отслеживаемых контролов датчиков движения
- * @param {Array} openingSensors Массив отслеживаемых контролов датчиков открытия
- * @param {Array} lightSwitches Массив выключателей света
+ * @param {Array} cfg.lightDevices Массив управляемых устройств освещения
+ * @param {Array} cfg.motionSensors Массив отслеживаемых контролов датчиков движения
+ * @param {Array} cfg.openingSensors Массив отслеживаемых контролов датчиков открытия
+ * @param {Array} cfg.lightSwitches Массив выключателей света
  * @returns {boolean} Результат инициализации (true, если успешно)
  */
-function init(
-  deviceTitle,
-  idPrefix,
-  isDebugEnabled,
-  delayByMotionSensors,
-  delayByOpeningSensors,
-  isDelayEnabledAfterSwitch,
-  delayBlockAfterSwitch,
-  lightDevices,
-  motionSensors,
-  openingSensors,
-  lightSwitches
-) {
+function init(deviceTitle, cfg) {
   var isAllArrays =
-    Array.isArray(lightDevices) &&
-    Array.isArray(motionSensors) &&
-    Array.isArray(openingSensors) &&
-    Array.isArray(lightSwitches);
+    Array.isArray(cfg.lightDevices) &&
+    Array.isArray(cfg.motionSensors) &&
+    Array.isArray(cfg.openingSensors) &&
+    Array.isArray(cfg.lightSwitches);
   if (!isAllArrays) {
     log.error(
-      'Light-control initialization error: lightDevices, motionSensors, openingSensors, and lightSwitches must be arrays'
+      'Light-control initialization error: cfg.lightDevices, cfg.motionSensors, cfg.openingSensors, and cfg.lightSwitches must be arrays'
     );
     return false;
   }
 
-  var genNames = generateNames(idPrefix);
+  var genNames = generateNames(cfg.idPrefix);
   var vDevObj = defineVirtualDevice(genNames.vDevice, {
     title: deviceTitle,
     cells: buildVirtualDeviceCells(),
@@ -82,21 +70,22 @@ function init(
   log.debug('Virtual device "' + deviceTitle + '" created successfully');
 
   var isAllDelayValid =
-    delayByMotionSensors > 0 &&
-    delayByOpeningSensors > 0 &&
-    (isDelayEnabledAfterSwitch === false || delayBlockAfterSwitch > 0);
+    cfg.delayByMotionSensors > 0 &&
+    cfg.delayByOpeningSensors > 0 &&
+    (cfg.isDelayEnabledAfterSwitch === false ||
+      cfg.delayBlockAfterSwitch > 0);
   if (!isAllDelayValid) {
     // prettier-ignore
     var curDelays =
-      '[' + delayByMotionSensors + '], ' +
-      '[' + delayByOpeningSensors + '], ' +
-      '[' + delayBlockAfterSwitch + ']';
+      '[' + cfg.delayByMotionSensors + '], ' +
+      '[' + cfg.delayByOpeningSensors + '], ' +
+      '[' + cfg.delayBlockAfterSwitch + ']';
 
     setError('Invalid delay - must be a positive number ' + curDelays);
     return false;
   }
 
-  var isLightDevicesEmpty = lightDevices.length === 0;
+  var isLightDevicesEmpty = cfg.lightDevices.length === 0;
   if (isLightDevicesEmpty) {
     setError(
       'Light-control initialization error: no light devices specified'
@@ -106,9 +95,9 @@ function init(
 
   // Проверяем что хотябы один тип триггера заполнен
   var isAllTriggersEmpty =
-    motionSensors.length === 0 &&
-    openingSensors.length === 0 &&
-    lightSwitches.length === 0;
+    cfg.motionSensors.length === 0 &&
+    cfg.openingSensors.length === 0 &&
+    cfg.lightSwitches.length === 0;
   if (isAllTriggersEmpty) {
     setError(
       'Light-control initialization error: no motion, ' +
@@ -121,13 +110,13 @@ function init(
   //        с типом датчика строка где обрабатывается только цифра
 
   log.debug('All checks pass successfuly!');
-  if (isDebugEnabled === true) {
+  if (cfg.isDebugEnabled === true) {
     // Нужна задержка чтобы успели создаться все используемые нами девайсы
     // ДО того как мы будем создавать связь на них
     // Значение 100мс бывает мало, поэтому установлено 1000мс = 1с
     setTimeout(addAllLinkedDevicesToVd, 1000);
   } else {
-    log.debug('Debug disabled and have value: "' + isDebugEnabled + '"');
+    log.debug('Debug disabled and have value: "' + cfg.isDebugEnabled + '"');
   }
 
   log.debug('Start rules creation');
@@ -135,9 +124,9 @@ function init(
   var logicEnableTimerId = null;
 
   // Предварительно извлекаем имена контролов
-  var motionSensorsControlNames = extractControlNames(motionSensors);
-  var openingSensorsControlNames = extractControlNames(openingSensors);
-  var lightSwitchesControlNames = extractControlNames(lightSwitches);
+  var motionSensorsControlNames = extractControlNames(cfg.motionSensors);
+  var openingSensorsControlNames = extractControlNames(cfg.openingSensors);
+  var lightSwitchesControlNames = extractControlNames(cfg.lightSwitches);
 
   tm.registerSingleEvent(
     genNames.vDevice + '/logicDisabledByWallSwitch',
@@ -176,12 +165,12 @@ function init(
    * обработчика.
    */
   tm.registerMultipleEventsWithBehaviorOpposite(
-    openingSensors,
+    cfg.openingSensors,
     openingSensorTriggeredLaunchCb,
     openingSensorTriggeredResetCb
   );
 
-  tm.initRulesForAllTopics('light_control_rule_' + idPrefix);
+  tm.initRulesForAllTopics('light_control_rule_' + cfg.idPrefix);
 
   // Создаем правило для датчиков движения
   var ruleIdMotion = defineRule(genNames.ruleMotion, {
@@ -264,14 +253,14 @@ function init(
   //                  Определения функций
   // ======================================================
 
-  function generateNames(idPrefix) {
+  function generateNames(prefix) {
     var delimeter = '_';
     var scenarioPrefix = 'wbsc' + delimeter;
     var rulePrefix = 'wbru' + delimeter;
-    var postfix = delimeter + idPrefix + delimeter;
+    var postfix = delimeter + prefix + delimeter;
 
     return {
-      vDevice: scenarioPrefix + idPrefix,
+      vDevice: scenarioPrefix + prefix,
       ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
       ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
       ruleLightOn: rulePrefix + 'lightOn' + postfix,
@@ -316,7 +305,7 @@ function init(
     };
 
     // Условное добавление полей в зависимости от конфигурации
-    if (motionSensors.length > 0) {
+    if (cfg.motionSensors.length > 0) {
       cells.motionInProgress = {
         title: {
           en: 'Motion in progress',
@@ -329,7 +318,7 @@ function init(
       };
     }
 
-    if (openingSensors.length > 0) {
+    if (cfg.openingSensors.length > 0) {
       cells.doorOpen = {
         title: {
           en: 'Door open',
@@ -342,7 +331,7 @@ function init(
       };
     }
 
-    if (lightSwitches.length > 0) {
+    if (cfg.lightSwitches.length > 0) {
       cells.remainingTimeToLogicEnableInSec = {
         title: {
           en: 'Automation activation in',
@@ -434,20 +423,20 @@ function init(
       value: '',
     });
 
-    if (lightDevices.length > 0) {
-      addLinkedControlsArray(lightDevices, 'light_device');
+    if (cfg.lightDevices.length > 0) {
+      addLinkedControlsArray(cfg.lightDevices, 'light_device');
     }
 
-    if (motionSensors.length > 0) {
-      addLinkedControlsArray(motionSensors, 'motion_sensor');
+    if (cfg.motionSensors.length > 0) {
+      addLinkedControlsArray(cfg.motionSensors, 'motion_sensor');
     }
 
-    if (openingSensors.length > 0) {
-      addLinkedControlsArray(openingSensors, 'opening_sensor');
+    if (cfg.openingSensors.length > 0) {
+      addLinkedControlsArray(cfg.openingSensors, 'opening_sensor');
     }
 
-    if (lightSwitches.length > 0) {
-      addLinkedControlsArray(lightSwitches, 'light_switch');
+    if (cfg.lightSwitches.length > 0) {
+      addLinkedControlsArray(cfg.lightSwitches, 'light_switch');
     }
   }
 
@@ -499,7 +488,7 @@ function init(
     var newDelaySec = newDelayMs / 1000;
     dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
 
-    if (isDebugEnabled === true) {
+    if (cfg.isDebugEnabled === true) {
       dev[genNames.vDevice + '/curValDisableLightTimerInSec'] = newDelaySec;
     }
     // @note: Таймер автоматически запускает обратный отсчет при установке
@@ -514,7 +503,7 @@ function init(
     var newDelaySec = newDelayMs / 1000;
     dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = newDelaySec;
 
-    if (isDebugEnabled === true) {
+    if (cfg.isDebugEnabled === true) {
       dev[genNames.vDevice + '/curValDisabledLogicTimerInSec'] = newDelaySec;
     }
     // @note: Таймер автоматически запускает обратный отсчет при установке
@@ -575,7 +564,7 @@ function init(
     lightOffTimerId = null;
     dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = 0;
 
-    if (isDebugEnabled === true) {
+    if (cfg.isDebugEnabled === true) {
       dev[genNames.vDevice + '/curValDisableLightTimerInSec'] = 0;
     }
   }
@@ -584,7 +573,7 @@ function init(
     logicEnableTimerId = null;
     dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = 0;
 
-    if (isDebugEnabled === true) {
+    if (cfg.isDebugEnabled === true) {
       dev[genNames.vDevice + '/curValDisabledLogicTimerInSec'] = 0;
     }
   }
@@ -674,8 +663,8 @@ function init(
    *     что двери закрыты, иначе false
    */
   function checkAllOpeningSensorsClose() {
-    for (var i = 0; i < openingSensors.length; i++) {
-      var curSensor = openingSensors[i];
+    for (var i = 0; i < cfg.openingSensors.length; i++) {
+      var curSensor = cfg.openingSensors[i];
       var curSensorState = dev[curSensor.mqttTopicName];
 
       // Проверяем активность датчика с учетом его поведения
@@ -698,10 +687,10 @@ function init(
    *     что движения нет, иначе false
    */
   function checkAllMotionSensorsInactive() {
-    for (var i = 0; i < motionSensors.length; i++) {
-      var curSensorState = dev[motionSensors[i].mqttTopicName];
+    for (var i = 0; i < cfg.motionSensors.length; i++) {
+      var curSensorState = dev[cfg.motionSensors[i].mqttTopicName];
       var isActive = isMotionSensorActiveByBehavior(
-        motionSensors[i],
+        cfg.motionSensors[i],
         curSensorState
       );
       if (isActive === true) {
@@ -736,9 +725,9 @@ function init(
 
     // Если значение true, включаем свет
     dev[genNames.vDevice + '/lightOn'] = true;
-    if (isDelayEnabledAfterSwitch === true) {
-      startLightOffTimer(delayBlockAfterSwitch * 1000);
-      startLogicEnableTimer(delayBlockAfterSwitch * 1000);
+    if (cfg.isDelayEnabledAfterSwitch === true) {
+      startLightOffTimer(cfg.delayBlockAfterSwitch * 1000);
+      startLogicEnableTimer(cfg.delayBlockAfterSwitch * 1000);
     }
     return true;
   }
@@ -749,7 +738,7 @@ function init(
 
     if (isDoorOpened) {
       dev[genNames.vDevice + '/lightOn'] = true;
-      startLightOffTimer(delayByOpeningSensors * 1000);
+      startLightOffTimer(cfg.delayByOpeningSensors * 1000);
     } else if (isDoorClosed) {
       // Do nothing
     } else {
@@ -764,9 +753,9 @@ function init(
     var isLightSwitchedOff = topicObj.val.new === false;
 
     if (isLightSwitchedOn) {
-      setValueAllDevicesByBehavior(lightDevices, true);
+      setValueAllDevicesByBehavior(cfg.lightDevices, true);
     } else if (isLightSwitchedOff) {
-      setValueAllDevicesByBehavior(lightDevices, false);
+      setValueAllDevicesByBehavior(cfg.lightDevices, false);
     } else {
       log.error('Light on - have not correct type');
     }
@@ -875,7 +864,7 @@ function init(
       dev[genNames.vDevice + '/lightOn'] = true;
     } else {
       // Detected motion end
-      startLightOffTimer(delayByMotionSensors * 1000);
+      startLightOffTimer(cfg.delayByMotionSensors * 1000);
     }
   }
 
@@ -897,9 +886,12 @@ function init(
     if (sensorType === 'motion') {
       // Найдем сенсор в списке по cellName
       var matchedSensor = null;
-      for (var i = 0; i < motionSensors.length; i++) {
-        if (motionSensors[i].mqttTopicName === devName + '/' + cellName) {
-          matchedSensor = motionSensors[i];
+      for (var i = 0; i < cfg.motionSensors.length; i++) {
+        if (
+          cfg.motionSensors[i].mqttTopicName ===
+          devName + '/' + cellName
+        ) {
+          matchedSensor = cfg.motionSensors[i];
           break;
         }
       }
@@ -933,31 +925,7 @@ function init(
   }
 }
 
-exports.init = function (
-  deviceTitle,
-  idPrefix,
-  isDebugEnabled,
-  delayByMotionSensors,
-  delayByOpeningSensors,
-  isDelayEnabledAfterSwitch,
-  delayBlockAfterSwitch,
-  lightDevices,
-  motionSensors,
-  openingSensors,
-  lightSwitches
-) {
-  var res = init(
-    deviceTitle,
-    idPrefix,
-    isDebugEnabled,
-    delayByMotionSensors,
-    delayByOpeningSensors,
-    isDelayEnabledAfterSwitch,
-    delayBlockAfterSwitch,
-    lightDevices,
-    motionSensors,
-    openingSensors,
-    lightSwitches
-  );
+exports.init = function (deviceTitle, cfg) {
+  var res = init(deviceTitle, cfg);
   return res;
 };

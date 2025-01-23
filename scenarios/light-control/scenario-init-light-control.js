@@ -49,27 +49,19 @@ var lightControl = require('light-control.mod');
 function initializeScenario(scenario) {
   log.debug('Processing scenario: ' + JSON.stringify(scenario));
 
-  var isInitSucess = lightControl.init(
-    scenario.name,
-    scenario.id_prefix,
-    scenario.isDebugEnabled,
-    scenario.motionSensors.delayToLightOff,
-    scenario.openingSensors.delayToLightOff,
-    scenario.lightSwitches.isDelayEnabled,
-    scenario.lightSwitches.delayToLightOffAndEnable,
-    scenario.lightDevices.sensorObjects,
-    scenario.motionSensors.sensorObjects,
-    scenario.openingSensors.sensorObjects,
-    scenario.lightSwitches.sensorObjects
-  );
-
-  // TODO: refactor func for little qty params
-  // var cfg = {
-  //   id_prefix: scenario.id_prefix
-  //   motionSensors: scenario.motionSensors.delayToLightOff,
-  //   openingSensors: scenario.openingSensors.delayToLightOff,
-  // }
-  // var isInitSucess = lightControl.init(scenario.name, cfg)
+  var cfg = {
+    id_prefix: scenario.id_prefix,
+    isDebugEnabled: scenario.isDebugEnabled,
+    delayByMotionSensors: scenario.motionSensors.delayToLightOff,
+    delayByOpeningSensors: scenario.openingSensors.delayToLightOff,
+    isDelayEnabledAfterSwitch: scenario.lightSwitches.isDelayEnabled,
+    delayBlockAfterSwitch: scenario.lightSwitches.delayToLightOffAndEnable,
+    lightDevices: scenario.lightDevices.sensorObjects,
+    motionSensors: scenario.motionSensors.sensorObjects,
+    openingSensors: scenario.openingSensors.sensorObjects,
+    lightSwitches: scenario.lightSwitches.sensorObjects,
+  };
+  var isInitSucess = lightControl.init(scenario.name, cfg);
 
   if (!isInitSucess) {
     log.error(
