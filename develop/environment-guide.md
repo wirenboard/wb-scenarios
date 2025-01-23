@@ -160,9 +160,14 @@ $ eslint src/tm-event-main.mod.js --debug
 1) ESLint - линтер проверяющий ошибки, но не наводит красоту.
    Ссылка в VsCode маркет:
    - Microsoft: [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+
 2) Prettier - форматтер наводит красоту в коде, но не проверяющий ошибки.
    Ссылка в VsCode маркет:
    - Prettier: [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+
+3) markdownlint - линтер и форматтер помогающий редактировать markdown файлв
+   Ссылка в VsCode маркет:
+   - David Anson: [markdownlint](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
 
 ### Файлы настроек
 
@@ -214,5 +219,15 @@ log - Hide error - 'log' is not defined.
   "semi": true,
   "useTabs": false,
   "singleQuote": true
+}
+```
+
+#### .markdownlint.json
+
+Содержит только одну диррективу отключающую проверку на inline html
+
+```json
+{
+    "MD033": false
 }
 ```
