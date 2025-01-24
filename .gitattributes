@@ -1,0 +1,7 @@
+# This line resolve warning
+#   This diff contains a change in line endings from 'LF' to 'CRLF'.
+#
+# link: https://docs.github.com/en/get-started/getting-started-with-git/configuring-git-to-handle-line-endings
+
+# Use LF for all files because this project used on linux driven controller
+* text=auto eol=lf

@@ -8,15 +8,19 @@
 # DESTDIR=/
 PREFIX=/usr
 
-# Путь к папке со сценариями
+# Локальные пути в директории сборки
+# Дирректория со сценариями
 SCENARIOS_ROOT := scenarios/
 
-# Папка для схем и изображений в схеме
+# Директория для схем и изображений в схеме
 SCHEMA_DIR := schema/
+
+# Директория с общими файлами исходников нескольких сценариев
+SRC_DIR := src/
 
 # Целевые пути
 CONFIG_DEST := $(DESTDIR)/etc
-IMAGE_DEST := $(DESTDIR)/var/www/images
+IMAGE_DEST := $(DESTDIR)/var/www/images/wb-scenarios
 SCHEMA_DEST := $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas
 # Используем системный путь до скриптов /usr/share/wb-rules-system/rules
 # так как /etc/wb-rules/* должно использоваться для пользовательских скриптов
@@ -28,6 +32,7 @@ MODULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-modules
 
 # Поиск папок сценариев внутри папки scenarios
 SCENARIO_DIRS := $(wildcard $(SCENARIOS_ROOT)*)
+SRC_MODULE_FILES := $(wildcard $(SRC_DIR)*.mod.js)
 
 # @note: Потенциально могут быть пробелы и спец символы в именах файлов
 #        или папок - можно сделать проверку перед началом работы
@@ -47,6 +52,8 @@ clean:
 dummy:
 	@echo "This is a dummy target"
 
+# @note: Используем везде цикл а не просто install, чтобы иметь возможность
+#        видеть в логе какие именно файлы копируются поштучно
 install:
 	@echo "Starting installation process..."
 
@@ -64,6 +71,15 @@ install:
 	@$(foreach file,$(SCHEMA_FILES),\
 		echo "Copying schema $(file) to $(SCHEMA_DEST)";\
 		install -Dm644 $(file) -t $(SCHEMA_DEST);)
+
+	@# Установка общих файлов сценариев из папки src
+	@if [ -z "$(SRC_MODULE_FILES)" ]; then \
+		echo "No .mod.js files found in dir."; \
+	else \
+		$(foreach file,$(SRC_MODULE_FILES),\
+			echo "Copying module file $(file) to $(MODULES_DEST)";\
+			install -Dm644 $(file) -t $(MODULES_DEST);) \
+	fi
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
