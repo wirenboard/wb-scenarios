@@ -21,6 +21,9 @@
         },
         {
           "$ref": "#/definitions/lightControl"
+        },
+        {
+          "$ref": "#/definitions/thermostat"
         }
       ],
       "_format": "wb-multiple",
@@ -72,9 +75,9 @@
           }
         },
         "id_prefix": {
-          "title": "id_prefix_title",
+          "title": "idPrefix_title",
           "type": "string",
-          "description": "id_prefix_description",
+          "description": "idPrefix_description",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "devices_control",
@@ -296,9 +299,9 @@
           }
         },
         "id_prefix": {
-          "title": "id_prefix_title",
+          "title": "idPrefix_title",
           "type": "string",
-          "description": "id_prefix_description",
+          "description": "idPrefix_description",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "lightControl",
@@ -655,6 +658,126 @@
         "openingSensors",
         "lightSwitches"
       ]
+    },
+    "thermostat": {
+      "type": "object",
+      "title": "thermostatScenarioName",
+      "description": "thermostatScenarioDescription",
+      "_format": "grid",
+      "properties": {
+        "componentVersion": {
+          "type": "integer",
+          "title": "Config version",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "scenarioType": {
+          "type": "string",
+          "enum": ["thermostat"],
+          "default": "thermostat",
+          "options": {
+            "hidden": true
+          }
+        },
+        "enable": {
+          "type": "boolean",
+          "title": "generalScenarioGenerateRuleTitle",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "generalScenarioName",
+          "default": "Теплый пол в комнате",
+          "minLength": 1,
+          "maxLength": 30,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "idPrefix": {
+          "type": "string",
+          "title": "ID Prefix",
+          "description": "idPrefix_description",
+          "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
+          "pattern": "^[0-9a-zA-Z_]+$",
+          "default": "room_warm_floor",
+          "minLength": 1,
+          "maxLength": 15,
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessage"
+          }
+        },
+        "targetTemperature": {
+          "type": "number",
+          "title": "thermostatTargetTemperatureTitle",
+          "default": 20,
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 3
+          }
+        },
+        "hysteresis": {
+          "type": "number",
+          "title": "thermostatTargetHysteresisTitle",
+          "default": 0.5,
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 3
+          }
+        },
+        "temperatureSensor": {
+          "type": "string",
+          "_format": "wb-autocomplete",
+          "title": "thermostatTemperatureSensorTitle",
+          "description": "What input control we need use in format: device/control",
+          "pattern": "^[^/+#]+/[^/+#]+$",
+          "propertyOrder": 6,
+          "options": {
+            "grid_columns": 12,
+            "wb": {
+              "data": "devices"
+            }
+          },
+          "minLength": 1
+        },
+        "actuator": {
+          "type": "string",
+          "_format": "wb-autocomplete",
+          "title": "thermostatActuatorTitle",
+          "description": "What output control we need use in format: device/control",
+          "pattern": "^[^/+#]+/[^/+#]+$",
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 12,
+            "wb": {
+              "data": "devices"
+            }
+          },
+          "minLength": 1
+        }
+      },
+      "required": [
+        "scenarioType",
+        "enable",
+        "name",
+        "idPrefix",
+        "targetTemperature",
+        "hysteresis",
+        "temperatureSensor",
+        "actuator"
+      ]
     }
   },
   "properties": {
@@ -700,8 +823,8 @@
       "generalEnumSetValue": "Set Value",
       "generalSensorArrTitle": "Elements list",
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
-      "id_prefix_title": "MQTT id of the device",
-      "id_prefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
+      "idPrefix_title": "MQTT id of the device",
+      "idPrefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
@@ -731,7 +854,14 @@
       "lightControlLightSwitchesEnableDelayTitle": "Automatic switching off of lights and switching on of automation",
       "lightControlLightSwitchesDelayTitle": "After a specified time from using the switch, the light will be turned off and the lighting control using sensors will be unlocked (seconds).",
       "lightControlLightSwitchesArrDescription": "Using the switch blocks the control of lighting using motion<br>and opening sensors. Unlocking will occur automatically,<br>after a set time or after pressing the switch again.",
-      "lightControlLightSwitchesObjTitle": "Switch"
+      "lightControlLightSwitchesObjTitle": "Switch",
+
+      "thermostatScenarioName": "Thermostat",
+      "thermostatScenarioDescription": "This scenario provides the ability to control the heater depending on the temperature",
+      "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
+      "thermostatTargetHysteresisTitle": "Hysteresis (°C)",
+      "thermostatTemperatureSensorTitle": "Temperature sensor",
+      "thermostatActuatorTitle": "Heater"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -748,8 +878,8 @@
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
-      "id_prefix_title": "Идентификатор устройства в MQTT",
-      "id_prefix_description": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
+      "idPrefix_title": "Идентификатор устройства в MQTT",
+      "idPrefix_description": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
@@ -790,7 +920,14 @@
       "lightControlOpeningSensorsObjTitle": "Датчик открытия",
       "lightControlOpeningSensorsBehaviorTypeDescription": "Событие при открытии двери",
       "lightControlOpeningSensorsEnumWhenDisabled": "Когда отключилось",
-      "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось"
+      "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
+
+      "thermostatScenarioName": "Термостат",
+      "thermostatScenarioDescription": "Данный сценарий предоставляет возможность управления нагревателем в зависимости от температуры",
+      "thermostatTargetTemperatureTitle": "Целевая температура (°C)",
+      "thermostatTargetHysteresisTitle": "Гистерезис (°C)",
+      "thermostatTemperatureSensorTitle": "Датчик температуры",
+      "thermostatActuatorTitle": "Нагреватель"
     }
   }
 }
