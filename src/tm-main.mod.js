@@ -59,7 +59,7 @@ function insertProcessorIntoChain(processorsChain, processorEntry) {
  * @param {number} [priority=0] (Опционально) Приоритет процессора
  *     (чем выше, тем раньше он будет вызван)
  */
-TopicManager.prototype.addProcessor = function (processor, priority) {
+function addProcessor(processor, priority) {
   var isValidProcessor = typeof processor === 'function';
   if (!isValidProcessor) {
     log.error('Invalid processor - must be a function');
@@ -75,14 +75,14 @@ TopicManager.prototype.addProcessor = function (processor, priority) {
 
   log.debug('Processor added with priority:', processorEntry.priority);
   return true;
-};
+}
 
 /**
  * Удаление обработчика из цепочки
  *
  * @param {Function} processor Функция процессора которую нужно удалить
  */
-TopicManager.prototype.removeProcessor = function (processor) {
+function removeProcessor(processor) {
   var index = -1;
   for (var i = 0; i < this.pluginsProcessorsChain.length; i++) {
     if (this.pluginsProcessorsChain[i].fn === processor) {
@@ -97,7 +97,7 @@ TopicManager.prototype.removeProcessor = function (processor) {
   } else {
     log.warning('Processor not found');
   }
-};
+}
 
 /**
  * Обработка данных всеми плагинами
@@ -105,7 +105,7 @@ TopicManager.prototype.removeProcessor = function (processor) {
  * @param {string} topic - Имя топика
  * @param {*} newValue - Новое значение топика
  */
-TopicManager.prototype.runProcessors = function (topic, newValue) {
+function runProcessors(topic, newValue) {
   if (this.pluginsProcessorsChain.length === 0) {
     log.debug('No processors in the chain');
     return;
@@ -115,7 +115,7 @@ TopicManager.prototype.runProcessors = function (topic, newValue) {
   for (var i = 0; i < this.pluginsProcessorsChain.length; i++) {
     this.pluginsProcessorsChain[i].fn(topic, newValue);
   }
-};
+}
 
 /**
  * Создание и запуск правила для всех зарегистрированных топиков
@@ -123,7 +123,7 @@ TopicManager.prototype.runProcessors = function (topic, newValue) {
  *
  * @param {string} ruleName Имя правила
  */
-TopicManager.prototype.initRulesForAllTopics = function (ruleName) {
+function initRulesForAllTopics(ruleName) {
   var ruleNameType = typeof ruleName;
   if (ruleNameType !== 'string') {
     log.error(
@@ -158,7 +158,7 @@ TopicManager.prototype.initRulesForAllTopics = function (ruleName) {
     this.ruleId
   );
   return true;
-};
+}
 
 /**
  * Метод для подключения плагинов к объекту TopicManager
@@ -168,7 +168,7 @@ TopicManager.prototype.initRulesForAllTopics = function (ruleName) {
  * @param {Object} [options] - Опциональные параметры для плагина
  * @returns {boolean} Успешность установки плагина
  */
-TopicManager.prototype.installPlugin = function (plugin, options) {
+function installPlugin(plugin, options) {
   var isValidPlugin = plugin && typeof plugin.install === 'function';
   var hasValidName = plugin.name && typeof plugin.name === 'string';
   var isAlreadyInstalled = this.installedPlugins.indexOf(plugin.name) !== -1;
@@ -212,7 +212,7 @@ TopicManager.prototype.installPlugin = function (plugin, options) {
   this.installedPlugins.push(plugin.name);
   log.debug('Plugin installed: ' + plugin.name);
   return true;
-};
+}
 
 /**
  * Проверка объекта на пустоту
@@ -224,7 +224,7 @@ function isEmptyObject(obj) {
 /**
  * Отладочный вывод текущего реестра
  */
-TopicManager.prototype.printRegistry = function () {
+function printRegistry() {
   log.debug('=== Current Registry State ===');
   var isRegistryEmpty = isEmptyObject(this.registry);
   if (isRegistryEmpty) {
@@ -233,6 +233,16 @@ TopicManager.prototype.printRegistry = function () {
     log.debug(JSON.stringify(this.registry, null, 2));
   }
   log.debug('==============================');
-};
+}
+
+/**
+ * These methods are shared across all instances of TopicManager
+ */
+TopicManager.prototype.addProcessor = addProcessor;
+TopicManager.prototype.removeProcessor = removeProcessor;
+TopicManager.prototype.runProcessors = runProcessors;
+TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
+TopicManager.prototype.installPlugin = installPlugin;
+TopicManager.prototype.printRegistry = printRegistry;
 
 exports.TopicManager = TopicManager;
