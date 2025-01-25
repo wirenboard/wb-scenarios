@@ -21,35 +21,7 @@ function TopicManager() {
   this.pluginsProcessorsChain = [];
 
   // Id созданного правила WB-rules
-  this.ruleId;
-}
-
-/**
- * Вставка процессора в цепочку с учетом приоритета
- *
- * @param {Array} processorsChain  Цепочка процессоров
- *     (массив объектов { fn, priority })
- * @param {Object} processorEntry Объект процессора { fn, priority }
- */
-function insertProcessorIntoChain(processorsChain, processorEntry) {
-  var insertIndex = -1;
-
-  // Ищем подходящее место для вставки
-  for (var i = 0; i < processorsChain.length; i++) {
-    // Если приоритет нового процессора выше текущего в цепочке
-    if (processorEntry.priority > processorsChain[i].priority) {
-      insertIndex = i;
-      break;
-    }
-  }
-
-  // Если место не найдено, добавляем процессор в конец
-  if (insertIndex === -1) {
-    processorsChain.push(processorEntry);
-  } else {
-    // Иначе вставляем процессор в найденное место
-    processorsChain.splice(insertIndex, 0, processorEntry);
-  }
+  this.ruleId = null;
 }
 
 /**
@@ -215,13 +187,6 @@ function installPlugin(plugin, options) {
 }
 
 /**
- * Проверка объекта на пустоту
- */
-function isEmptyObject(obj) {
-  return Object.keys(obj).length === 0;
-}
-
-/**
  * Отладочный вывод текущего реестра
  */
 function printRegistry() {
@@ -244,5 +209,46 @@ TopicManager.prototype.runProcessors = runProcessors;
 TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
 TopicManager.prototype.installPlugin = installPlugin;
 TopicManager.prototype.printRegistry = printRegistry;
+
+/**
+ * ======================================================
+ *                  Local functions
+ * ======================================================
+ */
+
+/**
+ * Проверка объекта на пустоту
+ */
+function isEmptyObject(obj) {
+  return Object.keys(obj).length === 0;
+}
+
+/**
+ * Вставка процессора в цепочку с учетом приоритета
+ *
+ * @param {Array} processorsChain  Цепочка процессоров
+ *     (массив объектов { fn, priority })
+ * @param {Object} processorEntry Объект процессора { fn, priority }
+ */
+function insertProcessorIntoChain(processorsChain, processorEntry) {
+  var insertIndex = -1;
+
+  // Ищем подходящее место для вставки
+  for (var i = 0; i < processorsChain.length; i++) {
+    // Если приоритет нового процессора выше текущего в цепочке
+    if (processorEntry.priority > processorsChain[i].priority) {
+      insertIndex = i;
+      break;
+    }
+  }
+
+  // Если место не найдено, добавляем процессор в конец
+  if (insertIndex === -1) {
+    processorsChain.push(processorEntry);
+  } else {
+    // Иначе вставляем процессор в найденное место
+    processorsChain.splice(insertIndex, 0, processorEntry);
+  }
+}
 
 exports.TopicManager = TopicManager;
