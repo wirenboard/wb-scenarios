@@ -186,7 +186,7 @@ function initRulesForAllTopics(ruleName) {
   return true;
 }
 
-function disableRule() {
+function disable() {
   if (!this.ruleId) {
     log.error('Нет ruleId, которое можно отключить');
     return false;
@@ -196,7 +196,7 @@ function disableRule() {
   return true;
 }
 
-function enableRule() {
+function enable() {
   if (!this.ruleId) {
     log.error('Нет ruleId, которое можно включить');
     return false;
@@ -206,7 +206,7 @@ function enableRule() {
   return true;
 }
 
-function runRule() {
+function run() {
   if (!this.ruleId) {
     log.error('Нет ruleId, которое можно запустить');
     return false;
@@ -239,9 +239,9 @@ TopicManager.prototype.removeProcessor = removeProcessor;
 TopicManager.prototype.runProcessors = runProcessors;
 
 TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
-TopicManager.prototype.disableRule = disableRule;
-TopicManager.prototype.enableRule = enableRule;
-TopicManager.prototype.runRule = runRule;
+TopicManager.prototype.disable = disable;
+TopicManager.prototype.enable = enable;
+TopicManager.prototype.run = run;
 
 TopicManager.prototype.printRegistry = printRegistry;
 
