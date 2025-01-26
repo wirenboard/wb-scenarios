@@ -25,6 +25,60 @@ function TopicManager() {
 }
 
 /**
+ * Метод для подключения плагинов к объекту TopicManager
+ * Ожидает объект с методом install
+ *
+ * @param {Object} plugin - Объект плагина с методом install
+ * @param {Object} [options] - Опциональные параметры для плагина
+ * @returns {boolean} Успешность установки плагина
+ */
+function installPlugin(plugin, options) {
+  var isValidPlugin = plugin && typeof plugin.install === 'function';
+  var hasValidName = plugin.name && typeof plugin.name === 'string';
+  var isAlreadyInstalled = this.installedPlugins.indexOf(plugin.name) !== -1;
+
+  if (!isValidPlugin) {
+    log.error('Invalid plugin format - Plugin must have an install method');
+    return false;
+  }
+
+  if (!hasValidName) {
+    log.error('Plugin is missing a name field or it is not a string');
+    return false;
+  }
+
+  if (isAlreadyInstalled) {
+    log.error('Plugin is already installed: ' + plugin.name);
+    return false;
+  }
+
+  // Проверка зависимостей
+  var isPluginHaveDep =
+    Array.isArray(plugin.dependencies) && plugin.dependencies.length > 0;
+  if (isPluginHaveDep === true) {
+    for (var i = 0; i < plugin.dependencies.length; i++) {
+      var depName = plugin.dependencies[i];
+      var isDepInstalled = this.installedPlugins.indexOf(depName) !== -1;
+      if (isDepInstalled === false) {
+        log.error(
+          'Plugin "' +
+            plugin.name +
+            '" depends on "' +
+            depName +
+            '", but it is not installed yet.'
+        );
+        return false;
+      }
+    }
+  }
+
+  plugin.install(this, options);
+  this.installedPlugins.push(plugin.name);
+  log.debug('Plugin installed: ' + plugin.name);
+  return true;
+}
+
+/**
  * Добавление процессора в цепочку
  *
  * @param {Function} processor Функция процессора, добавляемая в цепочку
@@ -132,74 +186,6 @@ function initRulesForAllTopics(ruleName) {
   return true;
 }
 
-/**
- * Метод для подключения плагинов к объекту TopicManager
- * Ожидает объект с методом install
- *
- * @param {Object} plugin - Объект плагина с методом install
- * @param {Object} [options] - Опциональные параметры для плагина
- * @returns {boolean} Успешность установки плагина
- */
-function installPlugin(plugin, options) {
-  var isValidPlugin = plugin && typeof plugin.install === 'function';
-  var hasValidName = plugin.name && typeof plugin.name === 'string';
-  var isAlreadyInstalled = this.installedPlugins.indexOf(plugin.name) !== -1;
-
-  if (!isValidPlugin) {
-    log.error('Invalid plugin format - Plugin must have an install method');
-    return false;
-  }
-
-  if (!hasValidName) {
-    log.error('Plugin is missing a name field or it is not a string');
-    return false;
-  }
-
-  if (isAlreadyInstalled) {
-    log.error('Plugin is already installed: ' + plugin.name);
-    return false;
-  }
-
-  // Проверка зависимостей
-  var isPluginHaveDep =
-    Array.isArray(plugin.dependencies) && plugin.dependencies.length > 0;
-  if (isPluginHaveDep === true) {
-    for (var i = 0; i < plugin.dependencies.length; i++) {
-      var depName = plugin.dependencies[i];
-      var isDepInstalled = this.installedPlugins.indexOf(depName) !== -1;
-      if (isDepInstalled === false) {
-        log.error(
-          'Plugin "' +
-            plugin.name +
-            '" depends on "' +
-            depName +
-            '", but it is not installed yet.'
-        );
-        return false;
-      }
-    }
-  }
-
-  plugin.install(this, options);
-  this.installedPlugins.push(plugin.name);
-  log.debug('Plugin installed: ' + plugin.name);
-  return true;
-}
-
-/**
- * Отладочный вывод текущего реестра
- */
-function printRegistry() {
-  log.debug('=== Current Registry State ===');
-  var isRegistryEmpty = isEmptyObject(this.registry);
-  if (isRegistryEmpty) {
-    log.debug('Registry is empty');
-  } else {
-    log.debug(JSON.stringify(this.registry, null, 2));
-  }
-  log.debug('==============================');
-}
-
 function disableRule() {
   if (!this.ruleId) {
     log.error('Нет ruleId, которое можно отключить');
@@ -231,18 +217,33 @@ function runRule() {
 }
 
 /**
+ * Отладочный вывод текущего реестра
+ */
+function printRegistry() {
+  log.debug('=== Current Registry State ===');
+  var isRegistryEmpty = isEmptyObject(this.registry);
+  if (isRegistryEmpty) {
+    log.debug('Registry is empty');
+  } else {
+    log.debug(JSON.stringify(this.registry, null, 2));
+  }
+  log.debug('==============================');
+}
+
+/**
  * These methods are shared across all instances of TopicManager
  */
+TopicManager.prototype.installPlugin = installPlugin;
 TopicManager.prototype.addProcessor = addProcessor;
 TopicManager.prototype.removeProcessor = removeProcessor;
 TopicManager.prototype.runProcessors = runProcessors;
-TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
-TopicManager.prototype.installPlugin = installPlugin;
-TopicManager.prototype.printRegistry = printRegistry;
 
+TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
 TopicManager.prototype.disableRule = disableRule;
 TopicManager.prototype.enableRule = enableRule;
 TopicManager.prototype.runRule = runRule;
+
+TopicManager.prototype.printRegistry = printRegistry;
 
 /**
  * ======================================================
