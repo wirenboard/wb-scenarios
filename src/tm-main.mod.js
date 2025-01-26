@@ -200,6 +200,36 @@ function printRegistry() {
   log.debug('==============================');
 }
 
+function disableRule() {
+  if (!this.ruleId) {
+    log.error('Нет ruleId, которое можно отключить');
+    return false;
+  }
+  disableRule(this.ruleId);
+  log.debug('Rule disabled:', this.ruleId);
+  return true;
+}
+
+function enableRule() {
+  if (!this.ruleId) {
+    log.error('Нет ruleId, которое можно включить');
+    return false;
+  }
+  enableRule(this.ruleId);
+  log.debug('Rule enabled:', this.ruleId);
+  return true;
+}
+
+function runRule() {
+  if (!this.ruleId) {
+    log.error('Нет ruleId, которое можно запустить');
+    return false;
+  }
+  runRule(this.ruleId);
+  log.debug('Rule triggered:', this.ruleId);
+  return true;
+}
+
 /**
  * These methods are shared across all instances of TopicManager
  */
@@ -209,6 +239,10 @@ TopicManager.prototype.runProcessors = runProcessors;
 TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
 TopicManager.prototype.installPlugin = installPlugin;
 TopicManager.prototype.printRegistry = printRegistry;
+
+TopicManager.prototype.disableRule = disableRule;
+TopicManager.prototype.enableRule = enableRule;
+TopicManager.prototype.runRule = runRule;
 
 /**
  * ======================================================
