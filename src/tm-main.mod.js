@@ -20,8 +20,8 @@ function TopicManager() {
   // Цепочка функций (процессоров) для обработки новых значений топика
   this.pluginsProcessorsChain = [];
 
-  // Id созданного правила WB-rules
-  this.ruleId = null;
+  // Объект для хранения правил по их именам вместе с мета информацией (Id)
+  this.rules = {};
 }
 
 /**
@@ -166,53 +166,19 @@ function initRulesForAllTopics(ruleName) {
   }
 
   // Создаем правило
-  this.ruleId = defineRule(ruleName, {
-    whenChanged: topics,
-    then: function (newValue, devName, cellName) {
+  var rule = _defineTmRule(
+    ruleName,
+    topics,
+    function (newValue, devName, cellName) {
       var topic = devName + '/' + cellName;
       this.runProcessors(topic, newValue);
-    }.bind(this),
-  });
-
-  if (!this.ruleId) {
-    log.error('Failed to create the rule:', ruleName);
-    return false;
-  }
-
-  log.debug(
-    'Rule "' + ruleName + '" successfully created with ID:',
-    this.ruleId
+    }.bind(this)
   );
-  return true;
-}
 
-function disable() {
-  if (!this.ruleId) {
-    log.error('Нет ruleId, которое можно отключить');
-    return false;
-  }
-  disableRule(this.ruleId);
-  log.debug('Rule disabled:', this.ruleId);
-  return true;
-}
+  // Сохранение правила в объекте rules
+  this.rules[ruleName] = rule;
+  log.debug('Rule "' + ruleName + '" created and added to TopicManager');
 
-function enable() {
-  if (!this.ruleId) {
-    log.error('Нет ruleId, которое можно включить');
-    return false;
-  }
-  enableRule(this.ruleId);
-  log.debug('Rule enabled:', this.ruleId);
-  return true;
-}
-
-function run() {
-  if (!this.ruleId) {
-    log.error('Нет ruleId, которое можно запустить');
-    return false;
-  }
-  runRule(this.ruleId);
-  log.debug('Rule triggered:', this.ruleId);
   return true;
 }
 
@@ -230,20 +196,41 @@ function printRegistry() {
   log.debug('==============================');
 }
 
+/** ==================================================== */
+
 /**
- * These methods are shared across all instances of TopicManager
+ * Конструктор RuleInstance для управления конкретным правилом
+ * @param {string} name Имя правила
+ * @param {string} ruleId Идентификатор правила
  */
-TopicManager.prototype.installPlugin = installPlugin;
-TopicManager.prototype.addProcessor = addProcessor;
-TopicManager.prototype.removeProcessor = removeProcessor;
-TopicManager.prototype.runProcessors = runProcessors;
+function RuleInstance(name, ruleId) {
+  this.name = name;
+  this.ruleId = ruleId;
+}
 
-TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
-TopicManager.prototype.disable = disable;
-TopicManager.prototype.enable = enable;
-TopicManager.prototype.run = run;
+/**
+ * Отключить правило
+ */
+function disable() {
+  disableRule(this.ruleId);
+  log.debug('Rule disabled: {}, {}', this.ruleId, this.ruleId);
+}
 
-TopicManager.prototype.printRegistry = printRegistry;
+/**
+ * Включить правило
+ */
+function enable() {
+  enableRule(this.ruleId);
+  log.debug('Rule enabled: {}, {}', this.ruleId, this.ruleId);
+}
+
+/**
+ * Запустить правило вручную
+ */
+function run() {
+  runRule(this.ruleId);
+  log.debug('Rule triggered manually: {}, {}', this.ruleId, this.ruleId);
+}
 
 /**
  * ======================================================
@@ -285,5 +272,56 @@ function insertProcessorIntoChain(processorsChain, processorEntry) {
     processorsChain.splice(insertIndex, 0, processorEntry);
   }
 }
+
+/**
+ * Создание правила для TM с добавлением нового объекта в rules{}
+ * @param {string} name Имя правила
+ * @param {Array<string>} topics Список топиков, которые отслеживает правило
+ * @param {Function} action Действие, выполняемое правилом
+ * @returns {RuleInstance|null} Экземпляр объекта правила или null
+ */
+function _defineTmRule(name, topics, action) {
+  var ruleId = defineRule(name, {
+    whenChanged: topics,
+    then: action,
+  });
+
+  if (!ruleId) {
+    log.error('Failed to create the rule: {}. Topics: {}', name, topics);
+    return null;
+  }
+
+  log.debug('Rule "' + name + '" successfully created with ID:', ruleId);
+
+  return new RuleInstance(name, ruleId);
+}
+
+function printRules() {
+  log.debug('=== Current Rules State ===');
+  for (var ruleName in this.rules) {
+    log.debug('Rule:', ruleName, 'ID:', this.rules[ruleName].ruleId);
+  }
+  log.debug('============================');
+}
+
+/**
+ * These methods are shared across all instances of TopicManager
+ */
+TopicManager.prototype.installPlugin = installPlugin;
+TopicManager.prototype.addProcessor = addProcessor;
+TopicManager.prototype.removeProcessor = removeProcessor;
+TopicManager.prototype.runProcessors = runProcessors;
+
+TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
+TopicManager.prototype.disable = disable;
+TopicManager.prototype.enable = enable;
+TopicManager.prototype.run = run;
+
+TopicManager.prototype.printRegistry = printRegistry;
+TopicManager.prototype.printRules = printRules;
+
+RuleInstance.prototype.disable = disable;
+RuleInstance.prototype.enable = enable;
+RuleInstance.prototype.run = run;
 
 exports.TopicManager = TopicManager;
