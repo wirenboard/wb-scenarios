@@ -44,6 +44,87 @@
    Например плагин событий позволяет кратко записывать создание разных
    обработчиков для разных типов событий.
 
+## Использование
+
+### 1. Подключение TM и плагинов
+
+TM и плагины являются модулями и находятся глобально из любого скрипта.
+
+```javascript
+var TopicManager = require('tm-main.mod').TopicManager;
+var eventPlugin = require('tm-event-main.mod').eventPlugin;
+var historyPlugin = require('tm-history-main.mod').historyPlugin;
+```
+
+### 2. Создание объекта топик менеджера
+
+Удобно пользоваться одним объектом TM на один скрипт чтобы у всех топиков
+и событий был один контекст выполнения, но при необходимости - в одном скрипте
+можно создать один или больше объектов топик менеджера, каждый из которых
+будут независимыми друг от друга.
+
+```javascript
+var tm = new TopicManager();
+```
+
+### 3. Установка плагинов в созданный объект TM
+
+Обратите внимание что порядок важен так как в плагине eventPlugin
+есть зависимость `eventPlugin.dependencies: ['historyPlugin']`:
+
+```javascript
+tm.installPlugin(historyPlugin);
+tm.installPlugin(eventPlugin);
+```
+
+### 4. Инициализация собыитий топиков
+
+Для использования событий - можно настроить детектирование событий следующим
+образом:
+
+```javascript
+function cbFuncDisabled(topic, event) {
+  log.debug('Run cbFuncDisabled()');
+  return true;
+}
+
+function cbFuncCrossUpper(topic, event) {
+  log.debug('Run cbFuncCrossUpper()');
+  return true;
+}
+
+function cbFuncCrossLower(topic, event) {
+  log.debug('Run cbFuncCrossLower()');  
+  return true;
+}
+
+tm.registerSingleEvent('wall_switch_9/enabled', 'whenDisabled', cbFuncDisabled);
+tm.registerSingleEvent('vd-water-meter-1/litres_used_value', 'whenCrossUpper', cbFuncCrossUpper, {actionValue: 15});
+tm.registerSingleEvent('vd-water-meter-1/litres_used_value', 'whenCrossLower', cbFuncCrossLower, {actionValue: 17});
+```
+
+### 5. Создание и запуск правила
+
+После инициализации всех топиков нужно выбрать один из типов запуска
+правила с топик менеджером - самый простой способ, это запустить правило:
+
+При использовании initRulesForAllTopics() будет создано правило которое
+отслеживает изменение всех настроенных ранее топиков с указанным именем:
+
+```javascript
+tm.initRulesForAllTopics('GenRuleName');
+```
+
+### 6. Управление правилом
+
+Созданное ранее правило можно отключить, включить или запустить принудительно.
+
+Пример:
+
+```javascript
+tm.rules['GenRuleName'].disable();
+```
+
 ## Пример использования в правилах WB-rules
 
 В данном примере при выключении топика `wall_switch_9/enabled` выполнится
@@ -84,10 +165,25 @@ function cbFuncCrossUpper(topic, event) {
   return true;
 }
 
+function cbFuncCrossLower(topic, event) {
+  log.debug('Run cbFuncCrossLower()');
+  log.debug('- Topic name: "' + topic.name + '"');
+  log.debug('- New value: "' + topic.val.new + '"');
+  log.debug('- Prev value: "' + topic.val.prev + '"');
+  log.debug('- Value history: ' + JSON.stringify(topic.val.history, null, 2));
+  log.debug('- Event type: "' + event.type + '"');
+
+  log.debug(' ... Rule will be disabled now ... ');
+  tm.rules['GenRuleName'].disable();
+
+  return true;
+}
+
 function main() {
   // Регистрация событий - "когда выключится" и "когда пересечет границу вверх"
   tm.registerSingleEvent('wall_switch_9/enabled', 'whenDisabled', cbFuncDisabled);
   tm.registerSingleEvent('vd-water-meter-1/litres_used_value', 'whenCrossUpper', cbFuncCrossUpper, {actionValue: 5});
+  tm.registerSingleEvent('vd-water-meter-1/litres_used_value', 'whenCrossLower', cbFuncCrossLower, {actionValue: 7});
 
   // Генерация и запуск правила для начала работы
   tm.initRulesForAllTopics('GenRuleName');
