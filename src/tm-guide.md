@@ -1,8 +1,15 @@
 # Руководство по модулю топик менеджера (tm, topic manager)
 
+Топик менеджер позволяет решать задачи начального уровня проще,
+так как предоставляет возможность детектировать разные именованные
+события топика (плагин событий) и дает другие вспомогательные инструменты,
+например создает виртуальное устройство для контроля используемых топиков
+и включения/отключения созданного правила и отображения ошибки
+при необходимости.
+
 Важно - базовый модуль топик менеджера не имеет полезного функционала.
 Для добавления полезного функционала нужно подключать соответствующие плагины
-такие как historyPlugin и eventPlugin
+такие как historyPlugin и eventPlugin.
 
 ## Общее описание
 
@@ -77,7 +84,7 @@ tm.installPlugin(historyPlugin);
 tm.installPlugin(eventPlugin);
 ```
 
-### 4. Инициализация собыитий топиков
+### 4. Инициализация событий топиков
 
 Для использования событий - можно настроить детектирование событий следующим
 образом:
@@ -115,7 +122,19 @@ tm.registerSingleEvent('vd-water-meter-1/litres_used_value', 'whenCrossLower', c
 tm.initRulesForAllTopics('GenRuleName');
 ```
 
-### 6. Управление правилом
+### 6. Создание виртуального девайса (Опционально)
+
+(TODO: Реализовать этот фукнционал)
+
+Для облегчения работы с топик менеджером можно создать виртуальное устрйоство
+которое поможет
+
+- Включать/выключать все правила TM. Например для веременной остановки
+  работы алгоритмов. Например используется в сценариях для остановки работы
+  сценария.
+- В режиме дебага отслеживать текущее состояние всех привязанных контролов
+
+### 7. Управление правилом
 
 Созданное ранее правило можно отключить, включить или запустить принудительно.
 
@@ -134,6 +153,7 @@ tm.rules['GenRuleName'].disable();
 var TopicManager = require('tm-main.mod').TopicManager;
 var eventPlugin = require('tm-event-main.mod').eventPlugin;
 var historyPlugin = require('tm-history-main.mod').historyPlugin;
+var basicVdPlugin = require('tm-basicvd-main.mod').basicVdPlugin;
 
 var tm = new TopicManager();
 
@@ -142,6 +162,7 @@ var tm = new TopicManager();
 // так как в eventPlugin.dependencies: ['historyPlugin']
 tm.installPlugin(historyPlugin);
 tm.installPlugin(eventPlugin);
+tm.installPlugin(basicVdPlugin);
 
 // Более функциональный коллбек с доступом к истории значения с помошью плагина
 // "topic" является расширяемым объектом которому можно добавить другие поля
@@ -150,7 +171,9 @@ function cbFuncDisabled(topic, event) {
   log.debug('- Topic name: "' + topic.name + '"');
   log.debug('- New value: "' + topic.val.new + '"');
   log.debug('- Prev value: "' + topic.val.prev + '"');
-  log.debug('- Value history: ' + JSON.stringify(topic.val.history, null, 2));
+  log.debug(
+    '- Value history: ' + JSON.stringify(topic.val.history, null, 2)
+  );
   log.debug('- Event type: "' + event.type + '"');
   return true;
 }
@@ -160,7 +183,9 @@ function cbFuncCrossUpper(topic, event) {
   log.debug('- Topic name: "' + topic.name + '"');
   log.debug('- New value: "' + topic.val.new + '"');
   log.debug('- Prev value: "' + topic.val.prev + '"');
-  log.debug('- Value history: ' + JSON.stringify(topic.val.history, null, 2));
+  log.debug(
+    '- Value history: ' + JSON.stringify(topic.val.history, null, 2)
+  );
   log.debug('- Event type: "' + event.type + '"');
   return true;
 }
@@ -170,29 +195,87 @@ function cbFuncCrossLower(topic, event) {
   log.debug('- Topic name: "' + topic.name + '"');
   log.debug('- New value: "' + topic.val.new + '"');
   log.debug('- Prev value: "' + topic.val.prev + '"');
-  log.debug('- Value history: ' + JSON.stringify(topic.val.history, null, 2));
+  log.debug(
+    '- Value history: ' + JSON.stringify(topic.val.history, null, 2)
+  );
   log.debug('- Event type: "' + event.type + '"');
 
-  log.debug(' ... Rule will be disabled now ... ');
+  // Управлять правилами TM можно двумя способами
+  // - Конкретное правило по имени
   tm.rules['GenRuleName'].disable();
+  // - Все правила пользователя (не отключит сервисные правила)
+  tm.disableAllRules();
+  // Далее мы сможем включить отключенные правила переключателем
+  // виртуального девайса (так как оно сервисное)
+  
 
   return true;
 }
 
 function main() {
   // Регистрация событий - "когда выключится" и "когда пересечет границу вверх"
-  tm.registerSingleEvent('wall_switch_9/enabled', 'whenDisabled', cbFuncDisabled);
-  tm.registerSingleEvent('vd-water-meter-1/litres_used_value', 'whenCrossUpper', cbFuncCrossUpper, {actionValue: 5});
-  tm.registerSingleEvent('vd-water-meter-1/litres_used_value', 'whenCrossLower', cbFuncCrossLower, {actionValue: 7});
+  tm.registerSingleEvent(
+    'wall_switch_9/enabled',
+    'whenDisabled',
+    cbFuncDisabled
+  );
+  tm.registerSingleEvent(
+    'vd-water-meter-1/litres_used_value',
+    'whenCrossUpper',
+    cbFuncCrossUpper,
+    { actionValue: 15 }
+  );
+  tm.registerSingleEvent(
+    'vd-water-meter-1/litres_used_value',
+    'whenCrossLower',
+    cbFuncCrossLower,
+    { actionValue: 17 }
+  );
 
-  // Генерация и запуск правила для начала работы
+  // Создаем виртуальное базовое виртуальное устройство
+  // которое может управлять правилом TM (отключать/включать)
+  tm.initVirtualDevice('my_dev', 'Мое устройство кульное');
+  
+  // Так же можем выставлять ошибку виртуального устройства - все контролы станут красными
+  tm.vd.setError('Hello');
+  
+  // И добавлять другие контролы - например добавить аларм в рантайм
+  tm.vd.addCell('test_cell', {
+    title: {
+      en: 'cellTitleEn',
+      ru: 'cellTitleRu',
+    },
+    type: 'alarm',
+    readonly: true,
+    value: true,
+  });
+
+  // Если сильно хочется работать с девайсом старыми способами - то можно либо получить имя, либо сразу объект
+  log.debug('Виртуальное устройство с именем: "{}"', tm.vd.name)
+  tm.vd.device.addControl('test_text', {
+    title: {
+      en: 'cellTitleTextEn',
+      ru: 'cellTitleTextRu',
+    },
+    type: 'Text',
+    readonly: true,
+    value: 'Новое поле',
+  });
+  
+
+  // Генерация и запуск правила TM для начала работы
+  // Созданное правило будет
+  // - Обрабатывать все сконфигурированные ранее события для топиков
+  // - При детектировании события вызывать коллбеки юзера
   tm.initRulesForAllTopics('GenRuleName');
 }
 
 main();
 ```
 
-## Структура реестра топиков
+## Внутренности реализации
+
+### Структура реестра топиков
 
 Ниже иллюстрация структуры - того как должен выглядеть объект при добавлении
 двух плагинов.
@@ -225,6 +308,23 @@ var history = manager.registry[topic].valHistory;
 - tm-event-main.mod.js - расширение для событий
 - tm-event-resolvers.mod.js - резолверы для событий
 - tm-history-main.mod.js - расширение для истории событий (@todo)
+
+### Хранилища правил
+
+У topic-manager есть два хранилища правил:
+
+1) Хранилище пользовательских правил которым можно и нужно управлять извне.
+   Сюда добавляются правила двух типов
+   - Создаваемые при настройке событий - с помошью которых происходит работа
+   с пользовательскими callback функциями.
+   - Создаваемые напрямую с помошью tm.defineRule()
+
+2) Хранилище сервисных правил - внутрь которого кладутся все вспомогательные
+   правила необходимые для работы topic-manager и его плагинов.
+   Например: там находится правило базового виртуального девайса для запуска
+   и остановки пользовательских правил. Если данное правило будет отключено
+   при выполнении tm.disableAllRules() когда сработает callback по изменению
+   свича VD управляющего работой правил, то включить правила уже не получится.
 
 ## Плагины
 
@@ -265,15 +365,52 @@ tm.installPlugin(eventPlugin); // подключаем event-функции
 
 Каждый плагин должен иметь:
 
-- Главный файл с именем типа tm-<!plugin-name!>-main.mod.js
-  Эот файл должен содержать функцию установки плагина и главную логику
-- Дополнительные файлы могут быть названы подобным образом, например
-  tm-event-main.mod.js + tm-event-resolvers.mod.js
+1. **Главный файл**
+   Именуется по шаблону `tm-<!plugin-name!>-main.mod.js`
+   Эот файл должен содержать функцию установки плагина и главную логику
 
-Содержание минимального файла плагина:
+2. **Документация** в формате markdown
+   Именуется по шаблону `tm-<!plugin-name!>-guide.md`
+   Данный файл должен содержать описание смысла данного плагина, а так же
+   все что необходимо для его использования
 
-- реализованную функцию install - которая вызовется при установке плагина
-- поле с именем плагина - используется для вывода ошибок и др лога
+3. **Дополнительные файлы** (опционально)
+   Могут быть названы подобным образом, где начало именуется
+   по шаблону `tm-<!plugin-name!>-<!file-name!>.mod.js`
+   Например для плагина событий с главномым файлом `tm-event-main.mod.js`
+   Можно добавить файл с именем `tm-event-resolvers.mod.js`
+
+Содержание минимального главного файла плагина:
+
+- Функция `install()` - которая вызовется при установке плагина
+  Данная функция должна иметь прототип:
+  
+  ```javascript
+  function install(manager, options) {
+    
+    ... Логика ...
+    
+    log.debug('TM: Plugin "Event" successfully installed');
+  }
+  ```
+
+  Где `manager` это экземпляр TopicManager, а `options` - не обязательные
+  параметры инициализации, например глубина истории в плагине `history`.
+  Обратите внимание на обязательное дебаг сообщение в случае успешной
+  установки плагина.
+
+- Экспортированный объект плагина содержащий следущую структуру
+  
+  ```javascript
+  exports.eventPlugin = {
+    name: 'eventPlugin',
+    install: install,
+    dependencies: ['historyPlugin']
+  };
+  ```
+
+  Где обязательным полем является `name` - имя плагина, которое используется
+  для разрешения зависимостей, вывода ошибок, лога и тд.
 
 Дополнительно плагин может зарегистрировать свой процессор в цепочке
 обработки. В этом случае плагин добавит дополнительный шаг автоматической
@@ -324,8 +461,6 @@ install() {
 сохранения информации в историю значений топика. А статистика может иметь
 необходимость вызванной после обработки событий.
 
-
-
 ### Два варианта использования
 
 1. Ручное управление обработкой вставляя там где нужно в правила wb-rules
@@ -333,7 +468,6 @@ install() {
    одно правило для всех топиков и обрабатывает их плагинами. В этом случае
    правило wb-rules создается топик менеджером и пользователь не должен думать
    об этом. Этот вариант преоритетен если вы не знаете что хотите.
-
 
 ## Написание плагина
 
