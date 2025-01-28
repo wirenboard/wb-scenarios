@@ -22,6 +22,7 @@ function TopicManager() {
 
   // Объект для хранения правил по их именам вместе с мета информацией (Id)
   this.rules = {};
+  this.serviceRules = {};
 }
 
 /**
@@ -233,6 +234,26 @@ function run() {
 }
 
 /**
+ * Включение всех правил
+ */
+function enableAllRules() {
+  for (var ruleName in this.rules) {
+    this.rules[ruleName].enable();
+  }
+  log.debug('Все правила включены');
+}
+
+/**
+ * Отключение всех правил
+ */
+function disableAllRules() {
+  for (var ruleName in this.rules) {
+    this.rules[ruleName].disable();
+  }
+  log.debug('Все правила отключены');
+}
+
+/**
  * ======================================================
  *                  Local functions
  * ======================================================
@@ -312,10 +333,10 @@ TopicManager.prototype.addProcessor = addProcessor;
 TopicManager.prototype.removeProcessor = removeProcessor;
 TopicManager.prototype.runProcessors = runProcessors;
 
+TopicManager.prototype.defineRule = _defineTmRule;
 TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
-TopicManager.prototype.disable = disable;
-TopicManager.prototype.enable = enable;
-TopicManager.prototype.run = run;
+TopicManager.prototype.disableAllRules = disableAllRules;
+TopicManager.prototype.enableAllRules = enableAllRules;
 
 TopicManager.prototype.printRegistry = printRegistry;
 TopicManager.prototype.printRules = printRules;
