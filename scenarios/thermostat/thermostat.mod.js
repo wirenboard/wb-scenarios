@@ -12,31 +12,24 @@
  * устройством
  * @param {string} deviceTitle Имя виртуального девайса указанный
  *     пользователем
- * @param {string} idPrefix Префикс сценария, используемый для идентификации
+ * @param {string} cfg.idPrefix Префикс сценария, используемый для идентификации
  *     виртуального устройства и правила
- * @param {number} targetTemperature Целевая температура, заданная пользователем
- * @param {number} hysteresis Значение гистерезиса (диапазон переключения)
- * @param {string} temperatureSensor Идентификатор входного отслеживаемого
+ * @param {number} cfg.targetTemperature Целевая температура, заданная пользователем
+ * @param {number} cfg.hysteresis Значение гистерезиса (диапазон переключения)
+ * @param {string} cfg.temperatureSensor Идентификатор входного отслеживаемого
  *     контрола датчика температуры значение которого следует слушать.
  *     Пример: 'temp_sensor/temp_value'
- * @param {string} actuator Идентификатор выходного контрола, выход реле
+ * @param {string} cfg.actuator Идентификатор выходного контрола, выход реле
  *     которым следует управлять. Пример: 'relay_module/K2'
  * @returns {boolean} Возвращает true, при успешной инициализации
  *     иначе false
  */
-function init(
-  deviceTitle,
-  idPrefix,
-  targetTemperature,
-  hysteresis,
-  temperatureSensor,
-  actuator
-) {
+function init(deviceTitle, cfg) {
   // @todo: Проверка входящей в функцию конфигурации параметров
-  log.debug('temperatureSensor: "' + temperatureSensor + '"');
-  log.debug('actuator: "' + actuator + '"');
+  log.debug('cfg.temperatureSensor: "' + cfg.temperatureSensor + '"');
+  log.debug('cfg.actuator: "' + cfg.actuator + '"');
 
-  var genNames = generateNames(idPrefix);
+  var genNames = generateNames(cfg.idPrefix);
 
   var vdev = defineVirtualDevice(genNames.vDevice, {
     title: deviceTitle,
@@ -59,7 +52,7 @@ function init(
   log.debug('Virtual device "' + deviceTitle + '" created successfully');
 
   var ruleIdNum = defineRule(genNames.rule, {
-    whenChanged: [temperatureSensor],
+    whenChanged: [cfg.temperatureSensor],
     then: thenHandler,
   });
   if (!ruleIdNum) {
@@ -73,14 +66,14 @@ function init(
   //                  Определения функций
   // ======================================================
 
-  function generateNames(idPrefix) {
+  function generateNames(prefix) {
     var delimeter = '_';
     var scenarioPrefix = 'wbsc' + delimeter;
     var rulePrefix = 'wbru' + delimeter;
 
     var generatedNames = {
-      vDevice: scenarioPrefix + idPrefix,
-      rule: rulePrefix + idPrefix,
+      vDevice: scenarioPrefix + prefix,
+      rule: rulePrefix + prefix,
     };
 
     return generatedNames;
@@ -95,20 +88,20 @@ function init(
     log.debug('WB-rule "' + genNames.rule + '" action handler started');
 
     var currentTemperature = newValue;
-    var heatingState = dev[actuator];
+    var heatingState = dev[cfg.actuator];
 
     if (heatingState) {
       // Если нагреватель включен, проверяем, не нужно ли выключить его
-      if (currentTemperature >= targetTemperature + hysteresis) {
-        dev[actuator] = false;
+      if (currentTemperature >= cfg.targetTemperature + cfg.hysteresis) {
+        dev[cfg.actuator] = false;
         log.debug(
           'Heating turned OFF. Current temperature: ' + currentTemperature
         );
       }
     } else {
       // Если нагреватель выключен, проверяем, не нужно ли включить его
-      if (currentTemperature <= targetTemperature - hysteresis) {
-        dev[actuator] = true;
+      if (currentTemperature <= cfg.targetTemperature - cfg.hysteresis) {
+        dev[cfg.actuator] = true;
         log.debug(
           'Heating turned ON. Current temperature: ' + currentTemperature
         );
@@ -117,21 +110,7 @@ function init(
   }
 }
 
-exports.init = function (
-  deviceTitle,
-  idPrefix,
-  targetTemperature,
-  hysteresis,
-  temperatureSensor,
-  actuator
-) {
-  var res = init(
-    deviceTitle,
-    idPrefix,
-    targetTemperature,
-    hysteresis,
-    temperatureSensor,
-    actuator
-  );
+exports.init = function (deviceTitle, cfg) {
+  var res = init(deviceTitle, cfg);
   return res;
 };

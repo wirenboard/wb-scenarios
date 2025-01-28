@@ -41,7 +41,7 @@ var CONFIG_PATH = '/etc/wb-scenarios.conf';
 var SCENARIO_TYPE_STR = 'thermostat';
 
 var helpers = require('scenarios-general-helpers.mod');
-var thermostat = require('thermostat.mod');
+var scenarioModule = require('thermostat.mod');
 
 /**
  * Инициализирует сценарий с использованием указанных настроек
@@ -51,14 +51,14 @@ var thermostat = require('thermostat.mod');
 function initializeScenario(scenario) {
   log.debug('Processing scenario: ' + JSON.stringify(scenario));
 
-  var isInitSucess = thermostat.init(
-    scenario.name,
-    scenario.idPrefix,
-    scenario.targetTemperature,
-    scenario.hysteresis,
-    scenario.temperatureSensor,
-    scenario.actuator
-  );
+  var cfg = {
+    idPrefix: scenario.idPrefix,
+    targetTemperature: scenario.targetTemperature,
+    hysteresis: scenario.hysteresis,
+    temperatureSensor: scenario.temperatureSensor,
+    actuator: scenario.actuator,
+  };
+  var isInitSucess = scenarioModule.init(scenario.name, cfg);
 
   if (isInitSucess !== true) {
     log.error(
