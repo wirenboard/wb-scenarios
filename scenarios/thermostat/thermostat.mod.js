@@ -7,6 +7,16 @@
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
+var TopicManager = require('tm-main.mod').TopicManager;
+var eventPlugin = require('tm-event-main.mod').eventPlugin;
+var historyPlugin = require('tm-history-main.mod').historyPlugin;
+var basicVdPlugin = require('tm-basicvd-main.mod').basicVdPlugin;
+
+var tm = new TopicManager();
+tm.installPlugin(historyPlugin);
+tm.installPlugin(eventPlugin);
+tm.installPlugin(basicVdPlugin);
+
 /**
  * Инициализирует виртуальное устройство и определяет правило для управления
  * устройством
@@ -31,35 +41,41 @@ function init(deviceTitle, cfg) {
 
   var genNames = generateNames(cfg.idPrefix);
 
-  var vdev = defineVirtualDevice(genNames.vDevice, {
-    title: deviceTitle,
-    cells: {
-      ruleEnabled: {
-        title: {
-          en: 'Enable rule',
-          ru: 'Включить правило',
-        },
-        type: 'switch',
-        value: true,
-        order: 1,
-      },
-    },
-  });
-  if (!vdev) {
-    log.debug('Error: Virtual device "' + deviceTitle + '" not created.');
-    return false;
+  function cbFuncCrossUpper(topic, event) {
+    var currentTemperature = topic.val.new;
+    dev[cfg.actuator] = false;
+    log.debug(
+      'Heating turned OFF. Current temperature: ' + currentTemperature
+    );
+    return true;
   }
-  log.debug('Virtual device "' + deviceTitle + '" created successfully');
 
-  var ruleIdNum = defineRule(genNames.rule, {
-    whenChanged: [cfg.temperatureSensor],
-    then: thenHandler,
-  });
-  if (!ruleIdNum) {
-    log.debug('Error: WB-rule "' + genNames.rule + '" not created.');
-    return false;
+  function cbFuncCrossLower(topic, event) {
+    var currentTemperature = topic.val.new;
+    dev[cfg.actuator] = true;
+    log.debug(
+      'Heating turned ON. Current temperature: ' + currentTemperature
+    );
+    return true;
   }
-  log.debug('WB-rule with IdNum "' + ruleIdNum + '" created successfully');
+
+  tm.registerSingleEvent(
+    cfg.temperatureSensor,
+    'whenCrossUpper',
+    cbFuncCrossUpper,
+    { actionValue: cfg.targetTemperature + cfg.hysteresis }
+  );
+  tm.registerSingleEvent(
+    cfg.temperatureSensor,
+    'whenCrossLower',
+    cbFuncCrossLower,
+    { actionValue: cfg.targetTemperature - cfg.hysteresis }
+  );
+
+  tm.initVirtualDevice(genNames.vDevice, deviceTitle);
+
+  tm.initRulesForAllTopics(genNames.rule);
+
   return true;
 
   // ======================================================
@@ -77,36 +93,6 @@ function init(deviceTitle, cfg) {
     };
 
     return generatedNames;
-  }
-
-  function thenHandler(newValue, devName, cellName) {
-    var isActive = dev[genNames.vDevice + '/ruleEnabled'];
-    if (!isActive) {
-      // OK: Сценарий с корректным конфигом, но выключен внутри virtual device
-      return true;
-    }
-    log.debug('WB-rule "' + genNames.rule + '" action handler started');
-
-    var currentTemperature = newValue;
-    var heatingState = dev[cfg.actuator];
-
-    if (heatingState) {
-      // Если нагреватель включен, проверяем, не нужно ли выключить его
-      if (currentTemperature >= cfg.targetTemperature + cfg.hysteresis) {
-        dev[cfg.actuator] = false;
-        log.debug(
-          'Heating turned OFF. Current temperature: ' + currentTemperature
-        );
-      }
-    } else {
-      // Если нагреватель выключен, проверяем, не нужно ли включить его
-      if (currentTemperature <= cfg.targetTemperature - cfg.hysteresis) {
-        dev[cfg.actuator] = true;
-        log.debug(
-          'Heating turned ON. Current temperature: ' + currentTemperature
-        );
-      }
-    }
   }
 }
 
