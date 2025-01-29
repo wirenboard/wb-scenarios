@@ -91,6 +91,7 @@ function install(manager, options) {
       name: devName,
       setError: setError,
       addCell: addCell,
+      addAlarm: addAlarm,
     };
 
     manager.vd = vdResult;
@@ -143,6 +144,23 @@ function install(manager, options) {
       device.addControl(cellName, cellConfig);
       log.debug('Ячейка добавлена в виртуальное устройство:', cellName);
     }
+  }
+
+  /**
+   * Добавляет ячейку с типом "alarm" и именем alarm в виртуальное устройство
+   *
+   * @param {string} msg Текст аларма (Заголовок ячейки)
+   */
+  function addAlarm(msg) {
+    manager.vd.addCell('alarm', {
+      title: {
+        en: msg,
+        ru: msg,
+      },
+      type: 'alarm',
+      readonly: true,
+      value: true,
+    });
   }
 
   // Экспортируем метод инициализации устройства в корень TM
