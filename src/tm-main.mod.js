@@ -167,8 +167,8 @@ function initRulesForAllTopics(ruleName) {
     return false;
   }
 
-  isSuccess = this._defineAndStoreTmRule(ruleName, topics);
-  return isSuccess;
+  isOk = this._defineAndStoreTmRule(ruleName, topics);
+  return isOk;
 }
 
 /**
@@ -306,13 +306,14 @@ function _defineTmRule(name, topics, action) {
 }
 
 /**
- * Создание и сохранение правила в сервисном реестре
+ * Создание и сохранение правила в выбранном реестре правил
  *
- * @param {string} ruleName - Имя правила
- * @param {Array<string>} topics - Топики, которые отслеживает правило
+ * @param {string} ruleName Имя правила
+ * @param {Array<string>} topics Топики, которые отслеживаются правилом
+ * @param {Object} targetRegistry Целевой реестр (общий или сервисный)
  * @returns {boolean} Успешность создания правила
  */
-function _defineAndStoreServiceTmRule(ruleName, topics) {
+function _defineAndStoreTmRule(ruleName, topics, targetRegistry) {
   /** Create rule */
   var rule = _defineTmRule(
     ruleName,
@@ -328,12 +329,22 @@ function _defineAndStoreServiceTmRule(ruleName, topics) {
     return false;
   }
 
-  /** Store rule in general user rule registry */
-  this.serviceRules[ruleName] = rule;
-  log.debug(
-    'TM: Rule "' + ruleName + '" created and added to service rules'
-  );
+  /** Store rule in the specified registry */
+  targetRegistry[ruleName] = rule;
+  log.debug('TM: Rule "' + ruleName + '" created and added to registry');
   return true;
+}
+
+/**
+ * Создание и сохранение правила в сервисном реестре
+ *
+ * @param {string} ruleName - Имя правила
+ * @param {Array<string>} topics - Топики, которые отслеживает правило
+ * @returns {boolean} Успешность создания правила
+ */
+function _defineAndStoreServiceTmRule(ruleName, topics) {
+  var isOk = this._defineAndStoreRule(ruleName, topics, this.serviceRules);
+  return isOk;
 }
 
 /**
@@ -343,34 +354,9 @@ function _defineAndStoreServiceTmRule(ruleName, topics) {
  * @param {Array<string>} topics - Топики, которые отслеживает правило
  * @returns {boolean} Успешность создания правила
  */
-function _defineAndStoreTmRule(ruleName, topics) {
-  /** Create rule */
-  var rule = _defineTmRule(
-    ruleName,
-    topics,
-    function (newValue, devName, cellName) {
-      var topic = devName + '/' + cellName;
-      this.runProcessors(topic, newValue);
-    }.bind(this)
-  );
-
-  if (!rule) {
-    log.error('Failed to create the rule: ' + ruleName);
-    return false;
-  }
-
-  /** Store rule in general user rule registry */
-  this.rules[ruleName] = rule;
-  log.debug('TM: Rule "' + ruleName + '" created and added to user rules');
-  return true;
-}
-
-function printRules() {
-  log.debug('=== Current Rules State ===');
-  for (var ruleName in this.rules) {
-    log.debug('Rule:', ruleName, 'ID:', this.rules[ruleName].ruleId);
-  }
-  log.debug('============================');
+function _defineAndStoreGeneralTmRule(ruleName, topics) {
+  var isOk = this._defineAndStoreRule(ruleName, topics, this.rules);
+  return isOk;
 }
 
 /**
@@ -381,7 +367,7 @@ TopicManager.prototype.addProcessor = addProcessor;
 TopicManager.prototype.removeProcessor = removeProcessor;
 TopicManager.prototype.runProcessors = runProcessors;
 
-TopicManager.prototype.defineRule = _defineAndStoreTmRule;
+TopicManager.prototype.defineRule = _defineAndStoreGeneralTmRule;
 TopicManager.prototype.defineServiceRule = _defineAndStoreServiceTmRule;
 TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
 TopicManager.prototype.disableAllRules = disableAllRules;
