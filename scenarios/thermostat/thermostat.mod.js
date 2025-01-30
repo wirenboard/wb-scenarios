@@ -35,51 +35,76 @@ tm.installPlugin(basicVdPlugin);
  *     иначе false
  */
 function init(deviceTitle, cfg) {
-  // @todo: Проверка входящей в функцию конфигурации параметров
-  log.debug('cfg.temperatureSensor: "' + cfg.temperatureSensor + '"');
-  log.debug('cfg.actuator: "' + cfg.actuator + '"');
-
   var genNames = generateNames(cfg.idPrefix);
 
-  function cbFuncCrossUpper(topic, event) {
-    var currentTemperature = topic.val.new;
-    dev[cfg.actuator] = false;
-    log.debug(
-      'Heating turned OFF. Current temperature: ' + currentTemperature
-    );
-    return true;
-  }
-
-  function cbFuncCrossLower(topic, event) {
-    var currentTemperature = topic.val.new;
-    dev[cfg.actuator] = true;
-    log.debug(
-      'Heating turned ON. Current temperature: ' + currentTemperature
-    );
-    return true;
-  }
+  tm.registerSingleEvent(cfg.temperatureSensor, 'whenChange', cbTempChange);
 
   tm.registerSingleEvent(
     cfg.temperatureSensor,
     'whenCrossUpper',
-    cbFuncCrossUpper,
+    cbTempCrossUpper,
     { actionValue: cfg.targetTemperature + cfg.hysteresis }
   );
   tm.registerSingleEvent(
     cfg.temperatureSensor,
     'whenCrossLower',
-    cbFuncCrossLower,
+    cbTempCrossLower,
     { actionValue: cfg.targetTemperature - cfg.hysteresis }
   );
 
+  vdTargetTempTopic = genNames.vDevice + '/targetTemperature';
+  tm.registerSingleEvent(
+    vdTargetTempTopic,
+    'whenChange',
+    cbTargetTempChange
+  );
+
+  tm.registerSingleEvent(cfg.actuator, 'whenChange', cbActuatorChange);
+
   tm.initVirtualDevice(genNames.vDevice, deviceTitle);
+
+  tm.vd.addCell('targetTemperature', {
+    title: {
+      en: 'Temperature Setpoint',
+      ru: 'Заданная температура',
+    },
+    type: 'range',
+    value: cfg.targetTemperature,
+    min: 15,
+    max: 30,
+    order: 2,
+  });
+
+  var curTemp = dev[cfg.temperatureSensor];
+  tm.vd.addCell('currentTemperature', {
+    title: {
+      en: 'Current Temperature',
+      ru: 'Текущая температура',
+    },
+    type: 'value',
+    units: 'deg C',
+    value: curTemp,
+    order: 3,
+    readonly: true,
+  });
+
+  tm.vd.addCell('actuatorStatus', {
+    title: {
+      en: 'Heating Status',
+      ru: 'Статус нагрева',
+    },
+    type: dev[cfg.actuator + '#type'],
+    value: dev[cfg.actuator],
+    order: 4,
+    readonly: true,
+  });
 
   tm.initRulesForAllTopics(genNames.rule);
 
   return true;
 
   // ======================================================
-  //                  Определения функций
+  //                    Local functions
   // ======================================================
 
   function generateNames(prefix) {
@@ -93,6 +118,72 @@ function init(deviceTitle, cfg) {
     };
 
     return generatedNames;
+  }
+
+  // ======================================================
+  //                 TM Callback functions
+  // ======================================================
+
+  function cbTempCrossUpper(topic, event) {
+    var curTemp = topic.val.new;
+    dev[cfg.actuator] = false;
+    log.debug('Heating turned OFF. Current temperature: ' + curTemp);
+    return true;
+  }
+
+  function cbTempCrossLower(topic, event) {
+    var curTemp = topic.val.new;
+    dev[cfg.actuator] = true;
+    log.debug('Heating turned ON. Current temperature: ' + curTemp);
+    return true;
+  }
+
+  function cbTempChange(topic, event) {
+    var curTemp = topic.val.new;
+    dev[genNames.vDevice + '/currentTemperature'] = curTemp;
+    return true;
+  }
+
+  function cbTargetTempChange(topic, event) {
+    var curTargetTemp = topic.val.new;
+    log.debug('Target temperature changed to: ' + curTargetTemp);
+
+    /** Change hysteresis events configuration */
+    var tempSensorEvents = tm.registry[cfg.temperatureSensor].events;
+    tempSensorEvents['whenCrossUpper'].cfg.actionValue =
+      curTargetTemp + cfg.hysteresis;
+    tempSensorEvents['whenCrossLower'].cfg.actionValue =
+      curTargetTemp - cfg.hysteresis;
+
+    /** Check the need to change the actuator state  */
+    var curTemp = dev[cfg.temperatureSensor];
+    var upperLimit = curTargetTemp + cfg.hysteresis;
+    var lowerLimit = curTargetTemp - cfg.hysteresis;
+    var curState = dev[cfg.actuator];
+    log.debug('curTemp: ' + curTemp);
+    log.debug('upperLimit: ' + upperLimit);
+    log.debug('lowerLimit: ' + lowerLimit);
+    log.debug('curState: ' + curState);
+
+    var isNeedTurnOffHeating = curTemp > upperLimit && curState === true;
+    var isNeedTurnOnHeating = curTemp < lowerLimit && curState === false;
+    log.debug('isNeedTurnOffHeating: ' + isNeedTurnOffHeating);
+    log.debug('isNeedTurnOnHeating: ' + isNeedTurnOnHeating);
+    if (isNeedTurnOffHeating) {
+      dev[cfg.actuator] = false;
+      log.debug('Heating turned OFF. Current temperature: ' + curTemp);
+    } else if (isNeedTurnOnHeating) {
+      dev[cfg.actuator] = true;
+      log.debug('Heating turned ON. Current temperature: ' + curTemp);
+    }
+
+    return true;
+  }
+
+  function cbActuatorChange(topic, event) {
+    var curState = topic.val.new;
+    dev[genNames.vDevice + '/actuatorStatus'] = curState;
+    return true;
   }
 }
 
