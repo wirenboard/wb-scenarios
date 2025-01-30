@@ -24,9 +24,11 @@ tm.installPlugin(basicVdPlugin);
  *     пользователем
  * @param {string} cfg.idPrefix Префикс сценария, используемый для идентификации
  *     виртуального устройства и правила
- * @param {number} cfg.targetTemperature Целевая температура, заданная пользователем
+ * @param {number} cfg.targetTemp Целевая температура, заданная пользователем
  * @param {number} cfg.hysteresis Значение гистерезиса (диапазон переключения)
- * @param {string} cfg.temperatureSensor Идентификатор входного отслеживаемого
+ * @param {number} cfg.tempLimitsMin Ограничение установки температуры снизу
+ * @param {number} cfg.tempLimitsMax Ограничение установки температуры сверху
+ * @param {string} cfg.tempSensor Идентификатор входного отслеживаемого
  *     контрола датчика температуры значение которого следует слушать.
  *     Пример: 'temp_sensor/temp_value'
  * @param {string} cfg.actuator Идентификатор выходного контрола, выход реле
@@ -37,19 +39,19 @@ tm.installPlugin(basicVdPlugin);
 function init(deviceTitle, cfg) {
   var genNames = generateNames(cfg.idPrefix);
 
-  tm.registerSingleEvent(cfg.temperatureSensor, 'whenChange', cbTempChange);
+  tm.registerSingleEvent(cfg.tempSensor, 'whenChange', cbTempChange);
 
   tm.registerSingleEvent(
-    cfg.temperatureSensor,
+    cfg.tempSensor,
     'whenCrossUpper',
     cbTempCrossUpper,
-    { actionValue: cfg.targetTemperature + cfg.hysteresis }
+    { actionValue: cfg.targetTemp + cfg.hysteresis }
   );
   tm.registerSingleEvent(
-    cfg.temperatureSensor,
+    cfg.tempSensor,
     'whenCrossLower',
     cbTempCrossLower,
-    { actionValue: cfg.targetTemperature - cfg.hysteresis }
+    { actionValue: cfg.targetTemp - cfg.hysteresis }
   );
 
   vdTargetTempTopic = genNames.vDevice + '/targetTemperature';
@@ -69,13 +71,13 @@ function init(deviceTitle, cfg) {
       ru: 'Заданная температура',
     },
     type: 'range',
-    value: cfg.targetTemperature,
-    min: 15,
-    max: 30,
+    value: cfg.targetTemp,
+    min: cfg.tempLimitsMin,
+    max: cfg.tempLimitsMax,
     order: 2,
   });
 
-  var curTemp = dev[cfg.temperatureSensor];
+  var curTemp = dev[cfg.tempSensor];
   tm.vd.addCell('currentTemperature', {
     title: {
       en: 'Current Temperature',
@@ -149,14 +151,14 @@ function init(deviceTitle, cfg) {
     log.debug('Target temperature changed to: ' + curTargetTemp);
 
     /** Change hysteresis events configuration */
-    var tempSensorEvents = tm.registry[cfg.temperatureSensor].events;
+    var tempSensorEvents = tm.registry[cfg.tempSensor].events;
     tempSensorEvents['whenCrossUpper'].cfg.actionValue =
       curTargetTemp + cfg.hysteresis;
     tempSensorEvents['whenCrossLower'].cfg.actionValue =
       curTargetTemp - cfg.hysteresis;
 
     /** Check the need to change the actuator state  */
-    var curTemp = dev[cfg.temperatureSensor];
+    var curTemp = dev[cfg.tempSensor];
     var upperLimit = curTargetTemp + cfg.hysteresis;
     var lowerLimit = curTargetTemp - cfg.hysteresis;
     var curState = dev[cfg.actuator];

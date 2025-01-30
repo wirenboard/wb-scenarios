@@ -722,19 +722,53 @@
         "targetTemperature": {
           "type": "number",
           "title": "thermostatTargetTemperatureTitle",
-          "default": 20,
+          "default": 22,
           "propertyOrder": 4,
           "options": {
-            "grid_columns": 3
+            "grid_columns": 12
+          }
+        },
+        "temperatureLimits": {
+          "type": "object",
+          "title": "thermostatTempLimitsObjTitle",
+          "description": "thermostatTempLimitsObjDescription",
+          "propertyOrder": 5,
+          "_format": "grid",
+          "options": {
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "min": {
+              "type": "number",
+              "title": "thermostatTempLimitsMinTitle",
+              "description": "thermostatTempLimitsMinDescription",
+              "default": 15,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 6
+              }
+            },
+            "max": {
+              "type": "number",
+              "title": "thermostatTempLimitsMaxTitle",
+              "description": "thermostatTempLimitsMaxDescription",
+              "default": 30,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 6
+              }
+            }
           }
         },
         "hysteresis": {
           "type": "number",
-          "title": "thermostatTargetHysteresisTitle",
-          "default": 0.5,
-          "propertyOrder": 5,
+          "title": "thermostatHysteresisTitle",
+          "default": 1,
+          "propertyOrder": 6,
           "options": {
-            "grid_columns": 3
+            "grid_columns": 12
           }
         },
         "temperatureSensor": {
@@ -743,7 +777,7 @@
           "title": "thermostatTemperatureSensorTitle",
           "description": "What input control we need use in format: device/control",
           "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 6,
+          "propertyOrder": 7,
           "options": {
             "grid_columns": 12,
             "wb": {
@@ -758,7 +792,7 @@
           "title": "thermostatActuatorTitle",
           "description": "What output control we need use in format: device/control",
           "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 7,
+          "propertyOrder": 9,
           "options": {
             "grid_columns": 12,
             "wb": {
@@ -859,7 +893,13 @@
       "thermostatScenarioName": "Thermostat",
       "thermostatScenarioDescription": "This scenario provides the ability to control the heater depending on the temperature",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
-      "thermostatTargetHysteresisTitle": "Hysteresis (°C)",
+      "thermostatTempLimitsObjTitle": "Temperature limits",
+      "thermostatTempLimitsObjDescription": "The limit available for setting the temperature",
+      "thermostatTempLimitsMinTitle": "Minimum Temperature (°C)",
+      "thermostatTempLimitsMinDescription": "The lowest limit",
+      "thermostatTempLimitsMaxTitle": "Maximum Temperature (°C)",
+      "thermostatTempLimitsMaxDescription": "The highest limit",
+      "thermostatHysteresisTitle": "Hysteresis (°C)",
       "thermostatTemperatureSensorTitle": "Temperature sensor",
       "thermostatActuatorTitle": "Heater"
     },
@@ -925,7 +965,13 @@
       "thermostatScenarioName": "Термостат",
       "thermostatScenarioDescription": "Данный сценарий предоставляет возможность управления нагревателем в зависимости от температуры",
       "thermostatTargetTemperatureTitle": "Целевая температура (°C)",
-      "thermostatTargetHysteresisTitle": "Гистерезис (°C)",
+      "thermostatTempLimitsObjTitle": "Границы температуры",
+      "thermostatTempLimitsObjDescription": "Границы доступные при задании температуры",
+      "thermostatTempLimitsMinTitle": "Минимальная температура (°C)",
+      "thermostatTempLimitsMinDescription": "Нижняя граница",
+      "thermostatTempLimitsMaxTitle": "Максимальная температура (°C)",
+      "thermostatTempLimitsMaxDescription": "Верхняя граница",
+      "thermostatHysteresisTitle": "Гистерезис (°C)",
       "thermostatTemperatureSensorTitle": "Датчик температуры",
       "thermostatActuatorTitle": "Нагреватель"
     }

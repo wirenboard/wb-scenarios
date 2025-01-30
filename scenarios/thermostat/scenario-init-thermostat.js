@@ -53,9 +53,11 @@ function initializeScenario(scenario) {
 
   var cfg = {
     idPrefix: scenario.idPrefix,
-    targetTemperature: scenario.targetTemperature,
+    targetTemp: scenario.targetTemperature,
+    tempLimitsMin: scenario.temperatureLimits.min,
+    tempLimitsMax: scenario.temperatureLimits.max,
     hysteresis: scenario.hysteresis,
-    temperatureSensor: scenario.temperatureSensor,
+    tempSensor: scenario.temperatureSensor,
     actuator: scenario.actuator,
   };
   var isInitSucess = scenarioModule.init(scenario.name, cfg);
