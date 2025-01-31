@@ -1,6 +1,9 @@
 /**
  * @file tm-event-main.mod.js
  * @description Плагин TM для обработки разных именованных событий топиков
+ *
+ * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
+ * @link Комментарии в формате JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
 var eventResolvers =
@@ -27,10 +30,13 @@ function install(manager, options) {
       return;
     }
 
-    // Установка значения по умолчанию для cfg
+    // Установка значения по умолчанию для cfg, по умолчанию режим "general"
     cfg = cfg || {};
+    if (!cfg.mode) {
+      cfg.mode = manager.MODES.GENERAL;
+    }
 
-    // Смотрим что в реестре событий есть описание указанного EventType
+    // Смотрим, что в реестре событий есть описание указанного EventType
     var resolver = eventResolvers[eventType];
     if (!resolver) {
       log.error(
@@ -70,12 +76,10 @@ function install(manager, options) {
     };
 
     log.debug(
-      'Событие зарегистрировано: topic="' +
-        topicName +
-        '",' +
-        'type="' +
-        eventType +
-        '"'
+      'Событие зарегистрировано: topic="{}", type="{}", mode="{}"',
+      topicName,
+      eventType,
+      cfg.mode
     );
   }
 
@@ -99,6 +103,9 @@ function install(manager, options) {
 
     // Установка значения по умолчанию для cfg
     cfg = cfg || {};
+    if (!cfg.mode) {
+      cfg.mode = manager.MODES.GENERAL;
+    }
 
     // Проверяем, что в реестре событий есть описание указанного EventType
     var resolver = eventResolvers[eventType];
@@ -217,6 +224,10 @@ function install(manager, options) {
     var cfg = {};
     if (topicWithBehavior.actionValue !== undefined) {
       cfg.actionValue = topicWithBehavior.actionValue;
+    }
+    // Если режим не задан, используем режим "general"
+    if (!cfg.mode) {
+      cfg.mode = manager.MODES.GENERAL;
     }
 
     if (!mqttTopicName || !behaviorType) {
@@ -341,6 +352,7 @@ function install(manager, options) {
    *
    * @param {string} topicName Имя MQTT-топика (вида "device/control")
    * @param {any} newValue Новое значение топика
+   * @param {string} mode Режим обработки события (например, "general" или "service")
    * @returns {Object} Статус результата обработки:
    *     Содержит общий статус обработки (status) и если есть сработавшие
    *     события, то содержит подробности по их результатам (details).
@@ -360,7 +372,7 @@ function install(manager, options) {
    *           ]
    *         }
    */
-  function processEvent(topicName, newValue) {
+  function processEvent(topicName, newValue, mode) {
     var res;
     var results = [];
 
@@ -396,6 +408,11 @@ function install(manager, options) {
       }
 
       var eventObj = topicEvents[curEventType];
+      // Фильтрация по режиму обработки
+      if (eventObj.cfg.mode !== mode) {
+        continue;
+      }
+
       var eventCfg = eventObj.cfg || {};
       var eventCtx = eventObj.ctx || {};
 
@@ -413,14 +430,10 @@ function install(manager, options) {
         eventCfg,
         eventCtx
       );
-      // Сохраняем контекст - важно если заменили объект полностью а не изменили
+      // Сохраняем обновленный контекст (важно при полной замене объекта)
       topicEvents[curEventType].ctx = eventCtx;
 
       if (!isTriggered) {
-        // log.debug(
-        //   'Resolver "' + curEventType + 'не подтвердил событие'
-        //   '" для топика "' + topicName + '"'
-        // );
         continue;
       }
 
@@ -457,12 +470,9 @@ function install(manager, options) {
       } else {
         retStatus = 'callback_missing';
         log.error(
-          'Для события "' +
-            curEventType +
-            '" не найден  Callback."' +
-            ' (topicName: "' +
-            topicName +
-            '")'
+          'Для события "{}" не найден Callback. (topicName: "{}")',
+          curEventType,
+          topicName
         );
       }
 
@@ -497,6 +507,14 @@ function install(manager, options) {
     return res;
   }
 
+  function processGeneralEvent(topic, newValue) {
+    return processEvent(topic, newValue, manager.MODES.GENERAL);
+  }
+
+  function processServiceEvent(topic, newValue) {
+    return processEvent(topic, newValue, manager.MODES.SERVICE);
+  }
+
   /**
    * Добавляем методы в экземпляр
    */
@@ -518,9 +536,12 @@ function install(manager, options) {
 
   // Обработка приходящих значений
   manager.processEvent = processEvent;
+  manager.processGeneralEvent = processGeneralEvent;
+  manager.processServiceEvent = processServiceEvent;
 
   var priority = 5;
-  manager.addProcessor(processEvent, manager.MODES.GENERAL, priority);
+  manager.addProcessor(processGeneralEvent, manager.MODES.GENERAL, priority);
+  manager.addProcessor(processServiceEvent, manager.MODES.SERVICE, priority);
 
   log.debug('Event plugin successfully installed');
 }

@@ -178,15 +178,15 @@ function runProcessors(type, topic, newValue) {
 }
 
 /**
- * Создание и запуск одного правила для обработки всех
- * зарегистрированных топиков
- *
+ * Создание и запуск правил для обработки всех зарегистрированных топиков
+ * (обработка в порядке: сначала service, затем general)
  * @param {string} ruleName Имя правила
  * @returns {boolean} Успешность создания и запуска правила
  */
 function initRulesForAllTopics(ruleName) {
   var ruleNameType = typeof ruleName;
-  if (ruleNameType !== 'string') {
+  var isRuleNameTypeString = ruleNameType === 'string';
+  if (isRuleNameTypeString === false) {
     log.error(
       'Invalid ruleName type, must be "string", but now: ' + ruleNameType
     );
@@ -196,12 +196,34 @@ function initRulesForAllTopics(ruleName) {
   // Сбор всех зарегистрированных топиков
   var topics = Object.keys(this.topics);
   if (topics.length === 0) {
-    log.warning('No registered topics found. Rule not created.');
+    log.warning('No registered topics found. Rules not created.');
     return false;
   }
 
-  var isOk = this._defineAndStoreRule(ruleName, topics);
-  return isOk;
+  var isOk = false;
+
+  var serviceFn = function (newValue, devName, cellName) {
+    var topic = devName + '/' + cellName;
+    this.runProcessors(this.MODES.SERVICE, topic, newValue);
+  }.bind(this);
+  isOk = this.defineServiceRule(ruleName + '_service', topics, serviceFn);
+  if (!isOk) {
+    log.error('Failed to create service rule for all topics');
+    return false;
+  }
+
+  var generalFn = function (newValue, devName, cellName) {
+    var topic = devName + '/' + cellName;
+    this.runProcessors(this.MODES.GENERAL, topic, newValue);
+  }.bind(this);
+  isOk = this.defineGeneralRule(ruleName, topics, generalFn);
+  if (!isOk) {
+    log.error('Failed to create general rule for all topics');
+    return false;
+  }
+
+  log.debug('Rules for service and general chains successfully created');
+  return true;
 }
 
 /**
@@ -382,25 +404,18 @@ function _defineTmRule(name, topics, action, type) {
  * Создание и сохранение правила в реестре
  * @param {string} ruleName Имя правила
  * @param {Array<string>} topics Топики, которые отслеживает правило
- * @param {string} ruleType Тип правила ('user' или 'service')
- * @returns {boolean} Успешность создания правила
+ * @param {Function} action Действие, выполняемое правилом
+ * @param {string} category Категория правила (см. MODES)
+ * @returns {boolean} Успешность создания и сохранения правила
  */
-function _defineAndStoreRule(ruleName, topics, ruleType) {
-  if (!this.MODES[ruleType.toUpperCase()]) {
-    log.error('Invalid rule type: ' + ruleType);
+function _defineAndStoreRule(ruleName, topics, action, category) {
+  if (!this.MODES[category.toUpperCase()]) {
+    log.error('Invalid rule category: ' + category);
     return false;
   }
 
   /** Create rule */
-  var rule = _defineTmRule(
-    ruleName,
-    topics,
-    function (newValue, devName, cellName) {
-      var topic = devName + '/' + cellName;
-      this.runProcessors(topic, newValue);
-    }.bind(this),
-    ruleType
-  );
+  var rule = _defineTmRule(ruleName, topics, action, category);
 
   if (!rule) {
     log.error('Failed to create the rule: ' + ruleName);
@@ -417,10 +432,16 @@ function _defineAndStoreRule(ruleName, topics, ruleType) {
  * Создание и сохранение сервисного правила
  * @param {string} ruleName Имя правила
  * @param {Array<string>} topics Топики, которые отслеживает правило
+ * @param {Function} action Действие, выполняемое правилом
  * @returns {boolean} Успешность создания правила
  */
-function defineServiceRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(ruleName, topics, this.MODES.SERVICE);
+function defineServiceRule(ruleName, topics, action) {
+  var isOk = this._defineAndStoreRule(
+    ruleName,
+    topics,
+    action,
+    this.MODES.SERVICE
+  );
   return isOk;
 }
 
@@ -428,10 +449,16 @@ function defineServiceRule(ruleName, topics) {
  * Создание и сохранение правила общего назначения
  * @param {string} ruleName Имя правила
  * @param {Array<string>} topics Топики, которые отслеживает правило
+ * @param {Function} action Действие, выполняемое правилом
  * @returns {boolean} Успешность создания правила
  */
-function defineGeneralRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(ruleName, topics, this.MODES.GENERAL);
+function defineGeneralRule(ruleName, topics, action) {
+  var isOk = this._defineAndStoreRule(
+    ruleName,
+    topics,
+    action,
+    this.MODES.GENERAL
+  );
   return isOk;
 }
 
