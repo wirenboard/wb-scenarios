@@ -1,16 +1,16 @@
 /**
  * @file tm-history-main.mod.js
- * @description Плагин TM для ведения истории значений. 
+ * @description Плагин TM для ведения истории значений.
  *     История хранится внутри manager.registry[topic].valHistory, где для
  *     каждого значения сохраняются дополнительные данные (например, время).
- * 
+ *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
 /**
  * Устанавливает плагин ведения истории значений
- * 
+ *
  * @param {Object} manager Экземпляр TopicManager
  * @param {Object} [options] Опции плагина
  * @param {number} [options.maxLength=5] Макс. кол-во записей (0=без лимита)
@@ -41,7 +41,7 @@ function install(manager, options) {
 
     history.push({
       value: newValue,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Если достигнут лимит — удаляем самую старую запись
@@ -59,8 +59,7 @@ function install(manager, options) {
    *     или [] если пусто
    */
   function getHistory(topic) {
-    if (!manager.registry[topic] ||
-      !manager.registry[topic].valHistory) {
+    if (!manager.registry[topic] || !manager.registry[topic].valHistory) {
       return [];
     }
 
@@ -76,15 +75,15 @@ function install(manager, options) {
    */
   function getValueAt(topic, index) {
     var history = getHistory(topic);
-  
+
     // Проверка на некорректный индекс
-    var isIndexCorrect = (index <= 0 && Math.abs(index) <= history.length);
+    var isIndexCorrect = index <= 0 && Math.abs(index) <= history.length;
     if (!isIndexCorrect) {
       return null;
     }
 
     // Преобразуем указанный пользователем индекс в реальный индекс массива
-    var arrIndex = (history.length + index) - 1; // - 1 для преобразования в индекс
+    var arrIndex = history.length + index - 1; // - 1 для преобразования в индекс
 
     // Переходим к значению с конца (0 = последний, -1 = предпоследний и т.д.)
     var record = history[arrIndex];
@@ -122,7 +121,7 @@ function install(manager, options) {
    * Добавляем общий обработчик в цепочку
    * Важно чтобы этот приоритет был выше чем у плагина событий
    */
-  
+
   var priority = 6;
   manager.addProcessor(historyProcessor, priority);
 
@@ -132,5 +131,5 @@ function install(manager, options) {
 exports.historyPlugin = {
   name: 'historyPlugin',
   install: install,
-  dependencies: []
+  dependencies: [],
 };
