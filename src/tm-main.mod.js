@@ -8,9 +8,9 @@
  */
 
 /**
- * Перечисление типов правил
+ * Перечисление типов приоритетов (для правил и цепи процессоров)
  */
-var RULE_TYPES = {
+var PRIO_TYPES = {
   GENERAL: 'general',
   SERVICE: 'service',
 };
@@ -32,7 +32,7 @@ function TopicManager() {
    * @type {Object<string, RuleInstance>}
    * Реестр всех правил по их именам
    * Каждый объект правила содержит тип и экземпляр RuleInstance
-   * @property {string} type Тип правила (см. RULE_TYPES)
+   * @property {string} type Тип правила (см. PRIO_TYPES)
    * @property {RuleInstance} instance Экземпляр правила
    */
   this.rules = {};
@@ -93,9 +93,9 @@ function installPlugin(plugin, options) {
 }
 
 /**
- * Добавление процессора в цепочку
- *
+ * Добавление процессора в указанную цепочку
  * @param {Function} processor Функция процессора, добавляемая в цепочку
+ * @param {string} type Тип цепочки ('general' или 'service')
  * @param {number} [priority=0] (Опционально) Приоритет процессора
  *     (чем выше, тем раньше он будет вызван)
  */
@@ -204,7 +204,7 @@ function printRegistry() {
  * Конструктор RuleInstance для управления конкретным правилом
  * @param {string} name Имя правила
  * @param {string} ruleId Идентификатор правила
- * @param {string} type Тип правила (см. RULE_TYPES)
+ * @param {string} type Тип правила (см. PRIO_TYPES)
  */
 function RuleInstance(name, ruleId, type) {
   this.name = name;
@@ -214,7 +214,7 @@ function RuleInstance(name, ruleId, type) {
 
 /**
  * Отключение всех правил определенного типа
- * @param {string} ruleType Тип правила (см. RULE_TYPES)
+ * @param {string} ruleType Тип правила (см. PRIO_TYPES)
  */
 function _disableAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -229,7 +229,7 @@ function _disableAllRulesOfType(ruleType) {
 
 /**
  * Включение всех правил определенного типа
- * @param {string} ruleType Тип правила (см. RULE_TYPES)
+ * @param {string} ruleType Тип правила (см. PRIO_TYPES)
  */
 function _enableAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -244,7 +244,7 @@ function _enableAllRulesOfType(ruleType) {
 
 /**
  * Запуск всех правил определенного типа
- * @param {string} ruleType - Тип правила (см. RULE_TYPES)
+ * @param {string} ruleType - Тип правила (см. PRIO_TYPES)
  */
 function _runAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -285,14 +285,14 @@ function run() {
  * Включение всех правил общего назначения
  */
 function enableAllRules() {
-  this._enableAllRulesOfType(RULE_TYPES.GENERAL);
+  this._enableAllRulesOfType(PRIO_TYPES.GENERAL);
 }
 
 /**
  * Отключение всех правил общего назначения
  */
 function disableAllRules() {
-  this._disableAllRulesOfType(RULE_TYPES.GENERAL);
+  this._disableAllRulesOfType(PRIO_TYPES.GENERAL);
 }
 
 /**
@@ -341,7 +341,7 @@ function insertProcessorIntoChain(processorsChain, processorEntry) {
  * @param {string} name Имя правила
  * @param {Array<string>} topics Список топиков, которые отслеживает правило
  * @param {Function} action Действие, выполняемое правилом
- * @param {string} type Тип правила (см. RULE_TYPES)
+ * @param {string} type Тип правила (см. PRIO_TYPES)
  * @returns {RuleInstance|null} Экземпляр объекта правила или null
  */
 function _defineTmRule(name, topics, action, type) {
@@ -367,7 +367,7 @@ function _defineTmRule(name, topics, action, type) {
  * @returns {boolean} Успешность создания правила
  */
 function _defineAndStoreRule(ruleName, topics, ruleType) {
-  if (!RULE_TYPES[ruleType.toUpperCase()]) {
+  if (!PRIO_TYPES[ruleType.toUpperCase()]) {
     log.error('Invalid rule type: ' + ruleType);
     return false;
   }
@@ -401,7 +401,7 @@ function _defineAndStoreRule(ruleName, topics, ruleType) {
  * @returns {boolean} Успешность создания правила
  */
 function defineServiceRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(ruleName, topics, RULE_TYPES.SERVICE);
+  var isOk = this._defineAndStoreRule(ruleName, topics, PRIO_TYPES.SERVICE);
   return isOk;
 }
 
@@ -412,7 +412,7 @@ function defineServiceRule(ruleName, topics) {
  * @returns {boolean} Успешность создания правила
  */
 function defineGeneralRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(ruleName, topics, RULE_TYPES.GENERAL);
+  var isOk = this._defineAndStoreRule(ruleName, topics, PRIO_TYPES.GENERAL);
   return isOk;
 }
 
