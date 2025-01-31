@@ -8,6 +8,14 @@
  */
 
 /**
+ * Перечисление типов правил
+ */
+var RULE_TYPES = {
+  GENERAL: 'general',
+  SERVICE: 'service',
+};
+
+/**
  * Базовый конструктор TopicManager
  */
 function TopicManager() {
@@ -20,9 +28,14 @@ function TopicManager() {
   // Цепочка функций (процессоров) для обработки новых значений топика
   this.pluginsProcessorsChain = [];
 
-  // Объект для хранения правил по их именам вместе с мета информацией (Id)
+  /**
+   * @type {Object<string, RuleInstance>}
+   * Реестр всех правил по их именам
+   * Каждый объект правила содержит тип и экземпляр RuleInstance
+   * @property {string} type Тип правила (см. RULE_TYPES)
+   * @property {RuleInstance} instance Экземпляр правила
+   */
   this.rules = {};
-  this.serviceRules = {};
 }
 
 /**
@@ -167,7 +180,7 @@ function initRulesForAllTopics(ruleName) {
     return false;
   }
 
-  isOk = this._defineAndStoreTmRule(ruleName, topics);
+  isOk = this._defineAndStoreRule(ruleName, topics);
   return isOk;
 }
 
@@ -191,10 +204,57 @@ function printRegistry() {
  * Конструктор RuleInstance для управления конкретным правилом
  * @param {string} name Имя правила
  * @param {string} ruleId Идентификатор правила
+ * @param {string} type Тип правила (см. RULE_TYPES)
  */
-function RuleInstance(name, ruleId) {
+function RuleInstance(name, ruleId, type) {
   this.name = name;
   this.ruleId = ruleId;
+  this.type = type;
+}
+
+/**
+ * Отключение всех правил определенного типа
+ * @param {string} ruleType Тип правила (см. RULE_TYPES)
+ */
+function _disableAllRulesOfType(ruleType) {
+  for (var ruleName in this.rules) {
+    var curRule = this.rules[ruleName];
+    var isRuleTypeMatch = curRule.type === ruleType;
+    if (isRuleTypeMatch) {
+      curRule.disable();
+    }
+  }
+  log.debug('All rules of type "' + ruleType + '" have been disabled.');
+}
+
+/**
+ * Включение всех правил определенного типа
+ * @param {string} ruleType Тип правила (см. RULE_TYPES)
+ */
+function _enableAllRulesOfType(ruleType) {
+  for (var ruleName in this.rules) {
+    var curRule = this.rules[ruleName];
+    var isRuleTypeMatch = curRule.type === ruleType;
+    if (isRuleTypeMatch) {
+      curRule.enable();
+    }
+  }
+  log.debug('All rules of type "' + ruleType + '" have been enabled.');
+}
+
+/**
+ * Запуск всех правил определенного типа
+ * @param {string} ruleType - Тип правила (см. RULE_TYPES)
+ */
+function _runAllRulesOfType(ruleType) {
+  for (var ruleName in this.rules) {
+    var curRule = this.rules[ruleName];
+    var isRuleTypeMatch = curRule.type === ruleType;
+    if (isRuleTypeMatch) {
+      curRule.run();
+    }
+  }
+  log.debug('All rules of type "' + ruleType + '" have been executed.');
 }
 
 /**
@@ -222,23 +282,17 @@ function run() {
 }
 
 /**
- * Включение всех правил
+ * Включение всех правил общего назначения
  */
 function enableAllRules() {
-  for (var ruleName in this.rules) {
-    this.rules[ruleName].enable();
-  }
-  log.debug('Все правила включены');
+  this._enableAllRulesOfType(RULE_TYPES.GENERAL);
 }
 
 /**
- * Отключение всех правил
+ * Отключение всех правил общего назначения
  */
 function disableAllRules() {
-  for (var ruleName in this.rules) {
-    this.rules[ruleName].disable();
-  }
-  log.debug('Все правила отключены');
+  this._disableAllRulesOfType(RULE_TYPES.GENERAL);
 }
 
 /**
@@ -287,9 +341,10 @@ function insertProcessorIntoChain(processorsChain, processorEntry) {
  * @param {string} name Имя правила
  * @param {Array<string>} topics Список топиков, которые отслеживает правило
  * @param {Function} action Действие, выполняемое правилом
+ * @param {string} type Тип правила (см. RULE_TYPES)
  * @returns {RuleInstance|null} Экземпляр объекта правила или null
  */
-function _defineTmRule(name, topics, action) {
+function _defineTmRule(name, topics, action, type) {
   var ruleId = defineRule(name, {
     whenChanged: topics,
     then: action,
@@ -300,20 +355,23 @@ function _defineTmRule(name, topics, action) {
     return null;
   }
 
-  log.debug('Rule "' + name + '" successfully created with ID:', ruleId);
-
-  return new RuleInstance(name, ruleId);
+  log.debug('Rule "' + name + '" successfully created with ID: ' + ruleId);
+  return new RuleInstance(name, ruleId, type);
 }
 
 /**
- * Создание и сохранение правила в выбранном реестре правил
- *
+ * Создание и сохранение правила в реестре
  * @param {string} ruleName Имя правила
- * @param {Array<string>} topics Топики, которые отслеживаются правилом
- * @param {Object} targetRegistry Целевой реестр (общий или сервисный)
+ * @param {Array<string>} topics Топики, которые отслеживает правило
+ * @param {string} ruleType Тип правила ('user' или 'service')
  * @returns {boolean} Успешность создания правила
  */
-function _defineAndStoreTmRule(ruleName, topics, targetRegistry) {
+function _defineAndStoreRule(ruleName, topics, ruleType) {
+  if (!RULE_TYPES[ruleType.toUpperCase()]) {
+    log.error('Invalid rule type: ' + ruleType);
+    return false;
+  }
+
   /** Create rule */
   var rule = _defineTmRule(
     ruleName,
@@ -321,7 +379,8 @@ function _defineAndStoreTmRule(ruleName, topics, targetRegistry) {
     function (newValue, devName, cellName) {
       var topic = devName + '/' + cellName;
       this.runProcessors(topic, newValue);
-    }.bind(this)
+    }.bind(this),
+    ruleType
   );
 
   if (!rule) {
@@ -329,35 +388,41 @@ function _defineAndStoreTmRule(ruleName, topics, targetRegistry) {
     return false;
   }
 
-  /** Store rule in the specified registry */
-  targetRegistry[ruleName] = rule;
+  /** Store rule */
+  this.rules[ruleName] = rule;
   log.debug('TM: Rule "' + ruleName + '" created and added to registry');
   return true;
 }
 
 /**
- * Создание и сохранение правила в сервисном реестре
- *
- * @param {string} ruleName - Имя правила
- * @param {Array<string>} topics - Топики, которые отслеживает правило
+ * Создание и сохранение сервисного правила
+ * @param {string} ruleName Имя правила
+ * @param {Array<string>} topics Топики, которые отслеживает правило
  * @returns {boolean} Успешность создания правила
  */
-function _defineAndStoreServiceTmRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(ruleName, topics, this.serviceRules);
+function defineServiceRule(ruleName, topics) {
+  var isOk = this._defineAndStoreRule(ruleName, topics, RULE_TYPES.SERVICE);
   return isOk;
 }
 
 /**
- * Создание и сохранение правила в общем реестре
- *
- * @param {string} ruleName - Имя правила
- * @param {Array<string>} topics - Топики, которые отслеживает правило
+ * Создание и сохранение правила общего назначения
+ * @param {string} ruleName Имя правила
+ * @param {Array<string>} topics Топики, которые отслеживает правило
  * @returns {boolean} Успешность создания правила
  */
-function _defineAndStoreGeneralTmRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(ruleName, topics, this.rules);
+function defineGeneralRule(ruleName, topics) {
+  var isOk = this._defineAndStoreRule(ruleName, topics, RULE_TYPES.GENERAL);
   return isOk;
 }
+
+/**
+ * Internal methods
+ */
+TopicManager.prototype._defineAndStoreRule = _defineAndStoreRule;
+TopicManager.prototype._disableAllRulesOfType = _disableAllRulesOfType;
+TopicManager.prototype._enableAllRulesOfType = _enableAllRulesOfType;
+TopicManager.prototype._runAllRulesOfType = _runAllRulesOfType;
 
 /**
  * These methods are shared across all instances of TopicManager
@@ -367,8 +432,8 @@ TopicManager.prototype.addProcessor = addProcessor;
 TopicManager.prototype.removeProcessor = removeProcessor;
 TopicManager.prototype.runProcessors = runProcessors;
 
-TopicManager.prototype.defineRule = _defineAndStoreGeneralTmRule;
-TopicManager.prototype.defineServiceRule = _defineAndStoreServiceTmRule;
+TopicManager.prototype.defineRule = defineGeneralRule;
+TopicManager.prototype.defineServiceRule = defineServiceRule;
 TopicManager.prototype.initRulesForAllTopics = initRulesForAllTopics;
 TopicManager.prototype.disableAllRules = disableAllRules;
 TopicManager.prototype.enableAllRules = enableAllRules;
