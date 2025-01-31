@@ -30,7 +30,7 @@ function TopicManager() {
    * @type {Object<string, RuleInstance>}
    * Реестр всех правил по их именам
    * Каждый объект правила содержит тип и экземпляр RuleInstance
-   * @property {string} type Тип правила (см. CATEGORIES)
+   * @property {string} type Тип правила (см. MODES)
    * @property {RuleInstance} instance Экземпляр правила
    */
   this.rules = {};
@@ -38,7 +38,7 @@ function TopicManager() {
   /**
    * Перечисление категорий для цепи процессоров и правил
    */
-  this.CATEGORIES = {
+  this.MODES = {
     GENERAL: 'general',
     SERVICE: 'service',
   };
@@ -101,12 +101,12 @@ function installPlugin(plugin, options) {
 /**
  * Добавление процессора в указанную цепочку
  * @param {Function} processor Функция процессора, добавляемая в цепочку
- * @param {string} type Тип цепочки (см. CATEGORIES)
+ * @param {string} type Тип цепочки (см. MODES)
  * @param {number} [priority=0] (Опционально) Приоритет процессора
  *     (чем выше, тем раньше он будет вызван)
  */
 function addProcessor(processor, type, priority) {
-  if (!this.CATEGORIES[type.toUpperCase()]) {
+  if (!this.MODES[type.toUpperCase()]) {
     log.error('Invalid processor type:', type);
     return false;
   }
@@ -131,7 +131,7 @@ function addProcessor(processor, type, priority) {
 /**
  * Удаление процессора из цепочки
  * @param {Function} processor Функция процессора для удаления
- * @param {string} type - Тип приоритета (см. CATEGORIES)
+ * @param {string} type - Тип приоритета (см. MODES)
  */
 function removeProcessor(processor, type) {
   if (!this.processorChains[type]) {
@@ -159,7 +159,7 @@ function removeProcessor(processor, type) {
 /**
  * Обработка данных всеми плагинами
  * Запускает все процессоры указанного типа приоритета
- * @param {string} type Тип приоритета (см. CATEGORIES)
+ * @param {string} type Тип приоритета (см. MODES)
  * @param {string} topic Имя топика
  * @param {*} newValue Новое значение топика
  */
@@ -224,7 +224,7 @@ function printRegistry() {
  * Конструктор RuleInstance для управления конкретным правилом
  * @param {string} name Имя правила
  * @param {string} ruleId Идентификатор правила
- * @param {string} type Тип правила (см. CATEGORIES)
+ * @param {string} type Тип правила (см. MODES)
  */
 function RuleInstance(name, ruleId, type) {
   this.name = name;
@@ -234,7 +234,7 @@ function RuleInstance(name, ruleId, type) {
 
 /**
  * Отключение всех правил определенного типа
- * @param {string} ruleType Тип правила (см. CATEGORIES)
+ * @param {string} ruleType Тип правила (см. MODES)
  */
 function _disableAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -249,7 +249,7 @@ function _disableAllRulesOfType(ruleType) {
 
 /**
  * Включение всех правил определенного типа
- * @param {string} ruleType Тип правила (см. CATEGORIES)
+ * @param {string} ruleType Тип правила (см. MODES)
  */
 function _enableAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -264,7 +264,7 @@ function _enableAllRulesOfType(ruleType) {
 
 /**
  * Запуск всех правил определенного типа
- * @param {string} ruleType - Тип правила (см. CATEGORIES)
+ * @param {string} ruleType - Тип правила (см. MODES)
  */
 function _runAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -305,14 +305,14 @@ function run() {
  * Включение всех правил общего назначения
  */
 function enableAllRules() {
-  this._enableAllRulesOfType(this.CATEGORIES.GENERAL);
+  this._enableAllRulesOfType(this.MODES.GENERAL);
 }
 
 /**
  * Отключение всех правил общего назначения
  */
 function disableAllRules() {
-  this._disableAllRulesOfType(this.CATEGORIES.GENERAL);
+  this._disableAllRulesOfType(this.MODES.GENERAL);
 }
 
 /**
@@ -360,7 +360,7 @@ function insertProcessorIntoChain(chain, processorEntry) {
  * @param {string} name Имя правила
  * @param {Array<string>} topics Список топиков, которые отслеживает правило
  * @param {Function} action Действие, выполняемое правилом
- * @param {string} type Тип правила (см. CATEGORIES)
+ * @param {string} type Тип правила (см. MODES)
  * @returns {RuleInstance|null} Экземпляр объекта правила или null
  */
 function _defineTmRule(name, topics, action, type) {
@@ -386,7 +386,7 @@ function _defineTmRule(name, topics, action, type) {
  * @returns {boolean} Успешность создания правила
  */
 function _defineAndStoreRule(ruleName, topics, ruleType) {
-  if (!this.CATEGORIES[ruleType.toUpperCase()]) {
+  if (!this.MODES[ruleType.toUpperCase()]) {
     log.error('Invalid rule type: ' + ruleType);
     return false;
   }
@@ -420,11 +420,7 @@ function _defineAndStoreRule(ruleName, topics, ruleType) {
  * @returns {boolean} Успешность создания правила
  */
 function defineServiceRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(
-    ruleName,
-    topics,
-    this.CATEGORIES.SERVICE
-  );
+  var isOk = this._defineAndStoreRule(ruleName, topics, this.MODES.SERVICE);
   return isOk;
 }
 
@@ -435,11 +431,7 @@ function defineServiceRule(ruleName, topics) {
  * @returns {boolean} Успешность создания правила
  */
 function defineGeneralRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(
-    ruleName,
-    topics,
-    this.CATEGORIES.GENERAL
-  );
+  var isOk = this._defineAndStoreRule(ruleName, topics, this.MODES.GENERAL);
   return isOk;
 }
 

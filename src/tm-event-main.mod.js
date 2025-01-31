@@ -520,7 +520,7 @@ function install(manager, options) {
   manager.processEvent = processEvent;
 
   var priority = 5;
-  manager.addProcessor(processEvent, manager.CATEGORIES.GENERAL, priority);
+  manager.addProcessor(processEvent, manager.MODES.GENERAL, priority);
 
   log.debug('Event plugin successfully installed');
 }

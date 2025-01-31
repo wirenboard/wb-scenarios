@@ -122,11 +122,7 @@ function install(manager, options) {
    * Важно чтобы этот приоритет был выше чем у плагина событий
    */
   var priority = 6;
-  manager.addProcessor(
-    historyProcessor,
-    manager.CATEGORIES.GENERAL,
-    priority
-  );
+  manager.addProcessor(historyProcessor, manager.MODES.GENERAL, priority);
 
   log.debug('History plugin installed, maxLength=' + maxLength);
 }
