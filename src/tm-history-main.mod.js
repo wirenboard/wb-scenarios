@@ -121,9 +121,12 @@ function install(manager, options) {
    * Добавляем общий обработчик в цепочку
    * Важно чтобы этот приоритет был выше чем у плагина событий
    */
-
   var priority = 6;
-  manager.addProcessor(historyProcessor, priority);
+  manager.addProcessor(
+    historyProcessor,
+    manager.CATEGORIES.GENERAL,
+    priority
+  );
 
   log.debug('History plugin installed, maxLength=' + maxLength);
 }
