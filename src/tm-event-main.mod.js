@@ -3,19 +3,19 @@
  * @description Плагин TM для обработки разных именованных событий топиков
  */
 
-var eventResolvers = require('tm-event-resolvers.mod').registryEventResolvers;
+var eventResolvers =
+  require('tm-event-resolvers.mod').registryEventResolvers;
 
 /**
  * Устанавливает плагин событий
- * 
+ *
  * @param {Object} manager Экземпляр TopicManager
  * @param {Object} [options] Опциональные параметры
  */
 function install(manager, options) {
-
   /**
    * Регистрирует событие для одного MQTT топика
-   * 
+   *
    * @param {string} topicName Имя MQTT-топика (вид "device/control")
    * @param {string} eventType Тип события
    * @param {function} mainCallback Обратный вызов вызываемый при событии
@@ -34,8 +34,10 @@ function install(manager, options) {
     var resolver = eventResolvers[eventType];
     if (!resolver) {
       log.error(
-        'Неизвестный eventType "' + eventType + '".' +
-        'Невозможно зарегистрировать данное событие'
+        'Неизвестный eventType "' +
+          eventType +
+          '".' +
+          'Невозможно зарегистрировать данное событие'
       );
       return;
     }
@@ -51,8 +53,12 @@ function install(manager, options) {
 
     if (topicEvents[eventType]) {
       log.warning(
-        'Событие "' + eventType + '" для топика "' + topicName + '"' +
-        'уже зарегистрировано. Callback будет перезаписан'
+        'Событие "' +
+          eventType +
+          '" для топика "' +
+          topicName +
+          '"' +
+          'уже зарегистрировано. Callback будет перезаписан'
       );
     }
 
@@ -60,23 +66,32 @@ function install(manager, options) {
     topicEvents[eventType] = {
       callback: mainCallback,
       cfg: cfg,
-      ctx: {}
+      ctx: {},
     };
 
     log.debug(
-      'Событие зарегистрировано: topic="' + topicName + '",' +
-      'type="' + eventType + '"'
+      'Событие зарегистрировано: topic="' +
+        topicName +
+        '",' +
+        'type="' +
+        eventType +
+        '"'
     );
   }
 
   /**
    * Регистрирует противоположное событие для одного MQTT топика
-   * 
+   *
    * @param {string} topicName Имя MQTT-топика вида "device/control"
    * @param {string} eventType Тип основного события (например, 'whenEnabled')
    * @param {Function} oppositeCallback Колбэк для противоположного события
    */
-  function registerOppositeEvent(topicName, eventType, oppositeCallback, cfg) {
+  function registerOppositeEvent(
+    topicName,
+    eventType,
+    oppositeCallback,
+    cfg
+  ) {
     if (typeof oppositeCallback !== 'function') {
       log.error('Callback должен быть функцией');
       return;
@@ -89,8 +104,10 @@ function install(manager, options) {
     var resolver = eventResolvers[eventType];
     if (!resolver) {
       log.error(
-        'Неизвестный eventType "' + eventType + '".' +
-        'Невозможно зарегистрировать противоположное событие'
+        'Неизвестный eventType "' +
+          eventType +
+          '".' +
+          'Невозможно зарегистрировать противоположное событие'
       );
       return;
     }
@@ -99,8 +116,10 @@ function install(manager, options) {
     var oppEventName = resolver.resetResolverName;
     if (!oppEventName) {
       log.error(
-        'Событие "' + eventType + '" не имеет resetResolverName.' +
-        'Невозможно зарегистрировать противоположное событие'
+        'Событие "' +
+          eventType +
+          '" не имеет resetResolverName.' +
+          'Невозможно зарегистрировать противоположное событие'
       );
       return;
     }
@@ -108,9 +127,11 @@ function install(manager, options) {
     // Проверяем, действительно ли oppEventName существует в реестре
     if (!eventResolvers[oppEventName]) {
       log.error(
-        'Имя противоположного события "' + oppEventName + '" ' +
-        'не найдено в registryEventResolvers.' +
-        'Невозможно зарегистрировать противоположное событие'
+        'Имя противоположного события "' +
+          oppEventName +
+          '" ' +
+          'не найдено в registryEventResolvers.' +
+          'Невозможно зарегистрировать противоположное событие'
       );
       return;
     }
@@ -118,8 +139,12 @@ function install(manager, options) {
     // Регистрируем «противоположное» событие
     registerSingleEvent(topicName, oppEventName, oppositeCallback, cfg);
     log.debug(
-      'Противоположное событие с именем "' + oppEventName + '"' +
-      'зарегистрировано для базового события "' + eventType + '"'
+      'Противоположное событие с именем "' +
+        oppEventName +
+        '"' +
+        'зарегистрировано для базового события "' +
+        eventType +
+        '"'
     );
   }
 
@@ -131,14 +156,19 @@ function install(manager, options) {
    * @param {function} mainCallback Колбэк для события
    * @param {Function} oppositeCallback Колбэк для противоположного события
    */
-  function registerBothEvents(topicName, eventType, mainCallback, oppositeCallback, cfg) {
+  function registerBothEvents(
+    topicName,
+    eventType,
+    mainCallback,
+    oppositeCallback,
+    cfg
+  ) {
     // Сначала регистрируем основное
     registerSingleEvent(topicName, eventType, mainCallback, cfg);
 
     // Затем регистрируем противоположное
     registerOppositeEvent(topicName, eventType, oppositeCallback, cfg);
   }
-
 
   /**
    * Регистрирует события для массива MQTT топиков
@@ -151,7 +181,9 @@ function install(manager, options) {
     if (!Array.isArray(topics)) {
       log.error(
         'Параметр "topics" должен быть массивом строк,' +
-        'но текущий тип: "' + typeof topics + '"'
+          'но текущий тип: "' +
+          typeof topics +
+          '"'
       );
       return;
     }
@@ -160,8 +192,10 @@ function install(manager, options) {
       var topicName = topics[i];
       if (typeof topicName !== 'string') {
         log.error(
-          'Пропуск не корректного топика, индекс "' + i + '":' +
-          'должен быть строкой.'
+          'Пропуск не корректного топика, индекс "' +
+            i +
+            '":' +
+            'должен быть строкой.'
         );
         continue;
       }
@@ -185,11 +219,10 @@ function install(manager, options) {
       cfg.actionValue = topicWithBehavior.actionValue;
     }
 
-
     if (!mqttTopicName || !behaviorType) {
       log.error(
         'Не корректные данные объекта топика. ' +
-        'mqttTopicName и behaviorType должны быть заданы'
+          'mqttTopicName и behaviorType должны быть заданы'
       );
       return;
     }
@@ -198,8 +231,10 @@ function install(manager, options) {
     var eventResolver = eventResolvers[behaviorType];
     if (!eventResolver) {
       log.error(
-        'Неизвестный behaviorType "' + behaviorType + '".' +
-        'Такое событие еще не зарегистрированно в регистре описания событий'
+        'Неизвестный behaviorType "' +
+          behaviorType +
+          '".' +
+          'Такое событие еще не зарегистрированно в регистре описания событий'
       );
       return;
     }
@@ -215,14 +250,18 @@ function install(manager, options) {
    * @param {Function} mainCallback Колбэк для основного события
    * @param {Function} oppCallback Колбэк для противоположного события
    */
-  function registerSingleEventWithBehaviorOpposite(topicWithBehavior, mainCallback, oppCallback) {
+  function registerSingleEventWithBehaviorOpposite(
+    topicWithBehavior,
+    mainCallback,
+    oppCallback
+  ) {
     var mqttTopicName = topicWithBehavior.mqttTopicName;
     var behaviorType = topicWithBehavior.behaviorType;
 
     if (!mqttTopicName || !behaviorType) {
       log.error(
         'Не корректные данные объекта топика. ' +
-        'mqttTopicName и behaviorType должны быть заданы'
+          'mqttTopicName и behaviorType должны быть заданы'
       );
       return;
     }
@@ -231,14 +270,21 @@ function install(manager, options) {
     var eventResolver = eventResolvers[behaviorType];
     if (!eventResolver) {
       log.error(
-        'Неизвестный behaviorType "' + behaviorType + '".' +
-        'Такое событие еще не зарегистрированно в регистре описания событий'
+        'Неизвестный behaviorType "' +
+          behaviorType +
+          '".' +
+          'Такое событие еще не зарегистрированно в регистре описания событий'
       );
       return;
     }
 
     // Вызываем уже имеющуюся функцию, которая регистрирует основное + противоположное
-    registerBothEvents(mqttTopicName, behaviorType, mainCallback, oppCallback);
+    registerBothEvents(
+      mqttTopicName,
+      behaviorType,
+      mainCallback,
+      oppCallback
+    );
   }
 
   /**
@@ -248,7 +294,10 @@ function install(manager, options) {
    * @param {Array} topicsWithBehavior Массив топиков с настройками поведения
    * @param {function} mainCallback Колбэк для основного события
    */
-  function registerMultipleEventsWithBehavior(topicsWithBehavior, mainCallback) {
+  function registerMultipleEventsWithBehavior(
+    topicsWithBehavior,
+    mainCallback
+  ) {
     if (!Array.isArray(topicsWithBehavior)) {
       log.error('TopicsWithBehavior должен быть массивом');
       return;
@@ -267,14 +316,22 @@ function install(manager, options) {
    * @param {Function} mainCallback Колбэк для основного события
    * @param {Function} oppCallback Колбэк для противоположного события
    */
-  function registerMultipleEventsWithBehaviorOpposite(topicsWithBehavior, mainCallback, oppCallback) {
+  function registerMultipleEventsWithBehaviorOpposite(
+    topicsWithBehavior,
+    mainCallback,
+    oppCallback
+  ) {
     if (!Array.isArray(topicsWithBehavior)) {
       log.error('topicsWithBehavior должен быть массивом');
       return;
     }
 
     for (var i = 0; i < topicsWithBehavior.length; i++) {
-      registerSingleEventWithBehaviorOpposite(topicsWithBehavior[i], mainCallback, oppCallback);
+      registerSingleEventWithBehaviorOpposite(
+        topicsWithBehavior[i],
+        mainCallback,
+        oppCallback
+      );
     }
   }
 
@@ -314,7 +371,7 @@ function install(manager, options) {
       res = {
         status: 'topic_not_found',
         message: 'Топик "' + topicName + '" не найден в реестре',
-        details: results
+        details: results,
       };
       return res;
     }
@@ -325,13 +382,15 @@ function install(manager, options) {
     // Обрабатываем каждое зарегистрированное событие для топика
     for (var curEventType in topicEvents) {
       var resolver = eventResolvers[curEventType];
-      var isResolverValid = resolver &&
-        typeof resolver.launchResolver === 'function';
+      var isResolverValid =
+        resolver && typeof resolver.launchResolver === 'function';
 
       if (!isResolverValid) {
         log.error(
-          'Не корректная структура события "' + curEventType + '":' +
-          'не найден корректный Resolver'
+          'Не корректная структура события "' +
+            curEventType +
+            '":' +
+            'не найден корректный Resolver'
         );
         continue;
       }
@@ -345,11 +404,15 @@ function install(manager, options) {
         val: {
           new: newValue,
           prev: manager.getPrevValue(topicName),
-          history: manager.registry[topicName].valHistory
-        }
+          history: manager.registry[topicName].valHistory,
+        },
       };
 
-      var isTriggered = resolver.launchResolver(topicData, eventCfg, eventCtx);
+      var isTriggered = resolver.launchResolver(
+        topicData,
+        eventCfg,
+        eventCtx
+      );
       // Сохраняем контекст - важно если заменили объект полностью а не изменили
       topicEvents[curEventType].ctx = eventCtx;
 
@@ -361,8 +424,8 @@ function install(manager, options) {
         continue;
       }
 
-      var isCallbackValid = eventObj &&
-        typeof eventObj.callback === 'function';
+      var isCallbackValid =
+        eventObj && typeof eventObj.callback === 'function';
 
       var retStatus;
       // Вызываем колбэк
@@ -371,16 +434,19 @@ function install(manager, options) {
           type: curEventType,
           callback: eventObj.callback,
           cfg: eventCfg,
-          ctx: eventCtx
-        };  
+          ctx: eventCtx,
+        };
 
         var cbRes = eventObj.callback(topicData, eventData);
 
         if (cbRes === undefined) {
           retStatus = 'processed_without_res';
           log.warning(
-            'Callback для "' + topicName + '" и типа события "' + curEventType +
-            '" выполнен успешно, но ничего не вернул. Ожидается возврат bool.'
+            'Callback для "' +
+              topicName +
+              '" и типа события "' +
+              curEventType +
+              '" выполнен успешно, но ничего не вернул. Ожидается возврат bool.'
           );
         } else if (cbRes === true) {
           retStatus = 'success';
@@ -391,21 +457,27 @@ function install(manager, options) {
       } else {
         retStatus = 'callback_missing';
         log.error(
-          'Для события "' + curEventType + '" не найден  Callback."' +
-          ' (topicName: "' + topicName + '")'
+          'Для события "' +
+            curEventType +
+            '" не найден  Callback."' +
+            ' (topicName: "' +
+            topicName +
+            '")'
         );
       }
 
       results.push({
         eventType: curEventType,
-        status: retStatus
+        status: retStatus,
       });
     } /* for */
 
     // Общий статус обработки
     var genStatus;
     var genMessage;
-    var hasFailure = results.some(function (r) { return r.status !== 'success'; });
+    var hasFailure = results.some(function (r) {
+      return r.status !== 'success';
+    });
     if (hasProcessed === true && hasFailure !== true) {
       genStatus = 'processed_success';
       genMessage = 'Все события обработаны успешно';
@@ -420,11 +492,10 @@ function install(manager, options) {
     res = {
       status: genStatus,
       message: genMessage,
-      details: results
+      details: results,
     };
     return res;
   }
-
 
   /**
    * Добавляем методы в экземпляр
@@ -440,8 +511,10 @@ function install(manager, options) {
 
   // Для topicWithBehavior
   manager.registerSingleEventWithBehavior = registerSingleEventWithBehavior;
-  manager.registerMultipleEventsWithBehavior = registerMultipleEventsWithBehavior;
-  manager.registerMultipleEventsWithBehaviorOpposite = registerMultipleEventsWithBehaviorOpposite;
+  manager.registerMultipleEventsWithBehavior =
+    registerMultipleEventsWithBehavior;
+  manager.registerMultipleEventsWithBehaviorOpposite =
+    registerMultipleEventsWithBehaviorOpposite;
 
   // Обработка приходящих значений
   manager.processEvent = processEvent;
@@ -455,5 +528,5 @@ function install(manager, options) {
 exports.eventPlugin = {
   name: 'eventPlugin',
   install: install,
-  dependencies: ['historyPlugin']
+  dependencies: ['historyPlugin'],
 };
