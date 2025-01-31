@@ -4,16 +4,8 @@
  *     Данный объект нужен как фундамент для наслоения расширений.
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
+ * @link Комментарии в формате JSDoc <https://jsdoc.app/> - Google styleguide
  */
-
-/**
- * Перечисление типов приоритетов (для правил и цепи процессоров)
- */
-var PRIO_TYPES = {
-  GENERAL: 'general',
-  SERVICE: 'service',
-};
 
 /**
  * Базовый конструктор TopicManager
@@ -25,17 +17,31 @@ function TopicManager() {
   // Установленные плагины (по именам)
   this.installedPlugins = [];
 
-  // Цепочка функций (процессоров) для обработки новых значений топика
-  this.pluginsProcessorsChain = [];
+  /**
+   * Цепочки процессоров для разных типов правил
+   * Процессор - это одна функция для обработки новых значений топика
+   */
+  this.processorChains = {
+    general: [],
+    service: [],
+  };
 
   /**
    * @type {Object<string, RuleInstance>}
    * Реестр всех правил по их именам
    * Каждый объект правила содержит тип и экземпляр RuleInstance
-   * @property {string} type Тип правила (см. PRIO_TYPES)
+   * @property {string} type Тип правила (см. CATEGORIES)
    * @property {RuleInstance} instance Экземпляр правила
    */
   this.rules = {};
+
+  /**
+   * Перечисление категорий для цепи процессоров и правил
+   */
+  this.CATEGORIES = {
+    GENERAL: 'general',
+    SERVICE: 'service',
+  };
 }
 
 /**
@@ -95,11 +101,16 @@ function installPlugin(plugin, options) {
 /**
  * Добавление процессора в указанную цепочку
  * @param {Function} processor Функция процессора, добавляемая в цепочку
- * @param {string} type Тип цепочки ('general' или 'service')
+ * @param {string} type Тип цепочки (см. CATEGORIES)
  * @param {number} [priority=0] (Опционально) Приоритет процессора
  *     (чем выше, тем раньше он будет вызван)
  */
-function addProcessor(processor, priority) {
+function addProcessor(processor, type, priority) {
+  if (!this.CATEGORIES[type.toUpperCase()]) {
+    log.error('Invalid processor type:', type);
+    return false;
+  }
+
   var isValidProcessor = typeof processor === 'function';
   if (!isValidProcessor) {
     log.error('Invalid processor - must be a function');
@@ -111,49 +122,58 @@ function addProcessor(processor, priority) {
     fn: processor,
     priority: priority || 0,
   };
-  insertProcessorIntoChain(this.pluginsProcessorsChain, processorEntry);
+  insertProcessorIntoChain(this.processorChains[type], processorEntry);
 
-  log.debug('Processor added with priority:', processorEntry.priority);
+  log.debug('Processor added to {} chain with priority: {}', type, priority);
   return true;
 }
 
 /**
- * Удаление обработчика из цепочки
- *
- * @param {Function} processor Функция процессора которую нужно удалить
+ * Удаление процессора из цепочки
+ * @param {Function} processor Функция процессора для удаления
+ * @param {string} type - Тип приоритета (см. CATEGORIES)
  */
-function removeProcessor(processor) {
+function removeProcessor(processor, type) {
+  if (!this.processorChains[type]) {
+    log.error('Invalid processor type:', type);
+    return;
+  }
+  var chain = this.processorChains[type];
+
   var index = -1;
-  for (var i = 0; i < this.pluginsProcessorsChain.length; i++) {
-    if (this.pluginsProcessorsChain[i].fn === processor) {
+  for (var i = 0; i < chain.length; i++) {
+    if (chain[i].fn === processor) {
       index = i;
       break;
     }
   }
 
   if (index !== -1) {
-    this.pluginsProcessorsChain.splice(index, 1);
-    log.debug('Processor removed');
+    chain.splice(index, 1);
+    log.debug('Processor removed from {} chain', type);
   } else {
-    log.warning('Processor not found');
+    log.warning('Processor not found in {} chain', type);
   }
 }
 
 /**
  * Обработка данных всеми плагинами
- *
- * @param {string} topic - Имя топика
- * @param {*} newValue - Новое значение топика
+ * Запускает все процессоры указанного типа приоритета
+ * @param {string} type Тип приоритета (см. CATEGORIES)
+ * @param {string} topic Имя топика
+ * @param {*} newValue Новое значение топика
  */
-function runProcessors(topic, newValue) {
-  if (this.pluginsProcessorsChain.length === 0) {
-    log.debug('No processors in the chain');
+function runProcessors(type, topic, newValue) {
+  var isChainEmpty =
+    !this.processorChains[type] || this.processorChains[type].length === 0;
+  if (isChainEmpty) {
+    log.debug('No processors in the chain for type: {}', type);
     return;
   }
 
   // Прогоняем через все обработчики в цепочке
-  for (var i = 0; i < this.pluginsProcessorsChain.length; i++) {
-    this.pluginsProcessorsChain[i].fn(topic, newValue);
+  for (var i = 0; i < this.processorChains[type].length; i++) {
+    this.processorChains[type][i].fn(topic, newValue);
   }
 }
 
@@ -180,7 +200,7 @@ function initRulesForAllTopics(ruleName) {
     return false;
   }
 
-  isOk = this._defineAndStoreRule(ruleName, topics);
+  var isOk = this._defineAndStoreRule(ruleName, topics);
   return isOk;
 }
 
@@ -204,7 +224,7 @@ function printRegistry() {
  * Конструктор RuleInstance для управления конкретным правилом
  * @param {string} name Имя правила
  * @param {string} ruleId Идентификатор правила
- * @param {string} type Тип правила (см. PRIO_TYPES)
+ * @param {string} type Тип правила (см. CATEGORIES)
  */
 function RuleInstance(name, ruleId, type) {
   this.name = name;
@@ -214,7 +234,7 @@ function RuleInstance(name, ruleId, type) {
 
 /**
  * Отключение всех правил определенного типа
- * @param {string} ruleType Тип правила (см. PRIO_TYPES)
+ * @param {string} ruleType Тип правила (см. CATEGORIES)
  */
 function _disableAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -229,7 +249,7 @@ function _disableAllRulesOfType(ruleType) {
 
 /**
  * Включение всех правил определенного типа
- * @param {string} ruleType Тип правила (см. PRIO_TYPES)
+ * @param {string} ruleType Тип правила (см. CATEGORIES)
  */
 function _enableAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -244,7 +264,7 @@ function _enableAllRulesOfType(ruleType) {
 
 /**
  * Запуск всех правил определенного типа
- * @param {string} ruleType - Тип правила (см. PRIO_TYPES)
+ * @param {string} ruleType - Тип правила (см. CATEGORIES)
  */
 function _runAllRulesOfType(ruleType) {
   for (var ruleName in this.rules) {
@@ -285,14 +305,14 @@ function run() {
  * Включение всех правил общего назначения
  */
 function enableAllRules() {
-  this._enableAllRulesOfType(PRIO_TYPES.GENERAL);
+  this._enableAllRulesOfType(this.CATEGORIES.GENERAL);
 }
 
 /**
  * Отключение всех правил общего назначения
  */
 function disableAllRules() {
-  this._disableAllRulesOfType(PRIO_TYPES.GENERAL);
+  this._disableAllRulesOfType(this.CATEGORIES.GENERAL);
 }
 
 /**
@@ -310,18 +330,17 @@ function isEmptyObject(obj) {
 
 /**
  * Вставка процессора в цепочку с учетом приоритета
- *
- * @param {Array} processorsChain  Цепочка процессоров
+ * @param {Array} chain Цепочка процессоров
  *     (массив объектов { fn, priority })
  * @param {Object} processorEntry Объект процессора { fn, priority }
  */
-function insertProcessorIntoChain(processorsChain, processorEntry) {
+function insertProcessorIntoChain(chain, processorEntry) {
   var insertIndex = -1;
 
   // Ищем подходящее место для вставки
-  for (var i = 0; i < processorsChain.length; i++) {
+  for (var i = 0; i < chain.length; i++) {
     // Если приоритет нового процессора выше текущего в цепочке
-    if (processorEntry.priority > processorsChain[i].priority) {
+    if (processorEntry.priority > chain[i].priority) {
       insertIndex = i;
       break;
     }
@@ -329,10 +348,10 @@ function insertProcessorIntoChain(processorsChain, processorEntry) {
 
   // Если место не найдено, добавляем процессор в конец
   if (insertIndex === -1) {
-    processorsChain.push(processorEntry);
+    chain.push(processorEntry);
   } else {
     // Иначе вставляем процессор в найденное место
-    processorsChain.splice(insertIndex, 0, processorEntry);
+    chain.splice(insertIndex, 0, processorEntry);
   }
 }
 
@@ -341,7 +360,7 @@ function insertProcessorIntoChain(processorsChain, processorEntry) {
  * @param {string} name Имя правила
  * @param {Array<string>} topics Список топиков, которые отслеживает правило
  * @param {Function} action Действие, выполняемое правилом
- * @param {string} type Тип правила (см. PRIO_TYPES)
+ * @param {string} type Тип правила (см. CATEGORIES)
  * @returns {RuleInstance|null} Экземпляр объекта правила или null
  */
 function _defineTmRule(name, topics, action, type) {
@@ -367,7 +386,7 @@ function _defineTmRule(name, topics, action, type) {
  * @returns {boolean} Успешность создания правила
  */
 function _defineAndStoreRule(ruleName, topics, ruleType) {
-  if (!PRIO_TYPES[ruleType.toUpperCase()]) {
+  if (!this.CATEGORIES[ruleType.toUpperCase()]) {
     log.error('Invalid rule type: ' + ruleType);
     return false;
   }
@@ -401,7 +420,11 @@ function _defineAndStoreRule(ruleName, topics, ruleType) {
  * @returns {boolean} Успешность создания правила
  */
 function defineServiceRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(ruleName, topics, PRIO_TYPES.SERVICE);
+  var isOk = this._defineAndStoreRule(
+    ruleName,
+    topics,
+    this.CATEGORIES.SERVICE
+  );
   return isOk;
 }
 
@@ -412,7 +435,11 @@ function defineServiceRule(ruleName, topics) {
  * @returns {boolean} Успешность создания правила
  */
 function defineGeneralRule(ruleName, topics) {
-  var isOk = this._defineAndStoreRule(ruleName, topics, PRIO_TYPES.GENERAL);
+  var isOk = this._defineAndStoreRule(
+    ruleName,
+    topics,
+    this.CATEGORIES.GENERAL
+  );
   return isOk;
 }
 
