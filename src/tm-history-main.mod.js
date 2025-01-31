@@ -1,7 +1,7 @@
 /**
  * @file tm-history-main.mod.js
  * @description Плагин TM для ведения истории значений.
- *     История хранится внутри manager.registry[topic].valHistory, где для
+ *     История хранится внутри manager.topics[topic].valHistory, где для
  *     каждого значения сохраняются дополнительные данные (например, время).
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
@@ -30,14 +30,14 @@ function install(manager, options) {
    * @param {*} newValue Значение для записи
    */
   function storeRecord(topic, newValue) {
-    if (!manager.registry[topic]) {
-      manager.registry[topic] = {};
+    if (!manager.topics[topic]) {
+      manager.topics[topic] = {};
     }
-    if (!manager.registry[topic].valHistory) {
-      manager.registry[topic].valHistory = [];
+    if (!manager.topics[topic].valHistory) {
+      manager.topics[topic].valHistory = [];
     }
 
-    var history = manager.registry[topic].valHistory;
+    var history = manager.topics[topic].valHistory;
 
     history.push({
       value: newValue,
@@ -59,11 +59,11 @@ function install(manager, options) {
    *     или [] если пусто
    */
   function getHistory(topic) {
-    if (!manager.registry[topic] || !manager.registry[topic].valHistory) {
+    if (!manager.topics[topic] || !manager.topics[topic].valHistory) {
       return [];
     }
 
-    var history = manager.registry[topic].valHistory;
+    var history = manager.topics[topic].valHistory;
     return history;
   }
 

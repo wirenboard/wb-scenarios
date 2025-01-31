@@ -332,10 +332,10 @@ main();
 Пример доступа к такого рода объектам которые были добавлены плагинами:
 
 ```javascript
-var topicEvents = manager.registry[topic].events;
+var topicEvents = manager.topics[topic].events;
 var whenEnabledCallback = topicEvents.['whenEnabled'].config.callback1;
 
-var history = manager.registry[topic].valHistory;
+var history = manager.topics[topic].valHistory;
 ```
 
 Внутри объекта возвращаемого createTopicManager() содержится две сущности:
@@ -390,7 +390,7 @@ var history = manager.registry[topic].valHistory;
 1) Добавление общих методов обработки - хелперов в объект топик менеджера
 2) Добавление процессоров в pluginsProcessorsChain[] который вызывается
    при обработке новой информации
-3) Добавление полезной информации о работе топика в реестр топиков (registry)
+3) Добавление полезной информации о работе топика в реестр топиков (topics)
 
 ### Пример подключения
 
@@ -539,10 +539,10 @@ function install(manager, options) {
   function logRegistry() {
     var prefix = options && options.prefix ? options.prefix + ' ' : '';
     log.info(prefix + 'Current Registry:');
-    if (Object.keys(manager.registry).length === 0) {
+    if (Object.keys(manager.topics).length === 0) {
       log.info(prefix + 'Registry is empty');
     } else {
-      log.info(prefix + JSON.stringify(manager.registry, null, 2));
+      log.info(prefix + JSON.stringify(manager.topics, null, 2));
     }
   }
 

@@ -42,14 +42,14 @@ function install(manager, options) {
       return;
     }
 
-    if (!manager.registry[topicName]) {
-      manager.registry[topicName] = {};
+    if (!manager.topics[topicName]) {
+      manager.topics[topicName] = {};
     }
-    if (!manager.registry[topicName].events) {
-      manager.registry[topicName].events = {};
+    if (!manager.topics[topicName].events) {
+      manager.topics[topicName].events = {};
     }
 
-    var topicEvents = manager.registry[topicName].events;
+    var topicEvents = manager.topics[topicName].events;
 
     if (topicEvents[eventType]) {
       log.warning(
@@ -365,7 +365,7 @@ function install(manager, options) {
     var results = [];
 
     // Проверяем, существует ли указанный топик приведя к булевому типу
-    var topicObj = manager.registry[topicName];
+    var topicObj = manager.topics[topicName];
     var topicExists = !!topicObj;
     if (!topicExists) {
       res = {
@@ -404,7 +404,7 @@ function install(manager, options) {
         val: {
           new: newValue,
           prev: manager.getPrevValue(topicName),
-          history: manager.registry[topicName].valHistory,
+          history: manager.topics[topicName].valHistory,
         },
       };
 

@@ -11,8 +11,8 @@
  * Базовый конструктор TopicManager
  */
 function TopicManager() {
-  // Хранилище топиков и метаданных
-  this.registry = {};
+  // Реестр топиков - хранилище информации о топиках, событиях и тд
+  this.topics = {};
 
   // Установленные плагины (по именам)
   this.installedPlugins = [];
@@ -194,7 +194,7 @@ function initRulesForAllTopics(ruleName) {
   }
 
   // Сбор всех зарегистрированных топиков
-  var topics = Object.keys(this.registry);
+  var topics = Object.keys(this.topics);
   if (topics.length === 0) {
     log.warning('No registered topics found. Rule not created.');
     return false;
@@ -208,12 +208,12 @@ function initRulesForAllTopics(ruleName) {
  * Отладочный вывод текущего реестра
  */
 function printRegistry() {
-  log.debug('=== Current Registry State ===');
-  var isRegistryEmpty = isEmptyObject(this.registry);
+  log.debug('=== Current Topics Registry State ===');
+  var isRegistryEmpty = isEmptyObject(this.topics);
   if (isRegistryEmpty) {
     log.debug('Registry is empty');
   } else {
-    log.debug(JSON.stringify(this.registry, null, 2));
+    log.debug(JSON.stringify(this.topics, null, 2));
   }
   log.debug('==============================');
 }
