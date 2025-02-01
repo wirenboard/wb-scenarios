@@ -6,7 +6,7 @@
  *     и объект vd, который предоставляет методы для работы с устройством.
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
+ * @link Комментарии в формате JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
 /**
@@ -58,35 +58,28 @@ function install(manager, options) {
     log.debug('Виртуальное устройство создано:', devName);
 
     // Создание сервисного правила для переключателя
+    function serviceFn(newValue) {
+      var isEnabledNow = newValue === true;
+      if (isEnabledNow) {
+        manager.enableAllRules();
+      } else {
+        manager.disableAllRules();
+      }
+    }
     var switchRuleName = devName + '_switch_control';
-    var switchRule = manager.defineRule(
+    isOk = manager.defineServiceRule(
       switchRuleName,
       [devName + '/ruleEnabled'],
-      function (newValue) {
-        if (newValue) {
-          manager.enableAllRules();
-        } else {
-          manager.disableAllRules();
-        }
-      }
+      serviceFn
     );
-
-    if (!switchRule) {
-      log.error(
-        'Не удалось создать сервисное правило для переключателя виртуального устройства'
-      );
+    if (!isOk) {
+      log.error('Failed to create service rule for switch_control');
       return false;
     }
 
-    // Сохранение сервисного правила
-    manager.serviceRules[switchRuleName] = switchRule;
-    log.debug(
-      'Сервисное правило для выключателя виртуального устройства создано:',
-      switchRuleName
-    );
-
     // Создание объекта vd
     var vdResult = {
+      /** TODO: rename device to devObj */
       device: device,
       name: devName,
       setError: setError,
