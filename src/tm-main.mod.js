@@ -485,7 +485,6 @@ TopicManager.prototype.disableAllRules = disableAllRules;
 TopicManager.prototype.enableAllRules = enableAllRules;
 
 TopicManager.prototype.printRegistry = printRegistry;
-TopicManager.prototype.printRules = printRules;
 
 RuleInstance.prototype.disable = disable;
 RuleInstance.prototype.enable = enable;
