@@ -45,9 +45,7 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": [
-            "devicesControl"
-          ],
+          "enum": ["devicesControl"],
           "default": "devicesControl",
           "options": {
             "hidden": true
@@ -119,7 +117,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
-                "patternmessage": "generalErrorRegexpPatternMessage",
+                  "patternmessage": "generalErrorRegexpPatternMessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -131,11 +129,7 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "generalBehaviorTypeTitle",
-                "enum": [
-                  "whenChange",
-                  "whenDisabled",
-                  "whenEnabled"
-                ],
+                "enum": ["whenChange", "whenDisabled", "whenEnabled"],
                 "default": "whenChange",
                 "options": {
                   "enum_titles": [
@@ -146,10 +140,7 @@
                 }
               }
             },
-            "required": [
-              "control",
-              "behaviorType"
-            ]
+            "required": ["control", "behaviorType"]
           }
         },
         "outControls": {
@@ -222,10 +213,7 @@
                 "default": 0
               }
             },
-            "required": [
-              "control",
-              "behaviorType"
-            ]
+            "required": ["control", "behaviorType"]
           }
         }
       },
@@ -259,9 +247,7 @@
         },
         "scenarioType": {
           "type": "string",
-          "enum": [
-            "lightControl"
-          ],
+          "enum": ["lightControl"],
           "default": "lightControl",
           "options": {
             "hidden": true
@@ -365,10 +351,7 @@
                     "type": "string",
                     "propertyOrder": 2,
                     "title": "outControls_behaviorType_title",
-                    "enum": [
-                      "setEnable",
-                      "setValueNumericInput"
-                    ],
+                    "enum": ["setEnable", "setValueNumericInput"],
                     "default": "setEnable",
                     "options": {
                       "enum_titles": [
@@ -390,10 +373,7 @@
                     }
                   }
                 },
-                "required": [
-                  "mqttTopicName",
-                  "behaviorType"
-                ]
+                "required": ["mqttTopicName", "behaviorType"]
               }
             }
           }
@@ -465,9 +445,7 @@
                     "minLength": 3
                   }
                 },
-                "required": [
-                  "mqttTopicName"
-                ]
+                "required": ["mqttTopicName"]
               }
             }
           }
@@ -531,10 +509,7 @@
                   "behaviorType": {
                     "type": "string",
                     "title": "generalBehaviorTypeTitle",
-                    "enum": [
-                      "whileValueHigherThanThreshold",
-                      "whenEnabled"
-                    ],
+                    "enum": ["whileValueHigherThanThreshold", "whenEnabled"],
                     "options": {
                       "enum_titles": [
                         "lightControlMotionSensorsEnumWhileValue",
@@ -556,10 +531,7 @@
                     }
                   }
                 },
-                "required": [
-                  "mqttTopicName",
-                  "behaviorType"
-                ]
+                "required": ["mqttTopicName", "behaviorType"]
               }
             }
           }
@@ -625,10 +597,7 @@
                     "propertyOrder": 2,
                     "title": "generalBehaviorTypeTitle",
                     "description": "lightControlOpeningSensorsBehaviorTypeDescription",
-                    "enum": [
-                      "whenDisabled",
-                      "whenEnabled"
-                    ],
+                    "enum": ["whenDisabled", "whenEnabled"],
                     "default": "whenEnabled",
                     "options": {
                       "enum_titles": [
@@ -638,10 +607,7 @@
                     }
                   }
                 },
-                "required": [
-                  "mqttTopicName",
-                  "behaviorType"
-                ]
+                "required": ["mqttTopicName", "behaviorType"]
               }
             }
           }
@@ -841,10 +807,7 @@
       "_format": "tabs"
     }
   },
-  "required": [
-    "configVersion",
-    "scenarios"
-  ],
+  "required": ["configVersion", "scenarios"],
   "translations": {
     "en": {
       "generalScenarioGenerateRuleTitle": "Activate scenario (creates a virtual device and a scenario rule)",
