@@ -11,6 +11,7 @@ var TopicManager = require('tm-main.mod').TopicManager;
 var eventPlugin = require('tm-event-main.mod').eventPlugin;
 var historyPlugin = require('tm-history-main.mod').historyPlugin;
 var basicVdPlugin = require('tm-basicvd-main.mod').basicVdPlugin;
+var transliterate = require('transliterate.mod').transliterate;
 
 var tm = new TopicManager();
 tm.installPlugin(historyPlugin);
@@ -40,12 +41,24 @@ tm.installPlugin(basicVdPlugin);
  * @returns {boolean} Возвращает true, при успешной инициализации иначе false
  */
 function init(deviceTitle, cfg) {
+  /** Check if 'idPrefix' exists and is not empty */
+  var idPrefix = '';
+  var idPrefixProvided = cfg.idPrefix && cfg.idPrefix.trim() !== '';
+  if (idPrefixProvided === true) {
+    idPrefix = cfg.idPrefix;
+    log.debug('Using provided idPrefix:', idPrefix);
+  } else {
+    idPrefix = transliterate(deviceTitle);
+    log.debug('Generated idPrefix from deviceTitle:', idPrefix);
+  }
+
+  /** Validate temperature limits */
   if (cfg.tempLimitsMin >= cfg.tempLimitsMax) {
     log.error('Config temperature limit "Min" must be less than "Max"');
     return;
   }
 
-  var genNames = generateNames(cfg.idPrefix);
+  var genNames = generateNames(idPrefix);
 
   tm.registerSingleEvent(cfg.tempSensor, 'whenChange', cbTempChange);
 
