@@ -18,23 +18,26 @@ tm.installPlugin(eventPlugin);
 tm.installPlugin(basicVdPlugin);
 
 /**
- * Инициализирует виртуальное устройство и определяет правило для управления
- * устройством
- * @param {string} deviceTitle Имя виртуального девайса указанный
- *     пользователем
- * @param {string} cfg.idPrefix Префикс сценария, используемый для идентификации
- *     виртуального устройства и правила
- * @param {number} cfg.targetTemp Целевая температура, заданная пользователем
- * @param {number} cfg.hysteresis Значение гистерезиса (диапазон переключения)
- * @param {number} cfg.tempLimitsMin Ограничение установки температуры снизу
- * @param {number} cfg.tempLimitsMax Ограничение установки температуры сверху
- * @param {string} cfg.tempSensor Идентификатор входного отслеживаемого
- *     контрола датчика температуры значение которого следует слушать.
- *     Пример: 'temp_sensor/temp_value'
- * @param {string} cfg.actuator Идентификатор выходного контрола, выход реле
- *     которым следует управлять. Пример: 'relay_module/K2'
- * @returns {boolean} Возвращает true, при успешной инициализации
- *     иначе false
+ * @typedef {Object} ThermostatConfig
+ * @property {string} idPrefix Префикс сценария для идентификации
+ *     виртуальногоустройства и правила
+ * @property {number} targetTemp Целевая температура, заданная пользователем
+ * @property {number} hysteresis Значение гистерезиса (диапазон переключения)
+ * @property {number} tempLimitsMin Ограничение установки температуры снизу
+ * @property {number} tempLimitsMax Ограничение установки температуры сверху
+ * @property {string} tempSensor Имя топика входного контрола - отслеживаемый
+ *     Пример: датчик температуры значение которого следует слушать
+ *     'temp_sensor/temp_value'
+ * @property {string} actuator Имя топика выходного контрола - управляемый
+ *     Пример: выход реле которым следует управлять - 'relay_module/K2'
+ */
+
+/**
+ * Инициализирует виртуальное устройство и определяет правило
+ * для управления устройством
+ * @param {string} deviceTitle Имя виртуального девайса
+ * @param {ThermostatConfig} cfg Параметры конфигурации
+ * @returns {boolean} Возвращает true, при успешной инициализации иначе false
  */
 function init(deviceTitle, cfg) {
   var genNames = generateNames(cfg.idPrefix);
@@ -54,14 +57,22 @@ function init(deviceTitle, cfg) {
     { actionValue: cfg.targetTemp - cfg.hysteresis }
   );
 
-  vdTargetTempTopic = genNames.vDevice + '/targetTemperature';
+  var vdTargetTempTopic = genNames.vDevice + '/targetTemperature';
   tm.registerSingleEvent(
     vdTargetTempTopic,
     'whenChange',
     cbTargetTempChange
   );
-
   tm.registerSingleEvent(cfg.actuator, 'whenChange', cbActuatorChange);
+
+  /** Create two service events for working after general rules disabled */
+  var vdRuleStatusTopic = genNames.vDevice + '/ruleEnabled';
+  tm.registerSingleEvent(vdRuleStatusTopic, 'whenEnabled', cbRuleEnabled, {
+    mode: tm.MODES.SERVICE,
+  });
+  tm.registerSingleEvent(vdRuleStatusTopic, 'whenDisabled', cbRuleDisabled, {
+    mode: tm.MODES.SERVICE,
+  });
 
   tm.initVirtualDevice(genNames.vDevice, deviceTitle);
 
@@ -109,6 +120,11 @@ function init(deviceTitle, cfg) {
   //                    Local functions
   // ======================================================
 
+  /**
+   * Генерация имен
+   * @param {string} prefix Префикс
+   * @returns {Object} Объект с именами: { vDevice, rule }
+   */
   function generateNames(prefix) {
     var delimeter = '_';
     var scenarioPrefix = 'wbsc' + delimeter;
@@ -120,6 +136,57 @@ function init(deviceTitle, cfg) {
     };
 
     return generatedNames;
+  }
+
+  /**
+   * @typedef {Object} HeatingStateData
+   * @property {number} curTemp - Текущая температура.
+   * @property {number} targetTemp - Целевая температура.
+   * @property {number} hysteresis - Значение гистерезиса.
+   */
+
+  /**
+   * Обновление состояния нагрева, вычисляя новое состояние на основе
+   * текущей температуры, целевой температуры и гистерезиса,
+   * и устанавливает его, если оно изменилось
+   * @param {string} actuator Идентификатор актуатора (ключ в объекте dev)
+   * @param {HeatingStateData} data Объект с полями: curTemp, targetTemp, hysteresis
+   * @returns {boolean} Новое состояние актуатора
+   */
+  function updateHeatingState(actuator, data) {
+    var currentState = dev[actuator];
+    var upperLimit = data.targetTemp + data.hysteresis;
+    var lowerLimit = data.targetTemp - data.hysteresis;
+    log.debug('curTemp: ' + data.curTemp);
+    log.debug('upperLimit: ' + upperLimit);
+    log.debug('lowerLimit: ' + lowerLimit);
+    log.debug('currentState: ' + currentState);
+
+    var isNeedTurnOffHeating =
+      data.curTemp > upperLimit && currentState === true;
+    var isNeedTurnOnHeating =
+      data.curTemp < lowerLimit && currentState === false;
+    log.debug('isNeedTurnOffHeating: ' + isNeedTurnOffHeating);
+    log.debug('isNeedTurnOnHeating: ' + isNeedTurnOnHeating);
+
+    var resultState = currentState;
+    if (isNeedTurnOnHeating) {
+      resultState = true;
+    } else if (isNeedTurnOffHeating) {
+      resultState = false;
+    }
+
+    if (resultState !== currentState) {
+      dev[actuator] = resultState;
+      log.debug(
+        'Heating turned ' +
+          (resultState ? 'ON' : 'OFF') +
+          '. Current temperature: ' +
+          data.curTemp
+      );
+    }
+
+    return resultState;
   }
 
   // ======================================================
@@ -151,7 +218,7 @@ function init(deviceTitle, cfg) {
     log.debug('Target temperature changed to: ' + curTargetTemp);
 
     /** Change hysteresis events configuration */
-    var tempSensorEvents = tm.registry[cfg.tempSensor].events;
+    var tempSensorEvents = tm.topics[cfg.tempSensor].events;
     tempSensorEvents['whenCrossUpper'].cfg.actionValue =
       curTargetTemp + cfg.hysteresis;
     tempSensorEvents['whenCrossLower'].cfg.actionValue =
@@ -159,32 +226,39 @@ function init(deviceTitle, cfg) {
 
     /** Check the need to change the actuator state  */
     var curTemp = dev[cfg.tempSensor];
-    var upperLimit = curTargetTemp + cfg.hysteresis;
-    var lowerLimit = curTargetTemp - cfg.hysteresis;
-    var curState = dev[cfg.actuator];
-    log.debug('curTemp: ' + curTemp);
-    log.debug('upperLimit: ' + upperLimit);
-    log.debug('lowerLimit: ' + lowerLimit);
-    log.debug('curState: ' + curState);
-
-    var isNeedTurnOffHeating = curTemp > upperLimit && curState === true;
-    var isNeedTurnOnHeating = curTemp < lowerLimit && curState === false;
-    log.debug('isNeedTurnOffHeating: ' + isNeedTurnOffHeating);
-    log.debug('isNeedTurnOnHeating: ' + isNeedTurnOnHeating);
-    if (isNeedTurnOffHeating) {
-      dev[cfg.actuator] = false;
-      log.debug('Heating turned OFF. Current temperature: ' + curTemp);
-    } else if (isNeedTurnOnHeating) {
-      dev[cfg.actuator] = true;
-      log.debug('Heating turned ON. Current temperature: ' + curTemp);
-    }
-
+    var data = {
+      curTemp: curTemp,
+      targetTemp: curTargetTemp,
+      hysteresis: cfg.hysteresis,
+    };
+    updateHeatingState(cfg.actuator, data);
     return true;
   }
 
   function cbActuatorChange(topic, event) {
     var curState = topic.val.new;
     dev[genNames.vDevice + '/actuatorStatus'] = curState;
+    return true;
+  }
+
+  function cbRuleEnabled(topic, event) {
+    var curTemp = dev[cfg.tempSensor];
+    var vdTargetTempTopic = genNames.vDevice + '/targetTemperature';
+    var curTargetTemp = dev[vdTargetTempTopic];
+    var data = {
+      curTemp: curTemp,
+      targetTemp: curTargetTemp,
+      hysteresis: cfg.hysteresis,
+    };
+    updateHeatingState(cfg.actuator, data);
+    /* Sync actual device status with VD **/
+    dev[genNames.vDevice + '/currentTemperature'] = dev[cfg.tempSensor];
+    return true;
+  }
+
+  function cbRuleDisabled(topic, event) {
+    dev[cfg.actuator] = false;
+    dev[genNames.vDevice + '/actuatorStatus'] = false;
     return true;
   }
 }
