@@ -40,6 +40,11 @@ tm.installPlugin(basicVdPlugin);
  * @returns {boolean} Возвращает true, при успешной инициализации иначе false
  */
 function init(deviceTitle, cfg) {
+  if (cfg.tempLimitsMin >= cfg.tempLimitsMax) {
+    log.error('Config temperature limit "Min" must be less than "Max"');
+    return;
+  }
+
   var genNames = generateNames(cfg.idPrefix);
 
   tm.registerSingleEvent(cfg.tempSensor, 'whenChange', cbTempChange);
