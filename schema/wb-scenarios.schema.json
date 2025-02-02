@@ -75,9 +75,9 @@
           }
         },
         "id_prefix": {
-          "title": "idPrefix_title",
+          "title": "generalScenarioIdPrefixTitle",
           "type": "string",
-          "description": "idPrefix_description",
+          "description": "generalScenarioIdPrefixDescription",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "devices_control",
@@ -299,9 +299,9 @@
           }
         },
         "id_prefix": {
-          "title": "idPrefix_title",
+          "title": "generalScenarioIdPrefixTitle",
           "type": "string",
-          "description": "idPrefix_description",
+          "description": "generalScenarioIdPrefixDescription",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "lightControl",
@@ -706,8 +706,8 @@
         },
         "idPrefix": {
           "type": "string",
-          "title": "ID Prefix",
-          "description": "idPrefix_description",
+          "title": "generalScenarioIdPrefixTitle",
+          "description": "generalScenarioIdPrefixDescription",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "room_warm_floor",
@@ -850,6 +850,8 @@
       "generalScenarioGenerateRuleTitle": "Activate scenario (creates a virtual device and a scenario rule)",
       "generalScenarioIsDebugEnabled": "Turn on the debug",
       "generalScenarioName": "Scenario name",
+      "generalScenarioIdPrefixTitle": "MQTT id of the device",
+      "generalScenarioIdPrefixDescription": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
       "generalMqttTopicNameTitle": "MQTT topic name",
       "generalMqttTopicNameDescription": "In format: Device/Control",
       "generalBehaviorTypeTitle": "Trigger logic",
@@ -857,9 +859,8 @@
       "generalErrorRegexpPatternMessage": "Value must be valid",
       "generalEnumSetValue": "Set Value",
       "generalSensorArrTitle": "Elements list",
+
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
-      "idPrefix_title": "MQTT id of the device",
-      "idPrefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
@@ -868,6 +869,7 @@
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
+
       "lightControlScenarioName": "Light control",
       "lightControlScenarioDescription": "The scenario controls lighting devices using switches,<br>motion sensors or opening sensors.",
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Light devices</p>",
@@ -909,6 +911,8 @@
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
       "generalScenarioIsDebugEnabled": "Включить отладку",
       "generalScenarioName": "Название сценария",
+      "generalScenarioIdPrefixTitle": "Идентификатор устройства в MQTT",
+      "generalScenarioIdPrefixDescription": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
       "generalMqttTopicNameTitle": "Имя MQTT топика",
       "generalMqttTopicNameDescription": "В формате: Устройство/Контрол",
       "generalBehaviorTypeTitle": "Логика срабатывания",
@@ -916,12 +920,11 @@
       "generalErrorRegexpPatternMessage": "Значение должно быть корректным",
       "generalEnumSetValue": "Установить значение",
       "generalSensorArrTitle": "Список элементов",
+
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
-      "idPrefix_title": "Идентификатор устройства в MQTT",
-      "idPrefix_description": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
@@ -940,6 +943,7 @@
       "Disable (switch)": "Выключить (для переключателей)",
       "Increase Value By": "Увеличить значение на",
       "Decrease Value By": "Уменьшить  значение на",
+
       "lightControlScenarioName": "Управление светом",
       "lightControlScenarioDescription": "Сценарий управляет устройствами освещения с помощью выключателей,<br>датчиков движения или датчиков открытия.",
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Устройства освещения</p>",
