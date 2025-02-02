@@ -722,6 +722,7 @@
         "targetTemperature": {
           "type": "number",
           "title": "thermostatTargetTemperatureTitle",
+          "description": "thermostatTargetTemperatureDescription",
           "default": 22,
           "propertyOrder": 4,
           "options": {
@@ -731,7 +732,6 @@
         "temperatureLimits": {
           "type": "object",
           "title": "thermostatTempLimitsObjTitle",
-          "description": "thermostatTempLimitsObjDescription",
           "propertyOrder": 5,
           "_format": "grid",
           "options": {
@@ -765,6 +765,7 @@
         "hysteresis": {
           "type": "number",
           "title": "thermostatHysteresisTitle",
+          "description": "thermostatHysteresisDescription",
           "default": 1,
           "propertyOrder": 6,
           "options": {
@@ -893,13 +894,14 @@
       "thermostatScenarioName": "Thermostat",
       "thermostatScenarioDescription": "This scenario provides the ability to control the heater depending on the temperature",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
-      "thermostatTempLimitsObjTitle": "Temperature limits",
-      "thermostatTempLimitsObjDescription": "The limit available for setting the temperature",
+      "thermostatTargetTemperatureDescription": "The temperature value you want the system to maintain. This is the 'target' the device is aiming for.",
+      "thermostatTempLimitsObjTitle": "Virtual device temperature setting limits",
       "thermostatTempLimitsMinTitle": "Minimum Temperature (°C)",
       "thermostatTempLimitsMinDescription": "The lowest limit",
       "thermostatTempLimitsMaxTitle": "Maximum Temperature (°C)",
       "thermostatTempLimitsMaxDescription": "The highest limit",
       "thermostatHysteresisTitle": "Hysteresis (°C)",
+      "thermostatHysteresisDescription": "The range around the set temperature in which the system does not react<br>to changes. It is necessary so that the device does not turn on and off<br>too often, ensuring stable operation.",
       "thermostatTemperatureSensorTitle": "Temperature sensor",
       "thermostatActuatorTitle": "Heater"
     },
@@ -964,14 +966,15 @@
 
       "thermostatScenarioName": "Термостат",
       "thermostatScenarioDescription": "Данный сценарий предоставляет возможность управления нагревателем в зависимости от температуры",
-      "thermostatTargetTemperatureTitle": "Целевая температура (°C)",
-      "thermostatTempLimitsObjTitle": "Границы температуры",
-      "thermostatTempLimitsObjDescription": "Границы доступные при задании температуры",
+      "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
+      "thermostatTargetTemperatureDescription": "Значение температуры, которое вы хотите поддерживать в системе. Это 'цель', к которой стремится устройство.",
+      "thermostatTempLimitsObjTitle": "Ограничения виртуального устройства на установку температуры",
       "thermostatTempLimitsMinTitle": "Минимальная температура (°C)",
       "thermostatTempLimitsMinDescription": "Нижняя граница",
       "thermostatTempLimitsMaxTitle": "Максимальная температура (°C)",
       "thermostatTempLimitsMaxDescription": "Верхняя граница",
       "thermostatHysteresisTitle": "Гистерезис (°C)",
+      "thermostatHysteresisDescription": "Диапазон вокруг заданной температуры, в котором система не реагирует на<br>изменения. Он нужен, чтобы устройство не включалось и выключалос слишком<br>часто, обеспечивая стабильную работу.",
       "thermostatTemperatureSensorTitle": "Датчик температуры",
       "thermostatActuatorTitle": "Нагреватель"
     }
