@@ -60,9 +60,9 @@ function initializeScenario(scenario) {
     tempSensor: scenario.temperatureSensor,
     actuator: scenario.actuator,
   };
-  var isInitSucess = scenarioModule.init(scenario.name, cfg);
+  var isInitSuccess = scenarioModule.init(scenario.name, cfg);
 
-  if (isInitSucess !== true) {
+  if (isInitSuccess !== true) {
     log.error(
       'Error: Init operation aborted for ' +
         'scenario name: "' +
