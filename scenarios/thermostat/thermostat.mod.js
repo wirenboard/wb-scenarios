@@ -129,7 +129,7 @@ function init(deviceTitle, cfg) {
     mode: tm.MODES.SERVICE,
   });
 
-  tm.initVirtualDevice(genNames.vDevice, deviceTitle);
+  tm.createBasicVD(genNames.vDevice, deviceTitle);
 
   tm.vd.addCell('targetTemperature', {
     title: {
