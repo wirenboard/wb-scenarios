@@ -90,12 +90,12 @@ function init(deviceTitle, cfg) {
     idPrefix = transliterate(deviceTitle);
   }
 
+  var genNames = generateNames(idPrefix);
+  tm.createBasicVD(genNames.vDevice, deviceTitle);
   var isConfigValid = validateConfig(cfg);
   if (isConfigValid !== true) {
     return false;
   }
-
-  var genNames = generateNames(idPrefix);
 
   tm.registerSingleEvent(cfg.tempSensor, 'whenChange', cbTempChange);
 
@@ -128,8 +128,6 @@ function init(deviceTitle, cfg) {
   tm.registerSingleEvent(vdRuleStatusTopic, 'whenDisabled', cbRuleDisabled, {
     mode: tm.MODES.SERVICE,
   });
-
-  tm.createBasicVD(genNames.vDevice, deviceTitle);
 
   tm.vd.addCell('targetTemperature', {
     title: {
