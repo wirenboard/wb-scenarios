@@ -81,7 +81,7 @@ function install(manager, options) {
     var vdResult = {
       devObj: devObj,
       name: devName,
-      setError: setError,
+      setTotalError: setTotalError,
       addCell: addCell,
       addAlarm: addAlarm,
     };
@@ -100,7 +100,7 @@ function install(manager, options) {
      *
      * @param {string} errorMsg Сообщение об ошибке
      */
-    function setError(errorMsg) {
+    function setTotalError(errorMsg) {
       if (!devObj) {
         log.error('Виртуальное устройство не инициализировано');
         return;
