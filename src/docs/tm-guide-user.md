@@ -309,7 +309,7 @@ function main() {
 
   // Если сильно хочется работать с девайсом старыми способами - то можно либо получить имя, либо сразу объект
   log.debug('Виртуальное устройство с именем: "{}"', tm.vd.name)
-  tm.vd.device.addControl('test_text', {
+  tm.vd.devObj.addControl('test_text', {
     title: {
       en: 'cellTitleTextEn',
       ru: 'cellTitleTextRu',

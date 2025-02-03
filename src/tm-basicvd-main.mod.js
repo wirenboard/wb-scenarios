@@ -48,9 +48,9 @@ function install(manager, options) {
       },
     };
 
-    var device = defineVirtualDevice(devName, config);
+    var devObj = defineVirtualDevice(devName, config);
 
-    if (!device) {
+    if (!devObj) {
       log.error('Не удалось создать виртуальное устройство:', devName);
       return false;
     }
@@ -79,8 +79,7 @@ function install(manager, options) {
 
     // Создание объекта vd
     var vdResult = {
-      /** TODO: rename device to devObj */
-      device: device,
+      devObj: devObj,
       name: devName,
       setError: setError,
       addCell: addCell,
@@ -102,14 +101,14 @@ function install(manager, options) {
      * @param {string} errorMsg Сообщение об ошибке
      */
     function setError(errorMsg) {
-      if (!device) {
+      if (!devObj) {
         log.error('Виртуальное устройство не инициализировано');
         return;
       }
 
       log.error('ERROR: ' + errorMsg);
 
-      device.controlsList().forEach(function (ctrl) {
+      devObj.controlsList().forEach(function (ctrl) {
         ctrl.setError('ERROR: ' + errorMsg);
       });
       // TODO: In this place may be add output to text field or create allert
@@ -122,19 +121,19 @@ function install(manager, options) {
      * @param {Object} cellConfig Конфигурация ячейки
      */
     function addCell(cellName, cellConfig) {
-      if (!device) {
+      if (!devObj) {
         log.error('Виртуальное устройство не инициализировано');
         return;
       }
 
       /* Проверка на существование такой ячейки */
       var fullControlName = devName + '/' + cellName;
-      if (device.getControl(fullControlName)) {
+      if (devObj.getControl(fullControlName)) {
         log.error('Ячейка уже существует:', cellName);
         return;
       }
 
-      device.addControl(cellName, cellConfig);
+      devObj.addControl(cellName, cellConfig);
       log.debug('Ячейка добавлена в виртуальное устройство:', cellName);
     }
   }
