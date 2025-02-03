@@ -630,6 +630,9 @@
       "title": "thermostatScenarioName",
       "description": "thermostatScenarioDescription",
       "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
       "properties": {
         "componentVersion": {
           "type": "integer",
@@ -770,10 +773,12 @@
         }
       },
       "required": [
+        "componentVersion",
         "scenarioType",
         "enable",
         "name",
         "targetTemperature",
+        "temperatureLimits",
         "hysteresis",
         "temperatureSensor",
         "actuator"
