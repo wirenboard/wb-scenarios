@@ -62,7 +62,8 @@ function validateConfig(cfg) {
   var tempSensorType = dev[cfg.tempSensor + '#type'];
   var actuatorType = dev[cfg.actuator + '#type'];
   var isTypesCorrect =
-    tempSensorType === 'value' && actuatorType === 'switch';
+    (tempSensorType === 'value' || tempSensorType === 'temperature') &&
+    actuatorType === 'switch';
   if (isTypesCorrect !== true) {
     tm.vd.setError(
       'Sensor/actuator topic types must be "value"/"switch"-actual:"{}"/"{}"',
