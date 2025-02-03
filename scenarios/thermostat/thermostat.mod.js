@@ -34,6 +34,46 @@ tm.installPlugin(basicVdPlugin);
  */
 
 /**
+ * Проверяет параметры конфигурации на корректность
+ * @param {ThermostatConfig} cfg Параметры конфигурации
+ * @returns {boolean} Статус проверки параметров:
+ *     - true: если параметры корректны
+ *     - false: если есть ошибка
+ */
+function validateConfig(cfg) {
+  var res = true;
+
+  var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
+  if (isLimitsCorrect !== true) {
+    log.error('Config temperature limit "Min" must be less than "Max"');
+    res = false;
+  }
+
+  var isTargetTempCorrect =
+    cfg.targetTemp >= cfg.tempLimitsMin &&
+    cfg.targetTemp <= cfg.tempLimitsMax;
+  if (isTargetTempCorrect !== true) {
+    log.error('Target temperature must be in the range from "Min" to "Max"');
+    res = false;
+  }
+
+  var tempSensorType = dev[cfg.tempSensor + '#type'];
+  var actuatorType = dev[cfg.actuator + '#type'];
+  var isTypesCorrect =
+    tempSensorType === 'value' && actuatorType === 'switch';
+  if (isTypesCorrect !== true) {
+    log.error(
+      'Sensor/actuator topic types must be "value"/"switch"-actual:"{}"/"{}"',
+      tempSensorType,
+      actuatorType
+    );
+    res = false;
+  }
+
+  return res;
+}
+
+/**
  * Инициализирует виртуальное устройство и определяет правило
  * для управления устройством
  * @param {string} deviceTitle Имя виртуального девайса
@@ -50,10 +90,9 @@ function init(deviceTitle, cfg) {
     idPrefix = transliterate(deviceTitle);
   }
 
-  /** Validate temperature limits */
-  if (cfg.tempLimitsMin >= cfg.tempLimitsMax) {
-    log.error('Config temperature limit "Min" must be less than "Max"');
-    return;
+  var isConfigValid = validateConfig(cfg);
+  if (isConfigValid !== true) {
+    return false;
   }
 
   var genNames = generateNames(idPrefix);
