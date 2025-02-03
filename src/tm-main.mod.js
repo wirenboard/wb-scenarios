@@ -216,7 +216,7 @@ function initRulesForAllTopics(ruleName) {
     var topic = devName + '/' + cellName;
     this.runProcessors(this.MODES.GENERAL, topic, newValue);
   }.bind(this);
-  isOk = this.defineGeneralRule(ruleName, topics, generalFn);
+  isOk = this.defineRule(ruleName, topics, generalFn);
   if (!isOk) {
     log.error('Failed to create general rule for all topics');
     return false;
