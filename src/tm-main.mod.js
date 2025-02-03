@@ -266,7 +266,6 @@ function _disableAllRulesOfType(ruleType) {
       curRule.disable();
     }
   }
-  log.debug('All rules of type "' + ruleType + '" have been disabled.');
 }
 
 /**
@@ -281,7 +280,6 @@ function _enableAllRulesOfType(ruleType) {
       curRule.enable();
     }
   }
-  log.debug('All rules of type "' + ruleType + '" have been enabled.');
 }
 
 /**
@@ -296,7 +294,6 @@ function _runAllRulesOfType(ruleType) {
       curRule.run();
     }
   }
-  log.debug('All rules of type "' + ruleType + '" have been executed.');
 }
 
 /**
@@ -304,7 +301,6 @@ function _runAllRulesOfType(ruleType) {
  */
 function disable() {
   disableRule(this.ruleId);
-  log.debug('Rule disabled: {}, {}', this.ruleId, this.ruleId);
 }
 
 /**
@@ -312,7 +308,6 @@ function disable() {
  */
 function enable() {
   enableRule(this.ruleId);
-  log.debug('Rule enabled: {}, {}', this.ruleId, this.ruleId);
 }
 
 /**
@@ -320,7 +315,6 @@ function enable() {
  */
 function run() {
   runRule(this.ruleId);
-  log.debug('Rule triggered manually: {}, {}', this.ruleId, this.ruleId);
 }
 
 /**
@@ -392,11 +386,11 @@ function _defineTmRule(name, topics, action, type) {
   });
 
   if (!ruleId) {
-    log.error('Failed to create the rule: {}. Topics: {}', name, topics);
+    log.error('TM: Failed to create the rule: {}. Topics: {}', name, topics);
     return null;
   }
 
-  log.debug('Rule "' + name + '" successfully created with ID: ' + ruleId);
+  log.debug('TM: Rule "' + name + '" successfully created with ID: ' + ruleId);
   return new RuleInstance(name, ruleId, type);
 }
 
@@ -424,7 +418,6 @@ function _defineAndStoreRule(ruleName, topics, action, category) {
 
   /** Store rule */
   this.rules[ruleName] = rule;
-  log.debug('TM: Rule "' + ruleName + '" created and added to registry');
   return true;
 }
 

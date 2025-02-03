@@ -46,10 +46,8 @@ function init(deviceTitle, cfg) {
   var idPrefixProvided = cfg.idPrefix && cfg.idPrefix.trim() !== '';
   if (idPrefixProvided === true) {
     idPrefix = cfg.idPrefix;
-    log.debug('Using provided idPrefix:', idPrefix);
   } else {
     idPrefix = transliterate(deviceTitle);
-    log.debug('Generated idPrefix from deviceTitle:', idPrefix);
   }
 
   /** Validate temperature limits */
@@ -175,17 +173,11 @@ function init(deviceTitle, cfg) {
     var currentState = dev[actuator];
     var upperLimit = data.targetTemp + data.hysteresis;
     var lowerLimit = data.targetTemp - data.hysteresis;
-    log.debug('curTemp: ' + data.curTemp);
-    log.debug('upperLimit: ' + upperLimit);
-    log.debug('lowerLimit: ' + lowerLimit);
-    log.debug('currentState: ' + currentState);
 
     var isNeedTurnOffHeating =
       data.curTemp > upperLimit && currentState === true;
     var isNeedTurnOnHeating =
       data.curTemp < lowerLimit && currentState === false;
-    log.debug('isNeedTurnOffHeating: ' + isNeedTurnOffHeating);
-    log.debug('isNeedTurnOnHeating: ' + isNeedTurnOnHeating);
 
     var resultState = currentState;
     if (isNeedTurnOnHeating) {
@@ -196,12 +188,6 @@ function init(deviceTitle, cfg) {
 
     if (resultState !== currentState) {
       dev[actuator] = resultState;
-      log.debug(
-        'Heating turned ' +
-          (resultState ? 'ON' : 'OFF') +
-          '. Current temperature: ' +
-          data.curTemp
-      );
     }
 
     return resultState;
@@ -214,14 +200,12 @@ function init(deviceTitle, cfg) {
   function cbTempCrossUpper(topic, event) {
     var curTemp = topic.val.new;
     dev[cfg.actuator] = false;
-    log.debug('Heating turned OFF. Current temperature: ' + curTemp);
     return true;
   }
 
   function cbTempCrossLower(topic, event) {
     var curTemp = topic.val.new;
     dev[cfg.actuator] = true;
-    log.debug('Heating turned ON. Current temperature: ' + curTemp);
     return true;
   }
 
@@ -233,7 +217,6 @@ function init(deviceTitle, cfg) {
 
   function cbTargetTempChange(topic, event) {
     var curTargetTemp = topic.val.new;
-    log.debug('Target temperature changed to: ' + curTargetTemp);
 
     /** Change hysteresis events configuration */
     var tempSensorEvents = tm.topics[cfg.tempSensor].events;
