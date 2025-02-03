@@ -745,7 +745,7 @@
           "type": "string",
           "_format": "wb-autocomplete",
           "title": "thermostatTemperatureSensorTitle",
-          "description": "What input control we need use in format: device/control",
+          "description": "generalMqttTopicNameDescription",
           "pattern": "^[^/+#]+/[^/+#]+$",
           "propertyOrder": 7,
           "options": {
@@ -760,7 +760,7 @@
           "type": "string",
           "_format": "wb-autocomplete",
           "title": "thermostatActuatorTitle",
-          "description": "What output control we need use in format: device/control",
+          "description": "generalMqttTopicNameDescription",
           "pattern": "^[^/+#]+/[^/+#]+$",
           "propertyOrder": 9,
           "options": {
@@ -861,7 +861,7 @@
       "lightControlLightSwitchesObjTitle": "Switch",
 
       "thermostatScenarioName": "Thermostat",
-      "thermostatScenarioDescription": "This scenario provides the ability to control the heater depending on the temperature",
+      "thermostatScenarioDescription": "Temperature dependent heater control scenario",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
       "thermostatTargetTemperatureDescription": "The temperature value you want the system to maintain. This is the 'target' the device is aiming for.",
       "thermostatTempLimitsObjTitle": "Virtual device temperature setting limits",
@@ -936,7 +936,7 @@
       "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
 
       "thermostatScenarioName": "Термостат",
-      "thermostatScenarioDescription": "Данный сценарий предоставляет возможность управления нагревателем в зависимости от температуры",
+      "thermostatScenarioDescription": "Сценарий управления нагревателем в зависимости от температуры",
       "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
       "thermostatTargetTemperatureDescription": "Значение температуры, которое вы хотите поддерживать в системе. Это 'цель', к которой стремится устройство.",
       "thermostatTempLimitsObjTitle": "Ограничения виртуального устройства на установку температуры",
@@ -945,7 +945,7 @@
       "thermostatTempLimitsMaxTitle": "Максимальная температура (°C)",
       "thermostatTempLimitsMaxDescription": "Верхняя граница",
       "thermostatHysteresisTitle": "Гистерезис (°C)",
-      "thermostatHysteresisDescription": "Диапазон вокруг заданной температуры, в котором система не реагирует на<br>изменения. Он нужен, чтобы устройство не включалось и выключалос слишком<br>часто, обеспечивая стабильную работу.",
+      "thermostatHysteresisDescription": "Диапазон вокруг заданной температуры, в котором система не реагирует на<br>изменения. Он нужен, чтобы устройство не включалось и выключалось слишком<br>часто, обеспечивая стабильную работу.",
       "thermostatTemperatureSensorTitle": "Датчик температуры",
       "thermostatActuatorTitle": "Нагреватель"
     }
