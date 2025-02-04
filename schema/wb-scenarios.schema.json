@@ -614,8 +614,8 @@
         }
       },
       "required": [
-        "componentVersion",
         "scenarioType",
+        "componentVersion",
         "enable",
         "name",
         "id_prefix",
@@ -773,8 +773,8 @@
         }
       },
       "required": [
-        "componentVersion",
         "scenarioType",
+        "componentVersion",
         "enable",
         "name",
         "targetTemperature",
