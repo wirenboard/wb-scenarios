@@ -20,8 +20,12 @@ tm.installPlugin(basicVdPlugin);
 
 /**
  * @typedef {Object} ThermostatConfig
- * @property {string} idPrefix Префикс сценария для идентификации
- *     виртуальногоустройства и правила
+ * @property {string} idPrefix Не обязательный префикс к имени для
+ *     идентификации виртуального устройства и правила:
+ *     - Если параметр указан, то ВУ и правило будут иметь имя вида
+ *       `wbsc_<!idPrefix!>` и `wbru_<!idPrefix!>`
+ *     - Если не указан (undefined), то правая часть создается методом
+ *       транслитерации из имени переданного в `init()`
  * @property {number} targetTemp Целевая температура, заданная пользователем
  * @property {number} hysteresis Значение гистерезиса (диапазон переключения)
  * @property {number} tempLimitsMin Ограничение установки температуры снизу

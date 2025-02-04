@@ -1,12 +1,12 @@
+# Описание возможностей хелпера для виртуальных девайсов
+
 ## addGroupTitleRO
 
 Позволяет создавать топики - заголовки полезные при отладке
 
 ВНИМАНИЕ: Их нельзя использовать в релизах - применять только при отладке!
 
-
-```
-
+```javascript
 var vdHelpers = require('virtual-device-helpers.mod');
 
 ...
@@ -34,9 +34,9 @@ var vdHelpers = require('virtual-device-helpers.mod');
 Внешний вид:
 ![Внешний вид заголовков](virtual-device-helpers-title.png)
 
-
 Динамическое добавление аларма к виртуальному девайсу
-```
+
+```javascript
 var vdHelpers = require('virtual-device-helpers.mod');
 
 ...
