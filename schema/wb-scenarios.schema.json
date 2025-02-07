@@ -21,6 +21,9 @@
         },
         {
           "$ref": "#/definitions/lightControl"
+        },
+        {
+          "$ref": "#/definitions/thermostat"
         }
       ],
       "_format": "wb-multiple",
@@ -42,9 +45,7 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": [
-            "devicesControl"
-          ],
+          "enum": ["devicesControl"],
           "default": "devicesControl",
           "options": {
             "hidden": true
@@ -72,9 +73,9 @@
           }
         },
         "id_prefix": {
-          "title": "id_prefix_title",
+          "title": "generalScenarioIdPrefixTitle",
           "type": "string",
-          "description": "id_prefix_description",
+          "description": "generalScenarioIdPrefixDescription",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "devices_control",
@@ -116,7 +117,7 @@
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
-                "patternmessage": "generalErrorRegexpPatternMessage",
+                  "patternmessage": "generalErrorRegexpPatternMessage",
                   "wb": {
                     "data": "devices"
                   }
@@ -128,11 +129,7 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "generalBehaviorTypeTitle",
-                "enum": [
-                  "whenChange",
-                  "whenDisabled",
-                  "whenEnabled"
-                ],
+                "enum": ["whenChange", "whenDisabled", "whenEnabled"],
                 "default": "whenChange",
                 "options": {
                   "enum_titles": [
@@ -143,10 +140,7 @@
                 }
               }
             },
-            "required": [
-              "control",
-              "behaviorType"
-            ]
+            "required": ["control", "behaviorType"]
           }
         },
         "outControls": {
@@ -219,10 +213,7 @@
                 "default": 0
               }
             },
-            "required": [
-              "control",
-              "behaviorType"
-            ]
+            "required": ["control", "behaviorType"]
           }
         }
       },
@@ -256,9 +247,7 @@
         },
         "scenarioType": {
           "type": "string",
-          "enum": [
-            "lightControl"
-          ],
+          "enum": ["lightControl"],
           "default": "lightControl",
           "options": {
             "hidden": true
@@ -296,9 +285,9 @@
           }
         },
         "id_prefix": {
-          "title": "id_prefix_title",
+          "title": "generalScenarioIdPrefixTitle",
           "type": "string",
-          "description": "id_prefix_description",
+          "description": "generalScenarioIdPrefixDescription",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
           "default": "lightControl",
@@ -362,10 +351,7 @@
                     "type": "string",
                     "propertyOrder": 2,
                     "title": "outControls_behaviorType_title",
-                    "enum": [
-                      "setEnable",
-                      "setValueNumericInput"
-                    ],
+                    "enum": ["setEnable", "setValueNumericInput"],
                     "default": "setEnable",
                     "options": {
                       "enum_titles": [
@@ -387,10 +373,7 @@
                     }
                   }
                 },
-                "required": [
-                  "mqttTopicName",
-                  "behaviorType"
-                ]
+                "required": ["mqttTopicName", "behaviorType"]
               }
             }
           }
@@ -462,9 +445,7 @@
                     "minLength": 3
                   }
                 },
-                "required": [
-                  "mqttTopicName"
-                ]
+                "required": ["mqttTopicName"]
               }
             }
           }
@@ -528,10 +509,7 @@
                   "behaviorType": {
                     "type": "string",
                     "title": "generalBehaviorTypeTitle",
-                    "enum": [
-                      "whileValueHigherThanThreshold",
-                      "whenEnabled"
-                    ],
+                    "enum": ["whileValueHigherThanThreshold", "whenEnabled"],
                     "options": {
                       "enum_titles": [
                         "lightControlMotionSensorsEnumWhileValue",
@@ -553,10 +531,7 @@
                     }
                   }
                 },
-                "required": [
-                  "mqttTopicName",
-                  "behaviorType"
-                ]
+                "required": ["mqttTopicName", "behaviorType"]
               }
             }
           }
@@ -622,10 +597,7 @@
                     "propertyOrder": 2,
                     "title": "generalBehaviorTypeTitle",
                     "description": "lightControlOpeningSensorsBehaviorTypeDescription",
-                    "enum": [
-                      "whenDisabled",
-                      "whenEnabled"
-                    ],
+                    "enum": ["whenDisabled", "whenEnabled"],
                     "default": "whenEnabled",
                     "options": {
                       "enum_titles": [
@@ -635,18 +607,15 @@
                     }
                   }
                 },
-                "required": [
-                  "mqttTopicName",
-                  "behaviorType"
-                ]
+                "required": ["mqttTopicName", "behaviorType"]
               }
             }
           }
         }
       },
       "required": [
-        "componentVersion",
         "scenarioType",
+        "componentVersion",
         "enable",
         "name",
         "id_prefix",
@@ -654,6 +623,165 @@
         "motionSensors",
         "openingSensors",
         "lightSwitches"
+      ]
+    },
+    "thermostat": {
+      "type": "object",
+      "title": "thermostatScenarioName",
+      "description": "thermostatScenarioDescription",
+      "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
+      "properties": {
+        "componentVersion": {
+          "type": "integer",
+          "title": "Config version",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "scenarioType": {
+          "type": "string",
+          "enum": ["thermostat"],
+          "default": "thermostat",
+          "options": {
+            "hidden": true
+          }
+        },
+        "enable": {
+          "type": "boolean",
+          "title": "generalScenarioGenerateRuleTitle",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "generalScenarioName",
+          "default": "Теплый пол в комнате",
+          "minLength": 1,
+          "maxLength": 30,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "idPrefix": {
+          "type": "string",
+          "title": "generalScenarioIdPrefixTitle",
+          "description": "generalScenarioIdPrefixDescription",
+          "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
+          "pattern": "^$|^[0-9a-zA-Z_]+$",
+          "default": "",
+          "minLength": 0,
+          "maxLength": 15,
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessage"
+          }
+        },
+        "targetTemperature": {
+          "type": "number",
+          "title": "thermostatTargetTemperatureTitle",
+          "description": "thermostatTargetTemperatureDescription",
+          "default": 22,
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "temperatureLimits": {
+          "type": "object",
+          "title": "thermostatTempLimitsObjTitle",
+          "propertyOrder": 5,
+          "_format": "grid",
+          "options": {
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "min": {
+              "type": "number",
+              "title": "thermostatTempLimitsMinTitle",
+              "description": "thermostatTempLimitsMinDescription",
+              "default": 15,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 6
+              }
+            },
+            "max": {
+              "type": "number",
+              "title": "thermostatTempLimitsMaxTitle",
+              "description": "thermostatTempLimitsMaxDescription",
+              "default": 30,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 6
+              }
+            }
+          }
+        },
+        "hysteresis": {
+          "type": "number",
+          "title": "thermostatHysteresisTitle",
+          "description": "thermostatHysteresisDescription",
+          "default": 1,
+          "propertyOrder": 6,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "temperatureSensor": {
+          "type": "string",
+          "_format": "wb-autocomplete",
+          "title": "thermostatTemperatureSensorTitle",
+          "description": "generalMqttTopicNameDescription",
+          "pattern": "^[^/+#]+/[^/+#]+$",
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 12,
+            "wb": {
+              "data": "devices"
+            }
+          },
+          "minLength": 1
+        },
+        "actuator": {
+          "type": "string",
+          "_format": "wb-autocomplete",
+          "title": "thermostatActuatorTitle",
+          "description": "generalMqttTopicNameDescription",
+          "pattern": "^[^/+#]+/[^/+#]+$",
+          "propertyOrder": 9,
+          "options": {
+            "grid_columns": 12,
+            "wb": {
+              "data": "devices"
+            }
+          },
+          "minLength": 1
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "enable",
+        "name",
+        "targetTemperature",
+        "temperatureLimits",
+        "hysteresis",
+        "temperatureSensor",
+        "actuator"
       ]
     }
   },
@@ -683,15 +811,14 @@
       "_format": "tabs"
     }
   },
-  "required": [
-    "configVersion",
-    "scenarios"
-  ],
+  "required": ["configVersion", "scenarios"],
   "translations": {
     "en": {
       "generalScenarioGenerateRuleTitle": "Activate scenario (creates a virtual device and a scenario rule)",
       "generalScenarioIsDebugEnabled": "Turn on the debug",
       "generalScenarioName": "Scenario name",
+      "generalScenarioIdPrefixTitle": "MQTT id of the device",
+      "generalScenarioIdPrefixDescription": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
       "generalMqttTopicNameTitle": "MQTT topic name",
       "generalMqttTopicNameDescription": "In format: Device/Control",
       "generalBehaviorTypeTitle": "Trigger logic",
@@ -699,9 +826,8 @@
       "generalErrorRegexpPatternMessage": "Value must be valid",
       "generalEnumSetValue": "Set Value",
       "generalSensorArrTitle": "Elements list",
+
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
-      "id_prefix_title": "MQTT id of the device",
-      "id_prefix_description": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
@@ -710,6 +836,7 @@
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
+
       "lightControlScenarioName": "Light control",
       "lightControlScenarioDescription": "The scenario controls lighting devices using switches,<br>motion sensors or opening sensors.",
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Light devices</p>",
@@ -731,12 +858,28 @@
       "lightControlLightSwitchesEnableDelayTitle": "Automatic switching off of lights and switching on of automation",
       "lightControlLightSwitchesDelayTitle": "After a specified time from using the switch, the light will be turned off and the lighting control using sensors will be unlocked (seconds).",
       "lightControlLightSwitchesArrDescription": "Using the switch blocks the control of lighting using motion<br>and opening sensors. Unlocking will occur automatically,<br>after a set time or after pressing the switch again.",
-      "lightControlLightSwitchesObjTitle": "Switch"
+      "lightControlLightSwitchesObjTitle": "Switch",
+
+      "thermostatScenarioName": "Thermostat",
+      "thermostatScenarioDescription": "Temperature dependent heater control scenario",
+      "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
+      "thermostatTargetTemperatureDescription": "The temperature value you want the system to maintain. This is the 'target' the device is aiming for.",
+      "thermostatTempLimitsObjTitle": "Virtual device temperature setting limits",
+      "thermostatTempLimitsMinTitle": "Minimum Temperature (°C)",
+      "thermostatTempLimitsMinDescription": "The lowest limit",
+      "thermostatTempLimitsMaxTitle": "Maximum Temperature (°C)",
+      "thermostatTempLimitsMaxDescription": "The highest limit",
+      "thermostatHysteresisTitle": "Hysteresis (°C)",
+      "thermostatHysteresisDescription": "The range around the set temperature in which the system does not react<br>to changes. It is necessary so that the device does not turn on and off<br>too often, ensuring stable operation.",
+      "thermostatTemperatureSensorTitle": "Temperature sensor",
+      "thermostatActuatorTitle": "Heater"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
       "generalScenarioIsDebugEnabled": "Включить отладку",
       "generalScenarioName": "Название сценария",
+      "generalScenarioIdPrefixTitle": "Идентификатор устройства в MQTT",
+      "generalScenarioIdPrefixDescription": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
       "generalMqttTopicNameTitle": "Имя MQTT топика",
       "generalMqttTopicNameDescription": "В формате: Устройство/Контрол",
       "generalBehaviorTypeTitle": "Логика срабатывания",
@@ -744,12 +887,11 @@
       "generalErrorRegexpPatternMessage": "Значение должно быть корректным",
       "generalEnumSetValue": "Установить значение",
       "generalSensorArrTitle": "Список элементов",
+
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
-      "id_prefix_title": "Идентификатор устройства в MQTT",
-      "id_prefix_description": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию.",
@@ -768,6 +910,7 @@
       "Disable (switch)": "Выключить (для переключателей)",
       "Increase Value By": "Увеличить значение на",
       "Decrease Value By": "Уменьшить  значение на",
+
       "lightControlScenarioName": "Управление светом",
       "lightControlScenarioDescription": "Сценарий управляет устройствами освещения с помощью выключателей,<br>датчиков движения или датчиков открытия.",
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Устройства освещения</p>",
@@ -790,7 +933,21 @@
       "lightControlOpeningSensorsObjTitle": "Датчик открытия",
       "lightControlOpeningSensorsBehaviorTypeDescription": "Событие при открытии двери",
       "lightControlOpeningSensorsEnumWhenDisabled": "Когда отключилось",
-      "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось"
+      "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
+
+      "thermostatScenarioName": "Термостат",
+      "thermostatScenarioDescription": "Сценарий управления нагревателем в зависимости от температуры",
+      "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
+      "thermostatTargetTemperatureDescription": "Значение температуры, которое вы хотите поддерживать в системе. Это 'цель', к которой стремится устройство.",
+      "thermostatTempLimitsObjTitle": "Ограничения виртуального устройства на установку температуры",
+      "thermostatTempLimitsMinTitle": "Минимальная температура (°C)",
+      "thermostatTempLimitsMinDescription": "Нижняя граница",
+      "thermostatTempLimitsMaxTitle": "Максимальная температура (°C)",
+      "thermostatTempLimitsMaxDescription": "Верхняя граница",
+      "thermostatHysteresisTitle": "Гистерезис (°C)",
+      "thermostatHysteresisDescription": "Диапазон вокруг заданной температуры, в котором система не реагирует на<br>изменения. Он нужен, чтобы устройство не включалось и выключалось слишком<br>часто, обеспечивая стабильную работу.",
+      "thermostatTemperatureSensorTitle": "Датчик температуры",
+      "thermostatActuatorTitle": "Нагреватель"
     }
   }
 }
