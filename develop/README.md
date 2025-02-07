@@ -124,6 +124,12 @@
 общий смысл большой задачи:
 
 ```text
+feature/INT-271-thermostat/main
+```
+
+Обратите внимание что создать без main нельзя, это ограничение гита
+
+```text
 feature/INT-271-thermostat
 ```
 
@@ -135,7 +141,7 @@ feature/INT-271-thermostat
 понятно где начало названия задачи
 
 ```text
-feature/INT-271-thermostat_add-tm-main
+feature/INT-271-thermostat/init-sc-folder
 ```
 
 ### 2. Пуш первой версии
