@@ -146,9 +146,19 @@ feature/INT-271-thermostat
 Указываем в названии веток примерно следующее:
 
 ```text
+feature/INT-271-thermostat/create-dir-and-readme
+feature/INT-271-thermostat/change-schema
+feature/INT-271-thermostat/change-env-configs
+feature/INT-271-thermostat/implement-transliterate
+feature/INT-271-thermostat/init-and-base-module
+```
+
+В названиях веток лучше не указывать номера, так как порядок PR может
+поменяться и там это легко изменить, а менять из за этого имя ветки будет
+лишним, поэтому такие именя веток где используется номер создавать не нужно:
+
+```text
 feature/INT-271-thermostat/1-create-dir-and-readme
-feature/INT-271-thermostat/2-change-schema
-feature/INT-271-thermostat/3-init-and-base-module
 ```
 
 ### 2. Пуш первой версии
