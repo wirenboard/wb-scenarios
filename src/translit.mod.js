@@ -1,5 +1,5 @@
 /**
- * @file transliterate.mod.js
+ * @file translit.mod.js
  * @description Module containing functions used for transliteration
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
@@ -99,7 +99,7 @@ function replaceChar(char) {
  * @returns {string} The transliterated string in lowercase
  *     with valid characters only
  */
-function transliterate(input) {
+function translit(input) {
   // Step 1: Replace not latin characters with latin equivalents
   var charArray = input.split('');
   var replacedArray = charArray.map(replaceChar);
@@ -112,10 +112,9 @@ function transliterate(input) {
   // Note: Any unsupported characters (e.g., special symbols, emojis) will be replaced with underscores.
   result = result.replace(/[^a-z0-9_]/g, '_');
 
-  // Return the final transliterated string
   return result;
 }
 
-exports.transliterate = function (input) {
-  return transliterate(input);
+exports.translit = function (input) {
+  return translit(input);
 };

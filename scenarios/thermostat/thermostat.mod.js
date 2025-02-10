@@ -11,7 +11,7 @@ var TopicManager = require('tm-main.mod').TopicManager;
 var eventPlugin = require('tm-event-main.mod').eventPlugin;
 var historyPlugin = require('tm-history-main.mod').historyPlugin;
 var basicVdPlugin = require('tm-basicvd-main.mod').basicVdPlugin;
-var transliterate = require('transliterate.mod').transliterate;
+var translit = require('translit.mod').translit;
 
 var tm = new TopicManager();
 tm.installPlugin(historyPlugin);
@@ -99,7 +99,7 @@ function init(deviceTitle, cfg) {
   if (idPrefixProvided === true) {
     idPrefix = cfg.idPrefix;
   } else {
-    idPrefix = transliterate(deviceTitle);
+    idPrefix = translit(deviceTitle);
   }
 
   var genNames = generateNames(idPrefix);
