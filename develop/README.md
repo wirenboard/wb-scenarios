@@ -143,8 +143,12 @@ feature/INT-271-thermostat
 Разделить общее название ветки и подзадачу нижним подчеркиванием чтобы было
 понятно где начало названия задачи
 
+Указываем в названии веток примерно следующее:
+
 ```text
-feature/INT-271-thermostat/create-dir-and-readme
+feature/INT-271-thermostat/1-create-dir-and-readme
+feature/INT-271-thermostat/2-change-schema
+feature/INT-271-thermostat/3-init-and-base-module
 ```
 
 ### 2. Пуш первой версии
@@ -196,6 +200,8 @@ docs: create new scenario dir + add README.md
 
 ```text
 Thermostat: PR 1 - docs: create new scenario dir + add README.md
+Thermostat: PR 2 - feat: add thermostat instance to schema
+Thermostat: PR 3 - feat: add init script + base module
 ```
 
 Описание
