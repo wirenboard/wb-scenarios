@@ -7,6 +7,7 @@
 
 - [Управление устройствами](scenarios/devices-control/README.md)
 - [Управление светом](scenarios/light-control/README.md)
+- [Термостат (нагрев)](scenarios/thermostat/README.md)
 
 ## Установка
 
