@@ -7,10 +7,10 @@
  */
 
 /**
- * Mapping of not latin characters to latin equivalents
+ * Mapping of non-Latin characters to latin equivalents
  * @type {Object<string, string>}
  */
-var map = {
+var translitMap = {
   'а': 'a',
   'б': 'b',
   'в': 'v',
@@ -44,55 +44,31 @@ var map = {
   'э': 'e',
   'ю': 'yu',
   'я': 'ya',
-
-  'А': 'a',
-  'Б': 'b',
-  'В': 'v',
-  'Г': 'g',
-  'Д': 'd',
-  'Е': 'e',
-  'Ё': 'e',
-  'Ж': 'zh',
-  'З': 'z',
-  'И': 'i',
-  'Й': 'y',
-  'К': 'k',
-  'Л': 'l',
-  'М': 'm',
-  'Н': 'n',
-  'О': 'o',
-  'П': 'p',
-  'Р': 'r',
-  'С': 's',
-  'Т': 't',
-  'У': 'u',
-  'Ф': 'f',
-  'Х': 'h',
-  'Ц': 'ts',
-  'Ч': 'ch',
-  'Ш': 'sh',
-  'Щ': 'sch',
-  'Ъ': '',
-  'Ы': 'y',
-  'Ь': '',
-  'Э': 'e',
-  'Ю': 'yu',
-  'Я': 'ya',
 };
+
 /**
  * Replaces a character based on the transliteration map
  *
  * @param {string} char The character to replace
- * @returns {string} The replaced character or the original if not found in the map
+ * @returns {string} The replaced character or original if not found in map
  */
 function replaceChar(char) {
-  return map[char] || char;
+  var res;
+  var mappedChar = translitMap[char];
+
+  if (mappedChar !== undefined) {
+    res = mappedChar;
+  } else {
+    res = char;
+  }
+
+  return res;
 }
 
 /**
  * Transliterates a given string:
- * - From not latin symbols to latin characters
  * - Converts the string to lowercase
+ * - Replaces non-Latin symbols to latin characters
  * - Replaces unsupported characters with underscores
  *
  * @param {string} input The input string to be transliterated
@@ -100,19 +76,19 @@ function replaceChar(char) {
  *     with valid characters only
  */
 function translit(input) {
-  // Step 1: Replace not latin characters with latin equivalents
-  var charArray = input.split('');
+  // Step 1: Convert the input to lowercase
+  var lowerCased = input.toLowerCase();
+
+  // Step 2: Replace non-Latin characters with latin equivalents
+  var charArray = lowerCased.split('');
   var replacedArray = charArray.map(replaceChar);
-  var result = replacedArray.join('');
+  var transliteratedString = replacedArray.join('');
 
-  // Step 2: Convert the result to lowercase
-  result = result.toLowerCase();
+  // Step 3: Replace unsupported characters with underscores
+  //         Allow only letters, digits, and underscores
+  var res = transliteratedString.replace(/[^a-z0-9_]/g, '_');
 
-  // Step 3: Remove unsupported characters (allow only letters, digits, and underscores)
-  // Note: Any unsupported characters (e.g., special symbols, emojis) will be replaced with underscores.
-  result = result.replace(/[^a-z0-9_]/g, '_');
-
-  return result;
+  return res;
 }
 
 exports.translit = function (input) {
