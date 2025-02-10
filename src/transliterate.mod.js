@@ -7,7 +7,7 @@
  */
 
 /**
- * Mapping of Russian characters to Latin equivalents
+ * Mapping of not latin characters to latin equivalents
  * @type {Object<string, string>}
  */
 var map = {
@@ -91,7 +91,7 @@ function replaceChar(char) {
 
 /**
  * Transliterates a given string:
- * - From Russian symbols to Latin characters
+ * - From not latin symbols to latin characters
  * - Converts the string to lowercase
  * - Replaces unsupported characters with underscores
  *
@@ -100,7 +100,7 @@ function replaceChar(char) {
  *     with valid characters only
  */
 function transliterate(input) {
-  // Step 1: Replace Russian characters with Latin equivalents
+  // Step 1: Replace not latin characters with latin equivalents
   var charArray = input.split('');
   var replacedArray = charArray.map(replaceChar);
   var result = replacedArray.join('');
