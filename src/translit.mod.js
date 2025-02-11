@@ -8,6 +8,7 @@
 
 /**
  * Mapping of non-Latin characters to latin equivalents
+ *
  * @type {Object<string, string>}
  */
 var translitMap = {
@@ -53,16 +54,8 @@ var translitMap = {
  * @returns {string} The replaced character or original if not found in map
  */
 function replaceChar(char) {
-  var res;
   var mappedChar = translitMap[char];
-
-  if (mappedChar !== undefined) {
-    res = mappedChar;
-  } else {
-    res = char;
-  }
-
-  return res;
+  return mappedChar !== undefined ? mappedChar : char;
 }
 
 /**
@@ -76,19 +69,7 @@ function replaceChar(char) {
  *     with valid characters only
  */
 function translit(input) {
-  // Step 1: Convert the input to lowercase
-  var lowerCased = input.toLowerCase();
-
-  // Step 2: Replace non-Latin characters with latin equivalents
-  var charArray = lowerCased.split('');
-  var replacedArray = charArray.map(replaceChar);
-  var transliteratedString = replacedArray.join('');
-
-  // Step 3: Replace unsupported characters with underscores
-  //         Allow only letters, digits, and underscores
-  var res = transliteratedString.replace(/[^a-z0-9_]/g, '_');
-
-  return res;
+  return input.toLowerCase().split('').map(replaceChar).join('').replace(/[^a-z0-9_]/g, '_');
 }
 
 exports.translit = function (input) {
