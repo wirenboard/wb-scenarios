@@ -59,17 +59,21 @@ function replaceChar(char) {
 }
 
 /**
- * Transliterates a given string:
- * - Converts the string to lowercase
- * - Replaces non-Latin symbols to latin characters
- * - Replaces unsupported characters with underscores
+ * Transliterates a given string
  *
  * @param {string} input The input string to be transliterated
  * @returns {string} The transliterated string in lowercase
  *     with valid characters only
  */
 function translit(input) {
-  return input.toLowerCase().split('').map(replaceChar).join('').replace(/[^a-z0-9_]/g, '_');
+  return input
+    .toLowerCase()
+    .split('')
+    .map(replaceChar)             // Replaces non-Latin symbols to latin char
+    .join('')
+    .replace(/[^a-z0-9_]/g, '_')  // Replaces unsupported characters with '_'
+    .replace(/_+/g, '_')          // Replace multiple '_' with a single one
+    .replace(/^_+|_+$/g, '');     // Remove leading and trailing '_'
 }
 
 exports.translit = function (input) {
