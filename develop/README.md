@@ -151,7 +151,8 @@ feature/INT-271-thermostat/create-dir-and-readme
 feature/INT-271-thermostat/change-schema
 feature/INT-271-thermostat/change-env-configs
 feature/INT-271-thermostat/implement-transliterate
-feature/INT-271-thermostat/init-and-base-module
+feature/INT-271-thermostat/init-and-empty-module
+feature/INT-271-thermostat/module-add-validation-and-idprefix
 ```
 
 В названиях веток лучше не указывать номера, так как порядок PR может
@@ -170,8 +171,11 @@ feature/INT-271-thermostat/1-create-dir-and-readme
 
 ```text
 Thermostat: PR 1 - docs: create new scenario dir + add README.md
-Thermostat: PR 2 - feat: add thermostat instance to schema
-Thermostat: PR 3 - feat: add init script + base module
+Thermostat: PR 2 - feat: add to schema thermostat instance
+Thermostat: PR 3 - fix: change env files configs - gitattr, prettier, eslint
+Thermostat: PR 4 - feat: implement transliteration module
+Thermostat: PR 5 - feat: add init script + empty module with init()
+Thermostat: PR 6 - feat: module add validation and idprefix
 ```
 
 Описание
@@ -524,6 +528,27 @@ function init(deviceTitle, cfg) {
 Обратите внимание, что имя виртуального устройства и его контролы должны
 называться так же как топики в конвенции WirenBoard - в нашем случае
 используется `snake_case`.
+
+**Проверка связных контролов**
+
+Так как контролы в виртуальном девайсе сценария бывают связаны с другими
+контролами других девайсов, то важно проверять связанные контролы при создании
+наших контролов.
+
+Поэтому нужно создавать такие контролы с осторожностью и только динамически,
+не просто через defineVirtualDevice и cells, а с предварительной проверкой
+наличия связанных контролов. Если связанного контрола нет сейчас - то можно
+решить это двумя методами:
+
+1) Приоритетный метод - выставлять ошибку `/meta/error r` для таких контролов
+   В этом случае все контролы будут отображены, но сказано что есть ошибка.
+2) Создавать их с lazyInit. Опубликуется значение - контрол появится.
+   В этом случае поведение не ломает сценарий, но не очень очевидо - не
+   критично, но не приятно.
+
+То - есть самое важное что нельзя показывать контрол с не корректным
+значением - его либо не должно быть (lazyInit), либо оно должно быть
+с ошибкой (/meta/error).
 
 #### 6.4. Экспорт
 
