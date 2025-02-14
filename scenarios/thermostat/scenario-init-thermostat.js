@@ -106,5 +106,4 @@ function main() {
   }
 }
 
-/* This delay need for correct init all devices after creation **/
-setTimeout(main, 1000);
+main();
