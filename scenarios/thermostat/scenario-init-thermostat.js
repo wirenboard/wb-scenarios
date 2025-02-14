@@ -1,41 +1,39 @@
 /**
  * @file scenario-init-thermostat.js
- * @description Скрипт для инициализации сценариев с типом SCENARIO_TYPE_STR
- *     Этот скрипт:
- *     - Загружает все конфигурации сценарииев с типом
- *       SCENARIO_TYPE_STR из файла
- *     - Находит все активные сценарии данного типа
- *     - Инициализирует их согласно настройкам, указанным
- *       в каждом сценарии
+ * @description Script for init scenarios of the SCENARIO_TYPE_STR type
+ *     This script:
+ *     - Loads all scenario configurations of the specific type from a file
+ *     - Finds all active scenarios of this type
+ *     - Initializes them according to the settings specified in each scenario
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
+ * @link JSDoc comments format <https://jsdoc.app/> - Google styleguide
  */
 
 /**
- * Требуемая версия общей структуры файла конфигурации сценариев
- *   Версия меняется редко, только при изменениях в схеме
- *   на одном уровне с array scenarios[]
+ * Required version of the common scenario configuration file structure
+ *   The version changes rarely, only when there are modifications
+ *   to the schema at the same level as the scenarios[] array
  * @type {number}
  */
 var REQUIRED_GENERAL_CFG_VER = 1;
 
 /**
- * Требуемая версия конфигурации данного вида сценариев
- *   Версия меняется каждый раз когда изменяется структура конфига
- *   данного типа сценария
+ * Required version of the configuration for this type of scenarios
+ *   The version changes every time the structure of the configuration
+ *   for this scenario type is modified
  * @type {number}
  */
 var REQUIRED_SCENARIO_CFG_VER = 1;
 
 /**
- * Строка абсолютного пути расположения файла конфигурации сценариев
+ * String of the absolute path to the scenario configuration file
  * @type {string}
  */
 var CONFIG_PATH = '/etc/wb-scenarios.conf';
 
 /**
- * Строка типа сценария для поиска в массиве конфигов всех сценариев
+ * Scenario type for searching in the array of all scenario configurations
  * @type {string}
  */
 var SCENARIO_TYPE_STR = 'thermostat';
@@ -44,8 +42,8 @@ var helpers = require('scenarios-general-helpers.mod');
 var scenarioModule = require('thermostat.mod');
 
 /**
- * Инициализирует сценарий с использованием указанных настроек
- * @param {object} scenario - Объект сценария, содержащий настройки
+ * Initializes a scenario using the specified settings
+ * @param {object} scenario - The scenario object containing the settings
  * @returns {void}
  */
 function initializeScenario(scenario) {
@@ -100,9 +98,7 @@ function main() {
     return;
   }
 
-  log.debug(
-    'Number of matched scenarios: ' + JSON.stringify(matchedScenarios.length)
-  );
+  log.debug('Number of matched scenarios: ' + matchedScenarios.length);
   log.debug('Matched scenarios JSON: ' + JSON.stringify(matchedScenarios));
 
   for (var i = 0; i < matchedScenarios.length; i++) {
