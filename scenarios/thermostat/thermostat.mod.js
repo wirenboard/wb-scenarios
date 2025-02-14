@@ -7,6 +7,8 @@
  * @link JSDoc comments format <https://jsdoc.app/> - Google styleguide
  */
 
+var translit = require('translit.mod').translit;
+
 /**
  * @typedef {Object} ThermostatConfig
  * @property {string} [idPrefix] Optional prefix for the name to identify
@@ -27,6 +29,68 @@
  */
 
 /**
+ * Validate the configuration parameters
+ * @param {ThermostatConfig} cfg Configuration parameters
+ * @returns {boolean} Validation status:
+ *     - true: if the parameters are valid
+ *     - false: if there is an error
+ */
+function validateConfig(cfg) {
+  var res = true;
+
+  var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
+  if (isLimitsCorrect !== true) {
+    log.error('Config temperature limit "Min" must be less than "Max"');
+    res = false;
+  }
+
+  var isTargetTempCorrect =
+    cfg.targetTemp >= cfg.tempLimitsMin &&
+    cfg.targetTemp <= cfg.tempLimitsMax;
+  if (isTargetTempCorrect !== true) {
+    log.error('Target temperature must be in the range from "Min" to "Max"');
+    res = false;
+  }
+
+  var tempSensorType = dev[cfg.tempSensor + '#type'];
+  var actuatorType = dev[cfg.actuator + '#type'];
+  var isTypesCorrect =
+    (tempSensorType === 'value' || tempSensorType === 'temperature') &&
+    actuatorType === 'switch';
+  if (isTypesCorrect !== true) {
+    log.error(
+      'Sensor/actuator topic types must be "value","temperature"/"switch".' +
+        ' But actual:"' +
+        tempSensorType +
+        '"/"' +
+        actuatorType +
+        '"'
+    );
+    res = false;
+  }
+
+  return res;
+}
+
+/**
+ * Generates the names to be used.
+ * @param {string} prefix Prefix.
+ * @returns {Object} An object with names: { vDevice, rule }
+ */
+function generateNames(prefix) {
+  var delimeter = '_';
+  var scenarioPrefix = 'wbsc' + delimeter;
+  var rulePrefix = 'wbru' + delimeter;
+
+  var generatedNames = {
+    vDevice: scenarioPrefix + prefix,
+    rule: rulePrefix + prefix,
+  };
+
+  return generatedNames;
+}
+
+/**
  * Initializes a virtual device and defines a rule
  * for controlling the device
  * @param {string} deviceTitle Name of the virtual device
@@ -34,7 +98,34 @@
  * @returns {boolean} Returns true if initialization is successful, otherwise false
  */
 function init(deviceTitle, cfg) {
-  /** TODO: Add validation logic + thermostat logic*/
+  // Set 'idPrefix' from user or transliterate from `deviceTitle`
+  var idPrefix = '';
+  var idPrefixProvided = cfg.idPrefix && cfg.idPrefix.trim() !== '';
+  if (idPrefixProvided === true) {
+    idPrefix = cfg.idPrefix;
+  } else {
+    idPrefix = translit(deviceTitle);
+  }
+
+  var genNames = generateNames(idPrefix);
+
+  /**
+   * TODO: 1. Create minimal virtual device
+   * createBasicVD(genNames.vDevice, deviceTitle);
+   */
+  log.debug('genNames.vDevice = "{}"', genNames.vDevice);
+  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate22'
+
+  var isConfigValid = validateConfig(cfg);
+  if (isConfigValid !== true) {
+    return false;
+  }
+
+  // TODO: 2. Create rules for events
+  log.debug('genNames.rule = "{}"', genNames.rule);
+  // При названии сценария 'Теплый пол в комнате' выведется 'wbru_teplyy_pol_v_komnate'
+
+  // TODO: 3. Add cells to VD
 
   return true;
 }
