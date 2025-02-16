@@ -472,22 +472,28 @@ function validateConfig(cfg) {
 
 - Генерация имен
   Принимает на вход префикс и возвращает объект содержащий все имена которые
-  нужны в сценарии.
+  нужны в сценарии. Имя виртуального устройства сценария (обычно это всегда
+  одно устройство) и всех генерируемых сценарием правил должны начинаться
+  префиксом `wbsc_` - чтобы было явно видно что эти сущности сгенерированы
+  автоматически внутри сценариев. Используем один префикс, так как отдельный
+  префикс для правил излишен в силу того, что два этих типа сущностей
+  хранятся в разных таблицах и не пересекаются - поэтому коллизий быть
+  не может.
 
 ```javascript
 /**
- * Генерация имен
- * @param {string} prefix Префикс
- * @returns {Object} Объект с именами: { vDevice, rule }
+ * Generates the names to be used
+ * @param {string} idPrefix Prefix for identifying this algorithm
+ *     For example: 'warm_floor_in_bathroom'
+ * @returns {Object} An object with names: { vDevice, rule }
  */
-function generateNames(prefix) {
+function generateNames(idPrefix) {
   var delimeter = '_';
   var scenarioPrefix = 'wbsc' + delimeter;
-  var rulePrefix = 'wbru' + delimeter;
 
   var generatedNames = {
-    vDevice: scenarioPrefix + prefix,
-    rule: rulePrefix + prefix,
+    vDevice: scenarioPrefix + idPrefix,
+    rule: scenarioPrefix + idPrefix,
   };
 
   return generatedNames;
