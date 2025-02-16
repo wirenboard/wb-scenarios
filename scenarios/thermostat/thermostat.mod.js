@@ -86,6 +86,24 @@ function validateConfig(cfg) {
 }
 
 /**
+ * Generates the names to be used
+ * @param {string} idPrefix Prefix for identifying this algorithm
+ *     For example: 'warm_floor_in_bathroom'
+ * @returns {Object} An object with names: { vDevice, rule }
+ */
+function generateNames(idPrefix) {
+  var delimeter = '_';
+  var scenarioPrefix = 'wbsc' + delimeter;
+
+  var generatedNames = {
+    vDevice: scenarioPrefix + idPrefix,
+    rule: scenarioPrefix + idPrefix,
+  };
+
+  return generatedNames;
+}
+
+/**
  * Initializes a virtual device and defines a rule
  * for controlling the device
  * @param {string} deviceTitle Name of the virtual device
@@ -184,24 +202,6 @@ function init(deviceTitle, cfg) {
   // ======================================================
   //                    Local functions
   // ======================================================
-
-  /**
-   * Генерация имен
-   * @param {string} prefix Префикс
-   * @returns {Object} Объект с именами: { vDevice, rule }
-   */
-  function generateNames(prefix) {
-    var delimeter = '_';
-    var scenarioPrefix = 'wbsc' + delimeter;
-    var rulePrefix = 'wbru' + delimeter;
-
-    var generatedNames = {
-      vDevice: scenarioPrefix + prefix,
-      rule: rulePrefix + prefix,
-    };
-
-    return generatedNames;
-  }
 
   /**
    * @typedef {Object} HeatingStateData
