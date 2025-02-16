@@ -73,22 +73,23 @@ function validateConfig(cfg) {
 }
 
 /**
- * Generates the names to be used.
- * @param {string} prefix Prefix.
+ * Generates the names to be used
+ * @param {string} idPrefix Prefix for identifying this algorithm
+ *     For example: 'warm_floor_in_bathroom'
  * @returns {Object} An object with names: { vDevice, rule }
  */
-function generateNames(prefix) {
+function generateNames(idPrefix) {
   var delimeter = '_';
   var scenarioPrefix = 'wbsc' + delimeter;
-  var rulePrefix = 'wbru' + delimeter;
 
   var generatedNames = {
-    vDevice: scenarioPrefix + prefix,
-    rule: rulePrefix + prefix,
+    vDevice: scenarioPrefix + idPrefix,
+    rule: scenarioPrefix + idPrefix,
   };
 
   return generatedNames;
 }
+
 
 /**
  * Initializes a virtual device and defines a rule
@@ -114,7 +115,7 @@ function init(deviceTitle, cfg) {
    * createBasicVD(genNames.vDevice, deviceTitle);
    */
   log.debug('genNames.vDevice = "{}"', genNames.vDevice);
-  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate22'
+  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
 
   var isConfigValid = validateConfig(cfg);
   if (isConfigValid !== true) {
@@ -123,7 +124,7 @@ function init(deviceTitle, cfg) {
 
   // TODO: 2. Create rules for events
   log.debug('genNames.rule = "{}"', genNames.rule);
-  // При названии сценария 'Теплый пол в комнате' выведется 'wbru_teplyy_pol_v_komnate'
+  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
 
   // TODO: 3. Add cells to VD
 
