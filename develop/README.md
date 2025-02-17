@@ -461,7 +461,7 @@ exports.init = function (deviceTitle, cfg) {
  *     - true: если параметры корректны
  *     - false: если есть ошибка
  */
-function validateConfig(cfg) {
+function isConfigValid(cfg) {
   var res = true;
 
   /** Логика валидации конфигурации  */
