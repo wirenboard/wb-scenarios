@@ -5,6 +5,9 @@
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
+var Logger = require('logger.mod').Logger;
+var log = new Logger('WBSC-helper');
+
 /**
  * Находит и возвращает все включеные сценарии с типом searchScenarioType
  * @param {Array} listScenario - Массив всех сценариев из конфигурации
