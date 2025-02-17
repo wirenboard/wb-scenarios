@@ -1,10 +1,10 @@
 /**
  * @file logger.mod.js
  * @description A logging module supporting:
- *     - Custom lables and the {} format similar to wb-rules logger
+ *     - Custom labels and the {} format similar to wb-rules logger
  *     - Log levels (log, debug, info, warning, error)
  *     - Allows enabling/disabling logging dynamically
- *     - Supports dynamic lable change
+ *     - Supports dynamic label change
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
@@ -25,15 +25,15 @@ function copyArray(srcArr) {
 
 /**
  * Logger constructor
- * @param {string} lable The lable to be added to all log messages in []
+ * @param {string} label The label to be added to all log messages in []
  * @constructor
  */
-function Logger(lable) {
-  if (!lable || typeof lable !== 'string') {
-    log.error('Logger requires a valid string lable');
+function Logger(label) {
+  if (!label || typeof label !== 'string') {
+    log.error('Logger requires a valid string label');
   }
 
-  this.lable = '[' + lable + ']';
+  this.label = '[' + label + ']';
   this.enabled = true; // Logger is enabled by default
 }
 
@@ -49,11 +49,11 @@ Logger.prototype._log = function () {
   var args = copyArray(arguments);
   var level = args.shift(); // Take the first argument as the log level
 
-  // Modify the first argument to include the lable and level
+  // Modify the first argument to include the label and level
   // Need add level - like this DEBUG:
   //     [MyModule] DEBUG: Debugging details here.
-  //     args[0] = this.lable + ' ' + level.toUpperCase() + ': ' + args[0];
-  args[0] = this.lable + ' ' + ': ' + args[0];
+  //     args[0] = this.label + ' ' + level.toUpperCase() + ': ' + args[0];
+  args[0] = this.label + ' ' + ': ' + args[0];
 
   // Call the global log method corresponding to the level
   switch (level) {
@@ -125,15 +125,15 @@ Logger.prototype.disable = function () {
 };
 
 /**
- * Dynamically changes the lable of the logger
- * @param {string} newLable The new lable to be added to  log messages in []
+ * Dynamically changes the label of the logger
+ * @param {string} newLabel The new label to be added to  log messages in []
  */
-Logger.prototype.setLable = function (newLable) {
-  if (!newLable || typeof newLable !== 'string') {
-    log.error('Logger requires a valid string lable');
+Logger.prototype.setLabel = function (newLabel) {
+  if (!newLabel || typeof newLabel !== 'string') {
+    log.error('Logger requires a valid string label');
     return;
   }
-  this.lable = '[' + newLable + ']';
+  this.label = '[' + newLabel + ']';
 };
 
 exports.Logger = Logger;

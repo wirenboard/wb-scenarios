@@ -70,5 +70,5 @@ log.debug('Debugging details here and var = "{}" in text', variable);
 id устройства. Для этого нужно написать:
 
 ```javascript
-logger.setLable('NewLable')
+logger.setLabel('NewLabel')
 ```
