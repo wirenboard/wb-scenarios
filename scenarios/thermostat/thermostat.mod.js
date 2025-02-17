@@ -38,12 +38,11 @@ var log = new Logger('WBSC-thermostat');
  *     - false: if there is an error
  */
 function validateConfig(cfg) {
-  var res = true;
+  var res = false;
 
   var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
   if (isLimitsCorrect !== true) {
     log.error('Config temperature limit "Min" must be less than "Max"');
-    res = false;
   }
 
   var isTargetTempCorrect =
@@ -51,7 +50,6 @@ function validateConfig(cfg) {
     cfg.targetTemp <= cfg.tempLimitsMax;
   if (isTargetTempCorrect !== true) {
     log.error('Target temperature must be in the range from "Min" to "Max"');
-    res = false;
   }
 
   var tempSensorType = dev[cfg.tempSensor + '#type'];
@@ -68,8 +66,11 @@ function validateConfig(cfg) {
         actuatorType +
         '"'
     );
-    res = false;
   }
+
+  var isCfgValidated =
+    isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
+  if(isCfgValidated) res = true;
 
   return res;
 }
