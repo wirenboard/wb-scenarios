@@ -9,7 +9,8 @@
 
 var translit = require('translit.mod').translit;
 var Logger = require('logger.mod').Logger;
-var log = new Logger('WBSC-thermostat-mod');
+var loggerFilePrefix = 'WBSC-thermostat-mod'
+var log = new Logger(loggerFilePrefix);
 
 /**
  * @typedef {Object} ThermostatConfig
@@ -114,6 +115,7 @@ function init(deviceTitle, cfg) {
   } else {
     idPrefix = translit(deviceTitle);
   }
+  log.setPrefix(loggerFilePrefix + '/' + idPrefix);
 
   var genNames = generateNames(idPrefix);
 
