@@ -4,10 +4,12 @@
  *     based on user-specified parameters
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link JSDoc comments format <https://jsdoc.app/> - Google styleguide
+ * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
 var translit = require('translit.mod').translit;
+var Logger = require('logger.mod').Logger;
+var log = new Logger('WBSC-thermostat');
 
 /**
  * @typedef {Object} ThermostatConfig
@@ -89,7 +91,6 @@ function generateNames(idPrefix) {
 
   return generatedNames;
 }
-
 
 /**
  * Initializes a virtual device and defines a rule
