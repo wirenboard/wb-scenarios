@@ -6,6 +6,7 @@
  * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
+var translit = require('translit.mod').translit;
 var Logger = require('logger.mod').Logger;
 var log = new Logger('WBSC-helper');
 
@@ -13,7 +14,7 @@ var log = new Logger('WBSC-helper');
  * Finds and returns all enabled scenarios of the specified type
  * @param {Array} listScenario An array of all scenarios from the config
  * @param {string} searchScenarioType The type of scenario to search for
- * @param {number} reqScenarioCfgVer The configuration version number 
+ * @param {number} reqScenarioCfgVer The configuration version number
  *     for the specific scenario type
  * @returns {Array} An array of active scenarios with type searchScenarioType
  */
@@ -102,6 +103,27 @@ function readAndValidateScenariosConfig(configPath, reqGeneralCfgVer) {
   return listAllScenarios;
 }
 
+/**
+ * Returns the ID prefix based on the provided configuration or
+ *     transliterates the device title
+ * @param {string} deviceTitle The device title used for transliteration
+ *     if 'idPrefix' is not provided
+ * @param {Object} cfg The configuration object containing
+ *     the 'idPrefix' property
+ * @return {string} The ID prefix
+ */
+function getIdPrefix(deviceTitle, cfg) {
+  var idPrefix = '';
+  var isIdPrefixProvided = cfg.idPrefix && cfg.idPrefix.trim() !== '';
+
+  if (isIdPrefixProvided === true) {
+    idPrefix = cfg.idPrefix;
+  } else {
+    idPrefix = translit(deviceTitle);
+  }
+  return idPrefix;
+}
+
 exports.findAllActiveScenariosWithType = function (
   listScenario,
   searchScenarioType,
@@ -120,5 +142,10 @@ exports.readAndValidateScenariosConfig = function (
   reqGeneralCfgVer
 ) {
   var res = readAndValidateScenariosConfig(configPath, reqGeneralCfgVer);
+  return res;
+};
+
+exports.getIdPrefix = function (deviceTitle, cfg) {
+  var res = getIdPrefix(deviceTitle, cfg);
   return res;
 };

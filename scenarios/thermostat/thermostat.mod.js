@@ -7,12 +7,13 @@
  * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
+var helpers = require('scenarios-general-helpers.mod');
 var TopicManager = require('tm-main.mod').TopicManager;
 var eventPlugin = require('tm-event-main.mod').eventPlugin;
 var historyPlugin = require('tm-history-main.mod').historyPlugin;
 var basicVdPlugin = require('tm-basicvd-main.mod').basicVdPlugin;
-var translit = require('translit.mod').translit;
 var Logger = require('logger.mod').Logger;
+
 var loggerFileLable = 'WBSC-thermostat-mod'
 var log = new Logger(loggerFileLable);
 
@@ -115,17 +116,10 @@ function generateNames(idPrefix) {
  * @returns {boolean} Returns true if initialization is successful, otherwise false
  */
 function init(deviceTitle, cfg) {
-  /** Check if 'idPrefix' exists and is not empty */
-  var idPrefix = '';
-  var idPrefixProvided = cfg.idPrefix && cfg.idPrefix.trim() !== '';
-  if (idPrefixProvided === true) {
-    idPrefix = cfg.idPrefix;
-  } else {
-    idPrefix = translit(deviceTitle);
-  }
+  var idPrefix = helpers.getIdPrefix(deviceTitle, cfg);
   log.setLable(loggerFileLable + '/' + idPrefix);
-
   var genNames = generateNames(idPrefix);
+
   tm.createBasicVD(genNames.vDevice, deviceTitle);
   if (isConfigValid(cfg) !== true) {
     return false;
