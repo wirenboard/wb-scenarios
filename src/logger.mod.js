@@ -4,6 +4,7 @@
  *     - Custom prefixes and the {} format similar to wb-rules logger
  *     - Log levels (log, debug, info, warning, error)
  *     - Allows enabling/disabling logging dynamically
+ *     - Supports dynamic prefix change
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
@@ -121,6 +122,18 @@ Logger.prototype.enable = function () {
  */
 Logger.prototype.disable = function () {
   this.enabled = false;
+};
+
+/**
+ * Dynamically changes the prefix of the logger
+ * @param {string} newPrefix The new prefix to be added to  log messages in []
+ */
+Logger.prototype.setPrefix = function (newPrefix) {
+  if (!newPrefix || typeof newPrefix !== 'string') {
+    log.error('Logger requires a valid string prefix');
+    return;
+  }
+  this.prefix = '[' + newPrefix + ']';
 };
 
 exports.Logger = Logger;
