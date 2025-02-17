@@ -10,6 +10,11 @@
  * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
+var helpers = require('scenarios-general-helpers.mod');
+var scenarioModule = require('thermostat.mod');
+var Logger = require('logger.mod').Logger;
+var log = new Logger('WBSC-thermostat');
+
 /**
  * Required version of the common scenario configuration file structure
  *   The version changes rarely, only when there are modifications
@@ -37,9 +42,6 @@ var CONFIG_PATH = '/etc/wb-scenarios.conf';
  * @type {string}
  */
 var SCENARIO_TYPE_STR = 'thermostat';
-
-var helpers = require('scenarios-general-helpers.mod');
-var scenarioModule = require('thermostat.mod');
 
 /**
  * Initializes a scenario using the specified settings
