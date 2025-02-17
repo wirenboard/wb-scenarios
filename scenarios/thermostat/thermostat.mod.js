@@ -12,6 +12,8 @@ var eventPlugin = require('tm-event-main.mod').eventPlugin;
 var historyPlugin = require('tm-history-main.mod').historyPlugin;
 var basicVdPlugin = require('tm-basicvd-main.mod').basicVdPlugin;
 var translit = require('translit.mod').translit;
+var Logger = require('logger.mod').Logger;
+var log = new Logger('WBSC-thermostat');
 
 var tm = new TopicManager();
 tm.installPlugin(historyPlugin);
