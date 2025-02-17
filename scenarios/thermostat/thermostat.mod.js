@@ -9,7 +9,7 @@
 
 var translit = require('translit.mod').translit;
 var Logger = require('logger.mod').Logger;
-var log = new Logger('WBSC-thermostat');
+var log = new Logger('WBSC-thermostat-mod');
 
 /**
  * @typedef {Object} ThermostatConfig
