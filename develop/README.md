@@ -529,6 +529,42 @@ function init(deviceTitle, cfg) {
 - Что тип выбранных пользователем топиков поддерживает выбранный
     тип события для аходных топиков или вид действия для выходных топиков
 
+Структура функции инициализации выглядит примерно следующим образом
+
+```javascript
+/**
+ * Initializes a virtual device and defines a rule
+ * for controlling the device
+ * @param {string} deviceTitle Name of the virtual device
+ * @param {ThermostatConfig} cfg Configuration parameters
+ * @returns {boolean} Returns true if initialization is successful, otherwise false
+ */
+function init(deviceTitle, cfg) {
+  var idPrefix = helpers.getIdPrefix(deviceTitle, cfg);
+  log.setLable(loggerFileLable + '/' + idPrefix);
+  var genNames = generateNames(idPrefix);
+
+  /**
+   * TODO: 1. Create minimal virtual device
+   * createBasicVD(genNames.vDevice, deviceTitle);
+   */
+  log.debug('genNames.vDevice = "{}"', genNames.vDevice);
+  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
+
+  if (isConfigValid(cfg) !== true) {
+    return false;
+  }
+
+  // TODO: 2. Create rules for events
+  log.debug('genNames.rule = "{}"', genNames.rule);
+  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
+
+  // TODO: 3. Add cells to VD
+
+  return true;
+}
+```
+
 #### 6.3. Виртуальное устройство для сценария
 
 Обратите внимание, что имя виртуального устройства и его контролы должны
