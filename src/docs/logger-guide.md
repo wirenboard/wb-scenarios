@@ -63,3 +63,12 @@ log.debug('Debugging details here and var = "{}" in text', variable);
 ```log
 2025-02-17 05:19:39[MyModule] : Debugging details here and var = "newWbLogger" in text
 ```
+
+Можно изменить префикс логов в уже созданном объекте, это удобно, если вы
+создаете глобальный объект лога в файле и после инициализации вашего
+приложения хотите добавить в префикс дополнительную информацию, например
+id устройства. Для этого нужно написать:
+
+```javascript
+logger.setPrefix('NewPrefix')
+```
