@@ -71,7 +71,11 @@ function initializeScenario(scenario) {
     return;
   }
 
-  log.debug('Initialization successful for scenario: "{}"', scenario.name);
+  log.debug(
+    'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
+    scenario.name,
+    scenario.idPrefix
+  );
 }
 
 function main() {
