@@ -7,7 +7,7 @@
  *     - Initializes them according to the settings specified in each scenario
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link JSDoc comments format <https://jsdoc.app/> - Google styleguide
+ * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
 /**
