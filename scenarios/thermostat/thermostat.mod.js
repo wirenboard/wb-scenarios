@@ -38,7 +38,7 @@ var log = new Logger(loggerFileLable);
  *     - true: if the parameters are valid
  *     - false: if there is an error
  */
-function validateConfig(cfg) {
+function isConfigValid(cfg) {
   var res = false;
 
   var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
@@ -126,8 +126,7 @@ function init(deviceTitle, cfg) {
   log.debug('genNames.vDevice = "{}"', genNames.vDevice);
   // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
 
-  var isConfigValid = validateConfig(cfg);
-  if (isConfigValid !== true) {
+  if (isConfigValid(cfg) !== true) {
     return false;
   }
 
