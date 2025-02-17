@@ -47,15 +47,14 @@ tm.installPlugin(basicVdPlugin);
  *     - true: если параметры корректны
  *     - false: если есть ошибка
  */
-function validateConfig(cfg) {
-  var res = true;
+function isConfigValid(cfg) {
+  var res = false;
 
   var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
   if (isLimitsCorrect !== true) {
     tm.vd.setTotalError(
       'Config temperature limit "Min" must be less than "Max"'
     );
-    res = false;
   }
 
   var isTargetTempCorrect =
@@ -65,7 +64,6 @@ function validateConfig(cfg) {
     tm.vd.setTotalError(
       'Target temperature must be in the range from "Min" to "Max"'
     );
-    res = false;
   }
 
   var tempSensorType = dev[cfg.tempSensor + '#type'];
@@ -82,8 +80,11 @@ function validateConfig(cfg) {
         actuatorType +
         '"'
     );
-    res = false;
   }
+
+  var isCfgValidated =
+    isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
+  if (isCfgValidated) res = true;
 
   return res;
 }
@@ -126,8 +127,7 @@ function init(deviceTitle, cfg) {
 
   var genNames = generateNames(idPrefix);
   tm.createBasicVD(genNames.vDevice, deviceTitle);
-  var isConfigValid = validateConfig(cfg);
-  if (isConfigValid !== true) {
+  if (isConfigValid(cfg) !== true) {
     return false;
   }
 
