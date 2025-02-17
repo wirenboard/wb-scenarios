@@ -41,7 +41,7 @@ var CONFIG_PATH = '/etc/wb-scenarios.conf';
  * @type {string}
  */
 var SCENARIO_TYPE_STR = 'thermostat';
-var log = new Logger('WBSC-' + SCENARIO_TYPE_STR);
+var log = new Logger('WBSC-' + SCENARIO_TYPE_STR + '-init');
 
 /**
  * Initializes a scenario using the specified settings
