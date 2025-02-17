@@ -42,14 +42,19 @@ function validateConfig(cfg) {
 
   var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
   if (isLimitsCorrect !== true) {
-    log.error('Config temperature limit "Min" must be less than "Max"');
+    log.error(
+      'Config temperature limit "Min" = {} must be less than "Max" = {}'
+    );
   }
 
   var isTargetTempCorrect =
     cfg.targetTemp >= cfg.tempLimitsMin &&
     cfg.targetTemp <= cfg.tempLimitsMax;
   if (isTargetTempCorrect !== true) {
-    log.error('Target temperature must be in the range from "Min" to "Max"');
+    log.error(
+      'Target temperature "{}" must be in the range from "Min" to "Max"',
+      cfg.targetTemp
+    );
   }
 
   var tempSensorType = dev[cfg.tempSensor + '#type'];
@@ -70,7 +75,7 @@ function validateConfig(cfg) {
 
   var isCfgValidated =
     isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
-  if(isCfgValidated) res = true;
+  if (isCfgValidated) res = true;
 
   return res;
 }
