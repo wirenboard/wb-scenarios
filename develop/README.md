@@ -541,7 +541,7 @@ function init(deviceTitle, cfg) {
  */
 function init(deviceTitle, cfg) {
   var idPrefix = helpers.getIdPrefix(deviceTitle, cfg);
-  log.setLable(loggerFileLable + '/' + idPrefix);
+  log.setLabel(loggerFileLabel + '/' + idPrefix);
   var genNames = generateNames(idPrefix);
 
   /**

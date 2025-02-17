@@ -14,8 +14,8 @@ var historyPlugin = require('tm-history-main.mod').historyPlugin;
 var basicVdPlugin = require('tm-basicvd-main.mod').basicVdPlugin;
 var Logger = require('logger.mod').Logger;
 
-var loggerFileLable = 'WBSC-thermostat-mod'
-var log = new Logger(loggerFileLable);
+var loggerFileLabel = 'WBSC-thermostat-mod'
+var log = new Logger(loggerFileLabel);
 
 var tm = new TopicManager();
 tm.installPlugin(historyPlugin);
@@ -117,7 +117,7 @@ function generateNames(idPrefix) {
  */
 function init(deviceTitle, cfg) {
   var idPrefix = helpers.getIdPrefix(deviceTitle, cfg);
-  log.setLable(loggerFileLable + '/' + idPrefix);
+  log.setLabel(loggerFileLabel + '/' + idPrefix);
   var genNames = generateNames(idPrefix);
 
   tm.createBasicVD(genNames.vDevice, deviceTitle);
