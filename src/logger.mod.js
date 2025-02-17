@@ -1,10 +1,10 @@
 /**
  * @file logger.mod.js
  * @description A logging module supporting:
- *     - Custom prefixes and the {} format similar to wb-rules logger
+ *     - Custom lables and the {} format similar to wb-rules logger
  *     - Log levels (log, debug, info, warning, error)
  *     - Allows enabling/disabling logging dynamically
- *     - Supports dynamic prefix change
+ *     - Supports dynamic lable change
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
@@ -25,15 +25,15 @@ function copyArray(srcArr) {
 
 /**
  * Logger constructor
- * @param {string} prefix The prefix to be added to all log messages in []
+ * @param {string} lable The lable to be added to all log messages in []
  * @constructor
  */
-function Logger(prefix) {
-  if (!prefix || typeof prefix !== 'string') {
-    log.error('Logger requires a valid string prefix');
+function Logger(lable) {
+  if (!lable || typeof lable !== 'string') {
+    log.error('Logger requires a valid string lable');
   }
 
-  this.prefix = '[' + prefix + ']';
+  this.lable = '[' + lable + ']';
   this.enabled = true; // Logger is enabled by default
 }
 
@@ -49,11 +49,11 @@ Logger.prototype._log = function () {
   var args = copyArray(arguments);
   var level = args.shift(); // Take the first argument as the log level
 
-  // Modify the first argument to include the prefix and level
+  // Modify the first argument to include the lable and level
   // Need add level - like this DEBUG:
   //     [MyModule] DEBUG: Debugging details here.
-  //     args[0] = this.prefix + ' ' + level.toUpperCase() + ': ' + args[0];
-  args[0] = this.prefix + ' ' + ': ' + args[0];
+  //     args[0] = this.lable + ' ' + level.toUpperCase() + ': ' + args[0];
+  args[0] = this.lable + ' ' + ': ' + args[0];
 
   // Call the global log method corresponding to the level
   switch (level) {
@@ -125,15 +125,15 @@ Logger.prototype.disable = function () {
 };
 
 /**
- * Dynamically changes the prefix of the logger
- * @param {string} newPrefix The new prefix to be added to  log messages in []
+ * Dynamically changes the lable of the logger
+ * @param {string} newLable The new lable to be added to  log messages in []
  */
-Logger.prototype.setPrefix = function (newPrefix) {
-  if (!newPrefix || typeof newPrefix !== 'string') {
-    log.error('Logger requires a valid string prefix');
+Logger.prototype.setLable = function (newLable) {
+  if (!newLable || typeof newLable !== 'string') {
+    log.error('Logger requires a valid string lable');
     return;
   }
-  this.prefix = '[' + newPrefix + ']';
+  this.lable = '[' + newLable + ']';
 };
 
 exports.Logger = Logger;
