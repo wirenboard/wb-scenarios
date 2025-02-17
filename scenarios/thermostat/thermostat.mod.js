@@ -7,8 +7,9 @@
  * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
-var translit = require('translit.mod').translit;
+var helpers = require('scenarios-general-helpers.mod');
 var Logger = require('logger.mod').Logger;
+
 var loggerFileLable = 'WBSC-thermostat-mod'
 var log = new Logger(loggerFileLable);
 
@@ -107,16 +108,8 @@ function generateNames(idPrefix) {
  * @returns {boolean} Returns true if initialization is successful, otherwise false
  */
 function init(deviceTitle, cfg) {
-  // Set 'idPrefix' from user or transliterate from `deviceTitle`
-  var idPrefix = '';
-  var idPrefixProvided = cfg.idPrefix && cfg.idPrefix.trim() !== '';
-  if (idPrefixProvided === true) {
-    idPrefix = cfg.idPrefix;
-  } else {
-    idPrefix = translit(deviceTitle);
-  }
+  var idPrefix = helpers.getIdPrefix(deviceTitle, cfg);
   log.setLable(loggerFileLable + '/' + idPrefix);
-
   var genNames = generateNames(idPrefix);
 
   /**
