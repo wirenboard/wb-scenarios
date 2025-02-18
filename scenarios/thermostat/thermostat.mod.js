@@ -42,11 +42,11 @@ tm.installPlugin(basicVdPlugin);
  */
 
 /**
- * Проверяет параметры конфигурации на корректность
- * @param {ThermostatConfig} cfg Параметры конфигурации
- * @returns {boolean} Статус проверки параметров:
- *     - true: если параметры корректны
- *     - false: если есть ошибка
+ * Validate the configuration parameters
+ * @param {ThermostatConfig} cfg Configuration parameters
+ * @returns {boolean} Validation status:
+ *     - true: if the parameters are valid
+ *     - false: if there is an error
  */
 function isConfigValid(cfg) {
   var res = false;
@@ -54,7 +54,11 @@ function isConfigValid(cfg) {
   var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
   if (isLimitsCorrect !== true) {
     tm.vd.setTotalError(
-      'Config temperature limit "Min" must be less than "Max"'
+      'Config temperature limit "Min" = "' +
+      cfg.tempLimitsMin +
+      '" must be less than "Max" = "' +
+      cfg.tempLimitsMax +
+      '"'
     );
   }
 
@@ -63,7 +67,9 @@ function isConfigValid(cfg) {
     cfg.targetTemp <= cfg.tempLimitsMax;
   if (isTargetTempCorrect !== true) {
     tm.vd.setTotalError(
-      'Target temperature must be in the range from "Min" to "Max"'
+      'Target temperature "' +
+      cfg.targetTemp +
+      '" must be in the range from "Min" to "Max"'
     );
   }
 
@@ -74,10 +80,10 @@ function isConfigValid(cfg) {
     actuatorType === 'switch';
   if (isTypesCorrect !== true) {
     tm.vd.setTotalError(
-      'Sensor/actuator topic types must be "value","temperature"/"switch".' +
-        ' But actual:"' +
+      'Topic types must be Sensor="value","temperature"/Actuator="switch".' +
+        ' But actual sensor:"' +
         tempSensorType +
-        '"/"' +
+        '", actuator:"' +
         actuatorType +
         '"'
     );
