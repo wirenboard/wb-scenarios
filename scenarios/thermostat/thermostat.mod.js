@@ -40,8 +40,6 @@ var log = new Logger(loggerFileLabel);
  *     - false: if there is an error
  */
 function isConfigValid(cfg) {
-  var res = false;
-
   var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
   if (isLimitsCorrect !== true) {
     log.error(
@@ -75,11 +73,8 @@ function isConfigValid(cfg) {
     );
   }
 
-  var isCfgValidated =
-    isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
-  if (isCfgValidated) res = true;
-
-  return res;
+  var isCfgValid = isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
+  return isCfgValid;
 }
 
 /**
