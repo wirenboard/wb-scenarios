@@ -49,8 +49,6 @@ tm.installPlugin(basicVdPlugin);
  *     - false: if there is an error
  */
 function isConfigValid(cfg) {
-  var res = false;
-
   var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
   if (isLimitsCorrect !== true) {
     tm.vd.setTotalError(
@@ -89,11 +87,8 @@ function isConfigValid(cfg) {
     );
   }
 
-  var isCfgValidated =
-    isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
-  if (isCfgValidated) res = true;
-
-  return res;
+  var isCfgValid = isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
+  return isCfgValid;
 }
 
 /**
