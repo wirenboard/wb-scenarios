@@ -39,39 +39,20 @@ function Logger(label) {
 
 /**
  * Logs a message if the logger is enabled
- * @param {string} level The log level (info, debug, etc.)
- * @param {...*} messages The message to log with
+ * @param {Function} logMethod The log function to call (log.debug, etc.)
+ * @param {Arguments} logArgs Arguments for call global log.*** func
  * @private
  */
-Logger.prototype._log = function () {
+
+Logger.prototype._log = function (logMethod, logArgs) {
   if (!this.enabled) return;
 
-  var args = copyArray(arguments);
-  var level = args.shift(); // Take the first argument as the log level
-
-  // Modify the first argument to include the label and level
-  // Need add level - like this DEBUG:
-  //     [MyModule] DEBUG: Debugging details here.
-  //     args[0] = this.label + ' ' + level.toUpperCase() + ': ' + args[0];
-  args[0] = this.label + ' ' + ': ' + args[0];
+  var args = copyArray(logArgs);
+  // Add lable to head message line
+  args[0] = this.label + ': ' + args[0];
 
   // Call the global log method corresponding to the level
-  switch (level) {
-    case 'debug':
-      log.debug.apply(null, args);
-      break;
-    case 'info':
-      log.info.apply(null, args);
-      break;
-    case 'warning':
-      log.warning.apply(null, args);
-      break;
-    case 'error':
-      log.error.apply(null, args);
-      break;
-    default:
-      break;
-  }
+  logMethod.apply(null, args);
 };
 
 /**
@@ -79,8 +60,7 @@ Logger.prototype._log = function () {
  * @param {...*} messages The message to log with
  */
 Logger.prototype.debug = function () {
-  var args = copyArray(arguments);
-  this._log.apply(this, ['debug'].concat(args));
+  this._log(log.debug, arguments);
 };
 
 /**
@@ -88,8 +68,7 @@ Logger.prototype.debug = function () {
  * @param {...*} messages The message to log with
  */
 Logger.prototype.info = function () {
-  var args = copyArray(arguments);
-  this._log.apply(this, ['info'].concat(args));
+  this._log(log.info, arguments);
 };
 
 /**
@@ -97,8 +76,7 @@ Logger.prototype.info = function () {
  * @param {...*} messages The message to log with
  */
 Logger.prototype.warning = function () {
-  var args = copyArray(arguments);
-  this._log.apply(this, ['warning'].concat(args));
+  this._log(log.warning, arguments);
 };
 
 /**
@@ -106,8 +84,7 @@ Logger.prototype.warning = function () {
  * @param {...*} messages The message to log with
  */
 Logger.prototype.error = function () {
-  var args = copyArray(arguments);
-  this._log.apply(this, ['error'].concat(args));
+  this._log(log.error, arguments);
 };
 
 /**
