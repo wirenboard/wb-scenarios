@@ -10,7 +10,7 @@
 var helpers = require('scenarios-general-helpers.mod');
 var Logger = require('logger.mod').Logger;
 
-var loggerFileLabel = 'WBSC-thermostat-mod'
+var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
@@ -60,20 +60,29 @@ function isConfigValid(cfg) {
   }
 
   var tempSensorType = dev[cfg.tempSensor + '#type'];
-  var actuatorType = dev[cfg.actuator + '#type'];
-  var isTypesCorrect =
-    (tempSensorType === 'value' || tempSensorType === 'temperature') &&
-    actuatorType === 'switch';
-  if (isTypesCorrect !== true) {
+  var isTempSensorValid =
+    tempSensorType === null ||
+    tempSensorType === 'value' ||
+    tempSensorType === 'temperature';
+  if (isTempSensorValid !== true) {
     log.error(
-      'Topic types must be Sensor="value","temperature"/Actuator="switch".' +
-      ' But actual sensor:"{}", actuator:"{}"',
-      tempSensorType,
-      actuatorType
+      'Sensor type must be "value" or "temperature", but got "{}"',
+      tempSensorType
     );
   }
 
-  var isCfgValid = isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
+  var actuatorType = dev[cfg.actuator + '#type'];
+  var isActuatorValid = actuatorType === null || actuatorType === 'switch';
+  if (isActuatorValid !== true) {
+    log.error('Actuator type must be "switch", but got "{}"', actuatorType);
+  }
+
+  var isCfgValid =
+    isLimitsCorrect &&
+    isTargetTempCorrect &&
+    isTempSensorValid &&
+    isActuatorValid;
+
   return isCfgValid;
 }
 
