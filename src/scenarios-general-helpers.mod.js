@@ -113,14 +113,9 @@ function readAndValidateScenariosConfig(configPath, reqGeneralCfgVer) {
  * @return {string} The ID prefix
  */
 function getIdPrefix(deviceTitle, cfg) {
-  var idPrefix = '';
   var isIdPrefixProvided = cfg.idPrefix && cfg.idPrefix.trim() !== '';
 
-  if (isIdPrefixProvided === true) {
-    idPrefix = cfg.idPrefix;
-  } else {
-    idPrefix = translit(deviceTitle);
-  }
+  var idPrefix = isIdPrefixProvided ? cfg.idPrefix : translit(deviceTitle);
   return idPrefix;
 }
 
