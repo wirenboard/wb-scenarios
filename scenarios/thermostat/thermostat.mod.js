@@ -4,8 +4,14 @@
  *     based on user-specified parameters
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link JSDoc comments format <https://jsdoc.app/> - Google styleguide
+ * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
+
+var helpers = require('scenarios-general-helpers.mod');
+var Logger = require('logger.mod').Logger;
+
+var loggerFileLabel = 'WBSC-thermostat-mod';
+var log = new Logger(loggerFileLabel);
 
 /**
  * @typedef {Object} ThermostatConfig
@@ -27,6 +33,78 @@
  */
 
 /**
+ * Validate the configuration parameters
+ * @param {ThermostatConfig} cfg Configuration parameters
+ * @returns {boolean} Validation status:
+ *     - true: if the parameters are valid
+ *     - false: if there is an error
+ */
+function isConfigValid(cfg) {
+  var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
+  if (isLimitsCorrect !== true) {
+    log.error(
+      'Config temperature limit "Min" = "{}" must be less than "Max" = "{}"',
+      cfg.tempLimitsMin,
+      cfg.tempLimitsMax
+    );
+  }
+
+  var isTargetTempCorrect =
+    cfg.targetTemp >= cfg.tempLimitsMin &&
+    cfg.targetTemp <= cfg.tempLimitsMax;
+  if (isTargetTempCorrect !== true) {
+    log.error(
+      'Target temperature "{}" must be in the range from "Min" to "Max"',
+      cfg.targetTemp
+    );
+  }
+
+  var tempSensorType = dev[cfg.tempSensor + '#type'];
+  var isTempSensorValid =
+    tempSensorType === null ||
+    tempSensorType === 'value' ||
+    tempSensorType === 'temperature';
+  if (isTempSensorValid !== true) {
+    log.error(
+      'Sensor type must be "value" or "temperature", but got "{}"',
+      tempSensorType
+    );
+  }
+
+  var actuatorType = dev[cfg.actuator + '#type'];
+  var isActuatorValid = actuatorType === null || actuatorType === 'switch';
+  if (isActuatorValid !== true) {
+    log.error('Actuator type must be "switch", but got "{}"', actuatorType);
+  }
+
+  var isCfgValid =
+    isLimitsCorrect &&
+    isTargetTempCorrect &&
+    isTempSensorValid &&
+    isActuatorValid;
+
+  return isCfgValid;
+}
+
+/**
+ * Generates the names to be used
+ * @param {string} idPrefix Prefix for identifying this algorithm
+ *     For example: 'warm_floor_in_bathroom'
+ * @returns {Object} An object with names: { vDevice, rule }
+ */
+function generateNames(idPrefix) {
+  var delimeter = '_';
+  var scenarioPrefix = 'wbsc' + delimeter;
+
+  var generatedNames = {
+    vDevice: scenarioPrefix + idPrefix,
+    rule: scenarioPrefix + idPrefix,
+  };
+
+  return generatedNames;
+}
+
+/**
  * Initializes a virtual device and defines a rule
  * for controlling the device
  * @param {string} deviceTitle Name of the virtual device
@@ -34,7 +112,27 @@
  * @returns {boolean} Returns true if initialization is successful, otherwise false
  */
 function init(deviceTitle, cfg) {
-  /** TODO: Add validation logic + thermostat logic*/
+  var idPrefix = helpers.getIdPrefix(deviceTitle, cfg);
+  log.setLabel(loggerFileLabel + '/' + idPrefix);
+  var genNames = generateNames(idPrefix);
+
+  // Create a minimal base virtual device to indicate errors if they occur
+  /**
+   * TODO: 1.
+   * createBasicVD(genNames.vDevice, deviceTitle);
+   */
+  log.debug('genNames.vDevice = "{}"', genNames.vDevice);
+  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
+
+  if (isConfigValid(cfg) !== true) {
+    return false;
+  }
+
+  // TODO: 2. Create rules for events
+  log.debug('genNames.rule = "{}"', genNames.rule);
+  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
+
+  // TODO: 3. Add cells to VD
 
   return true;
 }

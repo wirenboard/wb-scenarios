@@ -7,8 +7,12 @@
  *     - Initializes them according to the settings specified in each scenario
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link JSDoc comments format <https://jsdoc.app/> - Google styleguide
+ * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
+
+var helpers = require('scenarios-general-helpers.mod');
+var scenarioModule = require('thermostat.mod');
+var Logger = require('logger.mod').Logger;
 
 /**
  * Required version of the common scenario configuration file structure
@@ -37,9 +41,7 @@ var CONFIG_PATH = '/etc/wb-scenarios.conf';
  * @type {string}
  */
 var SCENARIO_TYPE_STR = 'thermostat';
-
-var helpers = require('scenarios-general-helpers.mod');
-var scenarioModule = require('thermostat.mod');
+var log = new Logger('WBSC-' + SCENARIO_TYPE_STR + '-init');
 
 /**
  * Initializes a scenario using the specified settings
@@ -47,7 +49,7 @@ var scenarioModule = require('thermostat.mod');
  * @returns {void}
  */
 function initializeScenario(scenario) {
-  log.debug('Processing scenario: ' + JSON.stringify(scenario));
+  log.debug('Processing scenario config: "{}"', JSON.stringify(scenario));
 
   var cfg = {
     idPrefix: scenario.idPrefix,
@@ -62,22 +64,22 @@ function initializeScenario(scenario) {
 
   if (isInitSuccess !== true) {
     log.error(
-      'Error: Init operation aborted for ' +
-        'scenario name: "' +
-        scenario.name +
-        '" ' +
-        'with idPrefix: "' +
-        scenario.idPrefix +
-        '"'
+      'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
+      scenario.name,
+      scenario.idPrefix
     );
     return;
   }
 
-  log.debug('Initialization successful for: ' + scenario.name);
+  log.debug(
+    'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
+    scenario.name,
+    scenario.idPrefix
+  );
 }
 
 function main() {
-  log.debug('Start initialisation ' + SCENARIO_TYPE_STR + ' scenario');
+  log.debug('Start initialisation "{}" type scenarios', SCENARIO_TYPE_STR);
   var listAllScenarios = helpers.readAndValidateScenariosConfig(
     CONFIG_PATH,
     REQUIRED_GENERAL_CFG_VER
@@ -91,15 +93,14 @@ function main() {
   );
   if (matchedScenarios.length === 0) {
     log.debug(
-      'No correct and active scenarios of type "' +
-        SCENARIO_TYPE_STR +
-        '" found'
+      'No correct and active scenarios of type "{}" found',
+      SCENARIO_TYPE_STR
     );
     return;
   }
 
-  log.debug('Number of matched scenarios: ' + matchedScenarios.length);
-  log.debug('Matched scenarios JSON: ' + JSON.stringify(matchedScenarios));
+  log.debug('Number of matched scenarios: {}', matchedScenarios.length);
+  log.debug('Matched scenarios JSON: "{}"', JSON.stringify(matchedScenarios));
 
   for (var i = 0; i < matchedScenarios.length; i++) {
     initializeScenario(matchedScenarios[i]);
