@@ -124,28 +124,6 @@ function getIdPrefix(deviceTitle, cfg) {
   return idPrefix;
 }
 
-exports.findAllActiveScenariosWithType = function (
-  listScenario,
-  searchScenarioType,
-  reqScenarioCfgVer
-) {
-  var res = findAllActiveScenariosWithType(
-    listScenario,
-    searchScenarioType,
-    reqScenarioCfgVer
-  );
-  return res;
-};
-
-exports.readAndValidateScenariosConfig = function (
-  configPath,
-  reqGeneralCfgVer
-) {
-  var res = readAndValidateScenariosConfig(configPath, reqGeneralCfgVer);
-  return res;
-};
-
-exports.getIdPrefix = function (deviceTitle, cfg) {
-  var res = getIdPrefix(deviceTitle, cfg);
-  return res;
-};
+exports.findAllActiveScenariosWithType = findAllActiveScenariosWithType;
+exports.readAndValidateScenariosConfig = readAndValidateScenariosConfig;
+exports.getIdPrefix = getIdPrefix;
