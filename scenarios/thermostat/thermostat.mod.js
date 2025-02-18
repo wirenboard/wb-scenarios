@@ -45,7 +45,9 @@ function isConfigValid(cfg) {
   var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
   if (isLimitsCorrect !== true) {
     log.error(
-      'Config temperature limit "Min" = {} must be less than "Max" = {}'
+      'Config temperature limit "Min" = "{}" must be less than "Max" = "{}"',
+      cfg.tempLimitsMin,
+      cfg.tempLimitsMax
     );
   }
 
@@ -66,12 +68,10 @@ function isConfigValid(cfg) {
     actuatorType === 'switch';
   if (isTypesCorrect !== true) {
     log.error(
-      'Sensor/actuator topic types must be "value","temperature"/"switch".' +
-        ' But actual:"' +
-        tempSensorType +
-        '"/"' +
-        actuatorType +
-        '"'
+      'Topic types must be Sensor="value","temperature"/Actuator="switch".' +
+      ' But actual sensor:"{}", actuator:"{}"',
+      tempSensorType,
+      actuatorType
     );
   }
 
