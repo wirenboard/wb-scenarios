@@ -112,8 +112,9 @@ function init(deviceTitle, cfg) {
   log.setLabel(loggerFileLabel + '/' + idPrefix);
   var genNames = generateNames(idPrefix);
 
+  // Create a minimal base virtual device to indicate errors if they occur
   /**
-   * TODO: 1. Create minimal virtual device
+   * TODO: 1.
    * createBasicVD(genNames.vDevice, deviceTitle);
    */
   log.debug('genNames.vDevice = "{}"', genNames.vDevice);
