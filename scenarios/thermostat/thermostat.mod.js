@@ -72,22 +72,34 @@ function isConfigValid(cfg) {
   }
 
   var tempSensorType = dev[cfg.tempSensor + '#type'];
-  var actuatorType = dev[cfg.actuator + '#type'];
-  var isTypesCorrect =
-    (tempSensorType === 'value' || tempSensorType === 'temperature') &&
-    actuatorType === 'switch';
-  if (isTypesCorrect !== true) {
-    tm.vd.setTotalError(
-      'Topic types must be Sensor="value","temperature"/Actuator="switch".' +
-        ' But actual sensor:"' +
-        tempSensorType +
-        '", actuator:"' +
-        actuatorType +
-        '"'
+  var isTempSensorValid =
+    tempSensorType === null ||
+    tempSensorType === 'value' ||
+    tempSensorType === 'temperature';
+  if (isTempSensorValid !== true) {
+    log.setTotalError(
+      'Sensor type must be "value" or "temperature", but got "' +
+      tempSensorType +
+      '"'
     );
   }
 
-  var isCfgValid = isLimitsCorrect && isTargetTempCorrect && isTypesCorrect;
+  var actuatorType = dev[cfg.actuator + '#type'];
+  var isActuatorValid = actuatorType === null || actuatorType === 'switch';
+  if (isActuatorValid !== true) {
+    log.setTotalError(
+      'Actuator type must be "switch", but got "' +
+      actuatorType +
+      '"'
+    );
+  }
+
+  var isCfgValid =
+    isLimitsCorrect &&
+    isTargetTempCorrect &&
+    isTempSensorValid &&
+    isActuatorValid;
+
   return isCfgValid;
 }
 
