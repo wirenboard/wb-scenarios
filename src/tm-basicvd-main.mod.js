@@ -26,7 +26,7 @@ function install(manager, options) {
    *     Пример: 'Мое классное устройство' или 'My cool device'
    * @returns {boolean} Успешность создания устройства
    */
-  function createBasicVD(devName, devTitle) {
+  function createBasicVd(devName, devTitle) {
     if (manager.vd) {
       log.error('Виртуальное устройство уже инициализировано:', devName);
       return false;
@@ -155,7 +155,7 @@ function install(manager, options) {
     });
   }
 
-  manager.createBasicVD = createBasicVD;
+  manager.createBasicVd = createBasicVd;
 
   log.debug('TM: Plugin "Basic Virtual Device" successfully installed');
 }

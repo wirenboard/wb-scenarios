@@ -134,7 +134,7 @@ function init(deviceTitle, cfg) {
   var genNames = generateNames(idPrefix);
 
   // Create a minimal base virtual device to indicate errors if they occur
-  tm.createBasicVD(genNames.vDevice, deviceTitle);
+  tm.createBasicVd(genNames.vDevice, deviceTitle);
   if (isConfigValid(cfg) !== true) {
     return false;
   }

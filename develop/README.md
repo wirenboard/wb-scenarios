@@ -557,7 +557,7 @@ function init(deviceTitle, cfg) {
 
   /**
    * TODO: 1. Create minimal virtual device
-   * createBasicVD(genNames.vDevice, deviceTitle);
+   * createBasicVd(genNames.vDevice, deviceTitle);
    */
   log.debug('genNames.vDevice = "{}"', genNames.vDevice);
   // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
