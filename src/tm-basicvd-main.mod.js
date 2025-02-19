@@ -24,11 +24,17 @@ function install(manager, options) {
    *     Пример: 'my_dev'
    * @param {string} devTitle Заголовок виртуального устройства
    *     Пример: 'Мое классное устройство' или 'My cool device'
-   * @returns {boolean} Успешность создания устройства
+   * @returns {boolean} Успешность создания нового устройства
    */
   function createBasicVd(devName, devTitle) {
     if (manager.vd) {
-      log.error('Виртуальное устройство уже инициализировано:', devName);
+      log.error('Виртуальное устройство уже инициализировано в TM:', devName);
+      return false;
+    }
+
+    var existingVdObj = getDevice(devName);
+    if (existingVdObj !== undefined) {
+      log.error('Виртуальное устройство уже существует в системе:', devName);
       return false;
     }
 
@@ -67,7 +73,7 @@ function install(manager, options) {
       }
     }
     var switchRuleName = devName + '_switch_control';
-    isOk = manager.defineServiceRule(
+    var isOk = manager.defineServiceRule(
       switchRuleName,
       [devName + '/ruleEnabled'],
       serviceFn
