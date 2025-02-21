@@ -117,7 +117,7 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
     log.error('Virtual device "{}" already exists in system', vdName);
     return null;
   }
-  
+
   var vdCfg = {
     title: vdTitle,
     cells: {},
@@ -150,7 +150,7 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
 
   var ruleId = defineRule(vdName + 'rule_enabled', {
     whenChanged: [vdName + '/ruleEnabled'],
-    then: toggleRules
+    then: toggleRules,
   });
 
   if (!ruleId) {
@@ -233,6 +233,24 @@ function addCustomCellsToVd(vdObj, cfg) {
 }
 
 /**
+ * Creates thermostat control rules
+ * @param {ThermostatConfig} cfg Configuration parameters
+ * @param {Object} genNames Generated names
+ * @param {Array<string>} rulesId Array to store rule IDs
+ */
+function createRules(cfg, genNames, rulesId) {
+  // TODO: Create other rules for thermostat events
+  ruleCfg = {
+    whenChanged: [cfg.tempSensor],
+    then: function (newValue, devName, cellName) {
+      dev[genNames.vDevice + '/currentTemperature'] = newValue;
+    },
+  };
+  var ruleId = defineRule(genNames.rule, ruleCfg);
+  rulesId.push(ruleId);
+}
+
+/**
  * Initializes a virtual device and defines a rule
  * for controlling the device
  * @param {string} deviceTitle Name of the virtual device
@@ -252,29 +270,14 @@ function init(deviceTitle, cfg) {
   }
 
   if (isConfigValid(cfg) !== true) {
-    setVdTotalError(vdObj, 'Config not valid')
+    setVdTotalError(vdObj, 'Config not valid');
     return false;
   }
 
-  addCustomCellsToVd(vdObj, cfg)
-  createRules();
+  addCustomCellsToVd(vdObj, cfg);
+  createRules(cfg, genNames, rulesId);
 
   return true;
-
-  // ======================================================
-  //                    Local functions
-  // ======================================================
-
-  function createRules() {
-    // TODO: Create other rules for thermostat events
-    plusruleId = defineRule(genNames.rule, {
-      whenChanged: [cfg.tempSensor],
-      then: function (newValue, devName, cellName) {
-        dev[genNames.vDevice + "/currentTemperature"] = newValue;
-      },
-    });
-    rulesId.push(plusruleId);
-  }
 }
 
 exports.init = init;
