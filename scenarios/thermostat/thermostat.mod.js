@@ -14,6 +14,16 @@ var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
+ * Control key strings for virtual device
+ */
+var vdCtrl = {
+  ruleEnabled: 'rule_enabled',
+  targetTemp: 'target_temperature',
+  curTemp: 'current_temperature',
+  actuatorStatus: 'actuator_status'
+};
+
+/**
  * @typedef {Object} ThermostatConfig
  * @property {string} [idPrefix] Optional prefix for the name to identify
  *     the virtual device and rule:
@@ -136,7 +146,7 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
     type: 'switch',
     value: true,
   };
-  vdObj.addControl('ruleEnabled', controlCfg);
+  vdObj.addControl(vdCtrl.ruleEnabled, controlCfg);
 
   function toggleRules(newValue) {
     for (var i = 0; i < rulesIdToToggle.length; i++) {
@@ -148,8 +158,8 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
     }
   }
 
-  var ruleId = defineRule(vdName + 'rule_enabled', {
-    whenChanged: [vdName + '/ruleEnabled'],
+  var ruleId = defineRule(vdName + vdCtrl.ruleEnabled, {
+    whenChanged: [vdName + '/' + vdCtrl.ruleEnabled],
     then: toggleRules,
   });
 
@@ -166,7 +176,7 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
  * Sets an error on a virtual device in three steps:
  *   - Logs the error message
  *   - Sets an error on each control to turn the entire device red
- *   - Turn off all scenario logic rules by 'vd/ruleEnabled' switch
+ *   - Turn off all scenario logic rules by 'vd/rule_enabled' switch
  * @param {Object} vdObj The virtual device object
  * @param {string} errorMsg The error message to log
  */
@@ -183,7 +193,7 @@ function setVdTotalError(vdObj, errorMsg) {
      */
     ctrl.setError('r');
   });
-  vdObj.getControl('ruleEnabled').setValue(false);
+  vdObj.getControl(vdCtrl.ruleEnabled).setValue(false);
 }
 
 /**
@@ -203,7 +213,7 @@ function addCustomCellsToVd(vdObj, cfg) {
     max: cfg.tempLimitsMax,
     order: 2,
   };
-  vdObj.addControl('targetTemperature', controlCfg);
+  vdObj.addControl(vdCtrl.targetTemp, controlCfg);
 
   var curTemp = dev[cfg.tempSensor];
   controlCfg = {
@@ -217,7 +227,7 @@ function addCustomCellsToVd(vdObj, cfg) {
     order: 3,
     readonly: true,
   };
-  vdObj.addControl('currentTemperature', controlCfg);
+  vdObj.addControl(vdCtrl.curTemp, controlCfg);
 
   controlCfg = {
     title: {
@@ -229,7 +239,7 @@ function addCustomCellsToVd(vdObj, cfg) {
     order: 4,
     readonly: true,
   };
-  vdObj.addControl('actuatorStatus', controlCfg);
+  vdObj.addControl(vdCtrl.actuatorStatus, controlCfg);
 }
 
 /**
@@ -243,7 +253,7 @@ function createRules(cfg, genNames, rulesId) {
   ruleCfg = {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
-      dev[genNames.vDevice + '/currentTemperature'] = newValue;
+      dev[genNames.vDevice + '/' + vdCtrl.curTemp] = newValue;
     },
   };
   var ruleId = defineRule(genNames.rule, ruleCfg);
