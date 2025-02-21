@@ -14,6 +14,16 @@ var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
+ * Control key strings for virtual device
+ */
+var vdCtrl = {
+  ruleEnabled: 'rule_enabled',
+  targetTemp: 'target_temperature',
+  curTemp: 'current_temperature',
+  actuatorStatus: 'actuator_status'
+};
+
+/**
  * @typedef {Object} ThermostatConfig
  * @property {string} [idPrefix] Optional prefix for the name to identify
  *     the virtual device and rule:
@@ -105,6 +115,152 @@ function generateNames(idPrefix) {
 }
 
 /**
+ * Creates a basic virtual device with a rule switch if it not already exist
+ * @param {string} vdName The name of the virtual device
+ * @param {string} vdTitle The title of the virtual device
+ * @param {Array<number>} rulesIdToToggle Array of rule IDs to toggle on switch
+ * @returns {Object|null} The virtual device object if created, otherwise null
+ */
+function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
+  var existingVdObj = getDevice(vdName);
+  if (existingVdObj !== undefined) {
+    log.error('Virtual device "{}" already exists in system', vdName);
+    return null;
+  }
+
+  var vdCfg = {
+    title: vdTitle,
+    cells: {},
+  };
+  var vdObj = defineVirtualDevice(vdName, vdCfg);
+  if (!vdObj) {
+    log.error('Virtual device "{}" not created', vdTitle);
+    return null;
+  }
+
+  var controlCfg = {
+    title: {
+      en: 'Activate scenario rule',
+      ru: 'Активировать правило сценария',
+    },
+    type: 'switch',
+    value: true,
+  };
+  vdObj.addControl(vdCtrl.ruleEnabled, controlCfg);
+
+  function toggleRules(newValue) {
+    for (var i = 0; i < rulesIdToToggle.length; i++) {
+      if (newValue) {
+        enableRule(rulesIdToToggle[i]);
+      } else {
+        disableRule(rulesIdToToggle[i]);
+      }
+    }
+  }
+
+  var ruleId = defineRule(vdName + vdCtrl.ruleEnabled, {
+    whenChanged: [vdName + '/' + vdCtrl.ruleEnabled],
+    then: toggleRules,
+  });
+
+  if (!ruleId) {
+    log.error('Failed to create the rule: {}', vdName);
+    return null;
+  }
+
+  log.debug('Base VD and rule with names "{}" created successfully', vdName);
+  return vdObj;
+}
+
+/**
+ * Sets an error on a virtual device in three steps:
+ *   - Logs the error message
+ *   - Sets an error on each control to turn the entire device red
+ *   - Turn off all scenario logic rules by 'vd/rule_enabled' switch
+ * @param {Object} vdObj The virtual device object
+ * @param {string} errorMsg The error message to log
+ */
+function setVdTotalError(vdObj, errorMsg) {
+  if (vdObj === undefined) {
+    log.error('Virtual device does not exist in the system');
+    return;
+  }
+  log.error(errorMsg);
+  vdObj.controlsList().forEach(function (ctrl) {
+    /**
+     * The error type can be 'r', 'w', or 'p'
+     * Our goal is to highlight the control in red
+     */
+    ctrl.setError('r');
+  });
+  vdObj.getControl(vdCtrl.ruleEnabled).setValue(false);
+}
+
+/**
+ * Adds custom control cells to a virtual device for scenario functionality
+ * @param {Object} vdObj The virtual device object
+ * @param {ThermostatConfig} cfg Configuration parameters
+ */
+function addCustomCellsToVd(vdObj, cfg) {
+  var controlCfg = {
+    title: {
+      en: 'Temperature Setpoint',
+      ru: 'Заданная температура',
+    },
+    type: 'range',
+    value: cfg.targetTemp,
+    min: cfg.tempLimitsMin,
+    max: cfg.tempLimitsMax,
+    order: 2,
+  };
+  vdObj.addControl(vdCtrl.targetTemp, controlCfg);
+
+  var curTemp = dev[cfg.tempSensor];
+  controlCfg = {
+    title: {
+      en: 'Current Temperature',
+      ru: 'Текущая температура',
+    },
+    type: 'value',
+    units: 'deg C',
+    value: curTemp,
+    order: 3,
+    readonly: true,
+  };
+  vdObj.addControl(vdCtrl.curTemp, controlCfg);
+
+  controlCfg = {
+    title: {
+      en: 'Heating Status',
+      ru: 'Статус нагрева',
+    },
+    type: dev[cfg.actuator + '#type'],
+    value: dev[cfg.actuator],
+    order: 4,
+    readonly: true,
+  };
+  vdObj.addControl(vdCtrl.actuatorStatus, controlCfg);
+}
+
+/**
+ * Creates thermostat control rules
+ * @param {ThermostatConfig} cfg Configuration parameters
+ * @param {Object} genNames Generated names
+ * @param {Array<string>} rulesId Array to store rule IDs
+ */
+function createRules(cfg, genNames, rulesId) {
+  // TODO: Create other rules for thermostat events
+  ruleCfg = {
+    whenChanged: [cfg.tempSensor],
+    then: function (newValue, devName, cellName) {
+      dev[genNames.vDevice + '/' + vdCtrl.curTemp] = newValue;
+    },
+  };
+  var ruleId = defineRule(genNames.rule, ruleCfg);
+  rulesId.push(ruleId);
+}
+
+/**
  * Initializes a virtual device and defines a rule
  * for controlling the device
  * @param {string} deviceTitle Name of the virtual device
@@ -116,28 +272,22 @@ function init(deviceTitle, cfg) {
   log.setLabel(loggerFileLabel + '/' + idPrefix);
   var genNames = generateNames(idPrefix);
 
-  // Create a minimal base virtual device to indicate errors if they occur
-  /**
-   * TODO: 1.
-   * createBasicVD(genNames.vDevice, deviceTitle);
-   */
-  log.debug('genNames.vDevice = "{}"', genNames.vDevice);
-  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
-
-  if (isConfigValid(cfg) !== true) {
+  // Create a minimal basic virtual device to indicate errors if they occur
+  var rulesId = [];
+  var vdObj = createBasicVd(genNames.vDevice, deviceTitle, rulesId);
+  if (vdObj === null) {
     return false;
   }
 
-  // TODO: 2. Create rules for events
-  log.debug('genNames.rule = "{}"', genNames.rule);
-  // При названии сценария 'Теплый пол в комнате' выведется 'wbsc_teplyy_pol_v_komnate'
+  if (isConfigValid(cfg) !== true) {
+    setVdTotalError(vdObj, 'Config not valid');
+    return false;
+  }
 
-  // TODO: 3. Add cells to VD
+  addCustomCellsToVd(vdObj, cfg);
+  createRules(cfg, genNames, rulesId);
 
   return true;
 }
 
-exports.init = function (deviceTitle, cfg) {
-  var res = init(deviceTitle, cfg);
-  return res;
-};
+exports.init = init;
