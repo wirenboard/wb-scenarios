@@ -20,26 +20,26 @@ function install(manager, options) {
    * Создаёт базовое виртуальное устройство для управления правилами, которое
    * содержит переключатель для включения/отключения пользовательских правил
    *
-   * @param {string} devName Имя виртуального устройства
+   * @param {string} vdName Имя виртуального устройства
    *     Пример: 'my_dev'
-   * @param {string} devTitle Заголовок виртуального устройства
+   * @param {string} vdTitle Заголовок виртуального устройства
    *     Пример: 'Мое классное устройство' или 'My cool device'
    * @returns {boolean} Успешность создания нового устройства
    */
-  function createBasicVd(devName, devTitle) {
+  function createBasicVd(vdName, vdTitle) {
     if (manager.vd) {
-      log.error('Виртуальное устройство уже инициализировано в TM:', devName);
+      log.error('Виртуальное устройство уже инициализировано в TM:', vdName);
       return false;
     }
 
-    var existingVdObj = getDevice(devName);
+    var existingVdObj = getDevice(vdName);
     if (existingVdObj !== undefined) {
-      log.error('Виртуальное устройство уже существует в системе:', devName);
+      log.error('Виртуальное устройство уже существует в системе:', vdName);
       return false;
     }
 
-    var config = {
-      title: devTitle,
+    var vdConfig = {
+      title: vdTitle,
       cells: {
         ruleEnabled: {
           title: {
@@ -54,14 +54,14 @@ function install(manager, options) {
       },
     };
 
-    var devObj = defineVirtualDevice(devName, config);
+    var devObj = defineVirtualDevice(vdName, vdConfig);
 
     if (!devObj) {
-      log.error('Не удалось создать виртуальное устройство:', devName);
+      log.error('Не удалось создать виртуальное устройство:', vdName);
       return false;
     }
 
-    log.debug('Виртуальное устройство создано:', devName);
+    log.debug('Виртуальное устройство создано:', vdName);
 
     // Создание сервисного правила для переключателя
     function serviceFn(newValue) {
@@ -72,10 +72,10 @@ function install(manager, options) {
         manager.disableAllRules();
       }
     }
-    var switchRuleName = devName + '_switch_control';
+    var switchRuleName = vdName + '_switch_control';
     var isOk = manager.defineServiceRule(
       switchRuleName,
-      [devName + '/ruleEnabled'],
+      [vdName + '/ruleEnabled'],
       serviceFn
     );
     if (!isOk) {
@@ -86,7 +86,7 @@ function install(manager, options) {
     // Создание объекта vd
     var vdResult = {
       devObj: devObj,
-      name: devName,
+      name: vdName,
       setTotalError: setTotalError,
       addCell: addCell,
       addAlarm: addAlarm,
@@ -133,7 +133,7 @@ function install(manager, options) {
       }
 
       /* Проверка на существование такой ячейки */
-      var fullControlName = devName + '/' + cellName;
+      var fullControlName = vdName + '/' + cellName;
       if (devObj.getControl(fullControlName)) {
         log.error('Ячейка уже существует:', cellName);
         return;

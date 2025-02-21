@@ -133,7 +133,7 @@ function init(deviceTitle, cfg) {
   log.setLabel(loggerFileLabel + '/' + idPrefix);
   var genNames = generateNames(idPrefix);
 
-  // Create a minimal base virtual device to indicate errors if they occur
+  // Create a minimal basic virtual device to indicate errors if they occur
   tm.createBasicVd(genNames.vDevice, deviceTitle);
   if (isConfigValid(cfg) !== true) {
     return false;
