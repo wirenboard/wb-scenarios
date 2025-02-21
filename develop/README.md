@@ -582,6 +582,23 @@ function init(deviceTitle, cfg) {
 называться так же как топики в конвенции WirenBoard - в нашем случае
 используется `snake_case`.
 
+Названия всех контролов нужно внести в глобальный объект, чтобы можно было
+переиспользовать эти строки.
+
+Пример объекта:
+
+```javascript
+/**
+ * Control key strings for virtual device
+ */
+var vdCtrl = {
+  ruleEnabled: 'rule_enabled',
+  targetTemp: 'target_temperature',
+  curTemp: 'current_temperature',
+  actuatorStatus: 'actuator_status'
+};
+```
+
 **Проверка связных контролов**
 
 Так как контролы в виртуальном девайсе сценария бывают связаны с другими
