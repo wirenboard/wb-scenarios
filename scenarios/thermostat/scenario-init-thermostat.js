@@ -1,5 +1,5 @@
 /**
- * @file scenario-init-thermostat.js
+ * @file scenario-init-thermostat.js - script for WirenBoard wb-rules 2.0
  * @description Script for init scenarios of the SCENARIO_TYPE_STR type
  *     This script:
  *     - Loads all scenario configurations of the specific type from a file
