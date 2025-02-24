@@ -24,6 +24,27 @@ var vdCtrl = {
 };
 
 /**
+ * Generates the names to be used
+ * @param {string} idPrefix Prefix for identifying this algorithm
+ *     For example: 'warm_floor_in_bathroom'
+ * @returns {Object} An object with generated names
+ */
+function generateNames(idPrefix) {
+  var scenarioPrefix = 'wbsc_';
+  var baseRuleName = scenarioPrefix + idPrefix;
+
+  var generatedNames = {
+    vDevice: scenarioPrefix + idPrefix,
+    rule_sync_act_status: baseRuleName + '_sync_act_status',
+    rule_temp_changed: baseRuleName + '_temp_changed',
+    rule_set_sc_status: baseRuleName + '_set_sc_status',
+    rule_set_target_t: baseRuleName + '_set_target_t',
+  };
+
+  return generatedNames;
+}
+
+/**
  * @typedef {Object} ThermostatConfig
  * @property {string} [idPrefix] Optional prefix for the name to identify
  *     the virtual device and rule:
@@ -106,24 +127,6 @@ function isConfigValid(cfg) {
 }
 
 /**
- * Generates the names to be used
- * @param {string} idPrefix Prefix for identifying this algorithm
- *     For example: 'warm_floor_in_bathroom'
- * @returns {Object} An object with names: { vDevice, rule }
- */
-function generateNames(idPrefix) {
-  var delimeter = '_';
-  var scenarioPrefix = 'wbsc' + delimeter;
-
-  var generatedNames = {
-    vDevice: scenarioPrefix + idPrefix,
-    rule: scenarioPrefix + idPrefix,
-  };
-
-  return generatedNames;
-}
-
-/**
  * Creates a basic virtual device with a rule switch if it not already exist
  * @param {string} vdName The name of the virtual device
  * @param {string} vdTitle The title of the virtual device
@@ -167,7 +170,7 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
     }
   }
 
-  var ruleId = defineRule(vdName + vdCtrl.ruleEnabled, {
+  var ruleId = defineRule(vdName + '_change_' + vdCtrl.ruleEnabled, {
     whenChanged: [vdName + '/' + vdCtrl.ruleEnabled],
     then: toggleRules,
   });
@@ -224,7 +227,6 @@ function addCustomCellsToVd(vdObj, cfg) {
   };
   vdObj.addControl(vdCtrl.targetTemp, controlCfg);
 
-  var curTemp = dev[cfg.tempSensor];
   controlCfg = {
     title: {
       en: 'Current Temperature',
@@ -232,7 +234,7 @@ function addCustomCellsToVd(vdObj, cfg) {
     },
     type: 'value',
     units: 'deg C',
-    value: curTemp,
+    value: dev[cfg.tempSensor],
     order: 3,
     readonly: true,
   };
@@ -283,10 +285,18 @@ function updateHeatingState(actuator, data) {
     data.curTemp <= lowerLimit && currentState === false;
 
   if (isNeedTurnOffHeating) {
-    log.debug('Heater turned OFF, current temp: "{}" °C', data.curTemp);
+    log.debug(
+      'Heater turned OFF, current/target temperatures: "{}"/"{}" °C',
+      data.curTemp,
+      data.targetTemp
+    );
     dev[actuator] = false;
   } else if (isNeedTurnOnHeating) {
-    log.debug('Heater turned ON, current temp: "{}" °C', data.curTemp);
+    log.debug(
+      'Heater turned ON, current/target temperatures: "{}"/"{}" °C',
+      data.curTemp,
+      data.targetTemp
+    );
     dev[actuator] = true;
   }
 }
@@ -306,16 +316,15 @@ function createRules(cfg, genNames, rulesId) {
     then: function (newValue, devName, cellName) {
       dev[genNames.vDevice + '/' + vdCtrl.curTemp] = newValue;
 
-      var curTargetTemp = dev[genNames.vDevice + '/' + vdCtrl.targetTemp];
       var data = {
         curTemp: newValue,
-        targetTemp: curTargetTemp,
+        targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
         hysteresis: cfg.hysteresis,
       };
       updateHeatingState(cfg.actuator, data);
     },
   };
-  ruleId = defineRule(genNames.rule + '_temp_changed', ruleCfg);
+  ruleId = defineRule(genNames.rule_temp_changed, ruleCfg);
   rulesId.push(ruleId);
   log.debug('Temperature changed rule created success with ID "{}"', ruleId);
 
@@ -325,7 +334,7 @@ function createRules(cfg, genNames, rulesId) {
       dev[genNames.vDevice + '/' + vdCtrl.actuatorStatus] = newValue;
     },
   };
-  ruleId = defineRule(genNames.rule + '_sync_act_status', ruleCfg);
+  ruleId = defineRule(genNames.rule_sync_act_status, ruleCfg);
   rulesId.push(ruleId);
   log.debug(
     'Sync actuator status rule created success with ID "{}"',
@@ -336,11 +345,9 @@ function createRules(cfg, genNames, rulesId) {
     whenChanged: [genNames.vDevice + '/' + vdCtrl.ruleEnabled],
     then: function (newValue, devName, cellName) {
       if (newValue) {
-        var curTemp = dev[cfg.tempSensor];
-        var curTargetTemp = dev[genNames.vDevice + '/' + vdCtrl.targetTemp];
         var data = {
-          curTemp: curTemp,
-          targetTemp: curTargetTemp,
+          curTemp: dev[cfg.tempSensor],
+          targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
           hysteresis: cfg.hysteresis,
         };
         updateHeatingState(cfg.actuator, data);
@@ -352,7 +359,7 @@ function createRules(cfg, genNames, rulesId) {
       }
     },
   };
-  ruleId = defineRule(genNames.rule + '_activate_sc_status', ruleCfg);
+  ruleId = defineRule(genNames.rule_set_sc_status, ruleCfg);
   // This rule not disable when user use switch in virtual device
   log.debug(
     'Activate scenario status rule created success with ID "{}"',
@@ -363,16 +370,15 @@ function createRules(cfg, genNames, rulesId) {
     whenChanged: [genNames.vDevice + '/' + vdCtrl.targetTemp],
     then: function (newValue, devName, cellName) {
       var curTemp = dev[cfg.tempSensor];
-      var curTargetTemp = newValue;
       var data = {
         curTemp: curTemp,
-        targetTemp: curTargetTemp,
+        targetTemp: newValue,
         hysteresis: cfg.hysteresis,
       };
       updateHeatingState(cfg.actuator, data);
     },
   };
-  ruleId = defineRule(genNames.rule + '_target_temp_change', ruleCfg);
+  ruleId = defineRule(genNames.rule_set_target_t, ruleCfg);
   rulesId.push(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 }
@@ -403,6 +409,14 @@ function init(deviceTitle, cfg) {
 
   addCustomCellsToVd(vdObj, cfg);
   createRules(cfg, genNames, rulesId);
+
+  // Set first heater state after initialisation
+  var data = {
+    curTemp: dev[cfg.tempSensor],
+    targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+    hysteresis: cfg.hysteresis,
+  };
+  updateHeatingState(cfg.actuator, data);
 
   return true;
 }
