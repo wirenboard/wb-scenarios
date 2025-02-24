@@ -1,5 +1,5 @@
 /**
- * @file thermostat.mod.js
+ * @file thermostat.mod.js - module for WirenBoard wb-rules 2.0
  * @description Module for initializing the thermostat algorithm
  *     based on user-specified parameters
  *
