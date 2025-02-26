@@ -1,5 +1,5 @@
 /**
- * @file thermostat.mod.js
+ * @file thermostat.mod.js - module for WirenBoard wb-rules 2.0
  * @description Module for initializing the thermostat algorithm
  *     based on user-specified parameters
  *
@@ -20,8 +20,29 @@ var vdCtrl = {
   ruleEnabled: 'rule_enabled',
   targetTemp: 'target_temperature',
   curTemp: 'current_temperature',
-  actuatorStatus: 'actuator_status'
+  actuatorStatus: 'actuator_status',
 };
+
+/**
+ * Generates the names to be used
+ * @param {string} idPrefix Prefix for identifying this algorithm
+ *     For example: 'warm_floor_in_bathroom'
+ * @returns {Object} An object with generated names
+ */
+function generateNames(idPrefix) {
+  var scenarioPrefix = 'wbsc_';
+  var baseRuleName = scenarioPrefix + idPrefix;
+
+  var generatedNames = {
+    vDevice: scenarioPrefix + idPrefix,
+    rule_sync_act_status: baseRuleName + '_sync_act_status',
+    rule_temp_changed: baseRuleName + '_temp_changed',
+    rule_set_sc_status: baseRuleName + '_set_sc_status',
+    rule_set_target_t: baseRuleName + '_set_target_t',
+  };
+
+  return generatedNames;
+}
 
 /**
  * @typedef {Object} ThermostatConfig
@@ -69,6 +90,14 @@ function isConfigValid(cfg) {
     );
   }
 
+  var isHysteresisCorrect = cfg.hysteresis > 0;
+  if (isHysteresisCorrect !== true) {
+    log.error(
+      'Hysteresis value must be greater than 0, but got "{}"',
+      cfg.hysteresis
+    );
+  }
+
   var tempSensorType = dev[cfg.tempSensor + '#type'];
   var isTempSensorValid =
     tempSensorType === null ||
@@ -90,28 +119,11 @@ function isConfigValid(cfg) {
   var isCfgValid =
     isLimitsCorrect &&
     isTargetTempCorrect &&
+    isHysteresisCorrect &&
     isTempSensorValid &&
     isActuatorValid;
 
   return isCfgValid;
-}
-
-/**
- * Generates the names to be used
- * @param {string} idPrefix Prefix for identifying this algorithm
- *     For example: 'warm_floor_in_bathroom'
- * @returns {Object} An object with names: { vDevice, rule }
- */
-function generateNames(idPrefix) {
-  var delimeter = '_';
-  var scenarioPrefix = 'wbsc' + delimeter;
-
-  var generatedNames = {
-    vDevice: scenarioPrefix + idPrefix,
-    rule: scenarioPrefix + idPrefix,
-  };
-
-  return generatedNames;
 }
 
 /**
@@ -158,7 +170,7 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
     }
   }
 
-  var ruleId = defineRule(vdName + vdCtrl.ruleEnabled, {
+  var ruleId = defineRule(vdName + '_change_' + vdCtrl.ruleEnabled, {
     whenChanged: [vdName + '/' + vdCtrl.ruleEnabled],
     then: toggleRules,
   });
@@ -215,7 +227,6 @@ function addCustomCellsToVd(vdObj, cfg) {
   };
   vdObj.addControl(vdCtrl.targetTemp, controlCfg);
 
-  var curTemp = dev[cfg.tempSensor];
   controlCfg = {
     title: {
       en: 'Current Temperature',
@@ -223,7 +234,7 @@ function addCustomCellsToVd(vdObj, cfg) {
     },
     type: 'value',
     units: 'deg C',
-    value: curTemp,
+    value: dev[cfg.tempSensor],
     order: 3,
     readonly: true,
   };
@@ -243,21 +254,133 @@ function addCustomCellsToVd(vdObj, cfg) {
 }
 
 /**
+ * @typedef {Object} HeatingStateData
+ * @property {number} curTemp The current temperature (°C)
+ * @property {number} targetTemp The target temperature (°C)
+ * @property {number} hysteresis The hysteresis value (°C)
+ *
+ * @example
+ * var data = {
+ *   curTemp: 22,
+ *   targetTemp: 24,
+ *   hysteresis: 2
+ * };
+ */
+
+/**
+ * Updates the heating state based on current temperature, target
+ * temperature, and hysteresis. Sets the new state if it has changed
+ * @param {string} actuator The actuator identifier (key in the dev object)
+ * @param {HeatingStateData} data Heating state data
+ */
+function updateHeatingState(actuator, data) {
+  var currentState = dev[actuator];
+  var upperLimit = data.targetTemp + data.hysteresis;
+  var lowerLimit = data.targetTemp - data.hysteresis;
+
+  // Update state only if it has changed
+  var isNeedTurnOffHeating =
+    data.curTemp >= upperLimit && currentState === true;
+  var isNeedTurnOnHeating =
+    data.curTemp <= lowerLimit && currentState === false;
+
+  if (isNeedTurnOffHeating) {
+    log.debug(
+      'Heater turned OFF, current/target temperatures: "{}"/"{}" °C',
+      data.curTemp,
+      data.targetTemp
+    );
+    dev[actuator] = false;
+  } else if (isNeedTurnOnHeating) {
+    log.debug(
+      'Heater turned ON, current/target temperatures: "{}"/"{}" °C',
+      data.curTemp,
+      data.targetTemp
+    );
+    dev[actuator] = true;
+  }
+}
+
+/**
  * Creates thermostat control rules
  * @param {ThermostatConfig} cfg Configuration parameters
  * @param {Object} genNames Generated names
- * @param {Array<string>} rulesId Array to store rule IDs
+ * @param {Array<string>} rulesId Array of rule IDs for enabling/disabling
  */
 function createRules(cfg, genNames, rulesId) {
-  // TODO: Create other rules for thermostat events
+  var ruleCfg = {};
+  var ruleId = null;
+
   ruleCfg = {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
       dev[genNames.vDevice + '/' + vdCtrl.curTemp] = newValue;
+
+      var data = {
+        curTemp: newValue,
+        targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+        hysteresis: cfg.hysteresis,
+      };
+      updateHeatingState(cfg.actuator, data);
     },
   };
-  var ruleId = defineRule(genNames.rule, ruleCfg);
+  ruleId = defineRule(genNames.rule_temp_changed, ruleCfg);
   rulesId.push(ruleId);
+  log.debug('Temperature changed rule created success with ID "{}"', ruleId);
+
+  ruleCfg = {
+    whenChanged: [cfg.actuator],
+    then: function (newValue, devName, cellName) {
+      dev[genNames.vDevice + '/' + vdCtrl.actuatorStatus] = newValue;
+    },
+  };
+  ruleId = defineRule(genNames.rule_sync_act_status, ruleCfg);
+  rulesId.push(ruleId);
+  log.debug(
+    'Sync actuator status rule created success with ID "{}"',
+    ruleId
+  );
+
+  ruleCfg = {
+    whenChanged: [genNames.vDevice + '/' + vdCtrl.ruleEnabled],
+    then: function (newValue, devName, cellName) {
+      if (newValue) {
+        var data = {
+          curTemp: dev[cfg.tempSensor],
+          targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+          hysteresis: cfg.hysteresis,
+        };
+        updateHeatingState(cfg.actuator, data);
+        /* Sync actual device status with VD **/
+        dev[genNames.vDevice + '/' + vdCtrl.curTemp] = dev[cfg.tempSensor];
+      } else {
+        dev[cfg.actuator] = false;
+        dev[genNames.vDevice + '/' + vdCtrl.actuatorStatus] = false;
+      }
+    },
+  };
+  ruleId = defineRule(genNames.rule_set_sc_status, ruleCfg);
+  // This rule not disable when user use switch in virtual device
+  log.debug(
+    'Activate scenario status rule created success with ID "{}"',
+    ruleId
+  );
+
+  ruleCfg = {
+    whenChanged: [genNames.vDevice + '/' + vdCtrl.targetTemp],
+    then: function (newValue, devName, cellName) {
+      var curTemp = dev[cfg.tempSensor];
+      var data = {
+        curTemp: curTemp,
+        targetTemp: newValue,
+        hysteresis: cfg.hysteresis,
+      };
+      updateHeatingState(cfg.actuator, data);
+    },
+  };
+  ruleId = defineRule(genNames.rule_set_target_t, ruleCfg);
+  rulesId.push(ruleId);
+  log.debug('Target temp change rule created success with ID "{}"', ruleId);
 }
 
 /**
@@ -286,6 +409,14 @@ function init(deviceTitle, cfg) {
 
   addCustomCellsToVd(vdObj, cfg);
   createRules(cfg, genNames, rulesId);
+
+  // Set first heater state after initialisation
+  var data = {
+    curTemp: dev[cfg.tempSensor],
+    targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+    hysteresis: cfg.hysteresis,
+  };
+  updateHeatingState(cfg.actuator, data);
 
   return true;
 }
