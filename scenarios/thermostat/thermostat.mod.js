@@ -306,6 +306,23 @@ function updateHeatingState(actuator, data) {
 }
 
 /**
+ * Updates the readonly state of the rule enable control
+ * Removes readonly only when both errors (sensor and actuator) are cleared
+ * @param {ThermostatConfig} cfg Configuration parameters
+ * @param {object} vdCtrlEnable Control "Enable rules" in scenario virtual dev
+ */
+function tryClearReadonly(cfg, vdCtrlEnable) {
+  var sensorErrVal = dev[cfg.tempSensor + '#error'];
+  var actuatorErrVal = dev[cfg.actuator + '#error'];
+  log.debug('tryClearReadonly "{}"/"{}"', sensorErrVal, actuatorErrVal);
+
+  if ((!sensorErrVal || sensorErrVal === '') && (!actuatorErrVal || actuatorErrVal === '')) {
+    log.debug('if tryClearReadonly "{}"/"{}"', sensorErrVal, actuatorErrVal);
+    vdCtrlEnable.setReadonly(false);
+  }
+}
+
+/**
  * Creates thermostat control rules
  * @param {ThermostatConfig} cfg Configuration parameters
  * @param {Object} genNames Generated names
@@ -316,19 +333,19 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   var ruleCfg = {};
   var ruleId = null;
 
-  ctrlCurTemp = vdObj.getControl(vdCtrl.curTemp);
-  ctrlActuator = vdObj.getControl(vdCtrl.actuatorStatus);
-  ctrlTartetTemp = vdObj.getControl(vdCtrl.targetTemp);
-  ctrlEnable = vdObj.getControl(vdCtrl.ruleEnabled);
+  vdCtrlCurTemp = vdObj.getControl(vdCtrl.curTemp);
+  vdCtrlActuator = vdObj.getControl(vdCtrl.actuatorStatus);
+  vdCtrlTartetTemp = vdObj.getControl(vdCtrl.targetTemp);
+  vdCtrlEnable = vdObj.getControl(vdCtrl.ruleEnabled);
 
   ruleCfg = {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
-      ctrlCurTemp.setValue(newValue);
+      vdCtrlCurTemp.setValue(newValue);
 
       var data = {
         curTemp: newValue,
-        targetTemp: ctrlTartetTemp.getValue(),
+        targetTemp: vdCtrlTartetTemp.getValue(),
         hysteresis: cfg.hysteresis,
       };
       updateHeatingState(cfg.actuator, data);
@@ -341,7 +358,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   ruleCfg = {
     whenChanged: [cfg.actuator],
     then: function (newValue, devName, cellName) {
-      ctrlActuator.setValue(newValue);
+      vdCtrlActuator.setValue(newValue);
     },
   };
   ruleId = defineRule(genNames.rule_sync_act_status, ruleCfg);
@@ -357,15 +374,16 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       if (newValue) {
         var data = {
           curTemp: dev[cfg.tempSensor],
-          targetTemp: ctrlTartetTemp.getValue(),
+          targetTemp: vdCtrlTartetTemp.getValue(),
           hysteresis: cfg.hysteresis,
         };
         updateHeatingState(cfg.actuator, data);
         /* Sync actual device status with VD **/
-        ctrlCurTemp.setValue(dev[cfg.tempSensor]);
+        vdCtrlCurTemp.setValue(dev[cfg.tempSensor]);
       } else {
         dev[cfg.actuator] = false;
-        ctrlActuator.setValue(false);
+        // Sync vd control state, because actuator sync-rule was disabled
+        vdCtrlActuator.setValue(false);
       }
     },
   };
@@ -401,17 +419,22 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
     then: function (newValue, devName, cellName) {
       if (newValue !== '') {
         log.error(
-          'Scenario disabled: Temperature sensor error topic {} state: {}',
+          'Scenario disabled: Temperature sensor err for topic {} state: {}',
           sensorErrTopic,
           newValue
         );
-        ctrlCurTemp.setError(newValue);
-        ctrlEnable.setReadonly(true);
-        ctrlEnable.setValue(false);
+        vdCtrlCurTemp.setError(newValue);
+        vdCtrlEnable.setReadonly(true);
+        vdCtrlEnable.setValue(false);
       } else {
+        log.debug(
+          'Temperature sensor err cleared for topic {} state: {}',
+          sensorErrTopic,
+          newValue
+        );
         // The error is cleared – reset the control's error state
-        ctrlCurTemp.setError('');
-        ctrlEnable.setReadonly(false);
+        vdCtrlCurTemp.setError('');
+        tryClearReadonly(cfg, vdCtrlEnable);
       }
     },
   };
@@ -428,17 +451,21 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
     then: function (newValue, devName, cellName) {
       if (newValue !== '') {
         log.error(
-          'Scenario disabled: Actuator (heater) error topic {} state: {}',
+          'Scenario disabled: Actuator (heater) err for topic {} state: {}',
           actuatorErrTopic,
           newValue
         );
-        ctrlActuator.setError(newValue);
-        ctrlEnable.setReadonly(true);
-        ctrlEnable.setValue(false);
+        vdCtrlActuator.setError(newValue);
+        vdCtrlEnable.setReadonly(true);
+        vdCtrlEnable.setValue(false);
       } else {
-        // The error is cleared – reset the control's error state
-        ctrlActuator.setError('');
-        ctrlEnable.setReadonly(false);
+        log.debug(
+          'Actuator (heater) err cleared for topic {} state: {}',
+          actuatorErrTopic,
+          newValue
+        );
+        vdCtrlActuator.setError('');
+        tryClearReadonly(cfg, vdCtrlEnable);
       }
     },
   };
