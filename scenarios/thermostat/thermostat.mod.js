@@ -139,7 +139,10 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
     log.error('Virtual device "{}" already exists in system', vdName);
     return null;
   }
-  log.debug('Virtual device "{}" not exists in system -> create new', vdName);
+  log.debug(
+    'Virtual device "{}" not exists in system -> create new',
+    vdName
+  );
 
   var vdCfg = {
     title: vdTitle,
@@ -401,14 +404,18 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
     then: function (newValue, devName, cellName) {
       var sensorErrValue = dev[sensorErrorTopic];
       if (sensorErrValue !== metaNotDefined && sensorErrValue !== '') {
-        log.error('Temperature sensor error topic {} state: {}', sensorErrorTopic, sensorErrValue);
+        log.error(
+          'Temperature sensor error topic {} state: {}',
+          sensorErrorTopic,
+          sensorErrValue
+        );
         ctrlCurTemp.setError(sensorErrValue);
         ctrlEnable.setValue(false);
       } else {
         // The error is cleared – reset the control's error state
         ctrlCurTemp.setError('');
       }
-    }
+    },
   };
   var ruleId = defineRule(genNames.vDevice + '_sensor_error_watch', ruleCfg);
   // This rule not disable when user use switch in virtual device
@@ -423,16 +430,23 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
     then: function (newValue, devName, cellName) {
       var actuatorErrValue = dev[actuatorErrorTopic];
       if (actuatorErrValue !== metaNotDefined && actuatorErrValue !== '') {
-        log.error('Actuator (heater) error topic {} state: {}', actuatorErrorTopic, actuatorErrValue);
+        log.error(
+          'Actuator (heater) error topic {} state: {}',
+          actuatorErrorTopic,
+          actuatorErrValue
+        );
         ctrlActuator.setError(actuatorErrValue);
         ctrlEnable.setValue(false);
       } else {
         // The error is cleared – reset the control's error state
         ctrlActuator.setError('');
       }
-    }
+    },
   };
-  var ruleId = defineRule(genNames.vDevice + '_actuator_error_watch', ruleCfg);
+  var ruleId = defineRule(
+    genNames.vDevice + '_actuator_error_watch',
+    ruleCfg
+  );
   // This rule not disable when user use switch in virtual device
   log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 }
