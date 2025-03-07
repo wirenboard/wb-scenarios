@@ -392,9 +392,6 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   managedRulesId.push(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 
-  // FIXME: This is will be fixed in feature time - must be 'null'
-  var metaUnset = undefined;
-
   /**
    * Rule to handle temperature sensor errors
    */
@@ -402,14 +399,13 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   var ruleCfg = {
     whenChanged: [sensorErrTopic],
     then: function (newValue, devName, cellName) {
-      var sensorErrVal = dev[sensorErrTopic];
-      if (sensorErrVal !== metaUnset && sensorErrVal !== '') {
+      if (newValue !== '') {
         log.error(
           'Scenario disabled: Temperature sensor error topic {} state: {}',
           sensorErrTopic,
-          sensorErrVal
+          newValue
         );
-        ctrlCurTemp.setError(sensorErrVal);
+        ctrlCurTemp.setError(newValue);
         ctrlEnable.setReadonly(true);
         ctrlEnable.setValue(false);
       } else {
@@ -430,14 +426,13 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   ruleCfg = {
     whenChanged: [actuatorErrTopic],
     then: function (newValue, devName, cellName) {
-      var actuatorErrVal = dev[actuatorErrTopic];
-      if (actuatorErrVal !== metaUnset && actuatorErrVal !== '') {
+      if (newValue !== '') {
         log.error(
           'Scenario disabled: Actuator (heater) error topic {} state: {}',
           actuatorErrTopic,
-          actuatorErrVal
+          newValue
         );
-        ctrlActuator.setError(actuatorErrVal);
+        ctrlActuator.setError(newValue);
         ctrlEnable.setReadonly(true);
         ctrlEnable.setValue(false);
       } else {
