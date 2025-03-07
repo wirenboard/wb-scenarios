@@ -139,6 +139,7 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
     log.error('Virtual device "{}" already exists in system', vdName);
     return null;
   }
+  log.debug('Virtual device "{}" not exists in system -> create new', vdName);
 
   var vdCfg = {
     title: vdTitle,
@@ -305,20 +306,26 @@ function updateHeatingState(actuator, data) {
  * Creates thermostat control rules
  * @param {ThermostatConfig} cfg Configuration parameters
  * @param {Object} genNames Generated names
+ * @param {Object} vdObj Scenario virtual device
  * @param {Array<string>} rulesId Array of rule IDs for enabling/disabling
  */
-function createRules(cfg, genNames, rulesId) {
+function createRules(cfg, genNames, vdObj, rulesId) {
   var ruleCfg = {};
   var ruleId = null;
+
+  ctrlCurTemp = vdObj.getControl(vdCtrl.curTemp);
+  ctrlActuator = vdObj.getControl(vdCtrl.actuatorStatus);
+  ctrlTartetTemp = vdObj.getControl(vdCtrl.targetTemp);
+  ctrlEnable = vdObj.getControl(vdCtrl.ruleEnabled);
 
   ruleCfg = {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
-      dev[genNames.vDevice + '/' + vdCtrl.curTemp] = newValue;
+      ctrlCurTemp.setValue(newValue);
 
       var data = {
         curTemp: newValue,
-        targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+        targetTemp: ctrlTartetTemp.getValue(),
         hysteresis: cfg.hysteresis,
       };
       updateHeatingState(cfg.actuator, data);
@@ -331,7 +338,7 @@ function createRules(cfg, genNames, rulesId) {
   ruleCfg = {
     whenChanged: [cfg.actuator],
     then: function (newValue, devName, cellName) {
-      dev[genNames.vDevice + '/' + vdCtrl.actuatorStatus] = newValue;
+      ctrlActuator.setValue(newValue);
     },
   };
   ruleId = defineRule(genNames.rule_sync_act_status, ruleCfg);
@@ -347,15 +354,15 @@ function createRules(cfg, genNames, rulesId) {
       if (newValue) {
         var data = {
           curTemp: dev[cfg.tempSensor],
-          targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+          targetTemp: ctrlTartetTemp.getValue(),
           hysteresis: cfg.hysteresis,
         };
         updateHeatingState(cfg.actuator, data);
         /* Sync actual device status with VD **/
-        dev[genNames.vDevice + '/' + vdCtrl.curTemp] = dev[cfg.tempSensor];
+        ctrlCurTemp.setValue(dev[cfg.tempSensor]);
       } else {
         dev[cfg.actuator] = false;
-        dev[genNames.vDevice + '/' + vdCtrl.actuatorStatus] = false;
+        ctrlActuator.setValue(false);
       }
     },
   };
@@ -381,6 +388,49 @@ function createRules(cfg, genNames, rulesId) {
   ruleId = defineRule(genNames.rule_set_target_t, ruleCfg);
   rulesId.push(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
+
+  // FIXME: This is will be fixed in feature - must be 'null'
+  var metaNotDefined = undefined;
+
+  var sensorErrorTopic = cfg.tempSensor + '#error';
+  debug('sensorErrorTopic='+sensorErrorTopic)
+  var actuatorErrorTopic = cfg.actuator + '#error';
+  debug('actuatorErrorTopic='+actuatorErrorTopic)
+  ruleCfg = {
+    whenChanged: [sensorErrorTopic, actuatorErrorTopic],
+    then: function (newValue, devName, cellName) {
+      var sensorErrValue = dev[sensorErrorTopic];
+      if (sensorErrValue !== metaNotDefined && sensorErrValue !== '') {
+        if (ctrlCurTemp !== null) {
+          log.error('Temperature sensor error topic {} state: {}', sensorErrorTopic, sensorErrValue);
+          ctrlCurTemp.setError(sensorErrValue);
+          ctrlEnable.setValue(false);
+        }
+      } else {
+        // The error is cleared – reset the control's error state
+        if (ctrlCurTemp !== null) {
+          ctrlCurTemp.setError('');
+        }
+      }
+
+      var actuatorErrValue = dev[actuatorErrorTopic];
+      if (actuatorErrValue !== metaNotDefined && actuatorErrValue !== '') {
+        if (ctrlActuator !== null) {
+          log.error('Actuator (heater) error topic {} state: {}', actuatorErrorTopic, actuatorErrValue);
+          ctrlActuator.setError(actuatorErrValue);
+          ctrlEnable.setValue(false);
+        }
+      } else {
+        // The error is cleared – reset the control's error state
+        if (ctrlActuator !== null) {
+          ctrlActuator.setError('');
+        }
+      }
+    }
+  };
+  var ruleId = defineRule(genNames.vDevice + '_meta_error_watch', ruleCfg)
+  // This rule not disable when user use switch in virtual device
+  log.debug('Meta error watch rule created with ID="{}"', ruleId);
 }
 
 /**
@@ -408,7 +458,7 @@ function init(deviceTitle, cfg) {
   }
 
   addCustomCellsToVd(vdObj, cfg);
-  createRules(cfg, genNames, rulesId);
+  createRules(cfg, genNames, vdObj, rulesId);
 
   // Set first heater state after initialisation
   var data = {
