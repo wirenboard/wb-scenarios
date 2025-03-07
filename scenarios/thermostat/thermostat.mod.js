@@ -393,27 +393,29 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 
   // FIXME: This is will be fixed in feature time - must be 'null'
-  var metaNotDefined = undefined;
+  var metaUnset = undefined;
 
   /**
    * Rule to handle temperature sensor errors
    */
-  var sensorErrorTopic = cfg.tempSensor + '#error';
+  var sensorErrTopic = cfg.tempSensor + '#error';
   var ruleCfg = {
-    whenChanged: [sensorErrorTopic],
+    whenChanged: [sensorErrTopic],
     then: function (newValue, devName, cellName) {
-      var sensorErrValue = dev[sensorErrorTopic];
-      if (sensorErrValue !== metaNotDefined && sensorErrValue !== '') {
+      var sensorErrVal = dev[sensorErrTopic];
+      if (sensorErrVal !== metaUnset && sensorErrVal !== '') {
         log.error(
-          'Temperature sensor error topic {} state: {}',
-          sensorErrorTopic,
-          sensorErrValue
+          'Scenario disabled: Temperature sensor error topic {} state: {}',
+          sensorErrTopic,
+          sensorErrVal
         );
-        ctrlCurTemp.setError(sensorErrValue);
+        ctrlCurTemp.setError(sensorErrVal);
+        ctrlEnable.setReadonly(true);
         ctrlEnable.setValue(false);
       } else {
         // The error is cleared – reset the control's error state
         ctrlCurTemp.setError('');
+        ctrlEnable.setReadonly(false);
       }
     },
   };
@@ -424,22 +426,24 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   /**
    * Rule to handle actuator errors
    */
-  var actuatorErrorTopic = cfg.actuator + '#error';
+  var actuatorErrTopic = cfg.actuator + '#error';
   ruleCfg = {
-    whenChanged: [actuatorErrorTopic],
+    whenChanged: [actuatorErrTopic],
     then: function (newValue, devName, cellName) {
-      var actuatorErrValue = dev[actuatorErrorTopic];
-      if (actuatorErrValue !== metaNotDefined && actuatorErrValue !== '') {
+      var actuatorErrVal = dev[actuatorErrTopic];
+      if (actuatorErrVal !== metaUnset && actuatorErrVal !== '') {
         log.error(
-          'Actuator (heater) error topic {} state: {}',
-          actuatorErrorTopic,
-          actuatorErrValue
+          'Scenario disabled: Actuator (heater) error topic {} state: {}',
+          actuatorErrTopic,
+          actuatorErrVal
         );
-        ctrlActuator.setError(actuatorErrValue);
+        ctrlActuator.setError(actuatorErrVal);
+        ctrlEnable.setReadonly(true);
         ctrlEnable.setValue(false);
       } else {
         // The error is cleared – reset the control's error state
         ctrlActuator.setError('');
+        ctrlEnable.setReadonly(false);
       }
     },
   };
