@@ -130,10 +130,10 @@ function isConfigValid(cfg) {
  * Creates a basic virtual device with a rule switch if it not already exist
  * @param {string} vdName The name of the virtual device
  * @param {string} vdTitle The title of the virtual device
- * @param {Array<number>} rulesIdToToggle Array of rule IDs to toggle on switch
+ * @param {Array<number>} managedRulesId Array of rule IDs to toggle on switch
  * @returns {Object|null} The virtual device object if created, otherwise null
  */
-function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
+function createBasicVd(vdName, vdTitle, managedRulesId) {
   var existingVdObj = getDevice(vdName);
   if (existingVdObj !== undefined) {
     log.error('Virtual device "{}" already exists in system', vdName);
@@ -162,11 +162,11 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
   vdObj.addControl(vdCtrl.ruleEnabled, controlCfg);
 
   function toggleRules(newValue) {
-    for (var i = 0; i < rulesIdToToggle.length; i++) {
+    for (var i = 0; i < managedRulesId.length; i++) {
       if (newValue) {
-        enableRule(rulesIdToToggle[i]);
+        enableRule(managedRulesId[i]);
       } else {
-        disableRule(rulesIdToToggle[i]);
+        disableRule(managedRulesId[i]);
       }
     }
   }
@@ -307,9 +307,9 @@ function updateHeatingState(actuator, data) {
  * @param {ThermostatConfig} cfg Configuration parameters
  * @param {Object} genNames Generated names
  * @param {Object} vdObj Scenario virtual device
- * @param {Array<string>} rulesId Array of rule IDs for enabling/disabling
+ * @param {Array<string>} managedRulesId Array of rule IDs for enabling/disabling
  */
-function createRules(cfg, genNames, vdObj, rulesId) {
+function createRules(cfg, genNames, vdObj, managedRulesId) {
   var ruleCfg = {};
   var ruleId = null;
 
@@ -332,7 +332,7 @@ function createRules(cfg, genNames, vdObj, rulesId) {
     },
   };
   ruleId = defineRule(genNames.rule_temp_changed, ruleCfg);
-  rulesId.push(ruleId);
+  managedRulesId.push(ruleId);
   log.debug('Temperature changed rule created success with ID "{}"', ruleId);
 
   ruleCfg = {
@@ -342,7 +342,7 @@ function createRules(cfg, genNames, vdObj, rulesId) {
     },
   };
   ruleId = defineRule(genNames.rule_sync_act_status, ruleCfg);
-  rulesId.push(ruleId);
+  managedRulesId.push(ruleId);
   log.debug(
     'Sync actuator status rule created success with ID "{}"',
     ruleId
@@ -386,7 +386,7 @@ function createRules(cfg, genNames, vdObj, rulesId) {
     },
   };
   ruleId = defineRule(genNames.rule_set_target_t, ruleCfg);
-  rulesId.push(ruleId);
+  managedRulesId.push(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 
   // FIXME: This is will be fixed in feature - must be 'null'
@@ -446,8 +446,8 @@ function init(deviceTitle, cfg) {
   var genNames = generateNames(idPrefix);
 
   // Create a minimal basic virtual device to indicate errors if they occur
-  var rulesId = [];
-  var vdObj = createBasicVd(genNames.vDevice, deviceTitle, rulesId);
+  var managedRulesId = [];
+  var vdObj = createBasicVd(genNames.vDevice, deviceTitle, managedRulesId);
   if (vdObj === null) {
     return false;
   }
@@ -458,7 +458,7 @@ function init(deviceTitle, cfg) {
   }
 
   addCustomCellsToVd(vdObj, cfg);
-  createRules(cfg, genNames, vdObj, rulesId);
+  createRules(cfg, genNames, vdObj, managedRulesId);
 
   // Set first heater state after initialisation
   var data = {
