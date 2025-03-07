@@ -389,48 +389,52 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   managedRulesId.push(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 
-  // FIXME: This is will be fixed in feature - must be 'null'
+  // FIXME: This is will be fixed in feature time - must be 'null'
   var metaNotDefined = undefined;
 
+  /**
+   * Rule to handle temperature sensor errors
+   */
   var sensorErrorTopic = cfg.tempSensor + '#error';
-  debug('sensorErrorTopic='+sensorErrorTopic)
-  var actuatorErrorTopic = cfg.actuator + '#error';
-  debug('actuatorErrorTopic='+actuatorErrorTopic)
-  ruleCfg = {
-    whenChanged: [sensorErrorTopic, actuatorErrorTopic],
+  var ruleCfg = {
+    whenChanged: [sensorErrorTopic],
     then: function (newValue, devName, cellName) {
       var sensorErrValue = dev[sensorErrorTopic];
       if (sensorErrValue !== metaNotDefined && sensorErrValue !== '') {
-        if (ctrlCurTemp !== null) {
-          log.error('Temperature sensor error topic {} state: {}', sensorErrorTopic, sensorErrValue);
-          ctrlCurTemp.setError(sensorErrValue);
-          ctrlEnable.setValue(false);
-        }
+        log.error('Temperature sensor error topic {} state: {}', sensorErrorTopic, sensorErrValue);
+        ctrlCurTemp.setError(sensorErrValue);
+        ctrlEnable.setValue(false);
       } else {
         // The error is cleared – reset the control's error state
-        if (ctrlCurTemp !== null) {
-          ctrlCurTemp.setError('');
-        }
-      }
-
-      var actuatorErrValue = dev[actuatorErrorTopic];
-      if (actuatorErrValue !== metaNotDefined && actuatorErrValue !== '') {
-        if (ctrlActuator !== null) {
-          log.error('Actuator (heater) error topic {} state: {}', actuatorErrorTopic, actuatorErrValue);
-          ctrlActuator.setError(actuatorErrValue);
-          ctrlEnable.setValue(false);
-        }
-      } else {
-        // The error is cleared – reset the control's error state
-        if (ctrlActuator !== null) {
-          ctrlActuator.setError('');
-        }
+        ctrlCurTemp.setError('');
       }
     }
   };
-  var ruleId = defineRule(genNames.vDevice + '_meta_error_watch', ruleCfg)
+  var ruleId = defineRule(genNames.vDevice + '_sensor_error_watch', ruleCfg);
   // This rule not disable when user use switch in virtual device
-  log.debug('Meta error watch rule created with ID="{}"', ruleId);
+  log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
+
+  /**
+   * Rule to handle actuator errors
+   */
+  var actuatorErrorTopic = cfg.actuator + '#error';
+  ruleCfg = {
+    whenChanged: [actuatorErrorTopic],
+    then: function (newValue, devName, cellName) {
+      var actuatorErrValue = dev[actuatorErrorTopic];
+      if (actuatorErrValue !== metaNotDefined && actuatorErrValue !== '') {
+        log.error('Actuator (heater) error topic {} state: {}', actuatorErrorTopic, actuatorErrValue);
+        ctrlActuator.setError(actuatorErrValue);
+        ctrlEnable.setValue(false);
+      } else {
+        // The error is cleared – reset the control's error state
+        ctrlActuator.setError('');
+      }
+    }
+  };
+  var ruleId = defineRule(genNames.vDevice + '_actuator_error_watch', ruleCfg);
+  // This rule not disable when user use switch in virtual device
+  log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 }
 
 /**
