@@ -35,12 +35,12 @@ function generateNames(idPrefix) {
 
   var generatedNames = {
     vDevice: scenarioPrefix + idPrefix,
-    rule_sync_act_status: baseRuleName + '_sync_act_status',
-    rule_temp_changed: baseRuleName + '_temp_changed',
-    rule_set_sc_status: baseRuleName + '_set_sc_status',
-    rule_set_target_t: baseRuleName + '_set_target_t',
-    rule_sensor_err: baseRuleName + '_sensor_error_changed',
-    rule_actuator_err: baseRuleName + '_actuator_error_changed',
+    ruleSyncActStatus: baseRuleName + '_sync_act_status',
+    ruleTempChanged: baseRuleName + '_temp_changed',
+    ruleSetScStatus: baseRuleName + '_set_sc_status',
+    ruleSetTargetTemp: baseRuleName + '_set_target_t',
+    ruleSensorErr: baseRuleName + '_sensor_error_changed',
+    ruleActuatorErr: baseRuleName + '_actuator_error_changed',
   };
 
   return generatedNames;
@@ -353,7 +353,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       updateHeatingState(cfg.actuator, data);
     },
   };
-  ruleId = defineRule(genNames.rule_temp_changed, ruleCfg);
+  ruleId = defineRule(genNames.ruleTempChanged, ruleCfg);
   managedRulesId.push(ruleId);
   log.debug('Temperature changed rule created success with ID "{}"', ruleId);
 
@@ -363,7 +363,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       vdCtrlActuator.setValue(newValue);
     },
   };
-  ruleId = defineRule(genNames.rule_sync_act_status, ruleCfg);
+  ruleId = defineRule(genNames.ruleSyncActStatus, ruleCfg);
   managedRulesId.push(ruleId);
   log.debug(
     'Sync actuator status rule created success with ID "{}"',
@@ -389,7 +389,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       }
     },
   };
-  ruleId = defineRule(genNames.rule_set_sc_status, ruleCfg);
+  ruleId = defineRule(genNames.ruleSetScStatus, ruleCfg);
   // This rule not disable when user use switch in virtual device
   log.debug(
     'Activate scenario status rule created success with ID "{}"',
@@ -408,7 +408,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       updateHeatingState(cfg.actuator, data);
     },
   };
-  ruleId = defineRule(genNames.rule_set_target_t, ruleCfg);
+  ruleId = defineRule(genNames.ruleSetTargetTemp, ruleCfg);
   managedRulesId.push(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 
@@ -442,7 +442,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       }
     },
   };
-  var ruleId = defineRule(genNames.rule_sensor_err, ruleCfg);
+  var ruleId = defineRule(genNames.ruleSensorErr, ruleCfg);
   // This rule not disable when user use switch in virtual device
   log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
 
@@ -475,7 +475,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       }
     },
   };
-  var ruleId = defineRule(genNames.rule_actuator_err, ruleCfg);
+  var ruleId = defineRule(genNames.ruleActuatorErr, ruleCfg);
   // This rule not disable when user use switch in virtual device
   log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 }
