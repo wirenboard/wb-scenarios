@@ -423,9 +423,11 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
           sensorErrTopic,
           newValue
         );
-        vdCtrlCurTemp.setError(newValue);
         vdCtrlEnable.setReadonly(true);
         vdCtrlEnable.setValue(false);
+        // FIXME: Set error must be after disable scenario rules
+        //        This seq important becoase we have bug about "err clearing"
+        vdCtrlCurTemp.setError(newValue);
       } else {
         log.debug(
           'Temperature sensor err cleared for topic {} state: {}',
@@ -455,9 +457,11 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
           actuatorErrTopic,
           newValue
         );
-        vdCtrlActuator.setError(newValue);
         vdCtrlEnable.setReadonly(true);
         vdCtrlEnable.setValue(false);
+        // FIXME: Set error must be after disable scenario rules
+        //        This seq important becoase we have bug about "err clearing"
+        vdCtrlActuator.setError(newValue);
       } else {
         log.debug(
           'Actuator (heater) err cleared for topic {} state: {}',
