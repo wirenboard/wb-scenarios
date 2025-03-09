@@ -325,6 +325,47 @@ function tryClearReadonly(cfg, vdCtrlEnable) {
 }
 
 /**
+ * Creates an error handling rule for a sensor or actuator
+ * @param {string} ruleName The name of the rule to be created
+ * @param {string} sourceErrTopic The MQTT topic where error events published
+ *     Example: "temperature_sensor/temperature#error", "relay_module/K2#error"
+ * @param {Object} targetVdCtrl The target virtual device control for sync
+ *     Example: `vdCtrlCurTemp = vdObj.getControl('ctrlID')`
+ * @returns {number|null} The ID of the created rule, or `null` if failed
+ */
+function createErrChangeRule(ruleName, sourceErrTopic, targetVdCtrl) {
+  var ruleCfg = {
+    whenChanged: [sourceErrTopic],
+    then: function (newValue, devName, cellName) {
+      if (newValue !== '') {
+        log.error(
+          'Scenario disabled: Get error for topic "{}". New error state: "{}"',
+          sourceErrTopic,
+          newValue
+        );
+        vdCtrlEnable.setReadonly(true);
+        vdCtrlEnable.setValue(false);
+        // FIXME: Set error must be after disable scenario rules
+        //        This seq important becoase we have bug about "err clearing"
+        targetVdCtrl.setError(newValue);
+      } else {
+        log.debug(
+          'Error cleared for topic "{}". New error state: "{}"',
+          sourceErrTopic,
+          newValue
+        );
+        // The error is cleared – reset the control's error state
+        targetVdCtrl.setError('');
+        tryClearReadonly(cfg, vdCtrlEnable);
+      }
+    },
+  };
+
+  var ruleId = defineRule(ruleName, ruleCfg);
+  return ruleId;
+}
+
+/**
  * Creates thermostat control rules
  * @param {ThermostatConfig} cfg Configuration parameters
  * @param {Object} genNames Generated names
@@ -416,33 +457,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
    * Rule to handle temperature sensor errors
    */
   var sensorErrTopic = cfg.tempSensor + '#error';
-  var ruleCfg = {
-    whenChanged: [sensorErrTopic],
-    then: function (newValue, devName, cellName) {
-      if (newValue !== '') {
-        log.error(
-          'Scenario disabled: Temperature sensor err for topic {} state: {}',
-          sensorErrTopic,
-          newValue
-        );
-        vdCtrlEnable.setReadonly(true);
-        vdCtrlEnable.setValue(false);
-        // FIXME: Set error must be after disable scenario rules
-        //        This seq important becoase we have bug about "err clearing"
-        vdCtrlCurTemp.setError(newValue);
-      } else {
-        log.debug(
-          'Temperature sensor err cleared for topic {} state: {}',
-          sensorErrTopic,
-          newValue
-        );
-        // The error is cleared – reset the control's error state
-        vdCtrlCurTemp.setError('');
-        tryClearReadonly(cfg, vdCtrlEnable);
-      }
-    },
-  };
-  var ruleId = defineRule(genNames.ruleSensorErr, ruleCfg);
+  ruleId = createErrChangeRule(genNames.ruleSensorErr, sensorErrTopic, vdCtrlCurTemp);
   // This rule not disable when user use switch in virtual device
   log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
 
@@ -450,32 +465,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
    * Rule to handle actuator errors
    */
   var actuatorErrTopic = cfg.actuator + '#error';
-  ruleCfg = {
-    whenChanged: [actuatorErrTopic],
-    then: function (newValue, devName, cellName) {
-      if (newValue !== '') {
-        log.error(
-          'Scenario disabled: Actuator (heater) err for topic {} state: {}',
-          actuatorErrTopic,
-          newValue
-        );
-        vdCtrlEnable.setReadonly(true);
-        vdCtrlEnable.setValue(false);
-        // FIXME: Set error must be after disable scenario rules
-        //        This seq important becoase we have bug about "err clearing"
-        vdCtrlActuator.setError(newValue);
-      } else {
-        log.debug(
-          'Actuator (heater) err cleared for topic {} state: {}',
-          actuatorErrTopic,
-          newValue
-        );
-        vdCtrlActuator.setError('');
-        tryClearReadonly(cfg, vdCtrlEnable);
-      }
-    },
-  };
-  var ruleId = defineRule(genNames.ruleActuatorErr, ruleCfg);
+  ruleId = createErrChangeRule(genNames.ruleActuatorErr, actuatorErrTopic, vdCtrlActuator);
   // This rule not disable when user use switch in virtual device
   log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 }
