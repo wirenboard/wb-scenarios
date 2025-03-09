@@ -39,6 +39,8 @@ function generateNames(idPrefix) {
     rule_temp_changed: baseRuleName + '_temp_changed',
     rule_set_sc_status: baseRuleName + '_set_sc_status',
     rule_set_target_t: baseRuleName + '_set_target_t',
+    rule_sensor_err: baseRuleName + '_sensor_error_changed',
+    rule_actuator_err: baseRuleName + '_actuator_error_changed',
   };
 
   return generatedNames;
@@ -440,7 +442,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       }
     },
   };
-  var ruleId = defineRule(genNames.vDevice + '_sensor_error_watch', ruleCfg);
+  var ruleId = defineRule(genNames.rule_sensor_err, ruleCfg);
   // This rule not disable when user use switch in virtual device
   log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
 
@@ -473,10 +475,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       }
     },
   };
-  var ruleId = defineRule(
-    genNames.vDevice + '_actuator_error_watch',
-    ruleCfg
-  );
+  var ruleId = defineRule(genNames.rule_actuator_err, ruleCfg);
   // This rule not disable when user use switch in virtual device
   log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 }
