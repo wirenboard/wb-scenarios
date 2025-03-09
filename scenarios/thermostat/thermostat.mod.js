@@ -317,7 +317,10 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
   var sensorErrVal = dev[cfg.tempSensor + '#error'];
   var actuatorErrVal = dev[cfg.actuator + '#error'];
 
-  if ((!sensorErrVal || sensorErrVal === '') && (!actuatorErrVal || actuatorErrVal === '')) {
+  if (
+    (!sensorErrVal || sensorErrVal === '') &&
+    (!actuatorErrVal || actuatorErrVal === '')
+  ) {
     vdCtrlEnable.setReadonly(false);
   }
 }
@@ -333,7 +336,13 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
  * @param {ThermostatConfig} cfg Configuration parameters
  * @returns {number|null} The ID of the created rule, or `null` if failed
  */
-function createErrChangeRule(ruleName, sourceErrTopic, targetVdCtrl, vdCtrlEnable, cfg) {
+function createErrChangeRule(
+  ruleName,
+  sourceErrTopic,
+  targetVdCtrl,
+  vdCtrlEnable,
+  cfg
+) {
   var ruleCfg = {
     whenChanged: [sourceErrTopic],
     then: function (newValue, devName, cellName) {
@@ -454,12 +463,24 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 
   var sensorErrTopic = cfg.tempSensor + '#error';
-  ruleId = createErrChangeRule(genNames.ruleSensorErr, sensorErrTopic, vdCtrlCurTemp, vdCtrlEnable, cfg);
+  ruleId = createErrChangeRule(
+    genNames.ruleSensorErr,
+    sensorErrTopic,
+    vdCtrlCurTemp,
+    vdCtrlEnable,
+    cfg
+  );
   // This rule not disable when user use switch in virtual device
   log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
 
   var actuatorErrTopic = cfg.actuator + '#error';
-  ruleId = createErrChangeRule(genNames.ruleActuatorErr, actuatorErrTopic, vdCtrlActuator, vdCtrlEnable, cfg);
+  ruleId = createErrChangeRule(
+    genNames.ruleActuatorErr,
+    actuatorErrTopic,
+    vdCtrlActuator,
+    vdCtrlEnable,
+    cfg
+  );
   // This rule not disable when user use switch in virtual device
   log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 }
