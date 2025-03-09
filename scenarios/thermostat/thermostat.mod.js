@@ -310,16 +310,14 @@ function updateHeatingState(actuator, data) {
 /**
  * Updates the readonly state of the rule enable control
  * Removes readonly only when both errors (sensor and actuator) are cleared
- * @param {ThermostatConfig} cfg Configuration parameters
  * @param {object} vdCtrlEnable Control "Enable rules" in scenario virtual dev
+ * @param {ThermostatConfig} cfg Configuration parameters
  */
-function tryClearReadonly(cfg, vdCtrlEnable) {
+function tryClearReadonly(vdCtrlEnable, cfg) {
   var sensorErrVal = dev[cfg.tempSensor + '#error'];
   var actuatorErrVal = dev[cfg.actuator + '#error'];
-  log.debug('tryClearReadonly "{}"/"{}"', sensorErrVal, actuatorErrVal);
 
   if ((!sensorErrVal || sensorErrVal === '') && (!actuatorErrVal || actuatorErrVal === '')) {
-    log.debug('if tryClearReadonly "{}"/"{}"', sensorErrVal, actuatorErrVal);
     vdCtrlEnable.setReadonly(false);
   }
 }
@@ -331,9 +329,11 @@ function tryClearReadonly(cfg, vdCtrlEnable) {
  *     Example: "temperature_sensor/temperature#error", "relay_module/K2#error"
  * @param {Object} targetVdCtrl The target virtual device control for sync
  *     Example: `vdCtrlCurTemp = vdObj.getControl('ctrlID')`
+ * @param {object} vdCtrlEnable Control "Enable rules" in scenario virtual dev
+ * @param {ThermostatConfig} cfg Configuration parameters
  * @returns {number|null} The ID of the created rule, or `null` if failed
  */
-function createErrChangeRule(ruleName, sourceErrTopic, targetVdCtrl) {
+function createErrChangeRule(ruleName, sourceErrTopic, targetVdCtrl, vdCtrlEnable, cfg) {
   var ruleCfg = {
     whenChanged: [sourceErrTopic],
     then: function (newValue, devName, cellName) {
@@ -356,7 +356,7 @@ function createErrChangeRule(ruleName, sourceErrTopic, targetVdCtrl) {
         );
         // The error is cleared – reset the control's error state
         targetVdCtrl.setError('');
-        tryClearReadonly(cfg, vdCtrlEnable);
+        tryClearReadonly(vdCtrlEnable, cfg);
       }
     },
   };
@@ -373,13 +373,13 @@ function createErrChangeRule(ruleName, sourceErrTopic, targetVdCtrl) {
  * @param {Array<string>} managedRulesId Array of rule IDs for enabling/disabling
  */
 function createRules(cfg, genNames, vdObj, managedRulesId) {
+  var vdCtrlCurTemp = vdObj.getControl(vdCtrl.curTemp);
+  var vdCtrlActuator = vdObj.getControl(vdCtrl.actuatorStatus);
+  var vdCtrlTargetTemp = vdObj.getControl(vdCtrl.targetTemp);
+  var vdCtrlEnable = vdObj.getControl(vdCtrl.ruleEnabled);
+
   var ruleCfg = {};
   var ruleId = null;
-
-  vdCtrlCurTemp = vdObj.getControl(vdCtrl.curTemp);
-  vdCtrlActuator = vdObj.getControl(vdCtrl.actuatorStatus);
-  vdCtrlTartetTemp = vdObj.getControl(vdCtrl.targetTemp);
-  vdCtrlEnable = vdObj.getControl(vdCtrl.ruleEnabled);
 
   ruleCfg = {
     whenChanged: [cfg.tempSensor],
@@ -388,7 +388,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
 
       var data = {
         curTemp: newValue,
-        targetTemp: vdCtrlTartetTemp.getValue(),
+        targetTemp: vdCtrlTargetTemp.getValue(),
         hysteresis: cfg.hysteresis,
       };
       updateHeatingState(cfg.actuator, data);
@@ -417,7 +417,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
       if (newValue) {
         var data = {
           curTemp: dev[cfg.tempSensor],
-          targetTemp: vdCtrlTartetTemp.getValue(),
+          targetTemp: vdCtrlTargetTemp.getValue(),
           hysteresis: cfg.hysteresis,
         };
         updateHeatingState(cfg.actuator, data);
@@ -453,19 +453,13 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   managedRulesId.push(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 
-  /**
-   * Rule to handle temperature sensor errors
-   */
   var sensorErrTopic = cfg.tempSensor + '#error';
-  ruleId = createErrChangeRule(genNames.ruleSensorErr, sensorErrTopic, vdCtrlCurTemp);
+  ruleId = createErrChangeRule(genNames.ruleSensorErr, sensorErrTopic, vdCtrlCurTemp, vdCtrlEnable, cfg);
   // This rule not disable when user use switch in virtual device
   log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
 
-  /**
-   * Rule to handle actuator errors
-   */
   var actuatorErrTopic = cfg.actuator + '#error';
-  ruleId = createErrChangeRule(genNames.ruleActuatorErr, actuatorErrTopic, vdCtrlActuator);
+  ruleId = createErrChangeRule(genNames.ruleActuatorErr, actuatorErrTopic, vdCtrlActuator, vdCtrlEnable, cfg);
   // This rule not disable when user use switch in virtual device
   log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 }
