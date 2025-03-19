@@ -4,7 +4,7 @@
   "title": "Automation scenarios",
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
-    "service": "wb-rules"
+    "service": "wb-scenarios-toucher"
   },
   "options": {
     "wb": {

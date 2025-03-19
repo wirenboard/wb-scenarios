@@ -2,4 +2,5 @@ usr/share/wb-rules-system/rules
 usr/share/wb-mqtt-confed/schemas
 var/www/images/wb-scenarios
 usr/share/wb-rules-modules
+usr/lib/wb-scenarios
 etc
