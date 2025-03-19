@@ -8,7 +8,6 @@ Description=One-shot service to reload scenario init files
 [Service]
 Type=oneshot
 ExecStart=/usr/lib/wb-scenarios/wb-scenarios-reloader -v
-SyslogIdentifier=wb_scenarios_reloader
 
 # [Install]
 # This section removed, because this service not start automatically on start

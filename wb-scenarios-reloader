@@ -21,7 +21,7 @@ FILES=(
   "${BASE_DIR}/init-devices-control.js"
   "${BASE_DIR}/scenario-init-light-control.js"
   "${BASE_DIR}/scenario-init-thermostat.js"
-  # Add other files here as needed
+  # ... Add other files here as needed ...
 )
 
 # Flag for verbose mode
@@ -31,10 +31,10 @@ VERBOSE=false
 # Arguments:
 #   $1 Message to log
 log() {
-  local msg=$1
+  local msg="${1}"
 
-  if [ "$VERBOSE" = true ]; then
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $msg"
+  if [ "${VERBOSE}" = true ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] ${msg}"
   fi
 }
 
@@ -44,17 +44,17 @@ log() {
 # Returns:
 #   0 on success, 1 on failure
 touch_file() {
-  local file=$1
+  local file="${1}"
   
   # Early return if file doesn't exist
-  if [ ! -f "$file" ]; then
-    log "ERROR: File does not exist: $file"
+  if [ ! -f "${file}" ]; then
+    log "ERROR: File does not exist: ${file}"
     return 1  # Failure
   fi
   
   # Update file timestamp
-  touch "$file"
-  log "Successfully updated timestamp for file: $file"
+  touch "${file}"
+  log "Successfully updated timestamp for file: ${file}"
   
   return 0  # Success
 }
@@ -70,13 +70,13 @@ main() {
   
   # Parse command line arguments
   while getopts "v" opt; do
-    case $opt in
+    case "${opt}" in
       v)
         VERBOSE=true
         log "Verbose mode enabled"
         ;;
       \?)
-        log "Invalid option: -$OPTARG"
+        log "Invalid option: -${OPTARG}"
         exit 1  # Invalid option
         ;;
     esac
@@ -86,8 +86,9 @@ main() {
   
   # Process each file in the list
   for file in "${FILES[@]}"; do
-    process_result=$(touch_file "$file"; echo $?)
-    if [ $process_result -ne 0 ]; then
+    touch_file "${file}"
+    process_result="${?}"
+    if [ "${process_result}" -ne 0 ]; then
       # Exit on first file processing error
       exit 1  # File processing failed
     fi
@@ -97,5 +98,5 @@ main() {
   return 0  # Success
 }
 
-main "$@"
-exit $?
+main "${@}"
+exit "${?}"
