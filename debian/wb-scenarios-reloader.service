@@ -1,18 +1,15 @@
-# wb-scenarios-reloader.service - must be install to /etc/systemd/system/*
+# wb-scenarios-reloader.service - must be installed to /etc/systemd/system/*
 #
 # Part of wb-scenarios package for Wiren Board controllers
 
 [Unit]
 Description=One-shot service to reload scenario init files
-Wants=wb-hwconf-manager.service
-After=wb-hwconf-manager.service
 
 [Service]
 Type=oneshot
 ExecStart=/usr/lib/wb-scenarios/wb-scenarios-reloader -v
-
 SyslogIdentifier=wb_scenarios_reloader
-SyslogLevel=debug
 
-[Install]
-WantedBy=multi-user.target
+# [Install]
+# This section removed, because this service not start automatically on start
+# Wb confed use for start: systemctl reload-or-restart wb-scenarios-reloader

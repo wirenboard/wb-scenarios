@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# wb-scenarios-reloader - must be install to /usr/lib/wb-scenarios/*
+# wb-scenarios-reloader - must be installed to /usr/lib/wb-scenarios/*
 #
 # Script to update timestamps of scenario initialization files in $FILES array
 # Used to trigger scenarios reinitialization without restarting wb-rules.
