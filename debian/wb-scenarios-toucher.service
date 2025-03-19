@@ -1,17 +1,17 @@
-# wb-scenarios-toucher.service - must be install to /etc/systemd/system/*
+# wb-scenarios-reloader.service - must be install to /etc/systemd/system/*
 #
 # Part of wb-scenarios package for Wiren Board controllers
 
 [Unit]
-Description=One-shot service to update scenario init files timestamps
+Description=One-shot service to reload scenario init files
 Wants=wb-hwconf-manager.service
 After=wb-hwconf-manager.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/wb-scenarios/wb-scenarios-toucher.sh -v
+ExecStart=/usr/lib/wb-scenarios/wb-scenarios-reloader -v
 
-SyslogIdentifier=wb_scenarios_toucher
+SyslogIdentifier=wb_scenarios_reloader
 SyslogLevel=debug
 
 [Install]

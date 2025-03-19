@@ -1,14 +1,14 @@
-#!/bin/bash
-# wb-scenarios-toucher.sh - must be install to /usr/lib/wb-scenarios/*
+#!/usr/bin/env bash
+# wb-scenarios-reloader - must be install to /usr/lib/wb-scenarios/*
 #
 # Script to update timestamps of scenario initialization files in $FILES array
 # Used to trigger scenarios reinitialization without restarting wb-rules.
 #
 # Usage:
-#   $ ./wb-scenarios-toucher.sh [-v]
+#   $ ./wb-scenarios-reloader [-v]
 #       -v  Enable verbose mode for debugging
 #
-# NOTE: Used by the wb-scenarios-toucher service which is referenced
+# NOTE: Used by the wb-scenarios-reloader service which is referenced
 #   in the wb-scenarios JSON schema. This enables a more gentle, targeted
 #   restart of wb-scenarios initialization scripts, as opposed to a hard
 #   restart of the entire wb-rules service. Designed to be used as a oneshot

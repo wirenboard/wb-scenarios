@@ -30,7 +30,7 @@ RULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules
 # для пользовательских модулей
 MODULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-modules
 
-# Целевой путь для скрипта wb-scenarios-toucher.sh
+# Целевой путь для скрипта wb-scenarios-reloader
 SCRIPTS_DEST := $(DESTDIR)$(PREFIX)/lib/wb-scenarios
 
 # Поиск папок сценариев внутри папки scenarios
@@ -44,8 +44,8 @@ SRC_MODULE_FILES := $(wildcard $(SRC_DIR)*.mod.js)
 CONFIG_FILES := $(wildcard *.conf)
 IMAGE_FILES := $(wildcard $(SCHEMA_DIR)*.png)
 SCHEMA_FILES := $(wildcard $(SCHEMA_DIR)*.schema.json)
-# Файл для wb-scenarios-toucher
-TOUCHER_SCRIPT := wb-scenarios-toucher.sh
+# Файл скрипта сервиса перезагрузки сценариев
+RELOADER_SCRIPT := wb-scenarios-reloader
 
 .PHONY: all dummy install
 
@@ -86,10 +86,9 @@ install:
 			install -Dm644 $(file) -t $(MODULES_DEST);) \
 	fi
 
-	@# Установка скрипта wb-scenarios-toucher.sh
-	@echo "Copying $(TOUCHER_SCRIPT) to $(SCRIPTS_DEST)"
-	@install -d $(SCRIPTS_DEST)
-	@install -m755 $(TOUCHER_SCRIPT) $(SCRIPTS_DEST)/
+	@# Установка скрипта wb-scenarios-reloader
+	@echo "Copying $(RELOADER_SCRIPT) to $(SCRIPTS_DEST)"
+	@install -Dm755 $(RELOADER_SCRIPT) -t $(SCRIPTS_DEST)/
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
