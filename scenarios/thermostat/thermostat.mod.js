@@ -308,6 +308,21 @@ function updateHeatingState(actuator, data) {
 }
 
 /**
+ * Checks if the given error value contains a critical error.
+ * A critical error is defined as a string containing 'r' or 'w'
+ * @param {string|undefined} errorVal The error value to check
+ * @returns {boolean} True if there is a critical error, false otherwise
+ */
+function hasCriticalErr(errorVal) {
+  if (typeof errorVal !== 'string') {
+    return false;
+  }
+
+  var containsCriticalError = errorVal.indexOf('r') !== -1 || errorVal.indexOf('w') !== -1;
+  return containsCriticalError;
+}
+
+/**
  * Updates the readonly state of the rule enable control
  * Removes readonly only when both errors (sensor and actuator) are cleared
  * @param {object} vdCtrlEnable Control "Enable rules" in scenario virtual dev
@@ -318,8 +333,8 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
   var actuatorErrVal = dev[cfg.actuator + '#error'];
 
   if (
-    (!sensorErrVal || sensorErrVal === '') &&
-    (!actuatorErrVal || actuatorErrVal === '')
+    (sensorErrVal === undefined || hasCriticalErr(sensorErrVal) === false) &&
+    (actuatorErrVal === undefined || hasCriticalErr(actuatorErrVal) === false)
   ) {
     vdCtrlEnable.setReadonly(false);
   }
@@ -349,13 +364,10 @@ function createErrChangeRule(
   var ruleCfg = {
     whenChanged: [sourceErrTopic],
     then: function (newValue, devName, cellName) {
+      targetVdCtrl.setError(newValue);
+
       if (newValue !== '') {
-        targetVdCtrl.setError(newValue);
-
-        var hasCriticalError =
-          newValue.indexOf('r') !== -1 || newValue.indexOf('w') !== -1;
-
-        if (hasCriticalError) {
+        if (hasCriticalErr(newValue) === true) {
           log.warning(
             'Get critical error (r/w) for topic "{}". New error state: "{}"',
             sourceErrTopic,
@@ -368,11 +380,8 @@ function createErrChangeRule(
             errorTimers[sourceErrTopic] = setTimeout(function () {
               // When timer stop - check still critical errors r/w
               var currentErrorVal = dev[sourceErrTopic];
-              var stillCritical =
-                currentErrorVal.indexOf('r') !== -1 ||
-                currentErrorVal.indexOf('w') !== -1;
 
-              if (stillCritical) {
+              if (hasCriticalErr(currentErrorVal) === true) {
                 log.error(
                   'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
                   sourceErrTopic,
@@ -399,7 +408,6 @@ function createErrChangeRule(
             sourceErrTopic,
             newValue
           );
-          // Non-critical error (p) - only display error state without disabling scenario
         }
       } else {
         log.debug(
@@ -408,7 +416,6 @@ function createErrChangeRule(
           newValue
         );
         // The error is cleared – reset the control's error state
-        targetVdCtrl.setError('');
         tryClearReadonly(vdCtrlEnable, cfg);
 
         // If on this topic was running timer - disable this timer
