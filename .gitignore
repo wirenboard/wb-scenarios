@@ -15,6 +15,7 @@
 # Ignore all debian package build files
 /debian/*
 # Exclude only specific control files, configuration and maintainer scripts
+!/debian/compat-note.md
 !/debian/changelog
 !/debian/compat
 !/debian/control
