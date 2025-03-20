@@ -347,16 +347,27 @@ function createErrChangeRule(
     whenChanged: [sourceErrTopic],
     then: function (newValue, devName, cellName) {
       if (newValue !== '') {
-        log.error(
-          'Scenario disabled: Get error for topic "{}". New error state: "{}"',
-          sourceErrTopic,
-          newValue
-        );
-        vdCtrlEnable.setReadonly(true);
-        vdCtrlEnable.setValue(false);
-        // FIXME: Set error must be after disable scenario rules
-        //        This seq important becoase we have bug about "err clearing"
         targetVdCtrl.setError(newValue);
+
+        var hasCriticalError =
+          newValue.indexOf('r') !== -1 || newValue.indexOf('w') !== -1;
+
+        if (hasCriticalError) {
+          log.error(
+            'Scenario disabled: Get critical error (r/w) for topic "{}". New error state: "{}"',
+            sourceErrTopic,
+            newValue
+          );
+          vdCtrlEnable.setReadonly(true);
+          vdCtrlEnable.setValue(false);
+        } else {
+          log.debug(
+            'Non-critical error (p) detected for topic "{}". New error state: "{}"',
+            sourceErrTopic,
+            newValue
+          );
+          // Non-critical error (p) - only display error state without disabling scenario
+        }
       } else {
         log.debug(
           'Error cleared for topic "{}". New error state: "{}"',
