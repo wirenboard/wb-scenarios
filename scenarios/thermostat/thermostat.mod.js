@@ -142,7 +142,7 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
     return null;
   }
   log.debug(
-    'Virtual device "{}" not exists in system -> create new',
+    'Virtual device "{}" does not exist in system -> create new VD',
     vdName
   );
 
