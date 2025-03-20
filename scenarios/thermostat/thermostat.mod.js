@@ -325,6 +325,9 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
   }
 }
 
+var errorTimers = {};
+var errorCheckTimeoutMs = 10000; // 10s debounse time
+
 /**
  * Creates an error handling rule for a sensor or actuator
  * @param {string} ruleName The name of the rule to be created
@@ -353,14 +356,44 @@ function createErrChangeRule(
           newValue.indexOf('r') !== -1 || newValue.indexOf('w') !== -1;
 
         if (hasCriticalError) {
-          log.error(
-            'Scenario disabled: Get critical error (r/w) for topic "{}". New error state: "{}"',
+          log.warning(
+            'Get critical error (r/w) for topic "{}". New error state: "{}"',
             sourceErrTopic,
             newValue
           );
-          vdCtrlEnable.setReadonly(true);
-          vdCtrlEnable.setValue(false);
+
+          // Create new timer only if not have running already
+          if (!errorTimers[sourceErrTopic]) {
+
+            errorTimers[sourceErrTopic] = setTimeout(function () {
+              // When timer stop - check still critical errors r/w
+              var currentErrorVal = dev[sourceErrTopic];
+              var stillCritical =
+                currentErrorVal.indexOf('r') !== -1 ||
+                currentErrorVal.indexOf('w') !== -1;
+
+              if (stillCritical) {
+                log.error(
+                  'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
+                  sourceErrTopic,
+                  errorCheckTimeoutMs,
+                  currentErrorVal
+                );
+                vdCtrlEnable.setReadonly(true);
+                vdCtrlEnable.setValue(false);
+              } else {
+                log.debug(
+                  'Error in topic "{}" cleared before timer disabled. Scenario still running.',
+                  sourceErrTopic
+                );
+              }
+
+              // Clear timer
+              errorTimers[sourceErrTopic] = null;
+            }, errorCheckTimeoutMs);
+          }
         } else {
+
           log.debug(
             'Non-critical error (p) detected for topic "{}". New error state: "{}"',
             sourceErrTopic,
@@ -377,6 +410,13 @@ function createErrChangeRule(
         // The error is cleared – reset the control's error state
         targetVdCtrl.setError('');
         tryClearReadonly(vdCtrlEnable, cfg);
+
+        // If on this topic was running timer - disable this timer
+        if (errorTimers[sourceErrTopic]) {
+          clearTimeout(errorTimers[sourceErrTopic]);
+          errorTimers[sourceErrTopic] = null;
+          log.debug('Debounce timer for error for topic "{}" disabled', sourceErrTopic);
+        }
       }
     },
   };
