@@ -366,52 +366,9 @@ function createErrChangeRule(
     then: function (newValue, devName, cellName) {
       targetVdCtrl.setError(newValue);
 
-      if (newValue !== '') {
-        if (hasCriticalErr(newValue) === true) {
-          log.warning(
-            'Get critical error (r/w) for topic "{}". New error state: "{}"',
-            sourceErrTopic,
-            newValue
-          );
-
-          // Create new timer only if not have running already
-          if (!errorTimers[sourceErrTopic]) {
-
-            errorTimers[sourceErrTopic] = setTimeout(function () {
-              // When timer stop - check still critical errors r/w
-              var currentErrorVal = dev[sourceErrTopic];
-
-              if (hasCriticalErr(currentErrorVal) === true) {
-                log.error(
-                  'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
-                  sourceErrTopic,
-                  errorCheckTimeoutMs,
-                  currentErrorVal
-                );
-                vdCtrlEnable.setReadonly(true);
-                vdCtrlEnable.setValue(false);
-              } else {
-                log.debug(
-                  'Error in topic "{}" cleared before timer disabled. Scenario still running.',
-                  sourceErrTopic
-                );
-              }
-
-              // Clear timer
-              errorTimers[sourceErrTopic] = null;
-            }, errorCheckTimeoutMs);
-          }
-        } else {
-
-          log.debug(
-            'Non-critical error (p) detected for topic "{}". New error state: "{}"',
-            sourceErrTopic,
-            newValue
-          );
-        }
-      } else {
+      if (hasCriticalErr(newValue) === false) {
         log.debug(
-          'Error cleared for topic "{}". New error state: "{}"',
+          'Error cleared or non-critical error (p) detected for topic "{}". New state: "{}"',
           sourceErrTopic,
           newValue
         );
@@ -422,9 +379,48 @@ function createErrChangeRule(
         if (errorTimers[sourceErrTopic]) {
           clearTimeout(errorTimers[sourceErrTopic]);
           errorTimers[sourceErrTopic] = null;
-          log.debug('Debounce timer for error for topic "{}" disabled', sourceErrTopic);
+          log.debug(
+            'Debounce timer for error for topic "{}" disabled',
+            sourceErrTopic
+          );
         }
+        return;
       }
+
+      log.warning(
+        'Get critical error (r/w) for topic "{}". New error state: "{}"',
+        sourceErrTopic,
+        newValue
+      );
+
+      // Create new timer only if not have running already
+      if (errorTimers[sourceErrTopic]) {
+        return;
+      }
+
+      errorTimers[sourceErrTopic] = setTimeout(function () {
+        // When timer stop - check still critical errors r/w
+        var currentErrorVal = dev[sourceErrTopic];
+
+        if (hasCriticalErr(currentErrorVal) === true) {
+          log.error(
+            'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
+            sourceErrTopic,
+            errorCheckTimeoutMs,
+            currentErrorVal
+          );
+          vdCtrlEnable.setReadonly(true);
+          vdCtrlEnable.setValue(false);
+        } else {
+          log.debug(
+            'Error in topic "{}" cleared before timer disabled. Scenario still running.',
+            sourceErrTopic
+          );
+        }
+
+        // Clear timer
+        errorTimers[sourceErrTopic] = null;
+      }, errorCheckTimeoutMs);
     },
   };
 
