@@ -35,10 +35,12 @@ function generateNames(idPrefix) {
 
   var generatedNames = {
     vDevice: scenarioPrefix + idPrefix,
-    rule_sync_act_status: baseRuleName + '_sync_act_status',
-    rule_temp_changed: baseRuleName + '_temp_changed',
-    rule_set_sc_status: baseRuleName + '_set_sc_status',
-    rule_set_target_t: baseRuleName + '_set_target_t',
+    ruleSyncActStatus: baseRuleName + '_sync_act_status',
+    ruleTempChanged: baseRuleName + '_temp_changed',
+    ruleSetScStatus: baseRuleName + '_set_sc_status',
+    ruleSetTargetTemp: baseRuleName + '_set_target_t',
+    ruleSensorErr: baseRuleName + '_sensor_error_changed',
+    ruleActuatorErr: baseRuleName + '_actuator_error_changed',
   };
 
   return generatedNames;
@@ -130,15 +132,19 @@ function isConfigValid(cfg) {
  * Creates a basic virtual device with a rule switch if it not already exist
  * @param {string} vdName The name of the virtual device
  * @param {string} vdTitle The title of the virtual device
- * @param {Array<number>} rulesIdToToggle Array of rule IDs to toggle on switch
+ * @param {Array<number>} managedRulesId Array of rule IDs to toggle on switch
  * @returns {Object|null} The virtual device object if created, otherwise null
  */
-function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
+function createBasicVd(vdName, vdTitle, managedRulesId) {
   var existingVdObj = getDevice(vdName);
   if (existingVdObj !== undefined) {
     log.error('Virtual device "{}" already exists in system', vdName);
     return null;
   }
+  log.debug(
+    'Virtual device "{}" does not exist in system -> create new VD',
+    vdName
+  );
 
   var vdCfg = {
     title: vdTitle,
@@ -161,11 +167,11 @@ function createBasicVd(vdName, vdTitle, rulesIdToToggle) {
   vdObj.addControl(vdCtrl.ruleEnabled, controlCfg);
 
   function toggleRules(newValue) {
-    for (var i = 0; i < rulesIdToToggle.length; i++) {
+    for (var i = 0; i < managedRulesId.length; i++) {
       if (newValue) {
-        enableRule(rulesIdToToggle[i]);
+        enableRule(managedRulesId[i]);
       } else {
-        disableRule(rulesIdToToggle[i]);
+        disableRule(managedRulesId[i]);
       }
     }
   }
@@ -302,40 +308,162 @@ function updateHeatingState(actuator, data) {
 }
 
 /**
+ * Checks if the given error value contains a critical error.
+ * A critical error is defined as a string containing 'r' or 'w'
+ * @param {string|undefined} errorVal The error value to check
+ * @returns {boolean} True if there is a critical error, false otherwise
+ */
+function hasCriticalErr(errorVal) {
+  if (typeof errorVal !== 'string') {
+    return false;
+  }
+
+  return (errorVal.indexOf('r') !== -1 || errorVal.indexOf('w') !== -1);
+}
+
+/**
+ * Updates the readonly state of the rule enable control
+ * Removes readonly only when both errors (sensor and actuator) are cleared
+ * @param {object} vdCtrlEnable Control "Enable rules" in scenario virtual dev
+ * @param {ThermostatConfig} cfg Configuration parameters
+ */
+function tryClearReadonly(vdCtrlEnable, cfg) {
+  if ( !hasCriticalErr(dev[cfg.tempSensor + '#error']) &&
+       !hasCriticalErr(dev[cfg.actuator + '#error'])
+  ) {
+    vdCtrlEnable.setReadonly(false);
+  }
+}
+
+var errorTimers = {};
+var errorCheckTimeoutMs = 10000; // 10s debounse time
+
+/**
+ * Creates an error handling rule for a sensor or actuator
+ * @param {string} ruleName The name of the rule to be created
+ * @param {string} sourceErrTopic The MQTT topic where error events published
+ *     Example: "temperature_sensor/temperature#error", "relay_module/K2#error"
+ * @param {Object} targetVdCtrl The target virtual device control for sync
+ *     Example: `vdCtrlCurTemp = vdObj.getControl('ctrlID')`
+ * @param {object} vdCtrlEnable Control "Enable rules" in scenario virtual dev
+ * @param {ThermostatConfig} cfg Configuration parameters
+ * @returns {number|null} The ID of the created rule, or `null` if failed
+ */
+function createErrChangeRule(
+  ruleName,
+  sourceErrTopic,
+  targetVdCtrl,
+  vdCtrlEnable,
+  cfg
+) {
+  var ruleCfg = {
+    whenChanged: [sourceErrTopic],
+    then: function (newValue, devName, cellName) {
+      targetVdCtrl.setError(newValue);
+
+      if (!hasCriticalErr(newValue)) {
+        log.debug(
+          'Error cleared or non-critical error (p) detected for topic "{}". New state: "{}"',
+          sourceErrTopic,
+          newValue
+        );
+        // The error is cleared – reset the control's error state
+        tryClearReadonly(vdCtrlEnable, cfg);
+
+        // If on this topic was running timer - disable this timer
+        if (errorTimers[sourceErrTopic]) {
+          clearTimeout(errorTimers[sourceErrTopic]);
+          errorTimers[sourceErrTopic] = null;
+          log.debug(
+            'Debounce timer for error for topic "{}" disabled',
+            sourceErrTopic
+          );
+        }
+        return;
+      }
+
+      log.warning(
+        'Get critical error (r/w) for topic "{}". New error state: "{}"',
+        sourceErrTopic,
+        newValue
+      );
+
+      // Create new timer only if not have running already
+      if (errorTimers[sourceErrTopic]) {
+        return;
+      }
+
+      errorTimers[sourceErrTopic] = setTimeout(function () {
+        // When timer stop - check still critical errors r/w
+        var currentErrorVal = dev[sourceErrTopic];
+
+        if (hasCriticalErr(currentErrorVal)) {
+          log.error(
+            'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
+            sourceErrTopic,
+            errorCheckTimeoutMs,
+            currentErrorVal
+          );
+          vdCtrlEnable.setReadonly(true);
+          vdCtrlEnable.setValue(false);
+        } else {
+          log.debug(
+            'Error in topic "{}" cleared before timer disabled. Scenario still running.',
+            sourceErrTopic
+          );
+        }
+
+        // Clear timer
+        errorTimers[sourceErrTopic] = null;
+      }, errorCheckTimeoutMs);
+    },
+  };
+
+  var ruleId = defineRule(ruleName, ruleCfg);
+  return ruleId;
+}
+
+/**
  * Creates thermostat control rules
  * @param {ThermostatConfig} cfg Configuration parameters
  * @param {Object} genNames Generated names
- * @param {Array<string>} rulesId Array of rule IDs for enabling/disabling
+ * @param {Object} vdObj Scenario virtual device
+ * @param {Array<string>} managedRulesId Array of rule IDs for enabling/disabling
  */
-function createRules(cfg, genNames, rulesId) {
+function createRules(cfg, genNames, vdObj, managedRulesId) {
+  var vdCtrlCurTemp = vdObj.getControl(vdCtrl.curTemp);
+  var vdCtrlActuator = vdObj.getControl(vdCtrl.actuatorStatus);
+  var vdCtrlTargetTemp = vdObj.getControl(vdCtrl.targetTemp);
+  var vdCtrlEnable = vdObj.getControl(vdCtrl.ruleEnabled);
+
   var ruleCfg = {};
   var ruleId = null;
 
   ruleCfg = {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
-      dev[genNames.vDevice + '/' + vdCtrl.curTemp] = newValue;
+      vdCtrlCurTemp.setValue(newValue);
 
       var data = {
         curTemp: newValue,
-        targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+        targetTemp: vdCtrlTargetTemp.getValue(),
         hysteresis: cfg.hysteresis,
       };
       updateHeatingState(cfg.actuator, data);
     },
   };
-  ruleId = defineRule(genNames.rule_temp_changed, ruleCfg);
-  rulesId.push(ruleId);
+  ruleId = defineRule(genNames.ruleTempChanged, ruleCfg);
+  managedRulesId.push(ruleId);
   log.debug('Temperature changed rule created success with ID "{}"', ruleId);
 
   ruleCfg = {
     whenChanged: [cfg.actuator],
     then: function (newValue, devName, cellName) {
-      dev[genNames.vDevice + '/' + vdCtrl.actuatorStatus] = newValue;
+      vdCtrlActuator.setValue(newValue);
     },
   };
-  ruleId = defineRule(genNames.rule_sync_act_status, ruleCfg);
-  rulesId.push(ruleId);
+  ruleId = defineRule(genNames.ruleSyncActStatus, ruleCfg);
+  managedRulesId.push(ruleId);
   log.debug(
     'Sync actuator status rule created success with ID "{}"',
     ruleId
@@ -347,19 +475,20 @@ function createRules(cfg, genNames, rulesId) {
       if (newValue) {
         var data = {
           curTemp: dev[cfg.tempSensor],
-          targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+          targetTemp: vdCtrlTargetTemp.getValue(),
           hysteresis: cfg.hysteresis,
         };
         updateHeatingState(cfg.actuator, data);
         /* Sync actual device status with VD **/
-        dev[genNames.vDevice + '/' + vdCtrl.curTemp] = dev[cfg.tempSensor];
+        vdCtrlCurTemp.setValue(dev[cfg.tempSensor]);
       } else {
         dev[cfg.actuator] = false;
-        dev[genNames.vDevice + '/' + vdCtrl.actuatorStatus] = false;
+        // Sync vd control state, because actuator sync-rule was disabled
+        vdCtrlActuator.setValue(false);
       }
     },
   };
-  ruleId = defineRule(genNames.rule_set_sc_status, ruleCfg);
+  ruleId = defineRule(genNames.ruleSetScStatus, ruleCfg);
   // This rule not disable when user use switch in virtual device
   log.debug(
     'Activate scenario status rule created success with ID "{}"',
@@ -378,9 +507,31 @@ function createRules(cfg, genNames, rulesId) {
       updateHeatingState(cfg.actuator, data);
     },
   };
-  ruleId = defineRule(genNames.rule_set_target_t, ruleCfg);
-  rulesId.push(ruleId);
+  ruleId = defineRule(genNames.ruleSetTargetTemp, ruleCfg);
+  managedRulesId.push(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
+
+  var sensorErrTopic = cfg.tempSensor + '#error';
+  ruleId = createErrChangeRule(
+    genNames.ruleSensorErr,
+    sensorErrTopic,
+    vdCtrlCurTemp,
+    vdCtrlEnable,
+    cfg
+  );
+  // This rule not disable when user use switch in virtual device
+  log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
+
+  var actuatorErrTopic = cfg.actuator + '#error';
+  ruleId = createErrChangeRule(
+    genNames.ruleActuatorErr,
+    actuatorErrTopic,
+    vdCtrlActuator,
+    vdCtrlEnable,
+    cfg
+  );
+  // This rule not disable when user use switch in virtual device
+  log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 }
 
 /**
@@ -396,8 +547,8 @@ function init(deviceTitle, cfg) {
   var genNames = generateNames(idPrefix);
 
   // Create a minimal basic virtual device to indicate errors if they occur
-  var rulesId = [];
-  var vdObj = createBasicVd(genNames.vDevice, deviceTitle, rulesId);
+  var managedRulesId = [];
+  var vdObj = createBasicVd(genNames.vDevice, deviceTitle, managedRulesId);
   if (vdObj === null) {
     return false;
   }
@@ -408,7 +559,7 @@ function init(deviceTitle, cfg) {
   }
 
   addCustomCellsToVd(vdObj, cfg);
-  createRules(cfg, genNames, rulesId);
+  createRules(cfg, genNames, vdObj, managedRulesId);
 
   // Set first heater state after initialisation
   var data = {
