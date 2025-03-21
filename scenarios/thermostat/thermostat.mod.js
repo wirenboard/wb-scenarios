@@ -318,8 +318,7 @@ function hasCriticalErr(errorVal) {
     return false;
   }
 
-  var containsCriticalError = errorVal.indexOf('r') !== -1 || errorVal.indexOf('w') !== -1;
-  return containsCriticalError;
+  return (errorVal.indexOf('r') !== -1 || errorVal.indexOf('w') !== -1);
 }
 
 /**
@@ -329,12 +328,8 @@ function hasCriticalErr(errorVal) {
  * @param {ThermostatConfig} cfg Configuration parameters
  */
 function tryClearReadonly(vdCtrlEnable, cfg) {
-  var sensorErrVal = dev[cfg.tempSensor + '#error'];
-  var actuatorErrVal = dev[cfg.actuator + '#error'];
-
-  if (
-    (sensorErrVal === undefined || hasCriticalErr(sensorErrVal) === false) &&
-    (actuatorErrVal === undefined || hasCriticalErr(actuatorErrVal) === false)
+  if ( !hasCriticalErr(dev[cfg.tempSensor + '#error']) &&
+       !hasCriticalErr(dev[cfg.actuator + '#error'])
   ) {
     vdCtrlEnable.setReadonly(false);
   }
@@ -366,7 +361,7 @@ function createErrChangeRule(
     then: function (newValue, devName, cellName) {
       targetVdCtrl.setError(newValue);
 
-      if (hasCriticalErr(newValue) === false) {
+      if (!hasCriticalErr(newValue)) {
         log.debug(
           'Error cleared or non-critical error (p) detected for topic "{}". New state: "{}"',
           sourceErrTopic,
@@ -402,7 +397,7 @@ function createErrChangeRule(
         // When timer stop - check still critical errors r/w
         var currentErrorVal = dev[sourceErrTopic];
 
-        if (hasCriticalErr(currentErrorVal) === true) {
+        if (hasCriticalErr(currentErrorVal)) {
           log.error(
             'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
             sourceErrTopic,
