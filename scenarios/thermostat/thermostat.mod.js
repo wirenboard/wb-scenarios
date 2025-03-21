@@ -14,6 +14,21 @@ var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
+ * One persistent-storage for all scenarios this type
+ * @example
+ *   ps = {
+ *     "bathroom_floor": {
+ *       "targetTemp": 22
+ *     },
+ *     "kitchen_heater": {
+ *       "targetTemp": 24
+ *     },
+ *     ...
+ *   }
+ */
+var ps = null;
+
+/**
  * Control key strings for virtual device
  */
 var vdCtrl = {
@@ -218,15 +233,16 @@ function setVdTotalError(vdObj, errorMsg) {
  * Adds custom control cells to a virtual device for scenario functionality
  * @param {Object} vdObj The virtual device object
  * @param {ThermostatConfig} cfg Configuration parameters
+ * @param {number} initialTemp Initial value for the target temperature
  */
-function addCustomCellsToVd(vdObj, cfg) {
+function addCustomCellsToVd(vdObj, cfg, initialTemp) {
   var controlCfg = {
     title: {
       en: 'Temperature Setpoint',
       ru: 'Заданная температура',
     },
     type: 'range',
-    value: cfg.targetTemp,
+    value: initialTemp,
     min: cfg.tempLimitsMin,
     max: cfg.tempLimitsMax,
     order: 2,
@@ -429,8 +445,9 @@ function createErrChangeRule(
  * @param {Object} genNames Generated names
  * @param {Object} vdObj Scenario virtual device
  * @param {Array<string>} managedRulesId Array of rule IDs for enabling/disabling
+ * @param {string} idPrefix Unique identifier of the scenario for persistent storage
  */
-function createRules(cfg, genNames, vdObj, managedRulesId) {
+function createRules(cfg, genNames, vdObj, managedRulesId, idPrefix) {
   var vdCtrlCurTemp = vdObj.getControl(vdCtrl.curTemp);
   var vdCtrlActuator = vdObj.getControl(vdCtrl.actuatorStatus);
   var vdCtrlTargetTemp = vdObj.getControl(vdCtrl.targetTemp);
@@ -498,6 +515,21 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
   ruleCfg = {
     whenChanged: [genNames.vDevice + '/' + vdCtrl.targetTemp],
     then: function (newValue, devName, cellName) {
+
+      // Save the new temperature to persistent storage
+      if (ps && typeof ps[idPrefix] !== 'undefined') {
+        try {
+          ps[idPrefix].targetTemp = newValue;
+          log.debug(
+            'Target temperature "{}" saved in persistent storage for scenario="{}"',
+            newValue,
+            idPrefix
+          );
+        } catch (err) {
+          log.error('Error saving target temperature to storage: {}', err);
+        }
+      }
+
       var curTemp = dev[cfg.tempSensor];
       var data = {
         curTemp: curTemp,
@@ -535,6 +567,59 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
 }
 
 /**
+ * Restore target temperature from persistent storage (if saved previosly)
+ * If the stored value is invalid or missing, we use cfg.targetTemp and save it
+ * @param {string} idPrefix Unique identifier of the scenario
+ * @param {Object} cfg Thermostat config (tempLimitsMin, tempLimitsMax, etc.)
+ * @returns {number} The target temperature to use
+ */
+function restoreTargetTemperature(idPrefix, cfg) {
+  if (typeof ps[idPrefix] === 'undefined') {
+    try {
+      ps[idPrefix] = StorableObject({});
+    } catch (err) {
+      log.error('Error on ps[idPrefix] assignment: {}', err);
+      return cfg.targetTemp;
+    }
+
+    log.debug(
+      'Created new record in persistent storage for scenario="{}"',
+      idPrefix
+    );
+  }
+
+  var storedTemp = ps[idPrefix].targetTemp;
+  var isValidStoredTemp =
+    typeof storedTemp === 'number' &&
+    storedTemp >= cfg.tempLimitsMin &&
+    storedTemp <= cfg.tempLimitsMax;
+
+  if (isValidStoredTemp) {
+    log.debug(
+      'Restored targetTemp="{}" for scenario="{}"',
+      storedTemp,
+      idPrefix
+    );
+    return storedTemp;
+  } else {
+    // Either no stored value, or it's out of range
+    var usedTemp = cfg.targetTemp;
+    ps[idPrefix].targetTemp = usedTemp;
+
+    // Show warning only if something was stored but invalid
+    if (typeof storedTemp === 'number') {
+      log.warning(
+        'Stored temp="{}" is out of range or invalid for "{}". Reset to "{}"',
+        storedTemp,
+        idPrefix,
+        usedTemp
+      );
+    }
+    return usedTemp;
+  }
+}
+
+/**
  * Initializes a virtual device and defines a rule
  * for controlling the device
  * @param {string} deviceTitle Name of the virtual device
@@ -542,6 +627,7 @@ function createRules(cfg, genNames, vdObj, managedRulesId) {
  * @returns {boolean} Returns true if initialization is successful, otherwise false
  */
 function init(deviceTitle, cfg) {
+  ps = new PersistentStorage('wbscThermostatSettings', { global: true });
   var idPrefix = helpers.getIdPrefix(deviceTitle, cfg);
   log.setLabel(loggerFileLabel + '/' + idPrefix);
   var genNames = generateNames(idPrefix);
@@ -557,9 +643,10 @@ function init(deviceTitle, cfg) {
     setVdTotalError(vdObj, 'Config not valid');
     return false;
   }
-
-  addCustomCellsToVd(vdObj, cfg);
-  createRules(cfg, genNames, vdObj, managedRulesId);
+  
+  var usedTemp = restoreTargetTemperature(idPrefix, cfg);
+  addCustomCellsToVd(vdObj, cfg, usedTemp);
+  createRules(cfg, genNames, vdObj, managedRulesId, idPrefix);
 
   // Set first heater state after initialisation
   var data = {
