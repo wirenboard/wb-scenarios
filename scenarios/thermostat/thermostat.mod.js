@@ -9,6 +9,7 @@
 
 var helpers = require('scenarios-general-helpers.mod');
 var Logger = require('logger.mod').Logger;
+var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
@@ -141,68 +142,6 @@ function isConfigValid(cfg) {
     isActuatorValid;
 
   return isCfgValid;
-}
-
-/**
- * Creates a basic virtual device with a rule switch if it not already exist
- * @param {string} vdName The name of the virtual device
- * @param {string} vdTitle The title of the virtual device
- * @param {Array<number>} managedRulesId Array of rule IDs to toggle on switch
- * @returns {Object|null} The virtual device object if created, otherwise null
- */
-function createBasicVd(vdName, vdTitle, managedRulesId) {
-  var existingVdObj = getDevice(vdName);
-  if (existingVdObj !== undefined) {
-    log.error('Virtual device "{}" already exists in system', vdName);
-    return null;
-  }
-  log.debug(
-    'Virtual device "{}" does not exist in system -> create new VD',
-    vdName
-  );
-
-  var vdCfg = {
-    title: vdTitle,
-    cells: {},
-  };
-  var vdObj = defineVirtualDevice(vdName, vdCfg);
-  if (!vdObj) {
-    log.error('Virtual device "{}" not created', vdTitle);
-    return null;
-  }
-
-  var controlCfg = {
-    title: {
-      en: 'Activate scenario rule',
-      ru: 'Активировать правило сценария',
-    },
-    type: 'switch',
-    value: true,
-  };
-  vdObj.addControl(vdCtrl.ruleEnabled, controlCfg);
-
-  function toggleRules(newValue) {
-    for (var i = 0; i < managedRulesId.length; i++) {
-      if (newValue) {
-        enableRule(managedRulesId[i]);
-      } else {
-        disableRule(managedRulesId[i]);
-      }
-    }
-  }
-
-  var ruleId = defineRule(vdName + '_change_' + vdCtrl.ruleEnabled, {
-    whenChanged: [vdName + '/' + vdCtrl.ruleEnabled],
-    then: toggleRules,
-  });
-
-  if (!ruleId) {
-    log.error('Failed to create the rule: {}', vdName);
-    return null;
-  }
-
-  log.debug('Base VD and rule with names "{}" created successfully', vdName);
-  return vdObj;
 }
 
 /**
