@@ -500,6 +500,41 @@ function generateNames(idPrefix) {
 }
 ```
 
+- Для того чтобы сценарий корректно запускался - нужно чтобы он подождал
+  создания связанных с ним топиков - для этого в функции init создается
+  таймер проверяющий корректность по функции isTopicsInited(cfg)
+  которую нужно описать вам.
+
+```javascript
+/**
+ * Checks if the specified topics (temperature sensor and actuator) are properly initialized
+ * 
+ * @param {Object} cfg - Configuration object containing device references
+ * @param {string} cfg.tempSensor - Reference to the temperature sensor device
+ * @param {string} cfg.actuator - Reference to the actuator device
+ * 
+ * @returns {boolean} Returns true if both devices are initialized and have no critical errors:
+ *   - Both devices have defined types (not null)
+ *   - Neither device has critical read/write errors
+ */
+function isTopicsInited(cfg) {
+  var sensorType = dev[cfg.tempSensor + '#type'];
+  var actuatorType = dev[cfg.actuator + '#type'];
+
+  if (sensorType === null || actuatorType === null) {
+    return false;
+  }
+
+  if (
+    hasCriticalErr(dev[cfg.tempSensor + '#error']) ||
+    hasCriticalErr(dev[cfg.actuator + '#error'])
+  ) {
+    return false;
+  }
+  return true;
+}
+```
+
 #### 6.2. Функция инициализации
 
 Прототип функции должен выглядеть следующим образом
