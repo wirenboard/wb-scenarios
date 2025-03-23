@@ -1,5 +1,5 @@
 /**
- * @file thermostat.mod.js
+ * @file thermostat.mod.js - module for WirenBoard wb-rules 2.0
  * @description Module for initializing the thermostat algorithm
  *     based on user-specified parameters
  *
@@ -217,18 +217,24 @@ function init(deviceTitle, cfg) {
 
   /**
    * @typedef {Object} HeatingStateData
-   * @property {number} curTemp - Текущая температура.
-   * @property {number} targetTemp - Целевая температура.
-   * @property {number} hysteresis - Значение гистерезиса.
+   * @property {number} curTemp The current temperature (°C)
+   * @property {number} targetTemp The target temperature (°C)
+   * @property {number} hysteresis The hysteresis value (°C)
+   * 
+   * @example
+   * var data = {
+   *   curTemp: 22,
+   *   targetTemp: 24,
+   *   hysteresis: 2
+   * };
    */
 
   /**
-   * Обновление состояния нагрева, вычисляя новое состояние на основе
-   * текущей температуры, целевой температуры и гистерезиса,
-   * и устанавливает его, если оно изменилось
-   * @param {string} actuator Идентификатор актуатора (ключ в объекте dev)
-   * @param {HeatingStateData} data Объект с полями: curTemp, targetTemp, hysteresis
-   * @returns {boolean} Новое состояние актуатора
+   * Updates the heating state based on current temperature, target
+   * temperature, and hysteresis. Sets the new state if it has changed
+   * @param {string} actuator The actuator identifier (key in the dev object)
+   * @param {HeatingStateData} data Heating state data
+   * @returns {boolean} The new state of the actuator
    */
   function updateHeatingState(actuator, data) {
     var currentState = dev[actuator];
@@ -247,6 +253,7 @@ function init(deviceTitle, cfg) {
       resultState = false;
     }
 
+    // Update state only if it has changed
     if (resultState !== currentState) {
       dev[actuator] = resultState;
     }
