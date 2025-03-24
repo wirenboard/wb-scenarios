@@ -105,6 +105,21 @@ function addAlarm(vDevObj, cellBaseName, cellTitleRu, cellTitleEn) {
 }
 
 /**
+ * Toggles rules based on the provided value
+ * @param {Array<number>} managedRulesId Array of rule IDs to toggle
+ * @param {boolean} newValue Whether to enable or disable rules
+ */
+function toggleRules(managedRulesId, newValue) {
+  for (var i = 0; i < managedRulesId.length; i++) {
+    if (newValue) {
+      enableRule(managedRulesId[i]);
+    } else {
+      disableRule(managedRulesId[i]);
+    }
+  }
+}
+
+/**
  * Creates a basic virtual device with a rule switch if it not already exist
  * @param {string} vdName The name of the virtual device
  * @param {string} vdTitle The title of the virtual device
@@ -112,7 +127,9 @@ function addAlarm(vDevObj, cellBaseName, cellTitleRu, cellTitleEn) {
  * @returns {Object|null} The virtual device object if created, otherwise null
  */
 function createBasicVd(vdName, vdTitle, managedRulesId) {
-  var ctrlRuleEnabled = 'rule_enabled'
+  var ctrlRuleEnabled = 'rule_enabled';
+  var ctrlInitStatus = 'init_status';
+
   var existingVdObj = getDevice(vdName);
   if (existingVdObj !== undefined) {
     log.error('Virtual device "{}" already exists in system', vdName);
@@ -140,22 +157,29 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
     },
     type: 'switch',
     value: true,
+    forceDefault: true, // Always must start from enabled state
+    order: 1,
   };
   vdObj.addControl(ctrlRuleEnabled, controlCfg);
 
-  function toggleRules(newValue) {
-    for (var i = 0; i < managedRulesId.length; i++) {
-      if (newValue) {
-        enableRule(managedRulesId[i]);
-      } else {
-        disableRule(managedRulesId[i]);
-      }
-    }
-  }
+  controlCfg = {
+    title: {
+      en: 'Status',
+      ru: 'Статус',
+    },
+    type: 'text',
+    value: 'Initialisation started...',
+    readonly: true,
+    forceDefault: true, // Always must start from init string state
+    order: 100,
+  };
+  vdObj.addControl(ctrlInitStatus, controlCfg);
 
   var ruleId = defineRule(vdName + '_change_' + ctrlRuleEnabled, {
     whenChanged: [vdName + '/' + ctrlRuleEnabled],
-    then: toggleRules,
+    then: function(newValue, devName, cellName) {
+      toggleRules(managedRulesId, newValue);
+    },
   });
 
   if (!ruleId) {
@@ -170,4 +194,5 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
 exports.addLinkedControlRO = addLinkedControlRO;
 exports.addGroupTitleRO = addGroupTitleRO;
 exports.addAlarm = addAlarm;
+exports.toggleRules = toggleRules;
 exports.createBasicVd = createBasicVd;

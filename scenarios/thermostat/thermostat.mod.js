@@ -37,6 +37,7 @@ var vdCtrl = {
   targetTemp: 'target_temperature',
   curTemp: 'current_temperature',
   actuatorStatus: 'actuator_status',
+  initStatus: 'init_status'
 };
 
 /**
@@ -277,6 +278,27 @@ function hasCriticalErr(errorVal) {
 }
 
 /**
+ * Checks if all specified topics are properly initialized
+ * 
+ * @param {string[]} topics - Array of string topics to check
+ *     Example: ['relay_module/K2', 'temp_sensor/temp_value']
+ * @returns {boolean} Returns true if ALL topics in the array are initialized
+ *     (non-null #type) and have no critical errors, otherwise false
+ */
+function isTopicsInited(topics) {
+  for (var i = 0; i < topics.length; i++) {
+    var topic = topics[i];
+    if (dev[topic + '#type'] === null) {
+      return false;
+    }
+    if (hasCriticalErr(dev[topic + '#error'])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Updates the readonly state of the rule enable control
  * Removes readonly only when both errors (sensor and actuator) are cleared
  * @param {object} vdCtrlEnable Control "Enable rules" in scenario virtual dev
@@ -291,7 +313,7 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
 }
 
 var errorTimers = {};
-var errorCheckTimeoutMs = 10000; // 10s debounse time
+var errorCheckTimeoutMs = 10000; // 10s debounce time
 
 /**
  * Creates an error handling rule for a sensor or actuator
@@ -322,7 +344,6 @@ function createErrChangeRule(
           sourceErrTopic,
           newValue
         );
-        // The error is cleared – reset the control's error state
         tryClearReadonly(vdCtrlEnable, cfg);
 
         // If on this topic was running timer - disable this timer
@@ -351,7 +372,6 @@ function createErrChangeRule(
       errorTimers[sourceErrTopic] = setTimeout(function () {
         // When timer stop - check still critical errors r/w
         var currentErrorVal = dev[sourceErrTopic];
-
         if (hasCriticalErr(currentErrorVal)) {
           log.error(
             'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
@@ -367,8 +387,6 @@ function createErrChangeRule(
             sourceErrTopic
           );
         }
-
-        // Clear timer
         errorTimers[sourceErrTopic] = null;
       }, errorCheckTimeoutMs);
     },
@@ -399,7 +417,6 @@ function createRules(cfg, genNames, vdObj, managedRulesId, idPrefix) {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
       vdCtrlCurTemp.setValue(newValue);
-
       var data = {
         curTemp: newValue,
         targetTemp: vdCtrlTargetTemp.getValue(),
@@ -578,22 +595,48 @@ function init(deviceTitle, cfg) {
     return false;
   }
 
-  if (isConfigValid(cfg) !== true) {
-    setVdTotalError(vdObj, 'Config not valid');
-    return false;
-  }
-  
-  var usedTemp = restoreTargetTemperature(idPrefix, cfg);
-  addCustomCellsToVd(vdObj, cfg, usedTemp);
-  createRules(cfg, genNames, vdObj, managedRulesId, idPrefix);
+  // Set up a timer that will wait for initialization
+  // If the topics become available after N seconds, continue
+  var checkIntervalMs = 500;
+  var totalWaitMs = 10000;
+  var elapsedMs = 0;
+  var initStatusCtrl = vdObj.getControl(vdCtrl.initStatus);
+  initStatusCtrl.setValue('Wait linked topic initialisation for ' + (totalWaitMs / 1000) + 's ...');
+  var waitTimer = setInterval(function () {
+    elapsedMs += checkIntervalMs;
 
-  // Set first heater state after initialisation
-  var data = {
-    curTemp: dev[cfg.tempSensor],
-    targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
-    hysteresis: cfg.hysteresis,
-  };
-  updateHeatingState(cfg.actuator, data);
+    if (isTopicsInited([cfg.tempSensor, cfg.actuator])) {
+      clearInterval(waitTimer);
+      initStatusCtrl.setValue('Topics initialized, startup continuing...');
+
+      if (!isConfigValid(cfg)) {
+        setVdTotalError(vdObj, 'Config not valid');
+        return false;
+      }
+
+      var usedTemp = restoreTargetTemperature(idPrefix, cfg);
+      addCustomCellsToVd(vdObj, cfg, usedTemp);
+      createRules(cfg, genNames, vdObj, managedRulesId, idPrefix);
+
+      // Set first heater state after initialisation
+      var data = {
+        curTemp: dev[cfg.tempSensor],
+        targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+        hysteresis: cfg.hysteresis,
+      };
+      updateHeatingState(cfg.actuator, data);
+
+      vdObj.removeControl(vdCtrl.initStatus);
+      log.debug('Thermostat init complete for device "{}".', deviceTitle);
+    } else if (elapsedMs >= totalWaitMs) {
+      var msg = 'Failed to initialize linked topics in ' + (elapsedMs / 1000) + 's.';
+      initStatusCtrl.setValue(msg);
+
+      clearInterval(waitTimer);
+      setVdTotalError(vdObj, msg);
+      log.error(msg);
+    }
+  }, checkIntervalMs);
 
   return true;
 }
