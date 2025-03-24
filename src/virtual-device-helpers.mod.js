@@ -104,46 +104,70 @@ function addAlarm(vDevObj, cellBaseName, cellTitleRu, cellTitleEn) {
   return true;
 }
 
-exports.addLinkedControlRO = function (
-  srcMqttControl,
-  vDevObj,
-  vDevName,
-  cellBaseName,
-  titlePrefix
-) {
-  var res = addLinkedControlRO(
-    srcMqttControl,
-    vDevObj,
-    vDevName,
-    cellBaseName,
-    titlePrefix
+/**
+ * Creates a basic virtual device with a rule switch if it not already exist
+ * @param {string} vdName The name of the virtual device
+ * @param {string} vdTitle The title of the virtual device
+ * @param {Array<number>} managedRulesId Array of rule IDs to toggle on switch
+ * @returns {Object|null} The virtual device object if created, otherwise null
+ */
+function createBasicVd(vdName, vdTitle, managedRulesId) {
+  var ctrlRuleEnabled = 'rule_enabled'
+  var existingVdObj = getDevice(vdName);
+  if (existingVdObj !== undefined) {
+    log.error('Virtual device "{}" already exists in system', vdName);
+    return null;
+  }
+  log.debug(
+    'Virtual device "{}" does not exist in system -> create new VD',
+    vdName
   );
-  return res;
-};
 
-exports.addGroupTitleRO = function (
-  vDevObj,
-  vDevName,
-  cellBaseName,
-  cellTitleRu,
-  cellTitleEn
-) {
-  var res = addGroupTitleRO(
-    vDevObj,
-    vDevName,
-    cellBaseName,
-    cellTitleRu,
-    cellTitleEn
-  );
-  return res;
-};
+  var vdCfg = {
+    title: vdTitle,
+    cells: {},
+  };
+  var vdObj = defineVirtualDevice(vdName, vdCfg);
+  if (!vdObj) {
+    log.error('Virtual device "{}" not created', vdTitle);
+    return null;
+  }
 
-exports.addAlarm = function (
-  vDevObj,
-  cellBaseName,
-  cellTitleRu,
-  cellTitleEn
-) {
-  var res = addAlarm(vDevObj, cellBaseName, cellTitleRu, cellTitleEn);
-  return res;
-};
+  var controlCfg = {
+    title: {
+      en: 'Activate scenario rule',
+      ru: 'Активировать правило сценария',
+    },
+    type: 'switch',
+    value: true,
+  };
+  vdObj.addControl(ctrlRuleEnabled, controlCfg);
+
+  function toggleRules(newValue) {
+    for (var i = 0; i < managedRulesId.length; i++) {
+      if (newValue) {
+        enableRule(managedRulesId[i]);
+      } else {
+        disableRule(managedRulesId[i]);
+      }
+    }
+  }
+
+  var ruleId = defineRule(vdName + '_change_' + ctrlRuleEnabled, {
+    whenChanged: [vdName + '/' + ctrlRuleEnabled],
+    then: toggleRules,
+  });
+
+  if (!ruleId) {
+    log.error('Failed to create the rule: {}', vdName);
+    return null;
+  }
+
+  log.debug('Base VD and rule with names "{}" created successfully', vdName);
+  return vdObj;
+}
+
+exports.addLinkedControlRO = addLinkedControlRO;
+exports.addGroupTitleRO = addGroupTitleRO;
+exports.addAlarm = addAlarm;
+exports.createBasicVd = createBasicVd;
