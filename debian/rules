@@ -10,5 +10,8 @@ override_dh_auto_configure:
 override_dh_builddeb:
 	dh_builddeb -- -Zgzip
 
+override_dh_installsystemd:
+	dh_installsystemd --name=wb-scenarios-reloader --no-start --no-restart-after-upgrade --no-restart-on-upgrade
+
 %:
 	dh $@

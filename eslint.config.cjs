@@ -28,6 +28,7 @@ module.exports = [
       "object-shorthand": "off",
       "class-methods-use-this": "off",
       indent: ["error", 2],
+      "quote-props": ["error", "preserve"]
     },
     plugins: {
       prettier: prettierPlugin,

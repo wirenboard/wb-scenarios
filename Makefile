@@ -30,6 +30,9 @@ RULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules
 # для пользовательских модулей
 MODULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-modules
 
+# Целевой путь для скрипта wb-scenarios-reloader
+SCRIPTS_DEST := $(DESTDIR)$(PREFIX)/lib/wb-scenarios
+
 # Поиск папок сценариев внутри папки scenarios
 SCENARIO_DIRS := $(wildcard $(SCENARIOS_ROOT)*)
 SRC_MODULE_FILES := $(wildcard $(SRC_DIR)*.mod.js)
@@ -41,6 +44,8 @@ SRC_MODULE_FILES := $(wildcard $(SRC_DIR)*.mod.js)
 CONFIG_FILES := $(wildcard *.conf)
 IMAGE_FILES := $(wildcard $(SCHEMA_DIR)*.png)
 SCHEMA_FILES := $(wildcard $(SCHEMA_DIR)*.schema.json)
+# Файл скрипта сервиса перезагрузки сценариев
+RELOADER_SCRIPT := wb-scenarios-reloader
 
 .PHONY: all dummy install
 
@@ -80,6 +85,10 @@ install:
 			echo "Copying module file $(file) to $(MODULES_DEST)";\
 			install -Dm644 $(file) -t $(MODULES_DEST);) \
 	fi
+
+	@# Установка скрипта wb-scenarios-reloader
+	@echo "Copying $(RELOADER_SCRIPT) to $(SCRIPTS_DEST)"
+	@install -Dm755 $(RELOADER_SCRIPT) -t $(SCRIPTS_DEST)/
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
