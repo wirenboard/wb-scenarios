@@ -13,11 +13,14 @@
  * @returns {boolean} Возвращает true, если контрол существует, иначе false
  */
 function isControlExists(controlName) {
-  var isExist = (dev[controlName] !== null)
+  var isExist = dev[controlName] !== null;
   if (!isExist) {
     log.error(
-      'Control "' + controlName + '" not found, ' +
-      'return value: ' + dev[controlName]
+      'Control "' +
+        controlName +
+        '" not found, ' +
+        'return value: ' +
+        dev[controlName]
     );
     return false;
   }
@@ -42,7 +45,7 @@ function addLinkedControlRO(
   cellBaseName,
   titlePrefix
 ) {
-  if(!isControlExists(srcMqttControl)) return false;
+  if (!isControlExists(srcMqttControl)) return false;
   var cellTitle = titlePrefix + ' ' + srcMqttControl;
   var srcControlType = dev[srcMqttControl + '#type'];
 
@@ -128,7 +131,7 @@ function toggleRules(managedRulesId, newValue) {
  */
 function createBasicVd(vdName, vdTitle, managedRulesId) {
   var ctrlRuleEnabled = 'rule_enabled';
-  var ctrlInitStatus = 'init_status';
+  var ctrlInitStatus = 'state';
 
   var existingVdObj = getDevice(vdName);
   if (existingVdObj !== undefined) {
@@ -164,20 +167,45 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
 
   controlCfg = {
     title: {
-      en: 'Status',
-      ru: 'Статус',
+      en: 'State',
+      ru: 'Состояние',
     },
-    type: 'text',
-    value: 'Initialisation started...',
+    type: 'value',
     readonly: true,
     forceDefault: true, // Always must start from init string state
+    value: 1,
+    enum: {
+      1: {
+        en: 'Initialisation started...',
+        ru: 'Инициализация запущена...',
+      },
+      2: {
+        en: 'Waiting for linked controls 10s...',
+        ru: 'Ожидание связанных контролов 10с...',
+      },
+      3: {
+        en: 'Linked controls ready',
+        ru: 'Связанные контролы готовы' },
+      4: {
+        en: 'Config not valid',
+        ru: 'Настройки не корректны',
+      },
+      5: {
+        en: 'Linked controls not ready in 10s',
+        ru: 'Связанные контролы не готовы за 10с',
+      },
+      6: {
+        en: 'Normal',
+        ru: 'В норме',
+      },
+    },
     order: 100,
   };
   vdObj.addControl(ctrlInitStatus, controlCfg);
 
   var ruleId = defineRule(vdName + '_change_' + ctrlRuleEnabled, {
     whenChanged: [vdName + '/' + ctrlRuleEnabled],
-    then: function(newValue, devName, cellName) {
+    then: function (newValue, devName, cellName) {
       toggleRules(managedRulesId, newValue);
     },
   });

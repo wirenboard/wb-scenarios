@@ -37,7 +37,7 @@ var vdCtrl = {
   targetTemp: 'target_temperature',
   curTemp: 'current_temperature',
   actuatorStatus: 'actuator_status',
-  initStatus: 'init_status'
+  initStatus: 'state'
 };
 
 /**
@@ -285,7 +285,7 @@ function hasCriticalErr(errorVal) {
  * @returns {boolean} Returns true if ALL topics in the array are initialized
  *     (non-null #type) and have no critical errors, otherwise false
  */
-function isTopicsInited(topics) {
+function areControlsInited(topics) {
   for (var i = 0; i < topics.length; i++) {
     var topic = topics[i];
     if (dev[topic + '#type'] === null) {
@@ -580,7 +580,8 @@ function restoreTargetTemperature(idPrefix, cfg) {
  * for controlling the device
  * @param {string} deviceTitle Name of the virtual device
  * @param {ThermostatConfig} cfg Configuration parameters
- * @returns {boolean} Returns true if initialization is successful, otherwise false
+ * @returns {boolean} True if initialization is successful
+ *                    False if not successful
  */
 function init(deviceTitle, cfg) {
   ps = new PersistentStorage('wbscThermostatSettings', { global: true });
@@ -601,17 +602,18 @@ function init(deviceTitle, cfg) {
   var totalWaitMs = 10000;
   var elapsedMs = 0;
   var initStatusCtrl = vdObj.getControl(vdCtrl.initStatus);
-  initStatusCtrl.setValue('Wait linked topic initialisation for ' + (totalWaitMs / 1000) + 's ...');
+  initStatusCtrl.setValue(2);
   var waitTimer = setInterval(function () {
     elapsedMs += checkIntervalMs;
 
-    if (isTopicsInited([cfg.tempSensor, cfg.actuator])) {
+    if (areControlsInited([cfg.tempSensor, cfg.actuator])) {
       clearInterval(waitTimer);
-      initStatusCtrl.setValue('Topics initialized, startup continuing...');
+      initStatusCtrl.setValue(3);
 
       if (!isConfigValid(cfg)) {
+        initStatusCtrl.setValue(4);
         setVdTotalError(vdObj, 'Config not valid');
-        return false;
+        return;
       }
 
       var usedTemp = restoreTargetTemperature(idPrefix, cfg);
@@ -626,15 +628,15 @@ function init(deviceTitle, cfg) {
       };
       updateHeatingState(cfg.actuator, data);
 
-      vdObj.removeControl(vdCtrl.initStatus);
+      initStatusCtrl.setValue(6);
       log.debug('Thermostat init complete for device "{}".', deviceTitle);
     } else if (elapsedMs >= totalWaitMs) {
-      var msg = 'Failed to initialize linked topics in ' + (elapsedMs / 1000) + 's.';
-      initStatusCtrl.setValue(msg);
-
+      initStatusCtrl.setValue(5);
       clearInterval(waitTimer);
-      setVdTotalError(vdObj, msg);
-      log.error(msg);
+      setVdTotalError(
+        vdObj,
+        'Linked controls not ready in ' + (elapsedMs / 1000) + 's.'
+      );
     }
   }, checkIntervalMs);
 
