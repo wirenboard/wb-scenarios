@@ -10,6 +10,7 @@
 var helpers = require('scenarios-general-helpers.mod');
 var Logger = require('logger.mod').Logger;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
+var setVdTotalError = require('virtual-device-helpers.mod').setVdTotalError;
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
@@ -143,30 +144,6 @@ function isConfigValid(cfg) {
     isActuatorValid;
 
   return isCfgValid;
-}
-
-/**
- * Sets an error on a virtual device in three steps:
- *   - Logs the error message
- *   - Sets an error on each control to turn the entire device red
- *   - Turn off all scenario logic rules by 'vd/rule_enabled' switch
- * @param {Object} vdObj The virtual device object
- * @param {string} errorMsg The error message to log
- */
-function setVdTotalError(vdObj, errorMsg) {
-  if (vdObj === undefined) {
-    log.error('Virtual device does not exist in the system');
-    return;
-  }
-  log.error(errorMsg);
-  vdObj.controlsList().forEach(function (ctrl) {
-    /**
-     * The error type can be 'r', 'w', or 'p'
-     * Our goal is to highlight the control in red
-     */
-    ctrl.setError('r');
-  });
-  vdObj.getControl(vdCtrl.ruleEnabled).setValue(false);
 }
 
 /**
@@ -613,6 +590,7 @@ function init(deviceTitle, cfg) {
       if (!isConfigValid(cfg)) {
         initStatusCtrl.setValue(4);
         setVdTotalError(vdObj, 'Config not valid');
+        vdObj.getControl(vdCtrl.ruleEnabled).setValue(false);
         return;
       }
 
@@ -637,6 +615,7 @@ function init(deviceTitle, cfg) {
         vdObj,
         'Linked controls not ready in ' + (elapsedMs / 1000) + 's.'
       );
+      vdObj.getControl(vdCtrl.ruleEnabled).setValue(false);
     }
   }, checkIntervalMs);
 

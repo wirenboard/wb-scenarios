@@ -123,6 +123,29 @@ function toggleRules(managedRulesId, newValue) {
 }
 
 /**
+ * Sets an error on a virtual device in three steps:
+ *   - Logs the error message
+ *   - Sets an error on each control to turn the entire device red
+ *   - Turn off all scenario logic rules by 'vd/rule_enabled' switch
+ * @param {Object} vdObj The virtual device object
+ * @param {string} errorMsg The error message to log
+ */
+function setVdTotalError(vdObj, errorMsg) {
+  if (vdObj === undefined) {
+    log.error('Virtual device does not exist in the system');
+    return;
+  }
+  log.error(errorMsg);
+  vdObj.controlsList().forEach(function (ctrl) {
+    /**
+     * The error type can be 'r', 'w', or 'p'
+     * Our goal is to highlight the control in red
+     */
+    ctrl.setError('r');
+  });
+}
+
+/**
  * Creates a basic virtual device with a rule switch if it not already exist
  * @param {string} vdName The name of the virtual device
  * @param {string} vdTitle The title of the virtual device
@@ -223,4 +246,5 @@ exports.addLinkedControlRO = addLinkedControlRO;
 exports.addGroupTitleRO = addGroupTitleRO;
 exports.addAlarm = addAlarm;
 exports.toggleRules = toggleRules;
+exports.setVdTotalError = setVdTotalError;
 exports.createBasicVd = createBasicVd;
