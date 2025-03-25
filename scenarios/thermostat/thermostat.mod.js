@@ -10,6 +10,7 @@
 var helpers = require('scenarios-general-helpers.mod');
 var Logger = require('logger.mod').Logger;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
+var setVdTotalError = require('virtual-device-helpers.mod').setVdTotalError;
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
@@ -37,6 +38,7 @@ var vdCtrl = {
   targetTemp: 'target_temperature',
   curTemp: 'current_temperature',
   actuatorStatus: 'actuator_status',
+  initStatus: 'state'
 };
 
 /**
@@ -142,30 +144,6 @@ function isConfigValid(cfg) {
     isActuatorValid;
 
   return isCfgValid;
-}
-
-/**
- * Sets an error on a virtual device in three steps:
- *   - Logs the error message
- *   - Sets an error on each control to turn the entire device red
- *   - Turn off all scenario logic rules by 'vd/rule_enabled' switch
- * @param {Object} vdObj The virtual device object
- * @param {string} errorMsg The error message to log
- */
-function setVdTotalError(vdObj, errorMsg) {
-  if (vdObj === undefined) {
-    log.error('Virtual device does not exist in the system');
-    return;
-  }
-  log.error(errorMsg);
-  vdObj.controlsList().forEach(function (ctrl) {
-    /**
-     * The error type can be 'r', 'w', or 'p'
-     * Our goal is to highlight the control in red
-     */
-    ctrl.setError('r');
-  });
-  vdObj.getControl(vdCtrl.ruleEnabled).setValue(false);
 }
 
 /**
@@ -277,6 +255,27 @@ function hasCriticalErr(errorVal) {
 }
 
 /**
+ * Checks if all specified topics are properly initialized
+ * 
+ * @param {string[]} topics - Array of string topics to check
+ *     Example: ['relay_module/K2', 'temp_sensor/temp_value']
+ * @returns {boolean} Returns true if ALL topics in the array are initialized
+ *     (non-null #type) and have no critical errors, otherwise false
+ */
+function areControlsInited(topics) {
+  for (var i = 0; i < topics.length; i++) {
+    var topic = topics[i];
+    if (dev[topic + '#type'] === null) {
+      return false;
+    }
+    if (hasCriticalErr(dev[topic + '#error'])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Updates the readonly state of the rule enable control
  * Removes readonly only when both errors (sensor and actuator) are cleared
  * @param {object} vdCtrlEnable Control "Enable rules" in scenario virtual dev
@@ -291,7 +290,7 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
 }
 
 var errorTimers = {};
-var errorCheckTimeoutMs = 10000; // 10s debounse time
+var errorCheckTimeoutMs = 10000; // 10s debounce time
 
 /**
  * Creates an error handling rule for a sensor or actuator
@@ -322,7 +321,6 @@ function createErrChangeRule(
           sourceErrTopic,
           newValue
         );
-        // The error is cleared – reset the control's error state
         tryClearReadonly(vdCtrlEnable, cfg);
 
         // If on this topic was running timer - disable this timer
@@ -351,7 +349,6 @@ function createErrChangeRule(
       errorTimers[sourceErrTopic] = setTimeout(function () {
         // When timer stop - check still critical errors r/w
         var currentErrorVal = dev[sourceErrTopic];
-
         if (hasCriticalErr(currentErrorVal)) {
           log.error(
             'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
@@ -367,8 +364,6 @@ function createErrChangeRule(
             sourceErrTopic
           );
         }
-
-        // Clear timer
         errorTimers[sourceErrTopic] = null;
       }, errorCheckTimeoutMs);
     },
@@ -399,7 +394,6 @@ function createRules(cfg, genNames, vdObj, managedRulesId, idPrefix) {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
       vdCtrlCurTemp.setValue(newValue);
-
       var data = {
         curTemp: newValue,
         targetTemp: vdCtrlTargetTemp.getValue(),
@@ -563,7 +557,8 @@ function restoreTargetTemperature(idPrefix, cfg) {
  * for controlling the device
  * @param {string} deviceTitle Name of the virtual device
  * @param {ThermostatConfig} cfg Configuration parameters
- * @returns {boolean} Returns true if initialization is successful, otherwise false
+ * @returns {boolean} True if initialization is successful
+ *                    False if not successful
  */
 function init(deviceTitle, cfg) {
   ps = new PersistentStorage('wbscThermostatSettings', { global: true });
@@ -578,22 +573,51 @@ function init(deviceTitle, cfg) {
     return false;
   }
 
-  if (isConfigValid(cfg) !== true) {
-    setVdTotalError(vdObj, 'Config not valid');
-    return false;
-  }
-  
-  var usedTemp = restoreTargetTemperature(idPrefix, cfg);
-  addCustomCellsToVd(vdObj, cfg, usedTemp);
-  createRules(cfg, genNames, vdObj, managedRulesId, idPrefix);
+  // Set up a timer that will wait for initialization
+  // If the topics become available after N seconds, continue
+  var checkIntervalMs = 500;
+  var totalWaitMs = 10000;
+  var elapsedMs = 0;
+  var initStatusCtrl = vdObj.getControl(vdCtrl.initStatus);
+  initStatusCtrl.setValue(2);
+  var waitTimer = setInterval(function () {
+    elapsedMs += checkIntervalMs;
 
-  // Set first heater state after initialisation
-  var data = {
-    curTemp: dev[cfg.tempSensor],
-    targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
-    hysteresis: cfg.hysteresis,
-  };
-  updateHeatingState(cfg.actuator, data);
+    if (areControlsInited([cfg.tempSensor, cfg.actuator])) {
+      clearInterval(waitTimer);
+      initStatusCtrl.setValue(3);
+
+      if (!isConfigValid(cfg)) {
+        initStatusCtrl.setValue(4);
+        setVdTotalError(vdObj, 'Config not valid');
+        vdObj.getControl(vdCtrl.ruleEnabled).setValue(false);
+        return;
+      }
+
+      var usedTemp = restoreTargetTemperature(idPrefix, cfg);
+      addCustomCellsToVd(vdObj, cfg, usedTemp);
+      createRules(cfg, genNames, vdObj, managedRulesId, idPrefix);
+
+      // Set first heater state after initialisation
+      var data = {
+        curTemp: dev[cfg.tempSensor],
+        targetTemp: dev[genNames.vDevice + '/' + vdCtrl.targetTemp],
+        hysteresis: cfg.hysteresis,
+      };
+      updateHeatingState(cfg.actuator, data);
+
+      initStatusCtrl.setValue(6);
+      log.debug('Thermostat init complete for device "{}".', deviceTitle);
+    } else if (elapsedMs >= totalWaitMs) {
+      initStatusCtrl.setValue(5);
+      clearInterval(waitTimer);
+      setVdTotalError(
+        vdObj,
+        'Linked controls not ready in ' + (elapsedMs / 1000) + 's.'
+      );
+      vdObj.getControl(vdCtrl.ruleEnabled).setValue(false);
+    }
+  }, checkIntervalMs);
 
   return true;
 }
