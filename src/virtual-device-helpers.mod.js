@@ -126,7 +126,6 @@ function toggleRules(managedRulesId, newValue) {
  * Sets an error on a virtual device in three steps:
  *   - Logs the error message
  *   - Sets an error on each control to turn the entire device red
- *   - Turn off all scenario logic rules by 'vd/rule_enabled' switch
  * @param {Object} vdObj The virtual device object
  * @param {string} errorMsg The error message to log
  */
