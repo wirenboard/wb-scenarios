@@ -113,11 +113,13 @@
                 "type": "string",
                 "propertyOrder": 1,
                 "title": "generalMqttTopicNameTitle",
-                "description": "generalMqttTopicNameDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessage",
+                  "inputAttributes": {
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                  },
                   "wb": {
                     "data": "devices"
                   }
@@ -169,11 +171,13 @@
                 "type": "string",
                 "propertyOrder": 1,
                 "title": "generalMqttTopicNameTitle",
-                "description": "generalMqttTopicNameDescription",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessage",
+                  "inputAttributes": {
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                  },
                   "wb": {
                     "data": "devices"
                   }
@@ -335,11 +339,13 @@
                     "type": "string",
                     "propertyOrder": 1,
                     "title": "generalMqttTopicNameTitle",
-                    "description": "generalMqttTopicNameDescription",
                     "pattern": "^[^/+#]+/[^/+#]+$",
                     "_format": "wb-autocomplete",
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessage",
+                      "inputAttributes": {
+                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                      },
                       "wb": {
                         "data": "devices"
                       }
@@ -432,11 +438,13 @@
                     "type": "string",
                     "propertyOrder": 1,
                     "title": "generalMqttTopicNameTitle",
-                    "description": "generalMqttTopicNameDescription",
                     "pattern": "^[^/+#]+/[^/+#]+$",
                     "_format": "wb-autocomplete",
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessage",
+                      "inputAttributes": {
+                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                      },
                       "wb": {
                         "data": "devices"
                       }
@@ -494,11 +502,13 @@
                     "type": "string",
                     "propertyOrder": 1,
                     "title": "generalMqttTopicNameTitle",
-                    "description": "generalMqttTopicNameDescription",
                     "pattern": "^[^/+#]+/[^/+#]+$",
                     "_format": "wb-autocomplete",
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessage",
+                      "inputAttributes": {
+                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                      },
                       "wb": {
                         "data": "devices"
                       }
@@ -580,11 +590,13 @@
                     "type": "string",
                     "propertyOrder": 1,
                     "title": "generalMqttTopicNameTitle",
-                    "description": "generalMqttTopicNameDescription",
                     "pattern": "^[^/+#]+/[^/+#]+$",
                     "_format": "wb-autocomplete",
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessage",
+                      "inputAttributes": {
+                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                      },
                       "wb": {
                         "data": "devices"
                       }
@@ -691,7 +703,6 @@
         "targetTemperature": {
           "type": "number",
           "title": "thermostatTargetTemperatureTitle",
-          "description": "thermostatTargetTemperatureDescription",
           "default": 22,
           "propertyOrder": 4,
           "options": {
@@ -712,7 +723,6 @@
             "min": {
               "type": "number",
               "title": "thermostatTempLimitsMinTitle",
-              "description": "thermostatTempLimitsMinDescription",
               "default": 15,
               "propertyOrder": 1,
               "options": {
@@ -722,7 +732,6 @@
             "max": {
               "type": "number",
               "title": "thermostatTempLimitsMaxTitle",
-              "description": "thermostatTempLimitsMaxDescription",
               "default": 30,
               "propertyOrder": 2,
               "options": {
@@ -745,11 +754,13 @@
           "type": "string",
           "_format": "wb-autocomplete",
           "title": "thermostatTemperatureSensorTitle",
-          "description": "generalMqttTopicNameDescription",
           "pattern": "^[^/+#]+/[^/+#]+$",
           "propertyOrder": 7,
           "options": {
             "grid_columns": 12,
+            "inputAttributes": {
+              "placeholder":  "generalMqttTopicNamePlaceholder"
+            },
             "wb": {
               "data": "devices"
             }
@@ -760,11 +771,13 @@
           "type": "string",
           "_format": "wb-autocomplete",
           "title": "thermostatActuatorTitle",
-          "description": "generalMqttTopicNameDescription",
           "pattern": "^[^/+#]+/[^/+#]+$",
           "propertyOrder": 9,
           "options": {
             "grid_columns": 12,
+            "inputAttributes": {
+              "placeholder":  "generalMqttTopicNamePlaceholder"
+            },
             "wb": {
               "data": "devices"
             }
@@ -816,11 +829,11 @@
     "en": {
       "generalScenarioGenerateRuleTitle": "Activate scenario (creates a virtual device and a scenario rule)",
       "generalScenarioIsDebugEnabled": "Turn on the debug",
-      "generalScenarioName": "Scenario name",
+      "generalScenarioName": "Name",
       "generalScenarioIdPrefixTitle": "MQTT id of the device",
       "generalScenarioIdPrefixDescription": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
       "generalMqttTopicNameTitle": "MQTT topic name",
-      "generalMqttTopicNameDescription": "In format: Device/Control",
+      "generalMqttTopicNamePlaceholder": "In format: Device/Control",
       "generalBehaviorTypeTitle": "Trigger logic",
       "generalActionValueTitle": "Value",
       "generalErrorRegexpPatternMessage": "Value must be valid",
@@ -861,27 +874,24 @@
       "lightControlLightSwitchesObjTitle": "Switch",
 
       "thermostatScenarioName": "Thermostat",
-      "thermostatScenarioDescription": "Temperature dependent heater control scenario",
+      "thermostatScenarioDescription": "Maintaining a set temperature with hysteresis",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
-      "thermostatTargetTemperatureDescription": "The temperature value you want the system to maintain. This is the 'target' the device is aiming for.",
-      "thermostatTempLimitsObjTitle": "Virtual device temperature setting limits",
-      "thermostatTempLimitsMinTitle": "Minimum Temperature (°C)",
-      "thermostatTempLimitsMinDescription": "The lowest limit",
-      "thermostatTempLimitsMaxTitle": "Maximum Temperature (°C)",
-      "thermostatTempLimitsMaxDescription": "The highest limit",
+      "thermostatTempLimitsObjTitle": "Temperature adjustment limits in widget",
+      "thermostatTempLimitsMinTitle": "Low (°C)",
+      "thermostatTempLimitsMaxTitle": "Top (°C)",
       "thermostatHysteresisTitle": "Hysteresis (°C)",
-      "thermostatHysteresisDescription": "The range around the set temperature in which the system does not react<br>to changes. It is necessary so that the device does not turn on and off<br>too often, ensuring stable operation.",
-      "thermostatTemperatureSensorTitle": "Temperature sensor",
-      "thermostatActuatorTitle": "Heater"
+      "thermostatHysteresisDescription": "Turn on = Set temperature - Hysteresis.<br>Turn off = Set temperature + Hysteresis.",
+      "thermostatTemperatureSensorTitle": "Temperature channel",
+      "thermostatActuatorTitle": "Heater channel"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
       "generalScenarioIsDebugEnabled": "Включить отладку",
-      "generalScenarioName": "Название сценария",
+      "generalScenarioName": "Наименование",
       "generalScenarioIdPrefixTitle": "Идентификатор устройства в MQTT",
       "generalScenarioIdPrefixDescription": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
       "generalMqttTopicNameTitle": "Имя MQTT топика",
-      "generalMqttTopicNameDescription": "В формате: Устройство/Контрол",
+      "generalMqttTopicNamePlaceholder": "В формате: Устройство/Контрол",
       "generalBehaviorTypeTitle": "Логика срабатывания",
       "generalActionValueTitle": "Значение",
       "generalErrorRegexpPatternMessage": "Значение должно быть корректным",
@@ -936,18 +946,15 @@
       "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
 
       "thermostatScenarioName": "Термостат",
-      "thermostatScenarioDescription": "Сценарий управления нагревателем в зависимости от температуры",
+      "thermostatScenarioDescription": "Поддержание заданной температуры с гистерезисом.",
       "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
-      "thermostatTargetTemperatureDescription": "Значение температуры, которое вы хотите поддерживать в системе. Это 'цель', к которой стремится устройство.",
-      "thermostatTempLimitsObjTitle": "Ограничения виртуального устройства на установку температуры",
-      "thermostatTempLimitsMinTitle": "Минимальная температура (°C)",
-      "thermostatTempLimitsMinDescription": "Нижняя граница",
-      "thermostatTempLimitsMaxTitle": "Максимальная температура (°C)",
-      "thermostatTempLimitsMaxDescription": "Верхняя граница",
+      "thermostatTempLimitsObjTitle": "Границы изменения температуры в виджете",
+      "thermostatTempLimitsMinTitle": "Нижняя (°C)",
+      "thermostatTempLimitsMaxTitle": "Верхняя (°C)",
       "thermostatHysteresisTitle": "Гистерезис (°C)",
-      "thermostatHysteresisDescription": "Диапазон вокруг заданной температуры, в котором система не реагирует на<br>изменения. Он нужен, чтобы устройство не включалось и выключалось слишком<br>часто, обеспечивая стабильную работу.",
-      "thermostatTemperatureSensorTitle": "Датчик температуры",
-      "thermostatActuatorTitle": "Нагреватель"
+      "thermostatHysteresisDescription": "Включение = Заданная температура - Гистерезис.<br>Выключение = Заданная температура + Гистерезис.",
+      "thermostatTemperatureSensorTitle": "Канал температуры",
+      "thermostatActuatorTitle": "Канал нагревателя"
     }
   }
 }
