@@ -86,7 +86,7 @@ function main() {
   );
   if (!listAllScenarios) return;
 
-  var matchedScenarios = helpers.findAllActiveScenariosWithType(
+  var matchedScenarios = helpers.findAllScenariosWithType(
     listAllScenarios,
     SCENARIO_TYPE_STR,
     REQUIRED_SCENARIO_CFG_VER

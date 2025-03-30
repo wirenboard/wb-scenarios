@@ -664,16 +664,6 @@
             "hidden": true
           }
         },
-        "enable": {
-          "type": "boolean",
-          "title": "generalScenarioGenerateRuleTitle",
-          "default": true,
-          "_format": "checkbox",
-          "propertyOrder": 1,
-          "options": {
-            "grid_columns": 12
-          }
-        },
         "name": {
           "type": "string",
           "title": "generalScenarioName",
@@ -788,7 +778,6 @@
       "required": [
         "scenarioType",
         "componentVersion",
-        "enable",
         "name",
         "targetTemperature",
         "temperatureLimits",
