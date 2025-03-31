@@ -828,7 +828,7 @@
       "generalBehaviorTypeTitle": "Trigger logic",
       "generalActionValueTitle": "Value",
       "generalErrorRegexpPatternMessageGeneralType": "Value must be valid",
-      "generalErrorRegexpPatternMessageMqttTopicName": "The entered value does not match the format <device>/<control>",
+      "generalErrorRegexpPatternMessageMqttTopicName": "Must match the format <device>/<control>",
       "generalEnumSetValue": "Set Value",
       "generalSensorArrTitle": "Elements list",
 
@@ -887,7 +887,7 @@
       "generalBehaviorTypeTitle": "Логика срабатывания",
       "generalActionValueTitle": "Значение",
       "generalErrorRegexpPatternMessageGeneralType": "Значение должно быть корректным",
-      "generalErrorRegexpPatternMessageMqttTopicName": "Введённое значение не соответствует формату <устройство>/<контрол>",
+      "generalErrorRegexpPatternMessageMqttTopicName": "Должно соответствовать формату <устройство>/<контрол>",
       "generalEnumSetValue": "Установить значение",
       "generalSensorArrTitle": "Список элементов",
 
