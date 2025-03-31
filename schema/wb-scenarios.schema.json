@@ -753,7 +753,8 @@
             },
             "wb": {
               "data": "devices"
-            }
+            },
+            "patternmessage": "generalErrorRegexpPatternMessage"
           },
           "minLength": 1
         },
@@ -770,7 +771,8 @@
             },
             "wb": {
               "data": "devices"
-            }
+            },
+            "patternmessage": "generalErrorRegexpPatternMessage"
           },
           "minLength": 1
         }
@@ -822,7 +824,7 @@
       "generalScenarioIdPrefixTitle": "MQTT id of the device",
       "generalScenarioIdPrefixDescription": "Used as part of the topic. Only Latin characters, digits and underscore are allowed. Maximum length is 120.",
       "generalMqttTopicNameTitle": "MQTT topic name",
-      "generalMqttTopicNamePlaceholder": "In format: Device/Control",
+      "generalMqttTopicNamePlaceholder": "Device/Control",
       "generalBehaviorTypeTitle": "Trigger logic",
       "generalActionValueTitle": "Value",
       "generalErrorRegexpPatternMessage": "Value must be valid",
@@ -880,7 +882,7 @@
       "generalScenarioIdPrefixTitle": "Идентификатор устройства в MQTT",
       "generalScenarioIdPrefixDescription": "Используется как часть топика в MQTT, только латинские буквы, цифры и нижнее подчёркивание. Не более 120 символов.",
       "generalMqttTopicNameTitle": "Имя MQTT топика",
-      "generalMqttTopicNamePlaceholder": "В формате: Устройство/Контрол",
+      "generalMqttTopicNamePlaceholder": "Устройство/Контрол",
       "generalBehaviorTypeTitle": "Логика срабатывания",
       "generalActionValueTitle": "Значение",
       "generalErrorRegexpPatternMessage": "Значение должно быть корректным",
