@@ -11,6 +11,41 @@ var Logger = require('logger.mod').Logger;
 var log = new Logger('WBSC-helper');
 
 /**
+ * Finds and returns all scenarios of the specified type
+ * @param {Array} listScenario An array of all scenarios from the config
+ * @param {string} searchScenarioType The type of scenario to search for
+ * @param {number} reqScenarioCfgVer The configuration version number
+ *     for the specific scenario type
+ * @returns {Array} An array of scenarios with type searchScenarioType
+ */
+function findAllScenariosWithType(
+  listScenario,
+  searchScenarioType,
+  reqScenarioCfgVer
+) {
+  var matchedScenarios = [];
+  for (var i = 0; i < listScenario.length; i++) {
+    var scenario = listScenario[i];
+    if (scenario.scenarioType !== searchScenarioType) {
+      continue;
+    }
+
+    if (scenario.componentVersion !== reqScenarioCfgVer) {
+      log.error(
+        'Scenario with name "{}" cfg ver mismatch. Expected: "{}", got: "{}"',
+        scenario.name,
+        reqScenarioCfgVer,
+        scenario.componentVersion
+      );
+      continue;
+    }
+    matchedScenarios.push(scenario);
+  }
+
+  return matchedScenarios;
+}
+
+/**
  * Finds and returns all enabled scenarios of the specified type
  * @param {Array} listScenario An array of all scenarios from the config
  * @param {string} searchScenarioType The type of scenario to search for
@@ -119,6 +154,7 @@ function getIdPrefix(deviceTitle, cfg) {
   return idPrefix;
 }
 
+exports.findAllScenariosWithType = findAllScenariosWithType;
 exports.findAllActiveScenariosWithType = findAllActiveScenariosWithType;
 exports.readAndValidateScenariosConfig = readAndValidateScenariosConfig;
 exports.getIdPrefix = getIdPrefix;
