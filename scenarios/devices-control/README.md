@@ -15,6 +15,152 @@
 
 ![virtual-device](doc/virtual-device.png)
 
+## Использование модуля
+
+Вы можете использовать модуль управления устройствами прямо из своих
+правил `wb-rules`.
+
+Для этого нужно сделать 2 действия:
+
+1) Подключить модуль в коде скрипта
+2) Инициализировать алгоритм с помошью `init()` указав необходимые параметры
+   описанные ниже
+
+### Описание параметров конфигурации
+
+Функция `init()` имеет 4 параметра:
+
+1. `id_prefix` {string} Обязательный параметр (в данном сценарии)
+   Задает строку префикса добавляемого к идентификаторам
+   виртуального устройства и правила:
+   - Вирт. устройство будет иметь имя вида `wbsc_<!id_prefix!>`
+   - Правила будут иметь имена вида `wbru_<!id_prefix!>`
+2. `name` {number} Имя виртуального устройства
+3. `inControls` {Array} Массив входящих отслеживаемых контролов.
+   При возникновении указанного события на любом из контролов - сразу начнется
+   выполнение логики над выходными контролами.
+   Каждый элемент имеет два парамтера:
+   - `control`: строка MQTT контрола
+   - `behaviorType`: строка с типом отслеживаемого действия.
+     Может быть следующих типов (в скобках разрешенные типы контролов):
+     "whenChange" ('switch', 'value'),
+     "whenEnabled" ('switch'),
+     "whenDisabled" ('switch')
+4. `outControls` {Array} Массив исходяших управляемых контролов. Над всеми
+   контроламе в списке будут произведены указанные пользователем действия.
+   Каждый элемент имеет три парамтера:
+   - `control`: строка MQTT контрола
+   - `behaviorType`: строка с типом действия над контролом.
+     Может быть следующих типов (в скобках разрешенные типы контролов):
+     "toggle" ('switch'),
+     "setEnable" ('switch'),
+     "setDisable" ('switch'),
+     "setValue" ('value'),
+     "increaseValueBy" ('value'),
+     "decreaseValueBy" ('value')
+   - `actionValue`: значение используемое в действии (если требуется)
+
+   Например, чтобы сделать мастер выключатель используя выключатель
+   без фиксации, который управляет двумя лампами можно указать:
+
+   - `inControls` два контрола счетчиков и поведение "whenChange"
+
+   ```json
+   [
+       {
+           "control": "wb-mr6cv3_127/Input 0 counter",
+           "behaviorType": "whenChange"
+       }, // Далее можно указать другие контролы
+     //{
+     //    "control": "wb-mr6cv3_127/Input 1 counter",
+     //    "behaviorType": "whenChange"
+     //}
+   ]
+   ```
+
+   - `outControls` два контрола и поведение "whenChange"
+
+   ```json
+   [
+       {
+           "control": "wb-mr6cv3_127/K5",
+           "behaviorType": "setEnable",
+           "actionValue": 0 // Не используется в случае "setEnable"
+       },
+       {
+           "control": "wb-mr6cv3_127/K6",
+           "behaviorType": "setEnable",
+           "actionValue": 0 // Не используется в случае "setEnable"
+       }, // Далее можно указать другие контролы
+     //{
+     //    "control": "wb-mr6cv3_127/K4",
+     //    "behaviorType": "setEnable",
+     //    "actionValue": 0
+     //}
+   ]
+   ```
+
+### Пример кода
+
+```js
+/**
+ * @file: devices-control.js
+ */
+
+// Step 1: include module
+var scenarioModule = require("devices-control.mod");
+
+function main() {
+  log.debug('Start init logic for: Bathroom light');
+
+  // Step 2: init algorithm
+  var inControls = [
+      {
+          "control": "wb-mr6cv3_127/Input 0 counter",
+          "behaviorType": "whenChange"
+      }
+  ];
+
+  var outControls = [
+      {
+          "control": "wb-mr6cv3_127/K5",
+          "behaviorType": "setEnable",
+          "actionValue": 0 // Не используется в случае "setEnable"
+      },
+      {
+          "control": "wb-mr6cv3_127/K6",
+          "behaviorType": "setEnable",
+          "actionValue": 0 // Не используется в случае "setEnable"
+      }
+  ];
+
+  var isInitSuccess = moduleInToOut.init('bathroom_light',
+                                        'Bathroom: light',
+                                        inControls,
+                                        outControls);
+
+  var isInitSuccess = scenarioModule.init('Bathroom: heat floor', cfg);
+  if (!isInitSuccess) {
+    log.error('Error: Init aborted for "id_prefix": {}', cfg.id_prefix);
+    return;
+  }
+
+  log.debug('Initialization successful for "id_prefix": {}', cfg.id_prefix);
+}
+
+main();
+```
+
+После запуска скрипта у вас с устройствах появится новое устройство
+для управления - которое будет аналогично тому, что вы можете создать через
+визульный конфигуратор в WEBUI контроллера:
+
+<p align="center">
+    <img width="400"
+         src="doc/virtual-device.png"
+         alt="Virtual device view" />
+</p>
+
 ## Добавление новых типов операций
 
 В сценарии используются следующие термины описанные ниже
