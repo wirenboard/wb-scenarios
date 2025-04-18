@@ -17,6 +17,22 @@ var tm = new TopicManager();
 tm.installPlugin(historyPlugin);
 tm.installPlugin(eventPlugin);
 
+var lastActionType = {
+  NOT_USED       : 0, // Not used yet (set immediately after start)
+  RULE_ON        : 1, // Scenario turned everything on
+  RULE_OFF       : 2, // Scenario turned everything off
+  EXT_ON         : 3, // Externally turned everything on
+  EXT_OFF        : 4, // Externally turned everything off
+  PARTIAL_EXT    : 5, // Partially changed by external actions
+  PARTIAL_BY_RULE: 6  // Partially changed by Scenario
+};
+
+var ruleActionInProgress = false;   // сценарий прямо сейчас меняет лампы
+var ruleTargetState      = null;    // true ⇢ должны включиться, false ⇢ выключиться
+
+// Флаг нужный для того чтобы /lightOn не реагировал при синхронизации и не включал свою логику
+var syncingLightOn = false;   // true ⇒ мы сами синхронизируем индикатор
+
 /**
  * Инициализирует виртуальное устройство и определяет правило для управления
  * и автоматизацией в зависимости от пользовательских настроек
@@ -142,10 +158,21 @@ function init(deviceTitle, cfg) {
   var logicEnableTimerId = null;
 
   // Предварительно извлекаем имена контролов
+  var lightDevicesControlNames = extractControlNames(cfg.lightDevices);
   var motionSensorsControlNames = extractControlNames(cfg.motionSensors);
   var openingSensorsControlNames = extractControlNames(cfg.openingSensors);
   var lightSwitchesControlNames = extractControlNames(cfg.lightSwitches);
 
+  tm.registerSingleEvent(
+    lightDevicesControlNames,
+    'whenChange',
+    lightDevicesCb
+  );
+  tm.registerSingleEvent(
+    genNames.vDevice + '/lastSwitchAction',
+    'whenChange',
+    lastSwitchActionCb
+  );
   tm.registerSingleEvent(
     genNames.vDevice + '/logicDisabledByWallSwitch',
     'whenChange',
@@ -310,6 +337,7 @@ function init(deviceTitle, cfg) {
         units: 's',
         type: 'value',
         value: 0,
+        forceDefault: true, // Always must start from 0
         readonly: true,
         order: 2,
       },
@@ -320,6 +348,27 @@ function init(deviceTitle, cfg) {
         readonly: true,
         order: 6,
       },
+      lastSwitchAction: {
+        title: { en: 'Last switch action', ru: 'Тип последнего переключения' },
+        type: 'value',
+        readonly: true,
+        forceDefault: true,   // always start from the default enum value
+        value: lastActionType.NOT_USED,             // 0 = Not used
+        enum: {
+          // All operations done by the scenario itself
+          0: { en: 'Not used',     ru: 'Не используется'      },
+          1: { en: 'Rule turned ON',  ru: 'Сценарий включил'  },
+          2: { en: 'Rule turned OFF', ru: 'Сценарий выключил' },
+          // At least one lamp forced ON
+          3: { en: 'Turn‑on externally',  ru: 'Включили извне'  },
+          // All lamps forced OFF
+          4: { en: 'Turn‑off externally', ru: 'Выключили извне' },
+          // Mixed external states, minimum one lamp externaly changed
+          5: { en: 'Partial external',    ru: 'Частично извне'  },
+          6: { en: 'Partial by rule',     ru: 'Частично сценарий'},
+        },
+        order: 8,
+      },  
     };
 
     // Условное добавление полей в зависимости от конфигурации
@@ -358,6 +407,7 @@ function init(deviceTitle, cfg) {
         units: 's',
         type: 'value',
         value: 0,
+        forceDefault: true, // Always must start from 0
         readonly: true,
         order: 3,
       };
@@ -369,6 +419,7 @@ function init(deviceTitle, cfg) {
         },
         type: 'switch',
         value: false,
+        forceDefault: true, // Always must start from disabled
         readonly: true,
         order: 7,
       };
@@ -719,6 +770,233 @@ function init(deviceTitle, cfg) {
   }
 
   /**
+   * Handler for any change coming from a lighting device
+   *
+   * @param {*} topicObj.val.new New value of the changed device topic
+   * @returns {boolean} Always `true` (required by TM API)
+   */
+  function lightDevicesCb(topicObj, eventObj) {
+    var internalLightStatus = dev[genNames.vDevice + '/lightOn'];
+    // TODO:(vg) Дописать этот метод так чтобы он различал что изменение топика сделал не наш код сценария а кто то извне
+    /* -------- 1. Считаем фактическое состояние всей группы -------- */
+    var onCnt = 0;
+    for (var i = 0; i < cfg.lightDevices.length; i++) {
+      if (dev[cfg.lightDevices[i].mqttTopicName] === true) {
+        onCnt++;
+      }
+    }
+
+    var allLightOn  = onCnt === cfg.lightDevices.length; // включены все
+    var allLightOff = onCnt === 0;                       // выключены все
+    var mixedState  = !allLightOn && !allLightOff;       // частично
+
+    var isExternalChange = false;
+    /* -------- 2. Обрабатываем действия, инициированные сценарием -------- */
+    if (ruleActionInProgress && (topicObj.val.new === internalLightStatus)) {
+      // Если изменение инициировал сам сценарий — выходим
+      //   - Лампа пришла в то же состояние, что и vd/lightOn
+      //   - Значит, именно сценарий её только что переключил
+
+      /* 2.1. Пока не достигнут итоговый результат → PARTIAL_BY_RULE */
+      if (mixedState) {
+        dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.PARTIAL_BY_RULE;
+        return true;                       // ждём следующих изменений для завершения
+      }
+  
+      /* 2.2. Итоговое состояние достигнуто */
+      if (allLightOn  && ruleTargetState === true) {
+        dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.RULE_ON;
+      } else if (allLightOff && ruleTargetState === false) {
+        dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.RULE_OFF;
+      }
+  
+
+      /* 2.3. НЕ синхронизируем индикатор lightOn (он должен быть уже верен) */
+      if (dev[genNames.vDevice + '/lightOn'] !== ruleTargetState) {
+        log.error('Not correct logic!');
+        syncingLightOn = true;
+        dev[genNames.vDevice + '/lightOn'] = ruleTargetState;
+        syncingLightOn = false;
+      }
+
+      // сценарий закончил переключение
+      ruleActionInProgress = false;
+      ruleTargetState      = null;
+      return true;
+    }
+
+    /* === 3. ВНЕШНЕЕ изменение === */
+
+    isExternalChange = true;
+    log.debug('External change detected for device: ' + topicObj.name);
+    log.debug('topicObj.val.new: ' + topicObj.val.new);
+
+
+    if (topicObj.val.new === false) {
+      log.debug('External control detected: Minimum one light turn-OFF externally');
+    } else if (topicObj.val.new === true) {
+      log.debug('External control detected: Minimum one light turn-ON externally');
+    }
+
+
+    /* 3.1. Определяем тип действия */
+    if (mixedState) {
+      dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.PARTIAL_EXT;
+      // В «частичном» варианте lightOn НЕ меняем
+    } else if (allLightOn) {
+      dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_ON;
+
+      /* --- синхронизируем lightOn (всё включили) --- */
+      if (dev[genNames.vDevice + '/lightOn'] !== true) {
+        syncingLightOn = true;
+        dev[genNames.vDevice + '/lightOn'] = true;
+        syncingLightOn = false;
+      }
+    } else if (allLightOff) {
+      dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_OFF;
+
+      /* --- синхронизируем lightOn (всё выключили) --- */
+      if (dev[genNames.vDevice + '/lightOn'] !== false) {
+        syncingLightOn = true;
+        dev[genNames.vDevice + '/lightOn'] = false;
+        syncingLightOn = false;
+      }
+    }
+
+
+
+    /* ---------- 3. Определяем тип внешнего воздействия ---------- */
+    // var newLastActionType = lastActionType.PARTIAL_EXT;
+    // if (!internalLightStatus && allLightOn) newLastActionType = lastActionType.EXT_ON;   // ВСЕ включили внешне
+    // if ( internalLightStatus && allLightOff) newLastActionType = lastActionType.EXT_OFF; // ВСЕ выключили внешне
+    // log.debug('newLastActionType: ' + newLastActionType);
+    // dev[genNames.vDevice + '/lastSwitchAction'] = newLastActionType;
+   
+  
+  
+
+    // if (topicObj.val.new === false) {
+    //   dev[genNames.vDevice + '/lightOn'] = false;
+    //   return true;
+    // }
+
+
+    return true;
+  }
+
+
+  function lastSwitchActionCb (topicObj /*, eventObj */) {
+    var action = topicObj.val.new;
+  
+    /* --- 1. Внешне выключили все девайсы освещения --- */
+    if (action === lastActionType.EXT_OFF) {
+  
+      /* 1.1. Сброс таймера света */
+      if (lightOffTimerId) {
+        clearTimeout(lightOffTimerId);
+        resetLightOffTimer();
+      }
+
+      /* 1.2. Всегда сбрасываем таймер блокировки логики при внешнем выключении */
+      if (logicEnableTimerId) {
+        clearTimeout(logicEnableTimerId);
+        resetLogicEnableTimer();
+      }
+
+      /* 1.3. Снимаем блокировку автоматизации */
+      var logicBlocked = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
+      if (logicBlocked === true) {
+        dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
+      }
+
+      /* 1.2. Сброс таймера блокировки логики —
+             ТОЛЬКО если логика НЕ отключена настенным выключателем */
+      // var logicBlocked = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
+      // if (!logicBlocked && logicEnableTimerId) {
+      //   clearTimeout(logicEnableTimerId);
+      //   resetLogicEnableTimer();
+      // }
+  
+      /* 1.4. Обнуляем флаг движения, чтобы новое движение снова включило свет */
+      if (dev[genNames.vDevice + '/motionInProgress'] === true) {
+        dev[genNames.vDevice + '/motionInProgress'] = false;
+      }
+
+      /* 1.5. Синхронизуем индикатор lightOn, если нужно */
+      if (dev[genNames.vDevice + '/lightOn'] !== false) {
+        syncingLightOn = true;
+        dev[genNames.vDevice + '/lightOn'] = false;
+        syncingLightOn = false;
+      }
+
+    //   /* ==== НОВЫЙ БЛОК: движение есть, свет погасили ==== */
+    //   if (dev[genNames.vDevice + '/motionInProgress'] === true &&
+    //     dev[genNames.vDevice + '/lightOn']            === false) {
+
+    //   log.debug('EXT_OFF during motion → restart automation');
+
+    //   /* 1. Помечаем, что сценарий вновь включает свет */
+    //   ruleActionInProgress = true;
+    //   ruleTargetState      = true;
+
+    //   /* 2. Включаем все лампы */
+    //   setValueAllDevicesByBehavior(cfg.lightDevices, true);
+
+    //   /* 3. Запускаем таймер авто‑выключения,
+    //         как при обычном срабатывании движения */
+    //   startLightOffTimer(cfg.delayByMotionSensors * 1000);
+    // }
+
+
+      return true;
+    }
+  
+    /* --- 2. Внешне ВКЛЮЧИЛИ всё --- */
+    if (action === lastActionType.EXT_ON) {
+  
+      /* 2.1. Если правило активно и автоматика разрешена — запускаем таймер
+         такой же, как при срабатывании датчика движения              */
+      var isRuleEnabled = dev[genNames.vDevice + '/ruleEnabled'];
+      var isLogicBlocked = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
+      var motionNow = dev[genNames.vDevice + '/motionInProgress'];
+      /* --- 0. Если это настенный выключатель (logicBlocked=true) ---
+             оставляем ТАЙМЕРЫ, расставленные logicDisabledCb, нетронутыми */
+      if (isLogicBlocked) {
+        log.debug('lastSwitchActionCb: detected wall switch');
+        startLightOffTimer   (cfg.delayBlockAfterSwitch * 1000);
+        startLogicEnableTimer(cfg.delayBlockAfterSwitch * 1000);
+        return true;          // → выходим, ничего не трогаем
+      }
+      // if (isRuleEnabled && !isLogicBlocked) {
+      //   /* Свет уже горит, поэтому просто заводим «таймер погашения» */
+      //   startLightOffTimer(cfg.delayByMotionSensors * 1000);
+      // }
+  
+      /*   ─ Запускаем таймер ТОЛЬКО если
+             – правило активно,
+             – автоматика не заблокирована,
+             – в момент включения ОБНАРУЖЕНО движение.            */
+      /* 1. Автоматическое гашение, когда свет включили извне во время движения */
+      if (isRuleEnabled && motionNow === true) {
+        startLightOffTimer(cfg.delayByMotionSensors * 1000);
+      } else {
+          /* Если таймер случайно был запущен раньше — сбросим,
+             чтобы не погасить свет вручную.                     */
+          if (lightOffTimerId) {
+              clearTimeout(lightOffTimerId);
+              resetLightOffTimer();
+          }
+      }
+
+      return true;
+    }
+  
+    /* --- 3. Иные значения не требуют реакции --- */
+    return true;
+  }
+  
+
+  /**
    * Обработчик выключения логики автоматики при использовании выключателя
    *
    * @param {boolean} topicObj.val.new Новое значение состояния логики:
@@ -760,22 +1038,29 @@ function init(deviceTitle, cfg) {
     } else if (isDoorClosed) {
       // Do nothing
     } else {
-      log.error('Door status - have not correct type');
+      log.error('Door status - have not correct type: {}', topicObj.val.new);
     }
 
     return true;
   }
 
   function lightOnCb(topicObj, eventObj) {
+    /* Не реагируем, если это мы сами обновили индикатор */
+    if (syncingLightOn) return true;
+
     var isLightSwitchedOn = topicObj.val.new === true;
     var isLightSwitchedOff = topicObj.val.new === false;
 
     if (isLightSwitchedOn) {
+      ruleActionInProgress = true;
+      ruleTargetState      = true;
       setValueAllDevicesByBehavior(cfg.lightDevices, true);
     } else if (isLightSwitchedOff) {
+      ruleActionInProgress = true;
+      ruleTargetState      = false;
       setValueAllDevicesByBehavior(cfg.lightDevices, false);
     } else {
-      log.error('Light on - have not correct type');
+      log.error('Light on - have not correct type: {}', topicObj.val.new);
     }
 
     return true;
