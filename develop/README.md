@@ -391,6 +391,69 @@ docs: create new scenario dir + add README.md
 В этом PR нужно написать скрипт инициализации и для корректного запуска, нужно
 написать заглушку модуля с реализованным пустым `init()`.
 
+Самый простой модуль выглядит следующим образом
+
+```
+/**
+ * @file generic-scenario.mod.js
+ * @description Модуль простого сценария который логирует каждое изменение
+ */
+
+/**
+ * Конструктор "GenericScenario"
+ * @param {string} name Название сценария
+ * @param {string} topic MQTT-топик для отслеживания
+ */
+function GenericScenario(name, topic) {
+  this.name = name;
+  this.topic = topic;
+  this._counter = 0;
+  this._ruleId = null;
+}
+
+/**
+ * Метод инициализации: создает правило и подписывается на события
+ */
+GenericScenario.prototype.init = function () {
+  var self = this;
+
+  this._ruleId = defineRule('rule_' + this.name, {
+    whenChanged: [this.topic],
+    then: function (newValue) {
+      self._counter++;
+      log.info('[' + self.name + '] Topic changed to: ' + newValue + ', counter = ' + self._counter);
+    }
+  });
+
+  log.info('[' + this.name + '] Scenario initialized with topic: ' + this.topic);
+};
+
+exports.GenericScenario = GenericScenario;
+```
+
+Скрипт инициализации без чтения конфига
+```
+/**
+ * @file test-generic-scenarios.js
+ * @description Скрипт инициализации двух сценариев
+ */
+
+var Scenario = require('generic-scenario.mod').GenericScenario;
+
+function main() {
+  var s1 = new Scenario('LivingRoom', 'wb-mr6cv3_127/K1');
+  var s2 = new Scenario('Kitchen', 'wb-mr6cv3_127/K2');
+
+  s1.init();
+  s2.init();
+
+  log.info('Two scenarios have been initialized');
+}
+
+main();
+```
+
+
 #### 5.1. Скрипт инициализации
 
 Скрипт является точкой входа для сценария, так как при перезапуске wb-rules
@@ -422,6 +485,22 @@ var isInitSucess = thermostat.init(scenario.name, cfg);
 
 Первая версия модуля может содержать общий код, который просто реализует
 сам метод init()
+
+TODO:(vg) Для того чтобы было проще управлять разными экземплярами сценариев
+одного типа и проще изолировать их контексты друг от друга - нужно обязательно
+оборачивать каждый сценарий в объект.
+    - Тогда не нужно будет думать в случае необходимости контекста разных
+      сценариев, тк внутри разных объектов параметры будут 100% изолированы
+      и не будет происходить коллизий. Глобальные переменные в модуле
+      использовать нельзя - а глобальный список сложнее сопровождается.
+    - Для того чтобы не передавать из первичного метода init() кучу параметров
+      в коллбек вызываемый после ожидания всех связанных топиков - тоже удобно
+      заполнить контекст и потом использовать его через self
+    - ScenarioBase сделан специально максимально абстрактным и его конструктор
+      даже не имеет параметров, чтобы не быть зависимым от типа создаваемых
+      сценариев. Это дает возможность не пробрасывать в родительский класс
+      параметры и не сломает систему если в будующем захотим добавить параметр
+      в родительский класс - достаточно добавить его в новых сценариях.
 
 ```javascript
 function init(deviceTitle, cfg) {
