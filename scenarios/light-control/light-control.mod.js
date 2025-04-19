@@ -39,6 +39,7 @@ LightControlScenario.prototype.generateNames = function (prefix) {
     ruleLastSwitchActionChange: rulePrefix + 'lastSwitchActionChange' + postfix,
     ruleLogicDisabledChange: rulePrefix + 'logicDisabledChange' + postfix,
     ruleDoorOpenChange: rulePrefix + 'doorOpenChange' + postfix,
+    ruleRemainingTimeToLightOffChange: rulePrefix + 'remainingTimeToLightOffChange' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
     ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
     ruleLightOn: rulePrefix + 'lightOn' + postfix,
@@ -240,11 +241,22 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdDoorOpen);
 
-  tm.registerSingleEvent(
-    self.genNames.vDevice + '/remainingTimeToLightOffInSec',
-    'whenChange',
-    remainingTimeToLightOffCb
+  ruleName = self.genNames.ruleRemainingTimeToLightOffChange;
+  var ruleIdRemainingTimeToLightOff = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/remainingTimeToLightOffInSec',
+    then: function (newValue, devName, cellName) {
+      remainingTimeToLightOffHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdRemainingTimeToLightOff) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdRemainingTimeToLightOff + '" was successfully created'
   );
+  addRule(ruleIdRemainingTimeToLightOff);
+
   tm.registerSingleEvent(
     self.genNames.vDevice + '/remainingTimeToLogicEnableInSec',
     'whenChange',
@@ -1047,21 +1059,26 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     return true;
   }
 
-  function remainingTimeToLightOffCb(topicObj, eventObj) {
+
+  /**
+   * Handler for change remaining time to light off VD control
+   * @param {boolean} newValue New logic state value
+   */
+  function remainingTimeToLightOffHandler(newValue, devName, cellName) {
     /**
      * Значение таймера отключения света может стать нулем в двух случаях:
      * 1 - Таймер дошел до конца без новых внешних воздействи
      * 2 - Таймер был обнулен так как движение снова появилось
      */
     var curMotionStatus = dev[self.genNames.vDevice + '/motionInProgress'];
-    if (topicObj.val.new === 0 && curMotionStatus === true) {
+    if (newValue === 0 && curMotionStatus === true) {
       /* Ничего не делаем если при движении обнулился таймер */
       return true;
     }
 
-    if (topicObj.val.new === 0) {
+    if (newValue === 0) {
       turnOffLightsByTimeout();
-    } else if (topicObj.val.new >= 1) {
+    } else if (newValue >= 1) {
       // Recharge timer
       if (lightOffTimerId) {
         clearTimeout(lightOffTimerId);
@@ -1070,7 +1087,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     } else {
       log.error(
         'Remaining time to light enable: have not correct value:' +
-          topicObj.val.new
+          newValue
       );
     }
 
