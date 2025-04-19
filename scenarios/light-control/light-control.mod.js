@@ -38,6 +38,7 @@ LightControlScenario.prototype.generateNames = function (prefix) {
     vDevice: scenarioPrefix + prefix,
     ruleLightDevsChange: rulePrefix + 'lightDevsChange' + postfix,
     ruleLastSwitchActionChange: rulePrefix + 'lastSwitchActionChange' + postfix,
+    ruleLogicDisabledChange: rulePrefix + 'logicDisabledChange' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
     ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
     ruleLightOn: rulePrefix + 'lightOn' + postfix,
@@ -207,11 +208,22 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdLastSwitchActionChange);
 
-  tm.registerSingleEvent(
-    self.genNames.vDevice + '/logicDisabledByWallSwitch',
-    'whenChange',
-    logicDisabledCb
+  ruleName = self.genNames.ruleLogicDisabledChange;
+  var ruleIdLogicDisabled = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/logicDisabledByWallSwitch',
+    then: function (newValue, devName, cellName) {
+      logicDisabledHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLogicDisabled) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdLogicDisabled + '" was successfully created'
   );
+  addRule(ruleIdLogicDisabled);
+
   tm.registerSingleEvent(
     self.genNames.vDevice + '/doorOpen',
     'whenChange',
@@ -917,7 +929,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       var isLogicBlocked = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
       var motionNow = dev[self.genNames.vDevice + '/motionInProgress'];
       /* --- 0. Если это настенный выключатель (logicBlocked=true) ---
-             оставляем ТАЙМЕРЫ, расставленные logicDisabledCb, нетронутыми */
+             оставляем ТАЙМЕРЫ, расставленные logicDisabledHandler, нетронутыми */
       if (isLogicBlocked) {
         log.debug('lastSwitchActionHandler: detected wall switch');
         startLightOffTimer   (cfg.delayBlockAfterSwitch * 1000);
@@ -951,17 +963,14 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     /* --- 3. Иные значения не требуют реакции --- */
     return true;
   }
-  
 
   /**
-   * Обработчик выключения логики автоматики при использовании выключателя
-   *
-   * @param {boolean} topicObj.val.new Новое значение состояния логики:
-   *     true - включает логику и запускает таймеры (если разрешено)
-   *     false - выключает логику и отключает свет.
-   * @returns {boolean} Callback возвращает true при успехе
+   * Handler for disabling automation logic when using the switch
+   * @param {boolean} newValue New logic state value:
+   *     true - enables logic and starts timers (if allowed)
+   *     false - disables logic and turns off the light
    */
-  function logicDisabledCb(topicObj, eventObj) {
+  function logicDisabledHandler(newValue, devName, cellName) {
     if (lightOffTimerId) {
       clearTimeout(lightOffTimerId);
       resetLightOffTimer();
@@ -971,7 +980,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       resetLogicEnableTimer();
     }
 
-    if (topicObj.val.new === false) {
+    if (newValue === false) {
       dev[self.genNames.vDevice + '/lightOn'] = false;
       return true;
     }
