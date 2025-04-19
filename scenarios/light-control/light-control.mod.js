@@ -174,14 +174,13 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start rules creation');
   addCustomCellsToVd();
 
-  // Предварительно извлекаем имена контролов
-  var lightDevicesControlNames = extractMqttTopics(cfg.lightDevices);
-  var motionSensorsControlNames = extractMqttTopics(cfg.motionSensors);
-  var openingSensorsControlNames = extractMqttTopics(cfg.openingSensors);
-  var lightSwitchesControlNames = extractMqttTopics(cfg.lightSwitches);
+  var lightDevTopics = extractMqttTopics(cfg.lightDevices);
+  var motionTopics = extractMqttTopics(cfg.motionSensors);
+  var openingTopics = extractMqttTopics(cfg.openingSensors);
+  var switchTopics = extractMqttTopics(cfg.lightSwitches);
 
   tm.registerSingleEvent(
-    lightDevicesControlNames,
+    lightDevTopics,
     'whenChange',
     lightDevicesCb
   );
@@ -216,7 +215,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     lightOnCb
   );
   tm.registerMultipleEvents(
-    lightSwitchesControlNames,
+    switchTopics,
     'whenChange',
     lightSwitchUsedCb
   );
@@ -236,7 +235,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   // Создаем правило для датчиков движения
   var ruleIdMotion = defineRule(self.genNames.ruleMotion, {
-    whenChanged: motionSensorsControlNames,
+    whenChanged: motionTopics,
     then: function (newValue, devName, cellName) {
       sensorTriggeredHandler(newValue, devName, cellName, 'motion');
     },
@@ -252,7 +251,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   // Создаем правило для датчиков открытия
   var ruleIdOpening = defineRule(self.genNames.ruleOpening, {
-    whenChanged: openingSensorsControlNames,
+    whenChanged: openingTopics,
     then: function (newValue, devName, cellName) {
       sensorTriggeredHandler(newValue, devName, cellName, 'opening');
     },
