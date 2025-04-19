@@ -36,6 +36,7 @@ LightControlScenario.prototype.generateNames = function (prefix) {
 
   return {
     vDevice: scenarioPrefix + prefix,
+    ruleLightDevsChange: rulePrefix + 'lightDevsChange' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
     ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
     ruleLightOn: rulePrefix + 'lightOn' + postfix,
@@ -171,12 +172,24 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var motionTopics = extractMqttTopics(cfg.motionSensors);
   var openingTopics = extractMqttTopics(cfg.openingSensors);
   var switchTopics = extractMqttTopics(cfg.lightSwitches);
-
-  tm.registerSingleEvent(
-    lightDevTopics,
-    'whenChange',
-    lightDevicesCb
+  var ruleName = '';
+  
+  ruleName = self.genNames.ruleLightDevsChange;
+  var ruleIdLightDevsChange = defineRule(ruleName, {
+    whenChanged: lightDevTopics,
+    then: function (newValue, devName, cellName) {
+      lightDevicesHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLightDevsChange) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdLightDevsChange + '" was successfully created'
   );
+  addRule(ruleIdLightDevsChange);
+
   tm.registerSingleEvent(
     self.genNames.vDevice + '/lastSwitchAction',
     'whenChange',
@@ -747,12 +760,10 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   /**
    * Handler for any change coming from a lighting device
    *
-   * @param {*} topicObj.val.new New value of the changed device topic
-   * @returns {boolean} Always `true` (required by TM API)
+   * @param {*} newValue New value of the changed device topic
    */
-  function lightDevicesCb(topicObj, eventObj) {
+  function lightDevicesHandler(newValue, devName, cellName) {
     var internalLightStatus = dev[self.genNames.vDevice + '/lightOn'];
-    // TODO:(vg) Дописать этот метод так чтобы он различал что изменение топика сделал не наш код сценария а кто то извне
     /* -------- 1. Считаем фактическое состояние всей группы -------- */
     var onCnt = 0;
     for (var i = 0; i < cfg.lightDevices.length; i++) {
@@ -767,7 +778,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
     var isExternalChange = false;
     /* -------- 2. Обрабатываем действия, инициированные сценарием -------- */
-    if (ruleActionInProgress && (topicObj.val.new === internalLightStatus)) {
+    if (ruleActionInProgress && (newValue === internalLightStatus)) {
       // Если изменение инициировал сам сценарий — выходим
       //   - Лампа пришла в то же состояние, что и vd/lightOn
       //   - Значит, именно сценарий её только что переключил
@@ -775,7 +786,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       /* 2.1. Пока не достигнут итоговый результат → PARTIAL_BY_RULE */
       if (mixedState) {
         dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.PARTIAL_BY_RULE;
-        return true;                       // ждём следующих изменений для завершения
+        return;  // ждём следующих изменений для завершения
       }
   
       /* 2.2. Итоговое состояние достигнуто */
@@ -797,19 +808,20 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       // сценарий закончил переключение
       ruleActionInProgress = false;
       ruleTargetState      = null;
-      return true;
+      return;
     }
 
     /* === 3. ВНЕШНЕЕ изменение === */
 
     isExternalChange = true;
-    log.debug('External change detected for device: ' + topicObj.name);
-    log.debug('topicObj.val.new: ' + topicObj.val.new);
+    topicName = devName + '/' + cellName;
+    log.debug('External change detected for device: "{}"' + topicName);
+    log.debug('newValue: ' + newValue);
 
 
-    if (topicObj.val.new === false) {
+    if (newValue === false) {
       log.debug('External control detected: Minimum one light turn-OFF externally');
-    } else if (topicObj.val.new === true) {
+    } else if (newValue === true) {
       log.debug('External control detected: Minimum one light turn-ON externally');
     }
 
@@ -821,7 +833,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     } else if (allLightOn) {
       dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_ON;
 
-      /* --- синхронизируем lightOn (всё включили) --- */
+      /* --- синхронизируем топик lightOn (всё активировали) --- */
       if (dev[self.genNames.vDevice + '/lightOn'] !== true) {
         syncingLightOn = true;
         dev[self.genNames.vDevice + '/lightOn'] = true;
@@ -830,33 +842,14 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     } else if (allLightOff) {
       dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_OFF;
 
-      /* --- синхронизируем lightOn (всё выключили) --- */
+      /* --- синхронизируем топик lightOn (всё отключили) --- */
       if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
         syncingLightOn = true;
         dev[self.genNames.vDevice + '/lightOn'] = false;
         syncingLightOn = false;
       }
     }
-
-
-
-    /* ---------- 3. Определяем тип внешнего воздействия ---------- */
-    // var newLastActionType = lastActionType.PARTIAL_EXT;
-    // if (!internalLightStatus && allLightOn) newLastActionType = lastActionType.EXT_ON;   // ВСЕ включили внешне
-    // if ( internalLightStatus && allLightOff) newLastActionType = lastActionType.EXT_OFF; // ВСЕ выключили внешне
-    // log.debug('newLastActionType: ' + newLastActionType);
-    // dev[self.genNames.vDevice + '/lastSwitchAction'] = newLastActionType;
-   
-  
-  
-
-    // if (topicObj.val.new === false) {
-    //   dev[self.genNames.vDevice + '/lightOn'] = false;
-    //   return true;
-    // }
-
-
-    return true;
+    return;
   }
 
 
