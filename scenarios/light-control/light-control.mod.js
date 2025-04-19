@@ -13,7 +13,6 @@ var Logger = require('logger.mod').Logger;
 
 var log = new Logger('WBSC‑light');
 
-
 var lastActionType = {
   NOT_USED       : 0, // Not used yet (set immediately after start)
   RULE_ON        : 1, // Scenario turned everything on
@@ -39,6 +38,7 @@ LightControlScenario.prototype.generateNames = function (prefix) {
     ruleLightDevsChange: rulePrefix + 'lightDevsChange' + postfix,
     ruleLastSwitchActionChange: rulePrefix + 'lastSwitchActionChange' + postfix,
     ruleLogicDisabledChange: rulePrefix + 'logicDisabledChange' + postfix,
+    ruleDoorOpenChange: rulePrefix + 'doorOpenChange' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
     ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
     ruleLightOn: rulePrefix + 'lightOn' + postfix,
@@ -224,11 +224,22 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdLogicDisabled);
 
-  tm.registerSingleEvent(
-    self.genNames.vDevice + '/doorOpen',
-    'whenChange',
-    doorOpenCb
+  ruleName = self.genNames.ruleDoorOpenChange;
+  var ruleIdDoorOpen = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/doorOpen',
+    then: function (newValue, devName, cellName) {
+      doorOpenHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdDoorOpen) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdDoorOpen + '" was successfully created'
   );
+  addRule(ruleIdDoorOpen);
+
   tm.registerSingleEvent(
     self.genNames.vDevice + '/remainingTimeToLightOffInSec',
     'whenChange',
@@ -994,9 +1005,13 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     return true;
   }
 
-  function doorOpenCb(topicObj, eventObj) {
-    var isDoorOpened = topicObj.val.new === true;
-    var isDoorClosed = topicObj.val.new === false;
+  /**
+   * Handler for automation logic when door open
+   * @param {boolean} newValue New logic state value
+   */
+  function doorOpenHandler(newValue, devName, cellName) {
+    var isDoorOpened = newValue === true;
+    var isDoorClosed = newValue === false;
 
     if (isDoorOpened) {
       dev[self.genNames.vDevice + '/lightOn'] = true;
@@ -1004,7 +1019,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     } else if (isDoorClosed) {
       // Do nothing
     } else {
-      log.error('Door status - have not correct type: {}', topicObj.val.new);
+      log.error('Door status - have not correct type: {}', newValue);
     }
 
     return true;
