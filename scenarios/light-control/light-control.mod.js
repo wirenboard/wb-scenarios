@@ -41,9 +41,8 @@ LightControlScenario.prototype.generateNames = function (prefix) {
     ruleDoorOpenChange: rulePrefix + 'doorOpenChange' + postfix,
     ruleRemainingTimeToLightOffChange: rulePrefix + 'remainingTimeToLightOffChange' + postfix,
     ruleRemainingTimeToLogicEnableChange: rulePrefix + 'remainingTimeToLogicEnableChange' + postfix,
+    ruleLightOnChange: rulePrefix + 'lightOnChange' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
-    ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
-    ruleLightOn: rulePrefix + 'lightOn' + postfix,
     ruleLogicDisabledByWallSwitch:
       rulePrefix + 'logicDisabledByWallSwitch' + postfix,
     ruleRemainingTimeToLightOffInSec:
@@ -274,11 +273,22 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdRemainingTimeToLogicEnableChange);
 
-  tm.registerSingleEvent(
-    self.genNames.vDevice + '/lightOn',
-    'whenChange',
-    lightOnCb
+  ruleName = self.genNames.ruleLightOnChange;
+  var ruleIdLightOnChange = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/lightOn',
+    then: function (newValue, devName, cellName) {
+      lightOnHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLightOnChange) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdLightOnChange + '" was successfully created'
   );
+  addRule(ruleIdLightOnChange);
+
   tm.registerMultipleEvents(
     switchTopics,
     'whenChange',
@@ -1049,12 +1059,16 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     return true;
   }
 
-  function lightOnCb(topicObj, eventObj) {
+  /**
+   * Handler for automation logic when 'lightOn' control changed
+   * @param {boolean} newValue New logic state value
+   */
+  function lightOnHandler(newValue, devName, cellName) {
     /* Не реагируем, если это мы сами обновили индикатор */
     if (syncingLightOn) return true;
 
-    var isLightSwitchedOn = topicObj.val.new === true;
-    var isLightSwitchedOff = topicObj.val.new === false;
+    var isLightSwitchedOn = newValue === true;
+    var isLightSwitchedOff = newValue === false;
 
     if (isLightSwitchedOn) {
       ruleActionInProgress = true;
@@ -1065,7 +1079,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       ruleTargetState      = false;
       setValueAllDevicesByBehavior(cfg.lightDevices, false);
     } else {
-      log.error('Light on - have not correct type: {}', topicObj.val.new);
+      log.error('Light on - have not correct type: {}', newValue);
     }
 
     return true;
