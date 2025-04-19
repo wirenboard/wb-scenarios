@@ -40,6 +40,7 @@ LightControlScenario.prototype.generateNames = function (prefix) {
     ruleLogicDisabledChange: rulePrefix + 'logicDisabledChange' + postfix,
     ruleDoorOpenChange: rulePrefix + 'doorOpenChange' + postfix,
     ruleRemainingTimeToLightOffChange: rulePrefix + 'remainingTimeToLightOffChange' + postfix,
+    ruleRemainingTimeToLogicEnableChange: rulePrefix + 'remainingTimeToLogicEnableChange' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
     ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
     ruleLightOn: rulePrefix + 'lightOn' + postfix,
@@ -257,11 +258,22 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdRemainingTimeToLightOff);
 
-  tm.registerSingleEvent(
-    self.genNames.vDevice + '/remainingTimeToLogicEnableInSec',
-    'whenChange',
-    remainingTimeToLogicEnableCb
+  ruleName = self.genNames.ruleRemainingTimeToLogicEnableChange;
+  var ruleIdRemainingTimeToLogicEnableChange = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/remainingTimeToLogicEnableInSec',
+    then: function (newValue, devName, cellName) {
+      remainingTimeToLogicEnableHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdRemainingTimeToLogicEnableChange) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdRemainingTimeToLogicEnableChange + '" was successfully created'
   );
+  addRule(ruleIdRemainingTimeToLogicEnableChange);
+
   tm.registerSingleEvent(
     self.genNames.vDevice + '/lightOn',
     'whenChange',
@@ -1094,10 +1106,14 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     return true;
   }
 
-  function remainingTimeToLogicEnableCb(topicObj, eventObj) {
-    if (topicObj.val.new === 0) {
+  /**
+   * Handler for change remaining time to logic enable VD control
+   * @param {boolean} newValue New logic state value
+   */
+  function remainingTimeToLogicEnableHandler(newValue, devName, cellName) {
+    if (newValue === 0) {
       enableLogicByTimeout();
-    } else if (topicObj.val.new >= 1) {
+    } else if (newValue >= 1) {
       // Recharge timer
       if (logicEnableTimerId) {
         clearTimeout(logicEnableTimerId);
@@ -1106,7 +1122,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     } else {
       log.error(
         'Remaining time to logic enable: have not correct value:' +
-          topicObj.val.new
+          newValue
       );
     }
 
