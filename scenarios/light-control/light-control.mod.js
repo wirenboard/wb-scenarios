@@ -9,17 +9,10 @@
 var ScenarioBase = require('scenario-base.mod').ScenarioBase;
 var vdHelpers = require('virtual-device-helpers.mod');
 var aTable = require('registry-action-resolvers.mod');
-
-var TopicManager = require('tm-main.mod').TopicManager;
-var eventPlugin = require('tm-event-main.mod').eventPlugin;
-var historyPlugin = require('tm-history-main.mod').historyPlugin;
 var Logger = require('logger.mod').Logger;
 
 var log = new Logger('WBSC‑light');
 
-var tm = new TopicManager();
-tm.installPlugin(historyPlugin);
-tm.installPlugin(eventPlugin);
 
 var lastActionType = {
   NOT_USED       : 0, // Not used yet (set immediately after start)
