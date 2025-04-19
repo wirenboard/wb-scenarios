@@ -42,6 +42,7 @@ LightControlScenario.prototype.generateNames = function (prefix) {
     ruleRemainingTimeToLightOffChange: rulePrefix + 'remainingTimeToLightOffChange' + postfix,
     ruleRemainingTimeToLogicEnableChange: rulePrefix + 'remainingTimeToLogicEnableChange' + postfix,
     ruleLightOnChange: rulePrefix + 'lightOnChange' + postfix,
+    ruleLightSwitchUsed: rulePrefix + 'lightSwitchUsed' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
     ruleLogicDisabledByWallSwitch:
       rulePrefix + 'logicDisabledByWallSwitch' + postfix,
@@ -51,7 +52,6 @@ LightControlScenario.prototype.generateNames = function (prefix) {
       rulePrefix + 'remainingTimeToLogicEnableInSec' + postfix,
     ruleMotion: rulePrefix + 'motion' + postfix,
     ruleOpening: rulePrefix + 'opening' + postfix,
-    ruleSwitches: rulePrefix + 'switches' + postfix,
   };
 };
 
@@ -289,11 +289,21 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdLightOnChange);
 
-  tm.registerMultipleEvents(
-    switchTopics,
-    'whenChange',
-    lightSwitchUsedCb
+  ruleName = self.genNames.ruleLightSwitchUsed;
+  var ruleIdLightSwitchUsed = defineRule(ruleName, {
+    whenChanged: switchTopics,
+    then: function (newValue, devName, cellName) {
+      lightSwitchUsedHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLightSwitchUsed) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdLightSwitchUsed + '" was successfully created'
   );
+  addRule(ruleIdLightSwitchUsed);
 
   /**
    * Для датчиков открытия пользователь может выбрать у каждого датчика
@@ -1143,7 +1153,12 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     return true;
   }
 
-  function lightSwitchUsedCb(topicObj, eventObj) {
+
+  /**
+   * Handler light switch used
+   * @param {boolean} newValue New logic state value
+   */
+  function lightSwitchUsedHandler(newValue, devName, cellName) {
     // Для выключателей считаем, что любое изменение (не важно какое)
     // - Меняет состояние переключателя отключения логики сценария
     var curValue = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
