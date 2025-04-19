@@ -37,6 +37,7 @@ LightControlScenario.prototype.generateNames = function (prefix) {
   return {
     vDevice: scenarioPrefix + prefix,
     ruleLightDevsChange: rulePrefix + 'lightDevsChange' + postfix,
+    ruleLastSwitchActionChange: rulePrefix + 'lastSwitchActionChange' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
     ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
     ruleLightOn: rulePrefix + 'lightOn' + postfix,
@@ -189,12 +190,23 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     'WB-rule with IdNum "' + ruleIdLightDevsChange + '" was successfully created'
   );
   addRule(ruleIdLightDevsChange);
-
-  tm.registerSingleEvent(
-    self.genNames.vDevice + '/lastSwitchAction',
-    'whenChange',
-    lastSwitchActionCb
+  
+  ruleName = self.genNames.ruleLastSwitchActionChange;
+  var ruleIdLastSwitchActionChange = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/lastSwitchAction',
+    then: function (newValue, devName, cellName) {
+      lastSwitchActionHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLastSwitchActionChange) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdLastSwitchActionChange + '" was successfully created'
   );
+  addRule(ruleIdLastSwitchActionChange);
+
   tm.registerSingleEvent(
     self.genNames.vDevice + '/logicDisabledByWallSwitch',
     'whenChange',
@@ -852,12 +864,16 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     return;
   }
 
-
-  function lastSwitchActionCb (topicObj /*, eventObj */) {
-    var action = topicObj.val.new;
+  /**
+   * Handler for any change coming from a lastSwitchAction type topic
+   *
+   * @param {*} newValue New value of the changed device topic
+   */
+  function lastSwitchActionHandler(newValue, devName, cellName) {
+    var curAction = newValue;
   
     /* --- 1. Внешне выключили все девайсы освещения --- */
-    if (action === lastActionType.EXT_OFF) {
+    if (curAction === lastActionType.EXT_OFF) {
   
       /* 1.1. Сброс таймера света */
       if (lightOffTimerId) {
@@ -877,14 +893,6 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
         dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
       }
 
-      /* 1.2. Сброс таймера блокировки логики —
-             ТОЛЬКО если логика НЕ отключена настенным выключателем */
-      // var logicBlocked = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
-      // if (!logicBlocked && logicEnableTimerId) {
-      //   clearTimeout(logicEnableTimerId);
-      //   resetLogicEnableTimer();
-      // }
-  
       /* 1.4. Обнуляем флаг движения, чтобы новое движение снова включило свет */
       if (dev[self.genNames.vDevice + '/motionInProgress'] === true) {
         dev[self.genNames.vDevice + '/motionInProgress'] = false;
@@ -897,30 +905,11 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
         syncingLightOn = false;
       }
 
-    //   /* ==== НОВЫЙ БЛОК: движение есть, свет погасили ==== */
-    //   if (dev[self.genNames.vDevice + '/motionInProgress'] === true &&
-    //     dev[self.genNames.vDevice + '/lightOn']            === false) {
-
-    //   log.debug('EXT_OFF during motion → restart automation');
-
-    //   /* 1. Помечаем, что сценарий вновь включает свет */
-    //   ruleActionInProgress = true;
-    //   ruleTargetState      = true;
-
-    //   /* 2. Включаем все лампы */
-    //   setValueAllDevicesByBehavior(cfg.lightDevices, true);
-
-    //   /* 3. Запускаем таймер авто‑выключения,
-    //         как при обычном срабатывании движения */
-    //   startLightOffTimer(cfg.delayByMotionSensors * 1000);
-    // }
-
-
-      return true;
+      return;
     }
   
     /* --- 2. Внешне ВКЛЮЧИЛИ всё --- */
-    if (action === lastActionType.EXT_ON) {
+    if (curAction === lastActionType.EXT_ON) {
   
       /* 2.1. Если правило активно и автоматика разрешена — запускаем таймер
          такой же, как при срабатывании датчика движения              */
@@ -930,7 +919,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       /* --- 0. Если это настенный выключатель (logicBlocked=true) ---
              оставляем ТАЙМЕРЫ, расставленные logicDisabledCb, нетронутыми */
       if (isLogicBlocked) {
-        log.debug('lastSwitchActionCb: detected wall switch');
+        log.debug('lastSwitchActionHandler: detected wall switch');
         startLightOffTimer   (cfg.delayBlockAfterSwitch * 1000);
         startLogicEnableTimer(cfg.delayBlockAfterSwitch * 1000);
         return true;          // → выходим, ничего не трогаем
