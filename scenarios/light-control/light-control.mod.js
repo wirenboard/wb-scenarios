@@ -175,10 +175,10 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   addCustomCellsToVd();
 
   // Предварительно извлекаем имена контролов
-  var lightDevicesControlNames = extractControlNames(cfg.lightDevices);
-  var motionSensorsControlNames = extractControlNames(cfg.motionSensors);
-  var openingSensorsControlNames = extractControlNames(cfg.openingSensors);
-  var lightSwitchesControlNames = extractControlNames(cfg.lightSwitches);
+  var lightDevicesControlNames = extractMqttTopics(cfg.lightDevices);
+  var motionSensorsControlNames = extractMqttTopics(cfg.motionSensors);
+  var openingSensorsControlNames = extractMqttTopics(cfg.openingSensors);
+  var lightSwitchesControlNames = extractMqttTopics(cfg.lightSwitches);
 
   tm.registerSingleEvent(
     lightDevicesControlNames,
@@ -1126,7 +1126,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   }
 
   //Извлечение имен контролов (mqttTopicName) из массива
-  function extractControlNames(devices) {
+  function extractMqttTopics(devices) {
     var result = [];
     for (var i = 0; i < devices.length; i++) {
       result.push(devices[i].mqttTopicName);
