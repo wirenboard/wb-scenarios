@@ -1,17 +1,21 @@
 /**
- * @file Модуль для инициализации алгоритма управления светом в общем
- *     и темной комнатой (darkroom) в частности
+ * @file light-control.mod.js - module for WirenBoard wb-rules v2.28.4
+ * @description Light‑control scenario class (extends ScenarioBase)
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
+var ScenarioBase = require('scenario-base.mod').ScenarioBase;
 var vdHelpers = require('virtual-device-helpers.mod');
 var aTable = require('registry-action-resolvers.mod');
 
 var TopicManager = require('tm-main.mod').TopicManager;
 var eventPlugin = require('tm-event-main.mod').eventPlugin;
 var historyPlugin = require('tm-history-main.mod').historyPlugin;
+var Logger = require('logger.mod').Logger;
+
+var log = new Logger('WBSC‑light');
 
 var tm = new TopicManager();
 tm.installPlugin(historyPlugin);
@@ -27,11 +31,89 @@ var lastActionType = {
   PARTIAL_BY_RULE: 6  // Partially changed by Scenario
 };
 
-var ruleActionInProgress = false;   // сценарий прямо сейчас меняет лампы
-var ruleTargetState      = null;    // true ⇢ должны включиться, false ⇢ выключиться
+function LightControlScenario() { ScenarioBase.call(this); }
+LightControlScenario.prototype = Object.create(ScenarioBase.prototype);
+LightControlScenario.prototype.constructor = LightControlScenario;
 
-// Флаг нужный для того чтобы /lightOn не реагировал при синхронизации и не включал свою логику
-var syncingLightOn = false;   // true ⇒ мы сами синхронизируем индикатор
+LightControlScenario.prototype.generateNames = function (prefix) {
+  var delimeter = '_';
+  var scenarioPrefix = 'wbsc' + delimeter;
+  var rulePrefix = 'wbru' + delimeter;
+  var postfix = delimeter + prefix + delimeter;
+
+  return {
+    vDevice: scenarioPrefix + prefix,
+    ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
+    ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
+    ruleLightOn: rulePrefix + 'lightOn' + postfix,
+    ruleLogicDisabledByWallSwitch:
+      rulePrefix + 'logicDisabledByWallSwitch' + postfix,
+    ruleRemainingTimeToLightOffInSec:
+      rulePrefix + 'remainingTimeToLightOffInSec' + postfix,
+    ruleRemainingTimeToLogicEnableInSec:
+      rulePrefix + 'remainingTimeToLogicEnableInSec' + postfix,
+    ruleMotion: rulePrefix + 'motion' + postfix,
+    ruleOpening: rulePrefix + 'opening' + postfix,
+    ruleSwitches: rulePrefix + 'switches' + postfix,
+  };
+};
+
+LightControlScenario.prototype.validateCfg = function (cfg) {
+  var isAllArrays =
+    Array.isArray(cfg.lightDevices) &&
+    Array.isArray(cfg.motionSensors) &&
+    Array.isArray(cfg.openingSensors) &&
+    Array.isArray(cfg.lightSwitches);
+  if (!isAllArrays) {
+    log.error(
+      'Light-control initialization error: cfg.lightDevices, cfg.motionSensors, cfg.openingSensors, and cfg.lightSwitches must be arrays'
+    );
+    return false;
+  }
+
+  var isAllDelayValid =
+    cfg.delayByMotionSensors > 0 &&
+    cfg.delayByOpeningSensors > 0 &&
+    (cfg.isDelayEnabledAfterSwitch === false ||
+      cfg.delayBlockAfterSwitch > 0);
+  if (!isAllDelayValid) {
+    // prettier-ignore
+    var curDelays =
+      '[' + cfg.delayByMotionSensors + '], ' +
+      '[' + cfg.delayByOpeningSensors + '], ' +
+      '[' + cfg.delayBlockAfterSwitch + ']';
+
+    setTotalError('Invalid delay - must be a positive number ' + curDelays);
+    return false;
+  }
+
+  var isLightDevicesEmpty = cfg.lightDevices.length === 0;
+  if (isLightDevicesEmpty) {
+    setTotalError(
+      'Light-control initialization error: no light devices specified'
+    );
+    return false;
+  }
+
+  // Проверяем что хотябы один тип триггера заполнен
+  var isAllTriggersEmpty =
+    cfg.motionSensors.length === 0 &&
+    cfg.openingSensors.length === 0 &&
+    cfg.lightSwitches.length === 0;
+  if (isAllTriggersEmpty) {
+    setTotalError(
+      'Light-control initialization error: no motion, ' +
+        'opening sensors and wall switches specified'
+    );
+    return false;
+  }
+
+  // @todo: Добавить проверку типов контролов - чтобы не запускать init
+  //        с типом датчика строка где обрабатывается только цифра
+
+  return true;
+};
+
 
 /**
  * Инициализирует виртуальное устройство и определяет правило для управления
@@ -61,89 +143,25 @@ var syncingLightOn = false;   // true ⇒ мы сами синхронизиру
  * @param {Array} cfg.lightSwitches Массив выключателей света
  * @returns {boolean} Результат инициализации (true, если успешно)
  */
-function init(deviceTitle, cfg) {
-  var isMissingIdPrefix = typeof cfg.idPrefix === 'undefined';
-  if (isMissingIdPrefix === true) {
-    log.error('Error: cfg.idPrefix is undefined, but must be string');
-    return false;
-  }
 
-  var isAllArrays =
-    Array.isArray(cfg.lightDevices) &&
-    Array.isArray(cfg.motionSensors) &&
-    Array.isArray(cfg.openingSensors) &&
-    Array.isArray(cfg.lightSwitches);
-  if (!isAllArrays) {
-    log.error(
-      'Light-control initialization error: cfg.lightDevices, cfg.motionSensors, cfg.openingSensors, and cfg.lightSwitches must be arrays'
-    );
-    return false;
-  }
+LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
-  var genNames = generateNames(cfg.idPrefix);
+  // = = = = = = Init local context = = = = = =
+  var self = this;
+  var addRule = this.addRule.bind(this);
+  var setTotalError = this.setTotalError.bind(this);
 
-  log.debug(
-    'Try create virtual device with name: "{}" and id "{}"',
-    deviceTitle,
-    genNames.vDevice
-  );
-  var vdObj = getDevice(genNames.vDevice);
-  if (typeof vdObj !== 'undefined') {
-    log.error('Device with ID "' + genNames.vDevice + '" already exists.');
-    return false;
-  }
+  var ruleActionInProgress = false;  // сценарий прямо сейчас меняет лампы
+  var ruleTargetState = null;   // true ⇢ должны включиться, false ⇢ выключиться
 
-  var vDevObj = defineVirtualDevice(genNames.vDevice, {
-    title: deviceTitle,
-    cells: buildVirtualDeviceCells(),
-  });
-  if (!vDevObj) {
-    log.error('Error: Virtual device "' + deviceTitle + '" not created');
-    return false;
-  }
-  log.debug('Virtual device "' + deviceTitle + '" created successfully');
+  // Флаг нужный для того чтобы /lightOn не реагировал при синхронизации и не включал свою логику
+  var syncingLightOn = false;  // true ⇒ мы сами синхронизируем индикатор
 
-  var isAllDelayValid =
-    cfg.delayByMotionSensors > 0 &&
-    cfg.delayByOpeningSensors > 0 &&
-    (cfg.isDelayEnabledAfterSwitch === false ||
-      cfg.delayBlockAfterSwitch > 0);
-  if (!isAllDelayValid) {
-    // prettier-ignore
-    var curDelays =
-      '[' + cfg.delayByMotionSensors + '], ' +
-      '[' + cfg.delayByOpeningSensors + '], ' +
-      '[' + cfg.delayBlockAfterSwitch + ']';
+  var lightOffTimerId = null;
+  var logicEnableTimerId = null;
 
-    setError('Invalid delay - must be a positive number ' + curDelays);
-    return false;
-  }
+  // = = = = = = Init logic = = = = = = 
 
-  var isLightDevicesEmpty = cfg.lightDevices.length === 0;
-  if (isLightDevicesEmpty) {
-    setError(
-      'Light-control initialization error: no light devices specified'
-    );
-    return false;
-  }
-
-  // Проверяем что хотябы один тип триггера заполнен
-  var isAllTriggersEmpty =
-    cfg.motionSensors.length === 0 &&
-    cfg.openingSensors.length === 0 &&
-    cfg.lightSwitches.length === 0;
-  if (isAllTriggersEmpty) {
-    setError(
-      'Light-control initialization error: no motion, ' +
-        'opening sensors and wall switches specified'
-    );
-    return false;
-  }
-
-  // @todo: Добавить проверку типов контролов - чтобы не запускать init
-  //        с типом датчика строка где обрабатывается только цифра
-
-  log.debug('All checks pass successfuly!');
   if (cfg.isDebugEnabled === true) {
     // Нужна задержка чтобы успели создаться все используемые нами девайсы
     // ДО того как мы будем создавать связь на них
@@ -154,8 +172,7 @@ function init(deviceTitle, cfg) {
   }
 
   log.debug('Start rules creation');
-  var lightOffTimerId = null;
-  var logicEnableTimerId = null;
+  addCustomCellsToVd();
 
   // Предварительно извлекаем имена контролов
   var lightDevicesControlNames = extractControlNames(cfg.lightDevices);
@@ -169,32 +186,32 @@ function init(deviceTitle, cfg) {
     lightDevicesCb
   );
   tm.registerSingleEvent(
-    genNames.vDevice + '/lastSwitchAction',
+    self.genNames.vDevice + '/lastSwitchAction',
     'whenChange',
     lastSwitchActionCb
   );
   tm.registerSingleEvent(
-    genNames.vDevice + '/logicDisabledByWallSwitch',
+    self.genNames.vDevice + '/logicDisabledByWallSwitch',
     'whenChange',
     logicDisabledCb
   );
   tm.registerSingleEvent(
-    genNames.vDevice + '/doorOpen',
+    self.genNames.vDevice + '/doorOpen',
     'whenChange',
     doorOpenCb
   );
   tm.registerSingleEvent(
-    genNames.vDevice + '/remainingTimeToLightOffInSec',
+    self.genNames.vDevice + '/remainingTimeToLightOffInSec',
     'whenChange',
     remainingTimeToLightOffCb
   );
   tm.registerSingleEvent(
-    genNames.vDevice + '/remainingTimeToLogicEnableInSec',
+    self.genNames.vDevice + '/remainingTimeToLogicEnableInSec',
     'whenChange',
     remainingTimeToLogicEnableCb
   );
   tm.registerSingleEvent(
-    genNames.vDevice + '/lightOn',
+    self.genNames.vDevice + '/lightOn',
     'whenChange',
     lightOnCb
   );
@@ -218,78 +235,82 @@ function init(deviceTitle, cfg) {
   tm.initRulesForAllTopics('light_control_rule_' + cfg.idPrefix);
 
   // Создаем правило для датчиков движения
-  var ruleIdMotion = defineRule(genNames.ruleMotion, {
+  var ruleIdMotion = defineRule(self.genNames.ruleMotion, {
     whenChanged: motionSensorsControlNames,
     then: function (newValue, devName, cellName) {
       sensorTriggeredHandler(newValue, devName, cellName, 'motion');
     },
   });
   if (!ruleIdMotion) {
-    setError('WB-rule "' + genNames.ruleMotion + '" not created');
+    setTotalError('WB-rule "' + self.genNames.ruleMotion + '" not created');
     return false;
   }
   log.debug(
     'WB-rule with IdNum "' + ruleIdMotion + '" was successfully created'
   );
+  addRule(ruleIdMotion);
 
   // Создаем правило для датчиков открытия
-  var ruleIdOpening = defineRule(genNames.ruleOpening, {
+  var ruleIdOpening = defineRule(self.genNames.ruleOpening, {
     whenChanged: openingSensorsControlNames,
     then: function (newValue, devName, cellName) {
       sensorTriggeredHandler(newValue, devName, cellName, 'opening');
     },
   });
   if (!ruleIdOpening) {
-    setError('WB-rule "' + genNames.ruleOpening + '" not created');
+    setTotalError('WB-rule "' + self.genNames.ruleOpening + '" not created');
     return false;
   }
   log.debug(
     'WB-rule with IdNum "' + ruleIdOpening + '" was successfully created'
   );
+  addRule(ruleIdOpening);
 
   // Создаем правило следящее за движением
   // Оно нужно для приведения всех датчиков движения к одному типу switch
   //   - Тип датчиков value приведется к типу switch
   //   - Тип датчиков switch не изменится
-  var ruleIdMotionInProgress = defineRule(genNames.ruleMotionInProgress, {
-    whenChanged: [genNames.vDevice + '/motionInProgress'],
+  var ruleIdMotionInProgress = defineRule(self.genNames.ruleMotionInProgress, {
+    whenChanged: [self.genNames.vDevice + '/motionInProgress'],
     then: function (newValue, devName, cellName) {
       motionInProgressHandler(newValue, devName, cellName);
     },
   });
   if (!ruleIdMotionInProgress) {
-    setError('WB-rule "' + genNames.ruleMotionInProgress + '" not created');
+    setTotalError('WB-rule "' + self.genNames.ruleMotionInProgress + '" not created');
     return false;
   }
   log.debug(
     'WB-rule with IdNum "' +
-      genNames.ruleMotionInProgress +
+      self.genNames.ruleMotionInProgress +
       '" was successfully created'
   );
+  addRule(ruleIdMotionInProgress);
 
   // Правило следящее за изменением значения задержки до включения логики сценария
   var ruleIdRemainingTimeToLogicEnableInSec = defineRule(
-    genNames.ruleRemainingTimeToLogicEnableInSec,
+    self.genNames.ruleRemainingTimeToLogicEnableInSec,
     {
-      whenChanged: [genNames.vDevice + '/remainingTimeToLogicEnableInSec'],
+      whenChanged: [self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'],
       then: function (newValue, devName, cellName) {
         tm.processEvent(devName + '/' + cellName, newValue);
       },
     }
   );
   if (!ruleIdRemainingTimeToLogicEnableInSec) {
-    setError(
+    setTotalError(
       'WB-rule "' +
-        genNames.ruleRemainingTimeToLogicEnableInSec +
+        self.genNames.ruleRemainingTimeToLogicEnableInSec +
         '" not created'
     );
     return false;
   }
   log.debug(
     'WB-rule with IdNum "' +
-      genNames.ruleRemainingTimeToLogicEnableInSec +
+      self.genNames.ruleRemainingTimeToLogicEnableInSec +
       '" was successfully created'
   );
+  addRule(ruleIdRemainingTimeToLogicEnableInSec);
 
   log.debug('Light-control initialization completed successfully');
   return true;
@@ -298,38 +319,8 @@ function init(deviceTitle, cfg) {
   //                  Определения функций
   // ======================================================
 
-  function generateNames(prefix) {
-    var delimeter = '_';
-    var scenarioPrefix = 'wbsc' + delimeter;
-    var rulePrefix = 'wbru' + delimeter;
-    var postfix = delimeter + prefix + delimeter;
-
-    return {
-      vDevice: scenarioPrefix + prefix,
-      ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
-      ruleDoorOpen: rulePrefix + 'doorOpen' + postfix,
-      ruleLightOn: rulePrefix + 'lightOn' + postfix,
-      ruleLogicDisabledByWallSwitch:
-        rulePrefix + 'logicDisabledByWallSwitch' + postfix,
-      ruleRemainingTimeToLightOffInSec:
-        rulePrefix + 'remainingTimeToLightOffInSec' + postfix,
-      ruleRemainingTimeToLogicEnableInSec:
-        rulePrefix + 'remainingTimeToLogicEnableInSec' + postfix,
-      ruleMotion: rulePrefix + 'motion' + postfix,
-      ruleOpening: rulePrefix + 'opening' + postfix,
-      ruleSwitches: rulePrefix + 'switches' + postfix,
-    };
-  }
-
-  function buildVirtualDeviceCells() {
-    var cells = {
-      ruleEnabled: {
-        title: { en: 'Enable rule', ru: 'Включить правило' },
-        type: 'switch',
-        value: true,
-        order: 1,
-      },
-      remainingTimeToLightOffInSec: {
+  function addCustomCellsToVd() {
+      var controlCfg = {
         title: {
           en: 'Light off in',
           ru: 'Отключение света через',
@@ -340,15 +331,19 @@ function init(deviceTitle, cfg) {
         forceDefault: true, // Always must start from 0
         readonly: true,
         order: 2,
-      },
-      lightOn: {
+      };
+      self.vd.addControl('remainingTimeToLightOffInSec', controlCfg);
+
+      controlCfg = {
         title: { en: 'Light on', ru: 'Освещение включено' },
         type: 'switch',
         value: false,
         readonly: true,
         order: 6,
-      },
-      lastSwitchAction: {
+      };
+      self.vd.addControl('lightOn', controlCfg);
+
+      controlCfg = {
         title: { en: 'Last switch action', ru: 'Тип последнего переключения' },
         type: 'value',
         readonly: true,
@@ -368,12 +363,12 @@ function init(deviceTitle, cfg) {
           6: { en: 'Partial by rule',     ru: 'Частично сценарий'},
         },
         order: 8,
-      },  
-    };
+      };
+      self.vd.addControl('lastSwitchAction', controlCfg);
 
     // Условное добавление полей в зависимости от конфигурации
     if (cfg.motionSensors.length > 0) {
-      cells.motionInProgress = {
+      controlCfg = {
         title: {
           en: 'Motion in progress',
           ru: 'Есть движение',
@@ -383,10 +378,11 @@ function init(deviceTitle, cfg) {
         readonly: true,
         order: 4,
       };
+      self.vd.addControl('motionInProgress', controlCfg);
     }
 
     if (cfg.openingSensors.length > 0) {
-      cells.doorOpen = {
+      controlCfg = {
         title: {
           en: 'Door open',
           ru: 'Дверь открыта',
@@ -396,10 +392,11 @@ function init(deviceTitle, cfg) {
         readonly: true,
         order: 5,
       };
+      self.vd.addControl('doorOpen', controlCfg);
     }
 
     if (cfg.lightSwitches.length > 0) {
-      cells.remainingTimeToLogicEnableInSec = {
+      controlCfg = {
         title: {
           en: 'Automation activation in',
           ru: 'Активация автоматики через',
@@ -411,8 +408,9 @@ function init(deviceTitle, cfg) {
         readonly: true,
         order: 3,
       };
+      self.vd.addControl('remainingTimeToLogicEnableInSec', controlCfg);
 
-      cells.logicDisabledByWallSwitch = {
+      controlCfg = {
         title: {
           en: 'Disabled manually by switch',
           ru: 'Отключено ручным выключателем',
@@ -423,9 +421,8 @@ function init(deviceTitle, cfg) {
         readonly: true,
         order: 7,
       };
+      self.vd.addControl('logicDisabledByWallSwitch', controlCfg);
     }
-
-    return cells;
   }
 
   /**
@@ -439,13 +436,13 @@ function init(deviceTitle, cfg) {
       var cellName = cellPrefix + '_' + i;
       var vdControlCreated = vdHelpers.addLinkedControlRO(
         curMqttControl,
-        vDevObj,
-        genNames.vDevice,
+        self.vd,
+        self.genNames.vDevice,
         cellName,
         ''
       );
       if (!vdControlCreated) {
-        setError(
+        setTotalError(
           'Failed to add ' + cellPrefix + ' ctrl for ' + curMqttControl
         );
       }
@@ -467,7 +464,7 @@ function init(deviceTitle, cfg) {
   function addAllLinkedDevicesToVd() {
     // Текущая задержка, меняется в зависимости от последнего
     // сработавшего типа датчика
-    vDevObj.addControl('curValDisableLightTimerInSec', {
+    self.vd.addControl('curValDisableLightTimerInSec', {
       title: {
         en: 'Dbg: Disable timer',
         ru: 'Dbg: Таймер отключения',
@@ -480,7 +477,7 @@ function init(deviceTitle, cfg) {
     });
 
     // Текущая задержка отключенной логики
-    vDevObj.addControl('curValDisabledLogicTimerInSec', {
+    self.vd.addControl('curValDisabledLogicTimerInSec', {
       title: {
         en: 'Dbg: Disabled logic timer',
         ru: 'Dbg: Таймер отключенной логики',
@@ -510,28 +507,14 @@ function init(deviceTitle, cfg) {
   }
 
   /**
-   * Установка ошибки
-   *
-   * @note Данный метод можно использовать только после инициализации
-   *     минимального виртуального устройства
-   */
-  function setError(errorString) {
-    log.error('ERROR Init: ' + errorString);
-
-    vDevObj.controlsList().forEach(function (ctrl) {
-      ctrl.setError('Error-see log');
-    });
-  }
-
-  /**
    * Обновление содержашейся в контроле цифры оставшегося времени
    * до отключения света каждую секунду
    */
   function updateRemainingLightOffTime() {
     var remainingTime =
-      dev[genNames.vDevice + '/remainingTimeToLightOffInSec'];
+      dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'];
     if (remainingTime >= 1) {
-      dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] =
+      dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] =
         remainingTime - 1;
     }
   }
@@ -542,9 +525,9 @@ function init(deviceTitle, cfg) {
    */
   function updateRemainingLogicEnableTime() {
     var remainingTime =
-      dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'];
+      dev[self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'];
     if (remainingTime >= 1) {
-      dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] =
+      dev[self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'] =
         remainingTime - 1;
     }
   }
@@ -555,10 +538,10 @@ function init(deviceTitle, cfg) {
    */
   function startLightOffTimer(newDelayMs) {
     var newDelaySec = newDelayMs / 1000;
-    dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
+    dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
 
     if (cfg.isDebugEnabled === true) {
-      dev[genNames.vDevice + '/curValDisableLightTimerInSec'] = newDelaySec;
+      dev[self.genNames.vDevice + '/curValDisableLightTimerInSec'] = newDelaySec;
     }
     // @note: Таймер автоматически запускает обратный отсчет при установке
     //        нового значения в контрол таймера.
@@ -570,10 +553,10 @@ function init(deviceTitle, cfg) {
    */
   function startLogicEnableTimer(newDelayMs) {
     var newDelaySec = newDelayMs / 1000;
-    dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = newDelaySec;
+    dev[self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = newDelaySec;
 
     if (cfg.isDebugEnabled === true) {
-      dev[genNames.vDevice + '/curValDisabledLogicTimerInSec'] = newDelaySec;
+      dev[self.genNames.vDevice + '/curValDisabledLogicTimerInSec'] = newDelaySec;
     }
     // @note: Таймер автоматически запускает обратный отсчет при установке
     //        нового значения в контрол таймера
@@ -583,7 +566,7 @@ function init(deviceTitle, cfg) {
    * Выключение освещения
    */
   function turnOffLightsByTimeout() {
-    dev[genNames.vDevice + '/lightOn'] = false;
+    dev[self.genNames.vDevice + '/lightOn'] = false;
     resetLightOffTimer();
   }
 
@@ -591,7 +574,7 @@ function init(deviceTitle, cfg) {
    * Активация логики сценария
    */
   function enableLogicByTimeout() {
-    dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
+    dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
     resetLogicEnableTimer();
   }
 
@@ -631,19 +614,19 @@ function init(deviceTitle, cfg) {
 
   function resetLightOffTimer() {
     lightOffTimerId = null;
-    dev[genNames.vDevice + '/remainingTimeToLightOffInSec'] = 0;
+    dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] = 0;
 
     if (cfg.isDebugEnabled === true) {
-      dev[genNames.vDevice + '/curValDisableLightTimerInSec'] = 0;
+      dev[self.genNames.vDevice + '/curValDisableLightTimerInSec'] = 0;
     }
   }
 
   function resetLogicEnableTimer() {
     logicEnableTimerId = null;
-    dev[genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = 0;
+    dev[self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = 0;
 
     if (cfg.isDebugEnabled === true) {
-      dev[genNames.vDevice + '/curValDisabledLogicTimerInSec'] = 0;
+      dev[self.genNames.vDevice + '/curValDisabledLogicTimerInSec'] = 0;
     }
   }
 
@@ -679,7 +662,7 @@ function init(deviceTitle, cfg) {
       } else if (newValue === false || newValue === 'false') {
         sensorTriggered = false;
       } else {
-        setError('Motion sensor have not correct value: "' + newValue + '"');
+        setTotalError('Motion sensor have not correct value: "' + newValue + '"');
         sensorTriggered = false;
       }
     } else {
@@ -776,7 +759,7 @@ function init(deviceTitle, cfg) {
    * @returns {boolean} Always `true` (required by TM API)
    */
   function lightDevicesCb(topicObj, eventObj) {
-    var internalLightStatus = dev[genNames.vDevice + '/lightOn'];
+    var internalLightStatus = dev[self.genNames.vDevice + '/lightOn'];
     // TODO:(vg) Дописать этот метод так чтобы он различал что изменение топика сделал не наш код сценария а кто то извне
     /* -------- 1. Считаем фактическое состояние всей группы -------- */
     var onCnt = 0;
@@ -799,23 +782,23 @@ function init(deviceTitle, cfg) {
 
       /* 2.1. Пока не достигнут итоговый результат → PARTIAL_BY_RULE */
       if (mixedState) {
-        dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.PARTIAL_BY_RULE;
+        dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.PARTIAL_BY_RULE;
         return true;                       // ждём следующих изменений для завершения
       }
   
       /* 2.2. Итоговое состояние достигнуто */
       if (allLightOn  && ruleTargetState === true) {
-        dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.RULE_ON;
+        dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.RULE_ON;
       } else if (allLightOff && ruleTargetState === false) {
-        dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.RULE_OFF;
+        dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.RULE_OFF;
       }
   
 
       /* 2.3. НЕ синхронизируем индикатор lightOn (он должен быть уже верен) */
-      if (dev[genNames.vDevice + '/lightOn'] !== ruleTargetState) {
+      if (dev[self.genNames.vDevice + '/lightOn'] !== ruleTargetState) {
         log.error('Not correct logic!');
         syncingLightOn = true;
-        dev[genNames.vDevice + '/lightOn'] = ruleTargetState;
+        dev[self.genNames.vDevice + '/lightOn'] = ruleTargetState;
         syncingLightOn = false;
       }
 
@@ -841,24 +824,24 @@ function init(deviceTitle, cfg) {
 
     /* 3.1. Определяем тип действия */
     if (mixedState) {
-      dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.PARTIAL_EXT;
+      dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.PARTIAL_EXT;
       // В «частичном» варианте lightOn НЕ меняем
     } else if (allLightOn) {
-      dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_ON;
+      dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_ON;
 
       /* --- синхронизируем lightOn (всё включили) --- */
-      if (dev[genNames.vDevice + '/lightOn'] !== true) {
+      if (dev[self.genNames.vDevice + '/lightOn'] !== true) {
         syncingLightOn = true;
-        dev[genNames.vDevice + '/lightOn'] = true;
+        dev[self.genNames.vDevice + '/lightOn'] = true;
         syncingLightOn = false;
       }
     } else if (allLightOff) {
-      dev[genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_OFF;
+      dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_OFF;
 
       /* --- синхронизируем lightOn (всё выключили) --- */
-      if (dev[genNames.vDevice + '/lightOn'] !== false) {
+      if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
         syncingLightOn = true;
-        dev[genNames.vDevice + '/lightOn'] = false;
+        dev[self.genNames.vDevice + '/lightOn'] = false;
         syncingLightOn = false;
       }
     }
@@ -870,13 +853,13 @@ function init(deviceTitle, cfg) {
     // if (!internalLightStatus && allLightOn) newLastActionType = lastActionType.EXT_ON;   // ВСЕ включили внешне
     // if ( internalLightStatus && allLightOff) newLastActionType = lastActionType.EXT_OFF; // ВСЕ выключили внешне
     // log.debug('newLastActionType: ' + newLastActionType);
-    // dev[genNames.vDevice + '/lastSwitchAction'] = newLastActionType;
+    // dev[self.genNames.vDevice + '/lastSwitchAction'] = newLastActionType;
    
   
   
 
     // if (topicObj.val.new === false) {
-    //   dev[genNames.vDevice + '/lightOn'] = false;
+    //   dev[self.genNames.vDevice + '/lightOn'] = false;
     //   return true;
     // }
 
@@ -904,34 +887,34 @@ function init(deviceTitle, cfg) {
       }
 
       /* 1.3. Снимаем блокировку автоматизации */
-      var logicBlocked = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
+      var logicBlocked = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
       if (logicBlocked === true) {
-        dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
+        dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
       }
 
       /* 1.2. Сброс таймера блокировки логики —
              ТОЛЬКО если логика НЕ отключена настенным выключателем */
-      // var logicBlocked = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
+      // var logicBlocked = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
       // if (!logicBlocked && logicEnableTimerId) {
       //   clearTimeout(logicEnableTimerId);
       //   resetLogicEnableTimer();
       // }
   
       /* 1.4. Обнуляем флаг движения, чтобы новое движение снова включило свет */
-      if (dev[genNames.vDevice + '/motionInProgress'] === true) {
-        dev[genNames.vDevice + '/motionInProgress'] = false;
+      if (dev[self.genNames.vDevice + '/motionInProgress'] === true) {
+        dev[self.genNames.vDevice + '/motionInProgress'] = false;
       }
 
       /* 1.5. Синхронизуем индикатор lightOn, если нужно */
-      if (dev[genNames.vDevice + '/lightOn'] !== false) {
+      if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
         syncingLightOn = true;
-        dev[genNames.vDevice + '/lightOn'] = false;
+        dev[self.genNames.vDevice + '/lightOn'] = false;
         syncingLightOn = false;
       }
 
     //   /* ==== НОВЫЙ БЛОК: движение есть, свет погасили ==== */
-    //   if (dev[genNames.vDevice + '/motionInProgress'] === true &&
-    //     dev[genNames.vDevice + '/lightOn']            === false) {
+    //   if (dev[self.genNames.vDevice + '/motionInProgress'] === true &&
+    //     dev[self.genNames.vDevice + '/lightOn']            === false) {
 
     //   log.debug('EXT_OFF during motion → restart automation');
 
@@ -956,9 +939,9 @@ function init(deviceTitle, cfg) {
   
       /* 2.1. Если правило активно и автоматика разрешена — запускаем таймер
          такой же, как при срабатывании датчика движения              */
-      var isRuleEnabled = dev[genNames.vDevice + '/ruleEnabled'];
-      var isLogicBlocked = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
-      var motionNow = dev[genNames.vDevice + '/motionInProgress'];
+      var isRuleEnabled = dev[self.genNames.vDevice + '/rule_enabled'];
+      var isLogicBlocked = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
+      var motionNow = dev[self.genNames.vDevice + '/motionInProgress'];
       /* --- 0. Если это настенный выключатель (logicBlocked=true) ---
              оставляем ТАЙМЕРЫ, расставленные logicDisabledCb, нетронутыми */
       if (isLogicBlocked) {
@@ -1015,12 +998,12 @@ function init(deviceTitle, cfg) {
     }
 
     if (topicObj.val.new === false) {
-      dev[genNames.vDevice + '/lightOn'] = false;
+      dev[self.genNames.vDevice + '/lightOn'] = false;
       return true;
     }
 
     // Если значение true, включаем свет
-    dev[genNames.vDevice + '/lightOn'] = true;
+    dev[self.genNames.vDevice + '/lightOn'] = true;
     if (cfg.isDelayEnabledAfterSwitch === true) {
       startLightOffTimer(cfg.delayBlockAfterSwitch * 1000);
       startLogicEnableTimer(cfg.delayBlockAfterSwitch * 1000);
@@ -1033,7 +1016,7 @@ function init(deviceTitle, cfg) {
     var isDoorClosed = topicObj.val.new === false;
 
     if (isDoorOpened) {
-      dev[genNames.vDevice + '/lightOn'] = true;
+      dev[self.genNames.vDevice + '/lightOn'] = true;
       startLightOffTimer(cfg.delayByOpeningSensors * 1000);
     } else if (isDoorClosed) {
       // Do nothing
@@ -1072,7 +1055,7 @@ function init(deviceTitle, cfg) {
      * 1 - Таймер дошел до конца без новых внешних воздействи
      * 2 - Таймер был обнулен так как движение снова появилось
      */
-    var curMotionStatus = dev[genNames.vDevice + '/motionInProgress'];
+    var curMotionStatus = dev[self.genNames.vDevice + '/motionInProgress'];
     if (topicObj.val.new === 0 && curMotionStatus === true) {
       /* Ничего не делаем если при движении обнулился таймер */
       return true;
@@ -1118,15 +1101,15 @@ function init(deviceTitle, cfg) {
   function lightSwitchUsedCb(topicObj, eventObj) {
     // Для выключателей считаем, что любое изменение (не важно какое)
     // - Меняет состояние переключателя отключения логики сценария
-    var curValue = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
-    dev[genNames.vDevice + '/logicDisabledByWallSwitch'] = !curValue;
+    var curValue = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
+    dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = !curValue;
 
     return true;
   }
 
   function openingSensorTriggeredLaunchCb(topicObj, eventObj) {
     // Тригерит только изменение выбранное пользователем
-    dev[genNames.vDevice + '/doorOpen'] = true;
+    dev[self.genNames.vDevice + '/doorOpen'] = true;
 
     return true;
   }
@@ -1134,7 +1117,7 @@ function init(deviceTitle, cfg) {
   function openingSensorTriggeredResetCb(topicObj, eventObj) {
     // Тригерит только противоположное действие
     if (checkAllOpeningSensorsClose()) {
-      dev[genNames.vDevice + '/doorOpen'] = false;
+      dev[self.genNames.vDevice + '/doorOpen'] = false;
     } else {
       // Если некоторые двери еще открыты - то ничего не делаем
     }
@@ -1164,7 +1147,7 @@ function init(deviceTitle, cfg) {
         clearTimeout(lightOffTimerId);
       }
       resetLightOffTimer();
-      dev[genNames.vDevice + '/lightOn'] = true;
+      dev[self.genNames.vDevice + '/lightOn'] = true;
     } else {
       // Detected motion end
       startLightOffTimer(cfg.delayByMotionSensors * 1000);
@@ -1173,14 +1156,14 @@ function init(deviceTitle, cfg) {
 
   // Обработчик, вызываемый при срабатывании датчиков движения и открытия
   function sensorTriggeredHandler(newValue, devName, cellName, sensorType) {
-    var isRuleActive = dev[genNames.vDevice + '/ruleEnabled'];
+    var isRuleActive = dev[self.genNames.vDevice + '/rule_enabled'];
 
     if (isRuleActive === false) {
       // log.debug('Light-control is disabled in virtual device - doing nothing');
       return true;
     }
 
-    var isSwitchUsed = dev[genNames.vDevice + '/logicDisabledByWallSwitch'];
+    var isSwitchUsed = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
     if (isSwitchUsed === true) {
       // log.debug('Light-control is disabled after used wall switch - doing nothing');
       return true;
@@ -1208,11 +1191,11 @@ function init(deviceTitle, cfg) {
       // log.debug('sensorTriggered = ' + sensorTriggered);
       if (sensorTriggered === true) {
         // log.debug('Motion detected on sensor ' + matchedSensor.mqttTopicName);
-        dev[genNames.vDevice + '/motionInProgress'] = true;
+        dev[self.genNames.vDevice + '/motionInProgress'] = true;
       } else if (sensorTriggered === false) {
         if (checkAllMotionSensorsInactive()) {
           // log.debug('~ All motion sensors inactive');
-          dev[genNames.vDevice + '/motionInProgress'] = false;
+          dev[self.genNames.vDevice + '/motionInProgress'] = false;
         } else {
           // log.debug('~ Some motion sensors are still active - keeping lights on');
         }
@@ -1228,7 +1211,4 @@ function init(deviceTitle, cfg) {
   }
 }
 
-exports.init = function (deviceTitle, cfg) {
-  var res = init(deviceTitle, cfg);
-  return res;
-};
+exports.LightControlScenario = LightControlScenario;
