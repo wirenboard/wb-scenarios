@@ -1,14 +1,20 @@
 /**
- * @file Скрипт для инициализации сценариев с типом SCENARIO_TYPE
- * @overview Этот скрипт:
- *             - Загружает все конфигурации сценарииев с типом
- *               SCENARIO_TYPE из файла
- *             - Находит все активные сценарии данного типа
- *             - Инициализирует их согласно настройкам, указанным
- *               в каждом сценарии
+ * @file init-light-control.js - script for WirenBoard wb-rules v2.28.4
+ * @description Script for init scenarios of the SCENARIO_TYPE type
+ *     This script:
+ *     - Loads all scenario configurations of the specific type from a file
+ *     - Finds all active scenarios of this type
+ *     - Initializes them according to the settings specified in each scenario
+ *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
+ * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
+
+var scGenHelpers = require('scenarios-general-helpers.mod');
+var LightControlSc  = require('light-control.mod').LightControlScenario;
+var Logger = require('logger.mod').Logger;
+
+var log = new Logger('WBSC-light-init');
 
 /**
  * Требуемая версия общей структуры файла конфигурации сценариев
@@ -38,40 +44,34 @@ var CONFIG_PATH = '/etc/wb-scenarios.conf';
  */
 var SCENARIO_TYPE = 'lightControl';
 
-var scGenHelpers = require('scenarios-general-helpers.mod');
-var lightControl = require('light-control.mod');
-
 /**
  * Инициализирует сценарий с использованием указанных настроек
- * @param {object} scenario - Объект сценария, содержащий настройки
+ * @param {object} scenarioCfg - Объект сценария, содержащий настройки
  * @returns {void}
  */
-function initializeScenario(scenario) {
-  log.debug('Processing scenario: ' + JSON.stringify(scenario));
+function initializeScenario(scenarioCfg) {
+  log.debug('Processing scenario: ' + JSON.stringify(scenarioCfg));
 
   var cfg = {
-    idPrefix: scenario.id_prefix,
-    isDebugEnabled: scenario.isDebugEnabled,
-    delayByMotionSensors: scenario.motionSensors.delayToLightOff,
-    delayByOpeningSensors: scenario.openingSensors.delayToLightOff,
-    isDelayEnabledAfterSwitch: scenario.lightSwitches.isDelayEnabled,
-    delayBlockAfterSwitch: scenario.lightSwitches.delayToLightOffAndEnable,
-    lightDevices: scenario.lightDevices.sensorObjects,
-    motionSensors: scenario.motionSensors.sensorObjects,
-    openingSensors: scenario.openingSensors.sensorObjects,
-    lightSwitches: scenario.lightSwitches.sensorObjects,
+    idPrefix: scenarioCfg.id_prefix,
+    isDebugEnabled: scenarioCfg.isDebugEnabled,
+    delayByMotionSensors: scenarioCfg.motionSensors.delayToLightOff,
+    delayByOpeningSensors: scenarioCfg.openingSensors.delayToLightOff,
+    isDelayEnabledAfterSwitch: scenarioCfg.lightSwitches.isDelayEnabled,
+    delayBlockAfterSwitch: scenarioCfg.lightSwitches.delayToLightOffAndEnable,
+    lightDevices: scenarioCfg.lightDevices.sensorObjects,
+    motionSensors: scenarioCfg.motionSensors.sensorObjects,
+    openingSensors: scenarioCfg.openingSensors.sensorObjects,
+    lightSwitches: scenarioCfg.lightSwitches.sensorObjects,
   };
-  var isInitSucess = lightControl.init(scenario.name, cfg);
-
+  var scenario = new LightControlSc();
+  var isInitSucess = scenario.init(scenarioCfg.name, cfg);
   if (!isInitSucess) {
-    log.error(
-      'Error: Init operation aborted for scenario with "idPrefix": ' +
-        scenario.id_prefix
-    );
+    log.error('Init aborted for idPrefix=' + scenarioCfg.id_prefix);
     return;
   }
 
-  log.debug('Initialization successful for: ' + scenario.name);
+  log.debug('Initialization successful for: ' + scenarioCfg.name);
 }
 
 function main() {

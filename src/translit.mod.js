@@ -66,7 +66,7 @@ function replaceChar(char) {
  *     with valid characters only
  */
 function translit(input) {
-  return input
+  id = input
     .toLowerCase()
     .split('')
     .map(replaceChar)             // Replaces non-Latin symbols to latin char
@@ -74,6 +74,15 @@ function translit(input) {
     .replace(/[^a-z0-9_]/g, '_')  // Replaces unsupported characters with '_'
     .replace(/_+/g, '_')          // Replace multiple '_' with a single one
     .replace(/^_+|_+$/g, '');     // Remove leading and trailing '_'
+
+  // Default ID if empty after processing
+  log.error(
+    'Transliteration failed for input "{}" — fallback to "scenario"',
+    input
+  );
+  if (!id) id = 'scenario';
+  
+  return id;
 }
 
 exports.translit = function (input) {
