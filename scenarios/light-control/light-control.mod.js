@@ -258,6 +258,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdRemainingTimeToLightOff);
 
+  // Правило следящее за изменением значения 'задержка до включения логики сценария'
   ruleName = self.genNames.ruleRemainingTimeToLogicEnableChange;
   var ruleIdRemainingTimeToLogicEnableChange = defineRule(ruleName, {
     whenChanged: self.genNames.vDevice + '/remainingTimeToLogicEnableInSec',
@@ -326,7 +327,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var ruleIdMotion = defineRule(self.genNames.ruleMotion, {
     whenChanged: motionTopics,
     then: function (newValue, devName, cellName) {
-      sensorTriggeredHandler(newValue, devName, cellName, 'motion');
+      allSensorsTriggeredHandler(newValue, devName, cellName, 'motion');
     },
   });
   if (!ruleIdMotion) {
@@ -342,7 +343,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var ruleIdOpening = defineRule(self.genNames.ruleOpening, {
     whenChanged: openingTopics,
     then: function (newValue, devName, cellName) {
-      sensorTriggeredHandler(newValue, devName, cellName, 'opening');
+      allSensorsTriggeredHandler(newValue, devName, cellName, 'opening');
     },
   });
   if (!ruleIdOpening) {
@@ -374,31 +375,6 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       '" was successfully created'
   );
   addRule(ruleIdMotionInProgress);
-
-  // Правило следящее за изменением значения задержки до включения логики сценария
-  var ruleIdRemainingTimeToLogicEnableInSec = defineRule(
-    self.genNames.ruleRemainingTimeToLogicEnableInSec,
-    {
-      whenChanged: [self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'],
-      then: function (newValue, devName, cellName) {
-        tm.processEvent(devName + '/' + cellName, newValue);
-      },
-    }
-  );
-  if (!ruleIdRemainingTimeToLogicEnableInSec) {
-    setTotalError(
-      'WB-rule "' +
-        self.genNames.ruleRemainingTimeToLogicEnableInSec +
-        '" not created'
-    );
-    return false;
-  }
-  log.debug(
-    'WB-rule with IdNum "' +
-      self.genNames.ruleRemainingTimeToLogicEnableInSec +
-      '" was successfully created'
-  );
-  addRule(ruleIdRemainingTimeToLogicEnableInSec);
 
   log.debug('Light-control initialization completed successfully');
   return true;
@@ -932,7 +908,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     /* === 3. ВНЕШНЕЕ изменение === */
 
     isExternalChange = true;
-    topicName = devName + '/' + cellName;
+    var topicName = devName + '/' + cellName;
     log.debug('External change detected for device: "{}"' + topicName);
     log.debug('newValue: ' + newValue);
 
@@ -1215,12 +1191,12 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    */
   function openingSensorHandler(newValue, devName, cellName) {
     var topicName = devName + '/' + cellName;
-    var sensorConfig = findTopicConfig(topicName, cfg.openingSensors);  
-    if (!sensorConfig) {
+    var matchedConfig = findTopicConfig(topicName, cfg.openingSensors);  
+    if (!matchedConfig) {
       return;
     }
 
-    var isDoorOpen = isOpeningSensorOpenedByBehavior(sensorConfig, newValue);
+    var isDoorOpen = isOpeningSensorOpenedByBehavior(matchedConfig, newValue);
     if (isDoorOpen) {
       // Any door open - we enable control '/doorOpen'
       dev[self.genNames.vDevice + '/doorOpen'] = true;
@@ -1264,43 +1240,42 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     }
   }
 
-  // Обработчик, вызываемый при срабатывании датчиков движения и открытия
-  function sensorTriggeredHandler(newValue, devName, cellName, sensorType) {
-    var isRuleActive = dev[self.genNames.vDevice + '/rule_enabled'];
-
-    if (isRuleActive === false) {
+  /**
+   * Universal handler for motion and opening sensor triggers
+   *
+   * @param {boolean|string} newValue - New sensor value
+   * @param {string} devName - Device name that changed
+   * @param {string} cellName - Cell/control name that changed
+   * @param {string} sensorType - Type of sensor ('motion' or 'opening')
+   */
+  function allSensorsTriggeredHandler(newValue, devName, cellName, sensorType) {
+    if (dev[self.genNames.vDevice + '/rule_enabled'] === false) {
       // log.debug('Light-control is disabled in virtual device - doing nothing');
-      return true;
+      return;
     }
 
-    var isSwitchUsed = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
-    if (isSwitchUsed === true) {
+    if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] === true) {
       // log.debug('Light-control is disabled after used wall switch - doing nothing');
-      return true;
+      return;
     }
 
+    var topicName = devName + '/' + cellName;
     if (sensorType === 'motion') {
       // Найдем сенсор в списке по cellName
-      var matchedSensor = null;
-      for (var i = 0; i < cfg.motionSensors.length; i++) {
-        if (
-          cfg.motionSensors[i].mqttTopicName ===
-          devName + '/' + cellName
-        ) {
-          matchedSensor = cfg.motionSensors[i];
-          break;
-        }
+      var matchedConfig = findTopicConfig(topicName, cfg.motionSensors);
+      if (!matchedConfig) {
+        log.debug('Motion sensor not found: ' + topicName);
+        return false;
       }
-      if (!matchedSensor) return false;
 
       // Нужно убедиться что произошло именно событие являющееся тригером:
       var sensorTriggered = isMotionSensorActiveByBehavior(
-        matchedSensor,
+        matchedConfig,
         newValue
       );
       // log.debug('sensorTriggered = ' + sensorTriggered);
       if (sensorTriggered === true) {
-        // log.debug('Motion detected on sensor ' + matchedSensor.mqttTopicName);
+        // log.debug('Motion detected on sensor ' + matchedConfig.mqttTopicName);
         dev[self.genNames.vDevice + '/motionInProgress'] = true;
       } else if (sensorTriggered === false) {
         if (checkAllMotionSensorsInactive()) {
@@ -1313,11 +1288,10 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     }
 
     if (sensorType === 'opening') {
-      var res = tm.processEvent(devName + '/' + cellName, newValue);
-      log.debug('opening res = ' + JSON.stringify(res));
+      openingSensorHandler(newValue, devName, cellName);
     }
 
-    return true;
+    return;
   }
 }
 
