@@ -804,10 +804,11 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   }
 
   /**
-   * Проверка - все ли датчики открытия замкнуты (двери закрыты)
+   * Check if all opening sensors are closed (doors are closed)
    *
-   * @returns {boolean} true, если все датчики показывают,
-   *     что двери закрыты, иначе false
+   * @returns {boolean} Complex status for all sensors:
+   *   - true if all sensors show that doors are closed
+   *   - false otherwise
    */
   function checkAllOpeningSensorsClose() {
     for (var i = 0; i < cfg.openingSensors.length; i++) {
@@ -820,11 +821,11 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
         curSensorState
       );
       if (isOpen === true) {
-        // Если хотя бы один датчик активен (дверь открыта), возвращаем false
+        // If at least one sensor is active (door is open), return false
         return false;
       }
     }
-    return true; // Все датчики пассивны (двери закрыты)
+    return true; // All sensors are passive (doors are closed)
   }
 
   /**
