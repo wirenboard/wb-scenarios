@@ -715,6 +715,29 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   }
 
   /**
+   * Find topic configuration in the specified configuration array
+   *
+   * @param {string} topicName - Topic name to search for
+   * @param {SensorConfig[]} configArray - Array of configurations to search in
+   * @returns {SensorConfig|null} Found topic configuration or null if not found
+   */
+  function findTopicConfig(topicName, configArray) {
+    if (!configArray || !Array.isArray(configArray)) {
+      log.error('Invalid config array provided for topic search: ' + topicName);
+      return null;
+    }
+    
+    for (var i = 0; i < configArray.length; i++) {
+      if (configArray[i].mqttTopicName === topicName) {
+        return configArray[i];
+      }
+    }
+    
+    log.error('Cannot find config for topic: ' + topicName);
+    return null;
+  }
+
+  /**
    * Проверка - находится ли датчик в активном состоянии
    *   У разных типов контролов будет разная логика определения
    *   'активного' состояния:
