@@ -759,36 +759,49 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     return sensorTriggered;
   }
 
+
   /**
-   * Проверка - активен ли датчик открытия (дверь открыта или закрыта)
-   *     на основе поведения
+   * @typedef {Object} SensorConfig
+   * @property {string} mqttTopicName - MQTT topic name for the sensor
+   * @property {string} behaviorType - Sensor behavior type
+   *   - whenEnabled
+   *   - whenDisabled
+   * @property {string} [description] - Optional description of the sensor
+   */
+
+  /**
+   * Check if opening sensor is triggered (door is open or closed)
+   * based on behavior type
    *
-   * @param {Object} sensorWithBehavior Объект датчика
-   *     (содержит behaviorType и другие свойства)
-   * @param {any} newValue Текущее состояние датчика
-   * @returns {boolean} true, если датчик активен (дверь открыта), иначе false
+   * @param {SensorConfig} sensorWithBehavior - Sensor object
+   *     (contains behaviorType and other properties)
+   * @param {boolean|string} newValue - Current sensor state
+   * @returns {boolean} Triggered status based on behavior type
+   *   - true if sensor is triggered (door is open)
+   *   - false otherwise
    */
   function isOpeningSensorOpenedByBehavior(sensorWithBehavior, newValue) {
     if (sensorWithBehavior.behaviorType === 'whenDisabled') {
       /**
-       * Датчик нормально замкнутый:
-       *   - При закрытой двери - нормальное состояние true
-       *   - Когда дверь открыта - разомкнут, состояние false
+       * Normally closed sensor:
+       *   - When door is closed - normal state is true
+       *   - When door is open - disconnected, state is false
        */
       return newValue === false || newValue === 'false';
     } else if (sensorWithBehavior.behaviorType === 'whenEnabled') {
       /**
-       * Датчик нормально разомкнутый:
-       *   - При закрытой двери - нормальное состояние false
-       *   - Когда дверь открыта - замыкается, состояние true
+       * Normally open sensor:
+       *   - When door is closed - normal state is false
+       *   - When door is open - connected, state is true
        */
       return newValue === true || newValue === 'true';
     } else {
+      // Consider unknown behavior as inactive
       log.error(
-        'Unknown behavior type for sensor: ' +
-          sensorWithBehavior.mqttTopicName
+        'Unknown behavior type for sensor: "{}"',
+        sensorWithBehavior.mqttTopicName
       );
-      return false; // Считаем неизвестное поведение неактивным
+      return false;
     }
   }
 
