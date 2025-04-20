@@ -187,7 +187,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   });
   if (!ruleIdLightDevsChange) {
     setTotalError('WB-rule "' + ruleName + '" not created');
-    return false;
+    return;
   }
   log.debug(
     'WB-rule with IdNum "' + ruleIdLightDevsChange + '" was successfully created'
@@ -203,7 +203,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   });
   if (!ruleIdLastSwitchActionChange) {
     setTotalError('WB-rule "' + ruleName + '" not created');
-    return false;
+    return;
   }
   log.debug(
     'WB-rule with IdNum "' + ruleIdLastSwitchActionChange + '" was successfully created'
@@ -522,7 +522,6 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       type: 'value',
       value: 0,
       readonly: true,
-      value: '',
     });
 
     // Текущая задержка отключенной логики
@@ -535,7 +534,6 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       type: 'value',
       value: 0,
       readonly: true,
-      value: '',
     });
 
     if (cfg.lightDevices.length > 0) {
@@ -1175,9 +1173,15 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * @param {string} cellName - Cell/control name that changed  
    */
   function openingSensorHandler(newValue, devName, cellName) {
+    if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] === true) {
+      // log.debug('Light-control is disabled after used wall switch - doing nothing');
+      return;
+    }
+
     var topicName = devName + '/' + cellName;
     var matchedConfig = findTopicConfig(topicName, cfg.openingSensors);  
     if (!matchedConfig) {
+      log.error('Opening sensor not found: ' + topicName);
       return;
     }
 
@@ -1233,39 +1237,29 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * @param {string} cellName - Cell/control name that changed
    */
   function motionSensorHandler(newValue, devName, cellName) {
-    if (dev[self.genNames.vDevice + '/rule_enabled'] === false) {
-      // log.debug('Light-control is disabled in virtual device - doing nothing');
-      return;
-    }
-
     if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] === true) {
       // log.debug('Light-control is disabled after used wall switch - doing nothing');
       return;
     }
 
     var topicName = devName + '/' + cellName;
-    // Найдем сенсор в списке по cellName
     var matchedConfig = findTopicConfig(topicName, cfg.motionSensors);
     if (!matchedConfig) {
-      log.debug('Motion sensor not found: ' + topicName);
-      return false;
+      log.error('Motion sensor not found: ' + topicName);
+      return;
     }
 
-    // Нужно убедиться что произошло именно событие являющееся тригером:
-    var sensorTriggered = isMotionSensorActiveByBehavior(
-      matchedConfig,
-      newValue
-    );
-    // log.debug('sensorTriggered = ' + sensorTriggered);
-    if (sensorTriggered === true) {
-      // log.debug('Motion detected on sensor ' + matchedConfig.mqttTopicName);
+    var isMotionActive = isMotionSensorActiveByBehavior(matchedConfig, newValue);
+    if (isMotionActive) {
+      // Any motion sensor active - we enable control
       dev[self.genNames.vDevice + '/motionInProgress'] = true;
-    } else if (sensorTriggered === false) {
+    } else {
+      // Only if all motion sensors deactivated - we disable control
       if (checkAllMotionSensorsInactive()) {
-        // log.debug('~ All motion sensors inactive');
         dev[self.genNames.vDevice + '/motionInProgress'] = false;
       } else {
-        // log.debug('~ Some motion sensors are still active - keeping lights on');
+        // If some motion sensors are still active - do nothing, keeping lights on
+        // Status will remain "open" until all sensors are deactivated
       }
     }
   }
