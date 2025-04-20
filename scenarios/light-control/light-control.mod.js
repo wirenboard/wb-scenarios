@@ -43,6 +43,7 @@ LightControlScenario.prototype.generateNames = function (prefix) {
     ruleRemainingTimeToLogicEnableChange: rulePrefix + 'remainingTimeToLogicEnableChange' + postfix,
     ruleLightOnChange: rulePrefix + 'lightOnChange' + postfix,
     ruleLightSwitchUsed: rulePrefix + 'lightSwitchUsed' + postfix,
+    ruleOpeningSensorsChange: rulePrefix + 'openingSensorsChange' + postfix,
     ruleMotionInProgress: rulePrefix + 'motionInProgress' + postfix,
     ruleLogicDisabledByWallSwitch:
       rulePrefix + 'logicDisabledByWallSwitch' + postfix,
@@ -305,18 +306,21 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdLightSwitchUsed);
 
-  /**
-   * Для датчиков открытия пользователь может выбрать у каждого датчика
-   * разную логику срабатывания - поэтому регистрируем два противоположных
-   * обработчика.
-   */
-  tm.registerMultipleEventsWithBehaviorOpposite(
-    cfg.openingSensors,
-    openingSensorTriggeredLaunchCb,
-    openingSensorTriggeredResetCb
+  ruleName = self.genNames.ruleOpeningSensorsChange;
+  var ruleIdOpeningSensorsChange = defineRule(ruleName, {
+    whenChanged: openingTopics,
+    then: function (newValue, devName, cellName) {
+      openingSensorHandler(newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdOpeningSensorsChange) {
+    setTotalError('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdOpeningSensorsChange + '" was successfully created'
   );
-
-  tm.initRulesForAllTopics('light_control_rule_' + cfg.idPrefix);
+  addRule(ruleIdOpeningSensorsChange);
 
   // Создаем правило для датчиков движения
   var ruleIdMotion = defineRule(self.genNames.ruleMotion, {
@@ -1202,24 +1206,33 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     return true;
   }
 
-  function openingSensorTriggeredLaunchCb(topicObj, eventObj) {
-    // Тригерит только изменение выбранное пользователем
-    // If any door open - we enable control '/doorOpen'
-    dev[self.genNames.vDevice + '/doorOpen'] = true;
-
-    return true;
-  }
-
-  function openingSensorTriggeredResetCb(topicObj, eventObj) {
-    // Тригерит только противоположное действие
-    // Only if all doors closec - we disable control '/doorOpen'
-    if (checkAllOpeningSensorsClose()) {
-      dev[self.genNames.vDevice + '/doorOpen'] = false;
-    } else {
-      // Если некоторые двери еще открыты - то ничего не делаем
+  /**
+   * Handler for opening sensor state changes
+   *
+   * @param {boolean|string} newValue - New value of the sensor
+   * @param {string} devName - Device name that changed
+   * @param {string} cellName - Cell/control name that changed  
+   */
+  function openingSensorHandler(newValue, devName, cellName) {
+    var topicName = devName + '/' + cellName;
+    var sensorConfig = findTopicConfig(topicName, cfg.openingSensors);  
+    if (!sensorConfig) {
+      return;
     }
 
-    return true;
+    var isDoorOpen = isOpeningSensorOpenedByBehavior(sensorConfig, newValue);
+    if (isDoorOpen) {
+      // Any door open - we enable control '/doorOpen'
+      dev[self.genNames.vDevice + '/doorOpen'] = true;
+    } else {
+      // Only if all doors closed - we disable control '/doorOpen'
+      if (checkAllOpeningSensorsClose()) {
+        dev[self.genNames.vDevice + '/doorOpen'] = false;
+      } else {
+        // If some doors are still open - do nothing
+        // Status will remain "open" until all doors are closed
+      }
+    }
   }
 
   //Извлечение имен контролов (mqttTopicName) из массива
