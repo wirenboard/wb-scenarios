@@ -307,6 +307,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   );
   addRule(ruleIdLightSwitchUsed);
 
+  // Создаем правило для датчиков открытия
   ruleName = self.genNames.ruleOpeningSensorsChange;
   var ruleIdOpeningSensorsChange = defineRule(ruleName, {
     whenChanged: openingTopics,
@@ -327,7 +328,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var ruleIdMotion = defineRule(self.genNames.ruleMotion, {
     whenChanged: motionTopics,
     then: function (newValue, devName, cellName) {
-      allSensorsTriggeredHandler(newValue, devName, cellName, 'motion');
+      motionSensorHandler(newValue, devName, cellName);
     },
   });
   if (!ruleIdMotion) {
@@ -338,22 +339,6 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     'WB-rule with IdNum "' + ruleIdMotion + '" was successfully created'
   );
   addRule(ruleIdMotion);
-
-  // Создаем правило для датчиков открытия
-  var ruleIdOpening = defineRule(self.genNames.ruleOpening, {
-    whenChanged: openingTopics,
-    then: function (newValue, devName, cellName) {
-      allSensorsTriggeredHandler(newValue, devName, cellName, 'opening');
-    },
-  });
-  if (!ruleIdOpening) {
-    setTotalError('WB-rule "' + self.genNames.ruleOpening + '" not created');
-    return false;
-  }
-  log.debug(
-    'WB-rule with IdNum "' + ruleIdOpening + '" was successfully created'
-  );
-  addRule(ruleIdOpening);
 
   // Создаем правило следящее за движением
   // Оно нужно для приведения всех датчиков движения к одному типу switch
@@ -1246,9 +1231,8 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * @param {boolean|string} newValue - New sensor value
    * @param {string} devName - Device name that changed
    * @param {string} cellName - Cell/control name that changed
-   * @param {string} sensorType - Type of sensor ('motion' or 'opening')
    */
-  function allSensorsTriggeredHandler(newValue, devName, cellName, sensorType) {
+  function motionSensorHandler(newValue, devName, cellName) {
     if (dev[self.genNames.vDevice + '/rule_enabled'] === false) {
       // log.debug('Light-control is disabled in virtual device - doing nothing');
       return;
@@ -1260,38 +1244,30 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     }
 
     var topicName = devName + '/' + cellName;
-    if (sensorType === 'motion') {
-      // Найдем сенсор в списке по cellName
-      var matchedConfig = findTopicConfig(topicName, cfg.motionSensors);
-      if (!matchedConfig) {
-        log.debug('Motion sensor not found: ' + topicName);
-        return false;
-      }
-
-      // Нужно убедиться что произошло именно событие являющееся тригером:
-      var sensorTriggered = isMotionSensorActiveByBehavior(
-        matchedConfig,
-        newValue
-      );
-      // log.debug('sensorTriggered = ' + sensorTriggered);
-      if (sensorTriggered === true) {
-        // log.debug('Motion detected on sensor ' + matchedConfig.mqttTopicName);
-        dev[self.genNames.vDevice + '/motionInProgress'] = true;
-      } else if (sensorTriggered === false) {
-        if (checkAllMotionSensorsInactive()) {
-          // log.debug('~ All motion sensors inactive');
-          dev[self.genNames.vDevice + '/motionInProgress'] = false;
-        } else {
-          // log.debug('~ Some motion sensors are still active - keeping lights on');
-        }
-      }
+    // Найдем сенсор в списке по cellName
+    var matchedConfig = findTopicConfig(topicName, cfg.motionSensors);
+    if (!matchedConfig) {
+      log.debug('Motion sensor not found: ' + topicName);
+      return false;
     }
 
-    if (sensorType === 'opening') {
-      openingSensorHandler(newValue, devName, cellName);
+    // Нужно убедиться что произошло именно событие являющееся тригером:
+    var sensorTriggered = isMotionSensorActiveByBehavior(
+      matchedConfig,
+      newValue
+    );
+    // log.debug('sensorTriggered = ' + sensorTriggered);
+    if (sensorTriggered === true) {
+      // log.debug('Motion detected on sensor ' + matchedConfig.mqttTopicName);
+      dev[self.genNames.vDevice + '/motionInProgress'] = true;
+    } else if (sensorTriggered === false) {
+      if (checkAllMotionSensorsInactive()) {
+        // log.debug('~ All motion sensors inactive');
+        dev[self.genNames.vDevice + '/motionInProgress'] = false;
+      } else {
+        // log.debug('~ Some motion sensors are still active - keeping lights on');
+      }
     }
-
-    return;
   }
 }
 
