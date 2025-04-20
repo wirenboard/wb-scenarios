@@ -739,9 +739,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
         sensorTriggered = false;
       }
     } else if (sensorWithBehavior.behaviorType === 'whenEnabled') {
-      if (newValue === true) {
-        sensorTriggered = true;
-      } else if (newValue === 'true') {
+      if (newValue === true || newValue === 'true') {
         sensorTriggered = true;
       } else if (newValue === false || newValue === 'false') {
         sensorTriggered = false;
@@ -1182,6 +1180,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   function openingSensorTriggeredLaunchCb(topicObj, eventObj) {
     // Тригерит только изменение выбранное пользователем
+    // If any door open - we enable control '/doorOpen'
     dev[self.genNames.vDevice + '/doorOpen'] = true;
 
     return true;
@@ -1189,6 +1188,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   function openingSensorTriggeredResetCb(topicObj, eventObj) {
     // Тригерит только противоположное действие
+    // Only if all doors closec - we disable control '/doorOpen'
     if (checkAllOpeningSensorsClose()) {
       dev[self.genNames.vDevice + '/doorOpen'] = false;
     } else {
