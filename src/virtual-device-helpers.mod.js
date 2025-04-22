@@ -1,9 +1,9 @@
 /**
- * @file Модуль содержащий фукнции используемые для создания виртуальных
- *       устройств и их модификации
+ * @file virtual-device-helpers.mod.js - ES5 module for wb-rules v2.28
+ * @description Module containing functions used for creating virtual devices
+ *   and their modification
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
 /**

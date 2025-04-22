@@ -1,6 +1,6 @@
 /**
- * @file wbsc-scenario-base.mod.js - module for WirenBoard wb-rules v2.28.4
- * @description Minimal abstract ES5 base class for all WB‑rules scenarios
+ * @file wbsc-scenario-base.mod.js - ES5 module for wb-rules v2.28
+ * @description Minimal abstract base class for all WB‑rules scenarios
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  */
