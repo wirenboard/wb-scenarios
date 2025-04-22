@@ -24,13 +24,13 @@ var ScenarioState = {
   LINKED_CONTROLS_READY: 3,
   CONFIG_INVALID: 4,
   LINKED_CONTROLS_TIMEOUT: 5,
-  NORMAL: 6
+  NORMAL: 6,
 };
 
 /**
  * Abstract base class for all scenarios
  * This class provides core functionality that all scenarios should inherit
- * 
+ *
  * @abstract Should not be instantiated directly, only extended by child
  * @constructor
  */
@@ -65,8 +65,7 @@ function ScenarioBase() {
    * @property {string} vdId - Virtual device ID
    * @property {Array<string>} ruleIds - Rule IDs
    */
-  this.genNames    = null;  // generated names (vd‑id, rule‑id’s …)
-
+  this.genNames = null; // generated names (vd‑id, rule‑id’s …)
 
   /**
    * Enhanced virtual device object with additional methods and properties
@@ -90,7 +89,7 @@ function ScenarioBase() {
  *   - Code from ScenarioState base VD enum control
  *   - Or null if VD/control is not initialized yet
  */
-ScenarioBase.prototype.getState = function() {
+ScenarioBase.prototype.getState = function () {
   if (!this.vd || !this.vd.devObj) {
     return null;
   }
@@ -103,16 +102,16 @@ ScenarioBase.prototype.getState = function() {
  * @param {number} stateCode - State code from ScenarioState enum
  * @returns {boolean} True if state was set successfully
  */
-ScenarioBase.prototype.setState = function(stateCode) {
+ScenarioBase.prototype.setState = function (stateCode) {
   var valid = false;
   for (var key in ScenarioState) {
-      if (ScenarioState[key] === stateCode) {
-          valid = true;
-          break;
-      }
+    if (ScenarioState[key] === stateCode) {
+      valid = true;
+      break;
+    }
   }
   if (!valid) {
-      throw new Error('Invalid scenario state: ' + stateCode);
+    throw new Error('Invalid scenario state: ' + stateCode);
   }
 
   if (this.vd && this.vd.devObj) {
@@ -129,7 +128,7 @@ ScenarioBase.prototype.setState = function(stateCode) {
 
 /**
  * Initialize the scenario with name and configuration
- * 
+ *
  * @note This is single entry point called by user code.
  *       Do not override unless you really need.
  * @param {string} name - Scenario title / virtual‑device title
@@ -138,7 +137,7 @@ ScenarioBase.prototype.setState = function(stateCode) {
  *   - True on success
  *   - Throws on error
  */
-ScenarioBase.prototype.init = function(name, cfg) {
+ScenarioBase.prototype.init = function (name, cfg) {
   if (this.getState() !== null) {
     throw new Error('Scenario was already launched earlier');
   }
@@ -159,7 +158,7 @@ ScenarioBase.prototype.init = function(name, cfg) {
   }
 
   this.genNames = this.generateNames(this.idPrefix);
-  
+
   var devObj = createBasicVd(this.genNames.vDevice, this.name, this._rules);
   if (!devObj) {
     throw new Error('Basic VD creation failed');
@@ -172,7 +171,7 @@ ScenarioBase.prototype.init = function(name, cfg) {
         log.error('VD does not exist in the system or devObj not defined');
         return;
       }
-  
+
       log.error(errorMsg);
       var controls = this.devObj.controlsList();
       for (var i = 0; i < controls.length; i++) {
@@ -184,7 +183,7 @@ ScenarioBase.prototype.init = function(name, cfg) {
          */
         controls[i].setError('r');
       }
-    }
+    },
   };
   this.setState(ScenarioState.INIT_STARTED);
 
@@ -249,7 +248,7 @@ ScenarioBase.prototype.disable = function () {
  * @returns {Object}
  */
 ScenarioBase.prototype.generateNames = function () {
-    throw new Error('generateNames() must be overridden by derived class');
+  throw new Error('generateNames() must be overridden by derived class');
 };
 
 /**
@@ -264,12 +263,11 @@ ScenarioBase.prototype.validateCfg = function () {
   // If all OK - must return - true
 };
 
-
 /**
  * Initializes custom scenario logic, rules, timers, etc
  * Must be implemented in subclass
  * Use {@link addRule} to store rule IDs if you need later clean‑up
- * 
+ *
  * @abstract
  * @param {string} name - Scenario name
  * @param {Object} cfg - Configuration object
