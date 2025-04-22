@@ -81,6 +81,12 @@ function ScenarioBase() {
    * @private
    */
   this._rules = [];
+
+  /**
+   * Context object for storing scenario-specific runtime variables
+   * @type {Object}
+   */
+  this.ctx = {};
 }
 
 /**
