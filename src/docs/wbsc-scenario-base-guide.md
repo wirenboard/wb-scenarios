@@ -178,6 +178,7 @@ exports.CustomScenario = CustomScenario;
 
 ```js
 var CustomScenario = require('scenario-custom.mod').CustomScenario;
+var ScenarioState = require('wbsc-scenario-base.mod').ScenarioState;
 var log = new (require('logger.mod').Logger)('test-scenario-init');
 
 var scenario = new CustomScenario();
@@ -201,6 +202,9 @@ scenario.vd.devObj.addControl('test_text', {
   type: 'text',
   value: 'Новое поле'
 });
+
+// При необходимости можно поменять состояние отображаемое в девайсе
+scenario.setState(ScenarioState.CONFIG_INVALID);
 
 log.info(JSON.stringify(scenario.vd.devObj.controlsList(), null, 2));
 ```
