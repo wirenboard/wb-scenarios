@@ -4,9 +4,7 @@
 
 ВНИМАНИЕ: Их нельзя использовать в релизах - применять только при отладке!
 
-
-```
-
+```js
 var vdHelpers = require('virtual-device-helpers.mod');
 
 ...
@@ -32,11 +30,11 @@ var vdHelpers = require('virtual-device-helpers.mod');
 ```
 
 Внешний вид:
-![Внешний вид заголовков](virtual-device-helpers-title.png)
-
+![Внешний вид заголовков](img/virtual-device-helpers.title.png)
 
 Динамическое добавление аларма к виртуальному девайсу
-```
+
+```js
 var vdHelpers = require('virtual-device-helpers.mod');
 
 ...
@@ -51,4 +49,4 @@ vdHelpers.addAlarm(
 ```
 
 Внешний вид:
-![Внешний вид alarm](virtual-device-helpers-alarm.png)
+![Внешний вид alarm](img/virtual-device-helpers.alarm.png)
