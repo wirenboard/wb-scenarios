@@ -85,14 +85,17 @@ function ScenarioBase() {
 }
 
 /**
- * Get current state of the scenario
- * @returns {number} Current state code from ScenarioState enum
+ * Get current state of the scenario from the virtual device
+ * @returns {number|null} Scenario state:
+ *   - Code from ScenarioState base VD enum control
+ *   - Or null if VD/control is not initialized yet
  */
 ScenarioBase.prototype.getState = function() {
-  if (this.vd && this.vd.devObj) {
-    return this.vd.devObj.getControl('state').getValue();
+  if (!this.vd || !this.vd.devObj) {
+    return null;
   }
-  return ScenarioState.INIT_STARTED; // Default state
+
+  return this.vd.devObj.getControl('state').getValue();
 };
 
 /**
@@ -136,7 +139,7 @@ ScenarioBase.prototype.setState = function(stateCode) {
  *   - Throws on error
  */
 ScenarioBase.prototype.init = function(name, cfg) {
-  if (this.getState() !== ScenarioState.CREATED) {
+  if (this.getState() !== null) {
     throw new Error('Scenario was already launched earlier');
   }
 
