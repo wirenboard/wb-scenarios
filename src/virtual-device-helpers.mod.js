@@ -195,8 +195,12 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
     type: 'value',
     readonly: true,
     forceDefault: true, // Always must start from init string state
-    value: 1,
+    value: 0,
     enum: {
+      0: {
+        en: 'Created, not initialized',
+        ru: 'Создан, не инициализирован',
+      },
       1: {
         en: 'Initialisation started...',
         ru: 'Инициализация запущена...',
