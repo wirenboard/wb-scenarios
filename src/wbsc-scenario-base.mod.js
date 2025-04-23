@@ -253,7 +253,7 @@ ScenarioBase.prototype.disable = function () {
  * @param {string} idPrefix - Transliteration of scenario title
  * @returns {Object}
  */
-ScenarioBase.prototype.generateNames = function () {
+ScenarioBase.prototype.generateNames = function (idPrefix) {
   throw new Error('generateNames() must be overridden by derived class');
 };
 
@@ -264,7 +264,7 @@ ScenarioBase.prototype.generateNames = function () {
  * @param   {Object} cfg  Raw configuration
  * @returns {boolean} True if configuration is acceptable
  */
-ScenarioBase.prototype.validateCfg = function () {
+ScenarioBase.prototype.validateCfg = function (cfg) {
   throw new Error('validateCfg() must be overridden by derived class');
   // If all OK - must return - true
 };
@@ -279,7 +279,7 @@ ScenarioBase.prototype.validateCfg = function () {
  * @param {Object} cfg - Configuration object
  * @returns {boolean} True if initialized successfully, false if not
  */
-ScenarioBase.prototype.initSpecific = function () {
+ScenarioBase.prototype.initSpecific = function (name, cfg) {
   throw new Error('initSpecific() must be overridden by derived class');
 };
 
