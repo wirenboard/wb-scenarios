@@ -1,9 +1,9 @@
 /**
- * @file Модуль содержащий фукнции используемые для создания виртуальных
- *       устройств и их модификации
+ * @file virtual-device-helpers.mod.js - ES5 module for wb-rules v2.28
+ * @description Module containing functions used for creating virtual devices
+ *   and their modification
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
 
 /**
@@ -195,8 +195,12 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
     type: 'value',
     readonly: true,
     forceDefault: true, // Always must start from init string state
-    value: 1,
+    value: 0,
     enum: {
+      0: {
+        en: 'Created, not initialized',
+        ru: 'Создан, не инициализирован',
+      },
       1: {
         en: 'Initialisation started...',
         ru: 'Инициализация запущена...',
