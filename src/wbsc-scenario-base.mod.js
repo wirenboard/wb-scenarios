@@ -7,6 +7,8 @@
 
 var getIdPrefix = require('scenarios-general-helpers.mod').getIdPrefix;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
+var waitControls = require('wbsc-wait-controls').waitControls; // TODO:(vg) add '.mod' to filename
+var isControlReady = require('wbsc-wait-controls').isControlReady;
 var Logger = require('logger.mod').Logger;
 
 var loggerFileLabel = 'WBSC‑base-mod';
@@ -141,11 +143,12 @@ ScenarioBase.prototype.setState = function (stateCode) {
  * @param {Object} cfg - Raw configuration object supplied by user
  * @returns {boolean} Initialisation result
  *   - True on success
- *   - Throws on error
+ *   - False if there was an error or throws
  */
 ScenarioBase.prototype.init = function (name, cfg) {
   if (this.getState() !== null) {
-    throw new Error('Scenario was already launched earlier');
+    log.error('Scenario was already launched earlier');
+    return false;
   }
 
   this.name = name;
@@ -160,14 +163,15 @@ ScenarioBase.prototype.init = function (name, cfg) {
     throw new Error('validateCfg() must be implemented in subclass');
   }
   if (this.initSpecific === ScenarioBase.prototype.initSpecific) {
-    throw new Error('initSpecific(cfg) must be implemented in subclass');
+    throw new Error('initSpecific() must be implemented in subclass');
   }
 
   this.genNames = this.generateNames(this.idPrefix);
 
   var devObj = createBasicVd(this.genNames.vDevice, this.name, this._rules);
   if (!devObj) {
-    throw new Error('Basic VD creation failed');
+    log.error('Basic VD creation failed');
+    return false;
   }
 
   this.vd = {
@@ -193,21 +197,67 @@ ScenarioBase.prototype.init = function (name, cfg) {
   };
   this.setState(ScenarioState.INIT_STARTED);
 
-  if (this.validateCfg(cfg) !== true) {
-    this.vd.setTotalError('Config validation failed');
+  var waitConfig = this.defineControlsWaitConfig(cfg);
+  var isNeedWaitControls = waitConfig.controls && waitConfig.controls.length > 0;
+  if (isNeedWaitControls) {
+    log.debug('Waiting for {} controls to be ready', waitConfig.controls.length);
+    this.setState(ScenarioState.WAITING_CONTROLS);
+
+    var self = this;
+    waitControls(
+      waitConfig.controls,
+      { 
+        timeout: waitConfig.timeout || 5000, 
+        period: waitConfig.period || 500 
+      },
+      function(err) {
+        if (err) {
+          log.error('Controls not ready within timeout: {}', err.notReadyCtrlList.join(', '));
+          self.setState(ScenarioState.LINKED_CONTROLS_TIMEOUT);
+          self.vd.setTotalError('Linked controls not ready in ' + 
+                              ((waitConfig.timeout || 5000) / 1000) + 's: ' + 
+                              err.notReadyCtrlList.join(', '));
+
+          self.disable();
+          return;
+        }
+        self.setState(ScenarioState.LINKED_CONTROLS_READY);
+        self._continueInitAfterControlsReady();
+      }
+    );
+    return true; // Return from init() - continuation will happen in callback
+  } else {
+    log.debug('No controls to wait for, continue immediately');
+    return this._continueInitAfterControlsReady();
+  }
+};
+
+
+/**
+ * Continue initialization after controls are ready
+ * @private
+ * @returns {boolean} True if initialization succeeds
+ */
+ScenarioBase.prototype._continueInitAfterControlsReady = function() {
+  log.debug('START _continueInitAfterControlsReady()');
+  if (this.validateCfg(this.cfg) !== true) {
     this.setState(ScenarioState.CONFIG_INVALID);
-    throw new Error('Config validation failed "' + this.name + '"');
-  }
-  log.debug('All checks pass successfuly!');
+    this.disable();
 
-  var ok = this.initSpecific(name, cfg);
+    var errMsg = 'Config validation failed for scenario: "' + this.name + '"';
+    this.vd.setTotalError(errMsg);
+    throw new Error(errMsg);
+  }
+  log.debug('Configuration validation passed successfully!');
+  
+  var ok = this.initSpecific(this.name, this.cfg);
   if (ok === false) {
-    this.vd.setTotalError('initSpecific() returned false');
-    throw new Error('initSpecific() returned false');
+    this.disable();
+    
+    var errMsg = 'Specific scenario initialization failed';
+    this.vd.setTotalError(errMsg);
+    throw new Error(errMsg);
   }
-
-  // TODO:(vg) write optional wait topics and call initAfterWait()
-  //           if we need wait - _initialized must be set after wait?
 
   this.setState(ScenarioState.NORMAL);
   log.info('Scenario "{}" initialized successfully', this.name);
@@ -281,6 +331,32 @@ ScenarioBase.prototype.validateCfg = function (cfg) {
  */
 ScenarioBase.prototype.initSpecific = function (name, cfg) {
   throw new Error('initSpecific() must be overridden by derived class');
+};
+
+
+/* ------------------------------------------------------------------ */
+/*        Abstract methods stubs — optionaly MAY be overridden        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Get configuration for waiting for controls
+ * Override in subclass to customize waiting behavior
+ * 
+ * @param {Object} cfg Configuration object
+ * @returns {Object} Waiting configuration object or empty object for no waiting
+ * 
+ * @example Returned object structure:
+ *   - List of controls to wait for
+ *   - Maximum wait time in milliseconds (default 10000 ms = 10s)
+ *   - Polling period in milliseconds (default 500 ms)
+ * {
+ *   controls: ['device1/control1', 'device2/control2'],
+ *   timeout: 10000,  // Optional - default 5000 (5s)
+ *   period: 500  // Optional - default 100 (0.1s)
+ * }
+ */
+ScenarioBase.prototype.defineControlsWaitConfig = function(cfg) {
+  return {}; // Empty object by default - no waiting
 };
 
 exports.ScenarioState = ScenarioState;
