@@ -7,6 +7,8 @@
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var Logger = require('logger.mod').Logger;
+var extractMqttTopics =
+  require('scenarios-general-helpers.mod').extractMqttTopics;
 
 var loggerFileLabel = 'WBSC-light-control-mod';
 var log = new Logger(loggerFileLabel);
@@ -54,6 +56,27 @@ LightControlScenario.prototype.generateNames = function (idPrefix) {
     vDevice: scenarioPrefix + idPrefix,
     ruleLightOnChange: baseRuleName + 'lightOnChange',
   };
+};
+
+/**
+ * Get configuration for waiting for controls
+ *
+ * @param {Object} cfg Configuration object
+ * @returns {Object} Waiting configuration object or empty object for no waiting
+ */
+ScenarioBase.prototype.defineControlsWaitConfig = function (cfg) {
+  var lightDevTopics = extractMqttTopics(cfg.lightDevices || []);
+  var motionTopics = extractMqttTopics(cfg.motionSensors || []);
+  var openingTopics = extractMqttTopics(cfg.openingSensors || []);
+  var switchTopics = extractMqttTopics(cfg.lightSwitches || []);
+
+  var allTopics = [].concat(
+    lightDevTopics,
+    motionTopics,
+    openingTopics,
+    switchTopics
+  );
+  return { controls: allTopics };
 };
 
 /**
