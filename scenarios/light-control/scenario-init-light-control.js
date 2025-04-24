@@ -35,7 +35,7 @@ function initializeScenario(scenarioCfg) {
 
   var scenario = new CustomTypeSc();
   var cfg = {
-    idPrefix: scenarioCfg.idPrefix,
+    idPrefix: scenarioCfg.id_prefix,
     isDebugEnabled: scenarioCfg.isDebugEnabled,
     delayByMotionSensors: scenarioCfg.motionSensors.delayToLightOff,
     delayByOpeningSensors: scenarioCfg.openingSensors.delayToLightOff,
@@ -53,7 +53,7 @@ function initializeScenario(scenarioCfg) {
     log.error(
       'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
       scenarioCfg.name,
-      scenarioCfg.idPrefix
+      scenarioCfg.id_prefix
     );
     return;
   }
@@ -61,14 +61,14 @@ function initializeScenario(scenarioCfg) {
   log.debug(
     'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
     scenarioCfg.name,
-    scenarioCfg.idPrefix
+    scenarioCfg.id_prefix
   );
 
   var scenarioStorage = scHelpers.getGlobalScenarioStore(
     CFG.scenarioTypeStr
   );
-  scenarioStorage[scenarioCfg.idPrefix] = scenario;
-  log.debug('Stored in global registry with ID: ' + scenarioCfg.idPrefix);
+  scenarioStorage[scenarioCfg.id_prefix] = scenario;
+  log.debug('Stored in global registry with ID: ' + scenarioCfg.id_prefix);
 }
 
 function main() {

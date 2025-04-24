@@ -244,7 +244,7 @@
           "title": "Config version",
           "minimum": 1,
           "maximum": 256,
-          "default": 2,
+          "default": 1,
           "options": {
             "hidden": true
           }
@@ -278,7 +278,7 @@
             "grid_columns": 12
           }
         },
-        "idPrefix": {
+        "id_prefix": {
           "title": "generalScenarioIdPrefixTitle",
           "type": "string",
           "description": "generalScenarioIdPrefixDescription",
