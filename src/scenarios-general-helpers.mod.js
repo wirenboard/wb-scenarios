@@ -154,7 +154,71 @@ function getIdPrefix(deviceTitle, cfg) {
   return idPrefix;
 }
 
+/**
+ * Gets or creates a global storage for a specific scenario type
+ * Ensures the global 'wbScenarios' object exists and has a structure 
+ * for the requested scenario type
+ * @param {string} scenarioType - The type of scenario (e.g., 'lightControl')
+ * @returns {Object} The global storage object for this scenario type
+ */
+function getGlobalScenarioStore(scenarioType) {
+  // Initialize global wbScenarios object if it doesn't exist
+  if (!global.wbScenarios) {
+    global.wbScenarios = {};
+  }
+
+  // Initialize storage for this specific scenario type if it doesn't exist
+  if (!global.wbScenarios[scenarioType]) {
+    global.wbScenarios[scenarioType] = {};
+  }
+
+  return global.wbScenarios[scenarioType];
+}
+
+
+/**
+ * @typedef {Object} Device
+ * @property {string} mqttTopicName - MQTT topic identifier for the device
+ * @property {string} behaviorType - Defines how the device responds to events
+ * @property {number} [actionValue] - Optional threshold value for behavior triggers
+ */
+
+/**
+ * Extracts MQTT topic names from a collection of devices.
+ * 
+ * Efficiently maps through the provided devices array to extract only the
+ * mqttTopicName property from each device object.
+ *
+ * @param {Device[]} devices - Collection of device configuration objects
+ * @returns {string[]} Array of extracted MQTT topic names
+ * @throws {TypeError} When provided parameter is not an array
+ *
+ * @example
+ * // Returns ["wb-mr6cv3_127/K6", "wb-msw-v4_34/Current Motion"]
+ * extractMqttTopics([
+ *   { mqttTopicName: "wb-mr6cv3_127/K6", behaviorType: "setEnable" },
+ *   { 
+ *     mqttTopicName: "wb-msw-v4_34/Current Motion", 
+ *     behaviorType: "whileValueHigherThanThreshold", 
+ *     actionValue: 170 
+ *   }
+ * ]);
+ */
+function extractMqttTopics(devices) {
+  if (!Array.isArray(devices)) {
+    throw new TypeError('The devices parameter must be an array');
+  }
+  
+  var result = [];
+  for (var i = 0; i < devices.length; i++) {
+    result.push(devices[i].mqttTopicName);
+  }
+  return result;
+}
+
 exports.findAllScenariosWithType = findAllScenariosWithType;
 exports.findAllActiveScenariosWithType = findAllActiveScenariosWithType;
 exports.readAndValidateScenariosConfig = readAndValidateScenariosConfig;
 exports.getIdPrefix = getIdPrefix;
+exports.getGlobalScenarioStore = getGlobalScenarioStore;
+exports.extractMqttTopics = extractMqttTopics;
