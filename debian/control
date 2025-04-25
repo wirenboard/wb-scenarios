@@ -2,7 +2,7 @@ Source: wb-scenarios
 Section: misc
 Priority: optional
 Maintainer: Wiren Board Team <info@wirenboard.com>
-Build-Depends: debhelper (>= 8.0.0)
+Build-Depends: debhelper-compat (= 13)
 Standards-Version: 4.5.1
 Homepage: https://github.com/wirenboard/wb-scenarios
 Vcs-Git: https://github.com/wirenboard/wb-scenarios
