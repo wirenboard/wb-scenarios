@@ -462,6 +462,40 @@ main();
    - Когда произошло событие - выполнение действий над выходными контролами
 3) Создание правила wb-rules
 
+
+
+
+Если вам потребуются какие-то контекстные данные в ходе работы вашего
+сценария, к которым нужно иметь доступ между вызовами правила или
+к которым нужно иметь доступ из разных правил/функций - то вы можете вместо
+глобальных переменных собрать все такие данные и записать их внутри объекта
+cxt - пример:
+
+```js
+/**
+ * Light control scenario implementation
+ * @class LightControlScenario
+ * @extends ScenarioBase
+ */
+function LightControlScenario() {
+  ScenarioBase.call(this);
+  
+  /**
+   * Context object for storing scenario runtime state
+   * @type {Object}
+   */
+  this.ctx = {
+    ruleActionInProgress: false,  // scenario is currently changing lights
+    ruleTargetState: null,        // true → should turn on, false → turn off
+    syncingLightOn: false,        // flag to prevent recursion when syncing lightOn
+    lightOffTimerId: null,        // timer ID for turning off lights
+    logicEnableTimerId: null      // timer ID for re-enabling automation logic
+  };
+}
+LightControlScenario.prototype = Object.create(ScenarioBase.prototype);
+LightControlScenario.prototype.constructor = LightControlScenario;
+```
+
 Так же не забудьте в конце файла указать экспотрт функции с учетом
 возвращаемого значения.
 
