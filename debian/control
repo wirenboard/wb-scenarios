@@ -11,3 +11,5 @@ Package: wb-scenarios
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, wb-rules (>= 2.20.0~~)
 Description: Scenarios for Wiren Board
+ This package provides ready-to-use scripts
+ to connect devices and link them together more quickly.
