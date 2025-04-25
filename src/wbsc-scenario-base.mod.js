@@ -143,12 +143,11 @@ ScenarioBase.prototype.setState = function (stateCode) {
  * @param {Object} cfg - Raw configuration object supplied by user
  * @returns {boolean} Initialisation result
  *   - True on success
- *   - False if there was an error or throws
+ *   - Throws on error
  */
 ScenarioBase.prototype.init = function (name, cfg) {
   if (this.getState() !== null) {
-    log.error('Scenario was already launched earlier');
-    return false;
+    throw new Error('Scenario was already launched earlier');
   }
 
   this.name = name;
@@ -170,8 +169,7 @@ ScenarioBase.prototype.init = function (name, cfg) {
 
   var devObj = createBasicVd(this.genNames.vDevice, this.name, this._rules);
   if (!devObj) {
-    log.error('Basic VD creation failed');
-    return false;
+    throw new Error('Basic VD creation failed');
   }
 
   this.vd = {
@@ -239,7 +237,6 @@ ScenarioBase.prototype.init = function (name, cfg) {
  * @returns {boolean} True if initialization succeeds
  */
 ScenarioBase.prototype._continueInitAfterControlsReady = function() {
-  log.debug('START _continueInitAfterControlsReady()');
   if (this.validateCfg(this.cfg) !== true) {
     this.setState(ScenarioState.CONFIG_INVALID);
     this.disable();
@@ -253,7 +250,7 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function() {
   var ok = this.initSpecific(this.name, this.cfg);
   if (ok === false) {
     this.disable();
-    
+
     var errMsg = 'Specific scenario initialization failed';
     this.vd.setTotalError(errMsg);
     throw new Error(errMsg);
