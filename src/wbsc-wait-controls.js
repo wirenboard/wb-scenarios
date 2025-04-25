@@ -1,4 +1,11 @@
 /**
+ * @file wbsc-wait-controls.mod.js - ES5 module for wb-rules v2.28
+ * @description Wait controls while creation time, for example after reset
+ *
+ * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
+ */
+
+/**
  * Check if a control is ready
  **/
 function isControlReady(controlPath) {
@@ -26,10 +33,10 @@ function isControlReady(controlPath) {
  * @param {...any} [params] - Additional parameters passed to the callback
  *
  * @example
- *   // Without options (used default timeout and polling period options)
- *   waitControls(controls, callback, param1, param2);
- *   // With options
- *   waitControls(controls, { timeout: 5000, period: 100 }, callback, param1, param2);
+ *   // Without options - used default timeout and polling period options
+ *   waitControls(controls, callback, param1);
+ *   // With options - change default 5000ms/500ms to 9000ms/100ms
+ *   waitControls(controls, { timeout: 9000, period: 100 }, callback, param1);
  **/
 function waitControls(controls, options, callback) {
   var cbParamsStartIndex;
@@ -94,3 +101,5 @@ function waitControls(controls, options, callback) {
     }
   }, period);
 }
+
+exports.waitControls = waitControls;

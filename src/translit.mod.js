@@ -1,9 +1,8 @@
 /**
- * @file translit.mod.js
+ * @file translit.mod.js - ES5 module for wb-rules v2.28
  * @description Module containing functions used for transliteration
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link JSDoc comments format <https://jsdoc.app/> - Google styleguide
  */
 
 /**
@@ -66,7 +65,7 @@ function replaceChar(char) {
  *     with valid characters only
  */
 function translit(input) {
-  return input
+  id = input
     .toLowerCase()
     .split('')
     .map(replaceChar)             // Replaces non-Latin symbols to latin char
@@ -74,6 +73,20 @@ function translit(input) {
     .replace(/[^a-z0-9_]/g, '_')  // Replaces unsupported characters with '_'
     .replace(/_+/g, '_')          // Replace multiple '_' with a single one
     .replace(/^_+|_+$/g, '');     // Remove leading and trailing '_'
+
+  // If result empty after processing - set default ID
+  // Example: if input is two underscope '__':
+  //   - scenario_qmbg561hkx
+  //   - scenario_gstcqtgwpi
+  if (!id) {
+    log.warning(
+      'Translit warning: Empty ID generated from input "{}", using random ID',
+       input
+      );
+    id = 'scenario_' + Math.random().toString(36).substring(2, 10);
+  }
+
+  return id;
 }
 
 exports.translit = function (input) {
