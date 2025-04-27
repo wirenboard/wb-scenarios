@@ -80,11 +80,60 @@ ScenarioBase.prototype.defineControlsWaitConfig = function (cfg) {
 };
 
 /**
- * Configuration validation stub - will be implemented in future PRs
+ * Configuration validation
  * @param {LightControlConfig} cfg - Configuration object
- * @returns {boolean} Always returns true in this first implementation
+ * @returns {boolean} True if configuration is valid, false otherwise
  */
 LightControlScenario.prototype.validateCfg = function (cfg) {
+  var isAllArrays =
+    Array.isArray(cfg.lightDevices) &&
+    Array.isArray(cfg.motionSensors) &&
+    Array.isArray(cfg.openingSensors) &&
+    Array.isArray(cfg.lightSwitches);
+  if (!isAllArrays) {
+    log.error(
+      'Light-control initialization error: cfg.lightDevices, cfg.motionSensors, cfg.openingSensors, and cfg.lightSwitches must be arrays'
+    );
+    return false;
+  }
+
+  var isAllDelayValid =
+    cfg.delayByMotionSensors > 0 &&
+    cfg.delayByOpeningSensors > 0 &&
+    (cfg.isDelayEnabledAfterSwitch === false ||
+      cfg.delayBlockAfterSwitch > 0);
+  if (!isAllDelayValid) {
+    // prettier-ignore
+    var curDelays =
+      '[' + cfg.delayByMotionSensors + '], ' +
+      '[' + cfg.delayByOpeningSensors + '], ' +
+      '[' + cfg.delayBlockAfterSwitch + ']';
+
+    log.error('Invalid delay - must be a positive number ' + curDelays);
+    return false;
+  }
+
+  var isLightDevicesEmpty = cfg.lightDevices.length === 0;
+  if (isLightDevicesEmpty) {
+    log.error(
+      'Light-control initialization error: no light devices specified'
+    );
+    return false;
+  }
+
+  // Check that at least one trigger type is specified
+  var isAllTriggersEmpty =
+    cfg.motionSensors.length === 0 &&
+    cfg.openingSensors.length === 0 &&
+    cfg.lightSwitches.length === 0;
+  if (isAllTriggersEmpty) {
+    log.error(
+      'Light-control initialization error: no motion, ' +
+        'opening sensors and wall switches specified'
+    );
+    return false;
+  }
+
   return true;
 };
 
