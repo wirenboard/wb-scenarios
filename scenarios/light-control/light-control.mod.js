@@ -41,8 +41,8 @@ var lastActionType = {
  *   lights after motion stops
  * @property {number} [delayByOpeningSensors] - Delay (s) before turning off
  *   lights after door closes
- * @property {boolean} [isDelayEnabledAfterSwitch] - Enable auto-off delay after
- *   manual switch usage
+ * @property {boolean} [isDelayEnabledAfterSwitch] - Enable auto-off delay
+ *   after manual switch usage
  * @property {number} [delayBlockAfterSwitch] - Delay (s) before automation
  *   resumes after manual control
  */
@@ -101,7 +101,7 @@ LightControlScenario.prototype.generateNames = function (idPrefix) {
  * Get configuration for waiting for controls
  *
  * @param {Object} cfg Configuration object
- * @returns {Object} Waiting configuration object or empty object for no waiting
+ * @returns {Object} Waiting configuration object or empty object for no wait
  */
 LightControlScenario.prototype.defineControlsWaitConfig = function (cfg) {
   var lightDevTopics = extractMqttTopics(cfg.lightDevices || []);
