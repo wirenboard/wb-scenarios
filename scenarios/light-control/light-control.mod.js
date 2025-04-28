@@ -353,10 +353,9 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   // Check if debug mode is enabled and add extra controls if needed
   if (cfg.isDebugEnabled === true) {
+    log.debug('Scenario debug enabled - add extra controls to VD');
     var self = this;
     addAllLinkedDevicesToVd(self, cfg);
-  } else {
-    log.debug('Debug disabled and has value: "' + cfg.isDebugEnabled + '"');
   }
 
   // Create a simple rule as a placeholder
