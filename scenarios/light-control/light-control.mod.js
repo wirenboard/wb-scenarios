@@ -15,6 +15,20 @@ var loggerFileLabel = 'WBSC-light-control-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
+ * Enum for tracking the last action type in the light control system
+ * @enum {number}
+ */
+var lastActionType = {
+  NOT_USED: 0, // Not used yet (set immediately after start)
+  RULE_ON: 1, // Scenario turned everything on
+  RULE_OFF: 2, // Scenario turned everything off
+  EXT_ON: 3, // Externally turned everything on
+  EXT_OFF: 4, // Externally turned everything off
+  PARTIAL_EXT: 5, // Partially changed by external actions
+  PARTIAL_BY_RULE: 6, // Partially changed by Scenario
+};
+
+/**
  * @typedef {Object} LightControlConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
