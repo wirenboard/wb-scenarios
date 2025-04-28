@@ -350,8 +350,6 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   // Add all required controls to the virtual device
   addCustomControlsToVirtualDevice(this, cfg);
-
-  // Check if debug mode is enabled and add extra controls if needed
   if (cfg.isDebugEnabled === true) {
     log.debug('Scenario debug enabled - add extra controls to VD');
     var self = this;
