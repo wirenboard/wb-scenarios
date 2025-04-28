@@ -353,11 +353,8 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   // Check if debug mode is enabled and add extra controls if needed
   if (cfg.isDebugEnabled === true) {
-    // Need a delay to ensure all devices are created before creating links
     var self = this;
-    setTimeout(function () {
-      addAllLinkedDevicesToVd(self, cfg);
-    }, 1000);
+    addAllLinkedDevicesToVd(self, cfg);
   } else {
     log.debug('Debug disabled and has value: "' + cfg.isDebugEnabled + '"');
   }
