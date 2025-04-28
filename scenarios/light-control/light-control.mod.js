@@ -283,30 +283,6 @@ function addCustomControlsToVirtualDevice(self, cfg) {
  * @param {Object} cfg - Configuration object
  */
 function addAllLinkedDevicesToVd(self, cfg) {
-  // Current delay timer for debug
-  self.vd.devObj.addControl('curValDisableLightTimerInSec', {
-    title: {
-      en: 'Dbg: Disable timer',
-      ru: 'Dbg: Таймер отключения',
-    },
-    units: 's',
-    type: 'value',
-    value: 0,
-    readonly: true,
-  });
-
-  // Current logic disabled timer for debug
-  self.vd.devObj.addControl('curValDisabledLogicTimerInSec', {
-    title: {
-      en: 'Dbg: Disabled logic timer',
-      ru: 'Dbg: Таймер отключенной логики',
-    },
-    units: 's',
-    type: 'value',
-    value: 0,
-    readonly: true,
-  });
-
   if (cfg.lightDevices.length > 0) {
     addLinkedControlsArray(self, cfg.lightDevices, 'light_device');
   }
