@@ -77,11 +77,23 @@ LightControlScenario.prototype.constructor = LightControlScenario;
  */
 LightControlScenario.prototype.generateNames = function (idPrefix) {
   var scenarioPrefix = 'wbsc_';
-  var baseRuleName = scenarioPrefix + idPrefix;
+  var baseRuleName = scenarioPrefix + idPrefix + '_';
 
+  // prettier-ignore
   return {
     vDevice: scenarioPrefix + idPrefix,
+    ruleLightDevsChange: baseRuleName + 'lightDevsChange',
+    ruleLastSwitchActionChange: baseRuleName + 'lastSwitchActionChange',
+    ruleLogicDisabledChange: baseRuleName + 'logicDisabledChange',
+    ruleDoorOpenChange: baseRuleName + 'doorOpenChange',
+    ruleMotion: baseRuleName + 'motion',
+    ruleRemainingTimeToLightOffChange: baseRuleName + 'remainingTimeToLightOffChange',
+    ruleRemainingTimeToLogicEnableChange: baseRuleName + 'remainingTimeToLogicEnableChange',
     ruleLightOnChange: baseRuleName + 'lightOnChange',
+    ruleLightSwitchUsed: baseRuleName + 'lightSwitchUsed',
+    ruleOpeningSensorsChange: baseRuleName + 'openingSensorsChange',
+    ruleMotionInProgress: baseRuleName + 'motionInProgress',
+    ruleLogicDisabledByWallSwitch: baseRuleName + 'logicDisabledByWallSwitch',
   };
 };
 
