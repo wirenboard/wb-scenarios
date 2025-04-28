@@ -40,6 +40,18 @@ var log = new Logger(loggerFileLabel);
  */
 function LightControlScenario() {
   ScenarioBase.call(this);
+
+  /**
+   * Context object for storing scenario runtime state
+   * @type {Object}
+   */
+  this.ctx = {
+    ruleActionInProgress: false, // scenario is currently changing lights
+    ruleTargetState: null, // true → should turn on, false → turn off
+    syncingLightOn: false, // flag to prevent recursion when syncing lightOn
+    lightOffTimerId: null, // timer ID for turning off lights
+    logicEnableTimerId: null, // timer ID for re-enabling automation logic
+  };
 }
 LightControlScenario.prototype = Object.create(ScenarioBase.prototype);
 LightControlScenario.prototype.constructor = LightControlScenario;
