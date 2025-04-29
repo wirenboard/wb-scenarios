@@ -88,8 +88,8 @@ LightControlScenario.prototype.generateNames = function (idPrefix) {
     ruleLogicDisabledChange: baseRuleName + 'logicDisabledChange',
     ruleDoorOpenChange: baseRuleName + 'doorOpenChange',
     ruleMotion: baseRuleName + 'motion',
-    ruleRemainingTimeToLightOffChange: baseRuleName + 'remainingTimeToLightOffChange',
-    ruleRemainingTimeToLogicEnableChange: baseRuleName + 'remainingTimeToLogicEnableChange',
+    ruleTimeToLightOffChange: baseRuleName + 'remainingTimeToLightOffChange',
+    ruleTimeToLogicEnableChange: baseRuleName + 'remainingTimeToLogicEnableChange',
     ruleLightOnChange: baseRuleName + 'lightOnChange',
     ruleLightSwitchUsed: baseRuleName + 'lightSwitchUsed',
     ruleOpeningSensorsChange: baseRuleName + 'openingSensorsChange',
@@ -353,6 +353,19 @@ function updateRemainingLightOffTime(self) {
 }
 
 /**
+ * Updates the remaining time to logic enable each second
+ * @param {Object} self - Reference to the LightControlScenario instance
+ */
+function updateRemainingLogicEnableTime(self) {
+  var remainingTime =
+    dev[self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'];
+  if (remainingTime >= 1) {
+    dev[self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'] =
+      remainingTime - 1;
+  }
+}
+
+/**
  * Starts the light off timer
  * @param {Object} self - Reference to the LightControlScenario instance
  * @param {number} newDelayMs - Delay in milliseconds
@@ -360,6 +373,18 @@ function updateRemainingLightOffTime(self) {
 function startLightOffTimer(self, newDelayMs) {
   var newDelaySec = newDelayMs / 1000;
   dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
+  // Timer automatically starts countdown when a new value is set
+}
+
+/**
+ * Starts the logic enable timer
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {number} newDelayMs - Delay in milliseconds
+ */
+function startLogicEnableTimer(self, newDelayMs) {
+  var newDelaySec = newDelayMs / 1000;
+  dev[self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'] =
+    newDelaySec;
   // Timer automatically starts countdown when a new value is set
 }
 
@@ -373,12 +398,30 @@ function turnOffLightsByTimeout(self) {
 }
 
 /**
+ * Enables logic by timeout
+ * @param {Object} self - Reference to the LightControlScenario instance
+ */
+function enableLogicByTimeout(self) {
+  dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
+  resetLogicEnableTimer(self);
+}
+
+/**
  * Resets the light off timer
  * @param {Object} self - Reference to the LightControlScenario instance
  */
 function resetLightOffTimer(self) {
   self.ctx.lightOffTimerId = null;
   dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] = 0;
+}
+
+/**
+ * Resets the logic enable timer
+ * @param {Object} self - Reference to the LightControlScenario instance
+ */
+function resetLogicEnableTimer(self) {
+  self.ctx.logicEnableTimerId = null;
+  dev[self.genNames.vDevice + '/remainingTimeToLogicEnableInSec'] = 0;
 }
 
 /**
@@ -472,6 +515,59 @@ function isMotionSensorActiveByBehavior(sensorWithBehavior, newValue) {
 }
 
 /**
+ * Checks if an opening sensor is triggered
+ * @param {SensorConfig} sensorWithBehavior - Sensor object with behavior type
+ * @param {boolean|string} newValue - Current sensor value
+ * @returns {boolean} Triggered status based on behavior type
+ *   - true if sensor is triggered (door is open)
+ *   - false otherwise
+ */
+function isOpeningSensorOpenedByBehavior(sensorWithBehavior, newValue) {
+  if (sensorWithBehavior.behaviorType === 'whenDisabled') {
+    /**
+     * Normally closed sensor:
+     *   - When door is closed - normal state is true
+     *   - When door is open - disconnected, state is false
+     */
+    return newValue === false || newValue === 'false';
+  }
+
+  if (sensorWithBehavior.behaviorType === 'whenEnabled') {
+    /**
+     * Normally open sensor:
+     *   - When door is closed - normal state is false
+     *   - When door is open - connected, state is true
+     */
+    return newValue === true || newValue === 'true';
+  }
+
+  throw new Error(
+    'Unknown behavior type for sensor: ' + sensorWithBehavior.mqttTopicName
+  );
+}
+
+/**
+ * Checks if all opening sensors are closed (doors are closed)
+ * @param {Array<Object>} openingSensors - Array of opening sensor configs
+ * @returns {boolean} Complex status for all sensors:
+ *   - true if all sensors show that doors are closed
+ *   - false otherwise
+ */
+function checkAllOpeningSensorsClose(openingSensors) {
+  for (var i = 0; i < openingSensors.length; i++) {
+    var curSensorState = dev[openingSensors[i].mqttTopicName];
+    var isOpen = isOpeningSensorOpenedByBehavior(
+      openingSensors[i],
+      curSensorState
+    );
+    if (isOpen === true) {
+      return false; // Least one sensor is active (door is open)
+    }
+  }
+  return true; // All sensors are passive (doors are closed)
+}
+
+/**
  * Checks if all motion sensors are inactive
  * @param {Array<Object>} motionSensors - Array of motion sensor configurations
  * @returns {boolean} Complex status for all sensors:
@@ -499,7 +595,10 @@ function checkAllMotionSensorsInactive(motionSensors) {
  * @returns {boolean} True if rules created successfully, false otherwise
  */
 function createRules(self, cfg) {
+  var lightDevTopics = extractMqttTopics(cfg.lightDevices);
   var motionTopics = extractMqttTopics(cfg.motionSensors);
+  var openingTopics = extractMqttTopics(cfg.openingSensors);
+  var switchTopics = extractMqttTopics(cfg.lightSwitches);
 
   // Rule for motion sensors
   var ruleIdMotion = defineRule(self.genNames.ruleMotion, {
@@ -541,7 +640,7 @@ function createRules(self, cfg) {
   self.addRule(ruleIdMotionInProgress);
 
   // Rule for remaining time to light off changes
-  ruleName = self.genNames.ruleRemainingTimeToLightOffChange;
+  ruleName = self.genNames.ruleTimeToLightOffChange;
   var ruleIdRemainingTimeToLightOff = defineRule(ruleName, {
     whenChanged: self.genNames.vDevice + '/remainingTimeToLightOffInSec',
     then: function (newValue, devName, cellName) {
@@ -578,13 +677,106 @@ function createRules(self, cfg) {
   );
   self.addRule(ruleIdLightOnChange);
 
+  // Rule for opening sensors changes
+  ruleName = self.genNames.ruleOpeningSensorsChange;
+  var ruleIdOpeningSensorsChange = defineRule(ruleName, {
+    whenChanged: openingTopics,
+    then: function (newValue, devName, cellName) {
+      openingSensorHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdOpeningSensorsChange) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdOpeningSensorsChange +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdOpeningSensorsChange);
+
+  // Rule for light switch used
+  ruleName = self.genNames.ruleLightSwitchUsed;
+  var ruleIdLightSwitchUsed = defineRule(ruleName, {
+    whenChanged: switchTopics,
+    then: function (newValue, devName, cellName) {
+      lightSwitchUsedHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLightSwitchUsed) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdLightSwitchUsed +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdLightSwitchUsed);
+
+  // Rule for remaining time to logic enable changes
+  ruleName = self.genNames.ruleTimeToLogicEnableChange;
+  var ruleIdRemainingTimeToLogicEnableChange = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/remainingTimeToLogicEnableInSec',
+    then: function (newValue, devName, cellName) {
+      remainingTimeToLogicEnableHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdRemainingTimeToLogicEnableChange) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdRemainingTimeToLogicEnableChange +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdRemainingTimeToLogicEnableChange);
+
+  // Rule for door open changes
+  ruleName = self.genNames.ruleDoorOpenChange;
+  var ruleIdDoorOpen = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/doorOpen',
+    then: function (newValue, devName, cellName) {
+      doorOpenHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdDoorOpen) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdDoorOpen + '" was successfully created'
+  );
+  self.addRule(ruleIdDoorOpen);
+
+  // Rule for logic disabled changes
+  ruleName = self.genNames.ruleLogicDisabledChange;
+  var ruleIdLogicDisabled = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/logicDisabledByWallSwitch',
+    then: function (newValue, devName, cellName) {
+      logicDisabledHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLogicDisabled) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdLogicDisabled +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdLogicDisabled);
+
   // TODO:(vg) Insert other rules in this place
 }
 
 /**
  * Handler for motion sensor changes
  * @param {Object} self - Reference to the LightControlScenario instance
- * @param {*} newValue - New sensor value
+ * @param {any} newValue - New sensor value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
  */
@@ -699,6 +891,140 @@ function lightOnHandler(self, newValue, devName, cellName) {
     log.error('Light on - has incorrect type: {}', newValue);
   }
 
+  return true;
+}
+
+/**
+ * Handler for opening sensor changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {any} newValue - New sensor value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function openingSensorHandler(self, newValue, devName, cellName) {
+  if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] === true) {
+    // log.debug('Light-control is disabled after used wall switch - doing nothing');
+    return;
+  }
+
+  var topicName = devName + '/' + cellName;
+  var matchedConfig = findTopicConfig(topicName, self.cfg.openingSensors);
+  if (!matchedConfig) {
+    log.error('Opening sensor not found: ' + topicName);
+    return;
+  }
+
+  var isDoorOpen = isOpeningSensorOpenedByBehavior(matchedConfig, newValue);
+  if (isDoorOpen) {
+    // Any door open - we enable control '/doorOpen'
+    dev[self.genNames.vDevice + '/doorOpen'] = true;
+  } else {
+    // Only if all doors closed - we disable control '/doorOpen'
+    if (checkAllOpeningSensorsClose(self.cfg.openingSensors)) {
+      dev[self.genNames.vDevice + '/doorOpen'] = false;
+    }
+    // If some doors are still open - do nothing
+    // Status will remain "open" until all doors are closed
+  }
+}
+
+/**
+ * Handler for light switch used
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {any} newValue - New switch value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function lightSwitchUsedHandler(self, newValue, devName, cellName) {
+  // For switches, consider any change as toggling the scenario logic state
+  var curValue = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
+  dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = !curValue;
+
+  return true;
+}
+
+/**
+ * Handler for remaining time to logic enable changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {number} newValue - New time value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function remainingTimeToLogicEnableHandler(
+  self,
+  newValue,
+  devName,
+  cellName
+) {
+  if (newValue === 0) {
+    enableLogicByTimeout(self);
+  } else if (newValue >= 1) {
+    // Recharge timer
+    if (self.ctx.logicEnableTimerId) {
+      clearTimeout(self.ctx.logicEnableTimerId);
+    }
+    self.ctx.logicEnableTimerId = setTimeout(function () {
+      updateRemainingLogicEnableTime(self);
+    }, 1000);
+  } else {
+    log.error(
+      'Remaining time to logic enable: has incorrect value: ' + newValue
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Handler for door open changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {boolean} newValue - New door state value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function doorOpenHandler(self, newValue, devName, cellName) {
+  var isDoorOpened = newValue === true;
+  var isDoorClosed = newValue === false;
+
+  if (isDoorOpened) {
+    dev[self.genNames.vDevice + '/lightOn'] = true;
+    startLightOffTimer(self, self.cfg.delayByOpeningSensors * 1000);
+  } else if (isDoorClosed) {
+    // Do nothing
+  } else {
+    log.error('Door status - has incorrect type: {}', newValue);
+  }
+
+  return true;
+}
+
+/**
+ * Handler for disabling automation logic when using the switch
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {boolean} newValue - New logic state value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function logicDisabledHandler(self, newValue, devName, cellName) {
+  if (self.ctx.lightOffTimerId) {
+    clearTimeout(self.ctx.lightOffTimerId);
+    resetLightOffTimer(self);
+  }
+  if (self.ctx.logicEnableTimerId) {
+    clearTimeout(self.ctx.logicEnableTimerId);
+    resetLogicEnableTimer(self);
+  }
+
+  if (newValue === false) {
+    dev[self.genNames.vDevice + '/lightOn'] = false;
+    return true;
+  }
+
+  dev[self.genNames.vDevice + '/lightOn'] = true;
+  if (self.cfg.isDelayEnabledAfterSwitch === true) {
+    startLightOffTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
+    startLogicEnableTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
+  }
   return true;
 }
 
