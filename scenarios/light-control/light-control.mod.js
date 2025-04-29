@@ -183,11 +183,8 @@ LightControlScenario.prototype.validateCfg = function (cfg) {
  * @param {Object} cfg - Configuration object
  */
 function addCustomControlsToVirtualDevice(self, cfg) {
-  var ctrlName = '';
-
   // Add basic lightOn control
-  ctrlName = 'lightOn';
-  self.vd.devObj.addControl(ctrlName, {
+  self.vd.devObj.addControl('lightOn', {
     title: {
       en: 'Light On',
       ru: 'Освещение включено',
@@ -197,11 +194,9 @@ function addCustomControlsToVirtualDevice(self, cfg) {
     readonly: true,
     order: 6,
   });
-  self.vd.ctrl.lightOn = self.vd.devObj.getControl(ctrlName);
 
   // Add timer for light off countdown
-  ctrlName = 'remainingTimeToLightOffInSec';
-  self.vd.devObj.addControl(ctrlName, {
+  self.vd.devObj.addControl('remainingTimeToLightOffInSec', {
     title: {
       en: 'Light off in',
       ru: 'Отключение света через',
@@ -213,12 +208,10 @@ function addCustomControlsToVirtualDevice(self, cfg) {
     readonly: true,
     order: 2,
   });
-  self.vd.ctrl.remainingTimeToLightOffInSec = self.vd.devObj.getControl(ctrlName);
 
   // Conditional controls based on configuration
   if (cfg.motionSensors.length > 0) {
-    ctrlName = 'motionInProgress';
-    self.vd.devObj.addControl(ctrlName, {
+    self.vd.devObj.addControl('motionInProgress', {
       title: {
         en: 'Motion in progress',
         ru: 'Есть движение',
@@ -228,12 +221,10 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       readonly: true,
       order: 4,
     });
-    self.vd.ctrl.motionInProgress = self.vd.devObj.getControl(ctrlName);
   }
 
   if (cfg.openingSensors.length > 0) {
-    ctrlName = 'doorOpen';
-    self.vd.devObj.addControl(ctrlName, {
+    self.vd.devObj.addControl('doorOpen', {
       title: {
         en: 'Door open',
         ru: 'Дверь открыта',
@@ -243,12 +234,10 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       readonly: true,
       order: 5,
     });
-    self.vd.ctrl.doorOpen = self.vd.devObj.getControl(ctrlName);
   }
 
   if (cfg.lightSwitches.length > 0) {
-    ctrlName = 'remainingTimeToLogicEnableInSec';
-    self.vd.devObj.addControl(ctrlName, {
+    self.vd.devObj.addControl('remainingTimeToLogicEnableInSec', {
       title: {
         en: 'Automation activation in',
         ru: 'Активация автоматики через',
@@ -260,10 +249,8 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       readonly: true,
       order: 3,
     });
-    self.vd.ctrl.remainingTimeToLogicEnableInSec = self.vd.devObj.getControl(ctrlName);
 
-    ctrlName = 'logicDisabledByWallSwitch';
-    self.vd.devObj.addControl(ctrlName, {
+    self.vd.devObj.addControl('logicDisabledByWallSwitch', {
       title: {
         en: 'Disabled manually by switch',
         ru: 'Отключено ручным выключателем',
@@ -274,12 +261,10 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       readonly: true,
       order: 7,
     });
-    self.vd.ctrl.logicDisabledByWallSwitch = self.vd.devObj.getControl(ctrlName);
   }
 
   // Add last switch action tracker
-  ctrlName = 'lastSwitchAction';
-  self.vd.devObj.addControl(ctrlName, {
+  self.vd.devObj.addControl('lastSwitchAction', {
     title: {
       en: 'Last switch action',
       ru: 'Тип последнего переключения',
@@ -303,7 +288,6 @@ function addCustomControlsToVirtualDevice(self, cfg) {
     },
     order: 8,
   });
-  self.vd.ctrl.lastSwitchAction = self.vd.devObj.getControl(ctrlName);
 }
 
 /**
@@ -360,9 +344,11 @@ function addLinkedControlsArray(self, arrayOfControls, cellPrefix) {
  * @param {Object} self - Reference to the LightControlScenario instance
  */
 function updateRemainingLightOffTime(self) {
-  var remainingTime = self.vd.ctrl.remainingTimeToLightOffInSec.getValue();
+  var remainingTime =
+    dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'];
   if (remainingTime >= 1) {
-    self.vd.ctrl.remainingTimeToLightOffInSec.setValue(remainingTime - 1);
+    dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] =
+      remainingTime - 1;
   }
 }
 
@@ -373,7 +359,7 @@ function updateRemainingLightOffTime(self) {
  */
 function startLightOffTimer(self, newDelayMs) {
   var newDelaySec = newDelayMs / 1000;
-  self.vd.ctrl.remainingTimeToLightOffInSec.setValue(newDelaySec);
+  dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
   // Timer automatically starts countdown when a new value is set
 }
 
@@ -382,7 +368,7 @@ function startLightOffTimer(self, newDelayMs) {
  * @param {Object} self - Reference to the LightControlScenario instance
  */
 function turnOffLightsByTimeout(self) {
-  self.vd.ctrl.lightOn.setValue(false);
+  dev[self.genNames.vDevice + '/lightOn'] = false;
   resetLightOffTimer(self);
 }
 
@@ -392,7 +378,7 @@ function turnOffLightsByTimeout(self) {
  */
 function resetLightOffTimer(self) {
   self.ctx.lightOffTimerId = null;
-  self.vd.ctrl.remainingTimeToLightOffInSec.setValue(0);
+  dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] = 0;
 }
 
 /**
@@ -535,7 +521,7 @@ function createRules(self, cfg) {
   var ruleIdMotionInProgress = defineRule(
     self.genNames.ruleMotionInProgress,
     {
-      whenChanged: [self.genNames.vDevice + '/' + self.vd.ctrl.motionInProgress.getId()],
+      whenChanged: [self.genNames.vDevice + '/motionInProgress'],
       then: function (newValue, devName, cellName) {
         motionInProgressHandler(self, newValue, devName, cellName);
       },
@@ -557,7 +543,7 @@ function createRules(self, cfg) {
   // Rule for remaining time to light off changes
   ruleName = self.genNames.ruleRemainingTimeToLightOffChange;
   var ruleIdRemainingTimeToLightOff = defineRule(ruleName, {
-    whenChanged: self.genNames.vDevice + '/' + self.vd.ctrl.remainingTimeToLightOffInSec.getId(),
+    whenChanged: self.genNames.vDevice + '/remainingTimeToLightOffInSec',
     then: function (newValue, devName, cellName) {
       remainingTimeToLightOffHandler(self, newValue, devName, cellName);
     },
@@ -576,7 +562,7 @@ function createRules(self, cfg) {
   // Rule for light on changes
   ruleName = self.genNames.ruleLightOnChange;
   var ruleIdLightOnChange = defineRule(ruleName, {
-    whenChanged: self.genNames.vDevice + '/' + self.vd.ctrl.lightOn.getId(),
+    whenChanged: self.genNames.vDevice + '/lightOn',
     then: function (newValue, devName, cellName) {
       lightOnHandler(self, newValue, devName, cellName);
     },
@@ -603,7 +589,7 @@ function createRules(self, cfg) {
  * @param {string} cellName - Cell name
  */
 function motionSensorHandler(self, newValue, devName, cellName) {
-  if (self.vd.ctrl.logicDisabledByWallSwitch.getValue() === true) {
+  if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] === true) {
     // log.debug('Light-control is disabled after used wall switch - doing nothing');
     return;
   }
@@ -621,11 +607,11 @@ function motionSensorHandler(self, newValue, devName, cellName) {
   );
   if (isMotionActive) {
     // Any motion sensor active - we enable control
-    self.vd.ctrl.motionInProgress.setValue(true);
+    dev[self.genNames.vDevice + '/motionInProgress'] = true;
   } else {
     // Only if all motion sensors deactivated - we disable control
     if (checkAllMotionSensorsInactive(self.cfg.motionSensors)) {
-      self.vd.ctrl.motionInProgress.setValue(false);
+      dev[self.genNames.vDevice + '/motionInProgress'] = false;
     }
     // If some motion sensors are still active - do nothing, keeping lights on
     // Status will remain "active" until all sensors are deactivated
@@ -647,7 +633,7 @@ function motionInProgressHandler(self, newValue, devName, cellName) {
       clearTimeout(self.ctx.lightOffTimerId);
     }
     resetLightOffTimer(self);
-    self.vd.ctrl.lightOn.setValue(true);
+    dev[self.genNames.vDevice + '/lightOn'] = true;
   } else {
     // Detected motion end
     startLightOffTimer(self, self.cfg.delayByMotionSensors * 1000);
@@ -662,7 +648,7 @@ function motionInProgressHandler(self, newValue, devName, cellName) {
  * @param {string} cellName - Cell name
  */
 function remainingTimeToLightOffHandler(self, newValue, devName, cellName) {
-  var curMotionStatus = self.vd.ctrl.motionInProgress.getValue();
+  var curMotionStatus = dev[self.genNames.vDevice + '/motionInProgress'];
   if (newValue === 0 && curMotionStatus === true) {
     // Do nothing if timer reset to zero during motion
     return true;

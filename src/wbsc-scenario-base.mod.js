@@ -174,7 +174,6 @@ ScenarioBase.prototype.init = function (name, cfg) {
 
   this.vd = {
     devObj: devObj,
-    ctrl: {},
     setTotalError: function (errorMsg) {
       if (!this.devObj) {
         log.error('VD does not exist in the system or devObj not defined');
@@ -194,9 +193,6 @@ ScenarioBase.prototype.init = function (name, cfg) {
       }
     },
   };
-  this.vd.ctrl.ruleEnabled = this.vd.devObj.getControl('rule_enabled');
-  this.vd.ctrl.state = this.vd.devObj.getControl('state');
-
   this.setState(ScenarioState.INIT_STARTED);
 
   var waitConfig = this.defineControlsWaitConfig(cfg);
