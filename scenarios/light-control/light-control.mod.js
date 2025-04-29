@@ -7,6 +7,7 @@
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var vdHelpers = require('virtual-device-helpers.mod');
+var aTable = require('registry-action-resolvers.mod');
 var Logger = require('logger.mod').Logger;
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
@@ -339,6 +340,369 @@ function addLinkedControlsArray(self, arrayOfControls, cellPrefix) {
 }
 
 /**
+ * Updates the remaining time to light off each second
+ * @param {Object} self - Reference to the LightControlScenario instance
+ */
+function updateRemainingLightOffTime(self) {
+  var remainingTime =
+    dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'];
+  if (remainingTime >= 1) {
+    dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] =
+      remainingTime - 1;
+  }
+}
+
+/**
+ * Starts the light off timer
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {number} newDelayMs - Delay in milliseconds
+ */
+function startLightOffTimer(self, newDelayMs) {
+  var newDelaySec = newDelayMs / 1000;
+  dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] = newDelaySec;
+  // Timer automatically starts countdown when a new value is set
+}
+
+/**
+ * Turns off the lights by timeout
+ * @param {Object} self - Reference to the LightControlScenario instance
+ */
+function turnOffLightsByTimeout(self) {
+  dev[self.genNames.vDevice + '/lightOn'] = false;
+  resetLightOffTimer(self);
+}
+
+/**
+ * Resets the light off timer
+ * @param {Object} self - Reference to the LightControlScenario instance
+ */
+function resetLightOffTimer(self) {
+  self.ctx.lightOffTimerId = null;
+  dev[self.genNames.vDevice + '/remainingTimeToLightOffInSec'] = 0;
+}
+
+/**
+ * Sets values for all devices based on behavior type
+ * @param {Array} actionControlsArr - Array of controls with behavior type and values
+ * @param {boolean} state - State to apply (true - allow, false - reset)
+ */
+function setValueAllDevicesByBehavior(actionControlsArr, state) {
+  for (var i = 0; i < actionControlsArr.length; i++) {
+    var curMqttTopicName = actionControlsArr[i].mqttTopicName;
+    var curUserAction = actionControlsArr[i].behaviorType;
+    var curActionValue = actionControlsArr[i].actionValue;
+    var actualValue = dev[curMqttTopicName];
+    var newCtrlValue;
+    if (state === true) {
+      newCtrlValue = aTable.actionsTable[curUserAction].launchResolver(
+        actualValue,
+        curActionValue
+      );
+    } else {
+      newCtrlValue = aTable.actionsTable[curUserAction].resetResolver(
+        actualValue,
+        curActionValue
+      );
+    }
+    dev[curMqttTopicName] = newCtrlValue;
+  }
+}
+
+/**
+ * @typedef {Object} SensorConfig
+ * @property {string} mqttTopicName - MQTT topic name for the sensor
+ * @property {string} behaviorType - Sensor behavior type
+ *   - whenEnabled
+ *   - whenDisabled
+ * @property {string} [description] - Optional description of the sensor
+ */
+
+/**
+ * Finds configuration for topic name in the specified configuration array
+ * @param {string} topicName - Topic name to search for
+ * @param {SensorConfig[]} configArray - Array of configurations to search in
+ * @returns {SensorConfig|null} Found topic configuration or null if not found
+ */
+function findTopicConfig(topicName, configArray) {
+  if (!configArray || !Array.isArray(configArray)) {
+    log.error(
+      'Invalid config array provided for topic search: ' + topicName
+    );
+    return null;
+  }
+
+  for (var i = 0; i < configArray.length; i++) {
+    if (configArray[i].mqttTopicName === topicName) {
+      return configArray[i];
+    }
+  }
+
+  log.error('Cannot find config for topic: "{}"', topicName);
+  return null;
+}
+
+/**
+ * Checks if a motion sensor is active based on its behavior type
+ * @param {SensorConfig} sensorWithBehavior - Sensor object with behavior type
+ * @param {any} newValue - Current sensor value
+ * @returns {boolean} isSensorTriggered - Shows if sensor is activated:
+ *   - True if sensor is active
+ *   - False otherwise
+ */
+function isMotionSensorActiveByBehavior(sensorWithBehavior, newValue) {
+  if (sensorWithBehavior.behaviorType === 'whileValueHigherThanThreshold') {
+    return newValue >= sensorWithBehavior.actionValue;
+  }
+
+  if (sensorWithBehavior.behaviorType === 'whenEnabled') {
+    if (newValue === true || newValue === 'true') {
+      return true;
+    }
+
+    if (newValue === false || newValue === 'false') {
+      return false;
+    }
+
+    throw new Error('Motion sensor has incorrect value: "' + newValue + '"');
+  }
+
+  throw new Error(
+    'Unknown behavior type for sensor: ' + sensorWithBehavior.mqttTopicName
+  );
+}
+
+/**
+ * Checks if all motion sensors are inactive
+ * @param {Array<Object>} motionSensors - Array of motion sensor configurations
+ * @returns {boolean} Complex status for all sensors:
+ *   - true if all sensors show no motion is detected
+ *   - false otherwise
+ */
+function checkAllMotionSensorsInactive(motionSensors) {
+  for (var i = 0; i < motionSensors.length; i++) {
+    var curSensorState = dev[motionSensors[i].mqttTopicName];
+    var isActive = isMotionSensorActiveByBehavior(
+      motionSensors[i],
+      curSensorState
+    );
+    if (isActive === true) {
+      return false; // Least one sensor is active
+    }
+  }
+  return true; // All sensors are inactive
+}
+
+/**
+ * Creates all required rules for the light control scenario
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {Object} cfg - Configuration object
+ * @returns {boolean} True if rules created successfully, false otherwise
+ */
+function createRules(self, cfg) {
+  var motionTopics = extractMqttTopics(cfg.motionSensors);
+
+  // Rule for motion sensors
+  var ruleIdMotion = defineRule(self.genNames.ruleMotion, {
+    whenChanged: motionTopics,
+    then: function (newValue, devName, cellName) {
+      motionSensorHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdMotion) {
+    log.error('WB-rule "' + self.genNames.ruleMotion + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' + ruleIdMotion + '" was successfully created'
+  );
+  self.addRule(ruleIdMotion);
+
+  // Rule for motion in progress
+  var ruleIdMotionInProgress = defineRule(
+    self.genNames.ruleMotionInProgress,
+    {
+      whenChanged: [self.genNames.vDevice + '/motionInProgress'],
+      then: function (newValue, devName, cellName) {
+        motionInProgressHandler(self, newValue, devName, cellName);
+      },
+    }
+  );
+  if (!ruleIdMotionInProgress) {
+    log.error(
+      'WB-rule "' + self.genNames.ruleMotionInProgress + '" not created'
+    );
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdMotionInProgress +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdMotionInProgress);
+
+  // Rule for remaining time to light off changes
+  ruleName = self.genNames.ruleRemainingTimeToLightOffChange;
+  var ruleIdRemainingTimeToLightOff = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/remainingTimeToLightOffInSec',
+    then: function (newValue, devName, cellName) {
+      remainingTimeToLightOffHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdRemainingTimeToLightOff) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdRemainingTimeToLightOff +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdRemainingTimeToLightOff);
+
+  // Rule for light on changes
+  ruleName = self.genNames.ruleLightOnChange;
+  var ruleIdLightOnChange = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/lightOn',
+    then: function (newValue, devName, cellName) {
+      lightOnHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLightOnChange) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdLightOnChange +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdLightOnChange);
+
+  // TODO:(vg) Insert other rules in this place
+}
+
+/**
+ * Handler for motion sensor changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {*} newValue - New sensor value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function motionSensorHandler(self, newValue, devName, cellName) {
+  if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] === true) {
+    // log.debug('Light-control is disabled after used wall switch - doing nothing');
+    return;
+  }
+
+  var topicName = devName + '/' + cellName;
+  var matchedConfig = findTopicConfig(topicName, self.cfg.motionSensors);
+  if (!matchedConfig) {
+    log.error('Motion sensor not found: ' + topicName);
+    return;
+  }
+
+  var isMotionActive = isMotionSensorActiveByBehavior(
+    matchedConfig,
+    newValue
+  );
+  if (isMotionActive) {
+    // Any motion sensor active - we enable control
+    dev[self.genNames.vDevice + '/motionInProgress'] = true;
+  } else {
+    // Only if all motion sensors deactivated - we disable control
+    if (checkAllMotionSensorsInactive(self.cfg.motionSensors)) {
+      dev[self.genNames.vDevice + '/motionInProgress'] = false;
+    }
+    // If some motion sensors are still active - do nothing, keeping lights on
+    // Status will remain "active" until all sensors are deactivated
+  }
+}
+
+/**
+ * Handler for motion in progress changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {boolean} newValue - New motion state value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function motionInProgressHandler(self, newValue, devName, cellName) {
+  var isMotionDetected = newValue === true;
+
+  if (isMotionDetected) {
+    if (self.ctx.lightOffTimerId) {
+      clearTimeout(self.ctx.lightOffTimerId);
+    }
+    resetLightOffTimer(self);
+    dev[self.genNames.vDevice + '/lightOn'] = true;
+  } else {
+    // Detected motion end
+    startLightOffTimer(self, self.cfg.delayByMotionSensors * 1000);
+  }
+}
+
+/**
+ * Handler for remaining time to light off changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {number} newValue - New time value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function remainingTimeToLightOffHandler(self, newValue, devName, cellName) {
+  var curMotionStatus = dev[self.genNames.vDevice + '/motionInProgress'];
+  if (newValue === 0 && curMotionStatus === true) {
+    // Do nothing if timer reset to zero during motion
+    return true;
+  }
+
+  if (newValue === 0) {
+    turnOffLightsByTimeout(self);
+  } else if (newValue >= 1) {
+    // Recharge timer
+    if (self.ctx.lightOffTimerId) {
+      clearTimeout(self.ctx.lightOffTimerId);
+    }
+    self.ctx.lightOffTimerId = setTimeout(function () {
+      updateRemainingLightOffTime(self);
+    }, 1000);
+  } else {
+    log.error(
+      'Remaining time to light enable: has incorrect value: ' + newValue
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Handler for light on control changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {boolean} newValue - New light state value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function lightOnHandler(self, newValue, devName, cellName) {
+  // Don't react if we updated the indicator ourselves
+  if (self.ctx.syncingLightOn) return true;
+
+  var isLightSwitchedOn = newValue === true;
+  var isLightSwitchedOff = newValue === false;
+
+  if (isLightSwitchedOn) {
+    self.ctx.ruleActionInProgress = true;
+    self.ctx.ruleTargetState = true;
+    setValueAllDevicesByBehavior(self.cfg.lightDevices, true);
+  } else if (isLightSwitchedOff) {
+    self.ctx.ruleActionInProgress = true;
+    self.ctx.ruleTargetState = false;
+    setValueAllDevicesByBehavior(self.cfg.lightDevices, false);
+  } else {
+    log.error('Light on - has incorrect type: {}', newValue);
+  }
+
+  return true;
+}
+
+/**
  * Scenario initialization
  * @param {string} deviceTitle - Virtual device title
  * @param {LightControlConfig} cfg - Configuration object
@@ -356,17 +720,11 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     addAllLinkedDevicesToVd(self, cfg);
   }
 
-  // Create a simple rule as a placeholder
-  var ruleId = defineRule(this.genNames.ruleLightOnChange, {
-    whenChanged: [this.genNames.vDevice + '/lightOn'],
-    then: function (newValue) {
-      log.debug('Light state changed to: ' + newValue);
-    },
-  });
+  log.debug('Start all required rules creation');
+  var rulesCreated = createRules(this, cfg);
 
-  this.addRule(ruleId);
   log.debug('Light control scenario initialized');
-  return true;
+  return rulesCreated;
 };
 
 exports.LightControlScenario = LightControlScenario;
