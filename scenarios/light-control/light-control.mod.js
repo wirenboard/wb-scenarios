@@ -445,33 +445,30 @@ function findTopicConfig(topicName, configArray) {
  * Checks if a motion sensor is active based on its behavior type
  * @param {SensorConfig} sensorWithBehavior - Sensor object with behavior type
  * @param {any} newValue - Current sensor value
- * @returns {boolean} True if sensor is active, false otherwise
+ * @returns {boolean} isSensorTriggered - Shows if sensor is activated:
+ *   - True if sensor is active
+ *   - False otherwise
  */
 function isMotionSensorActiveByBehavior(sensorWithBehavior, newValue) {
-  var sensorTriggered = false;
   if (sensorWithBehavior.behaviorType === 'whileValueHigherThanThreshold') {
-    var isMotionStart = newValue >= sensorWithBehavior.actionValue;
-    if (isMotionStart) {
-      sensorTriggered = true;
-    } else {
-      sensorTriggered = false;
-    }
-  } else if (sensorWithBehavior.behaviorType === 'whenEnabled') {
-    if (newValue === true || newValue === 'true') {
-      sensorTriggered = true;
-    } else if (newValue === false || newValue === 'false') {
-      sensorTriggered = false;
-    } else {
-      throw new Error(
-        'Motion sensor has incorrect value: "' + newValue + '"'
-      );
-    }
-  } else {
-    throw new Error(
-      'Unknown behavior type for sensor: ' + sensorWithBehavior.mqttTopicName
-    );
+    return newValue >= sensorWithBehavior.actionValue;
   }
-  return sensorTriggered;
+
+  if (sensorWithBehavior.behaviorType === 'whenEnabled') {
+    if (newValue === true || newValue === 'true') {
+      return true;
+    }
+
+    if (newValue === false || newValue === 'false') {
+      return false;
+    }
+
+    throw new Error('Motion sensor has incorrect value: "' + newValue + '"');
+  }
+
+  throw new Error(
+    'Unknown behavior type for sensor: ' + sensorWithBehavior.mqttTopicName
+  );
 }
 
 /**
