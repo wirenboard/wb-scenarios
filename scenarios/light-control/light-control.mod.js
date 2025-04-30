@@ -61,8 +61,8 @@ function LightControlScenario() {
    * @type {Object}
    */
   this.ctx = {
-    ruleActionInProgress: false, // scenario is currently changing lights
-    ruleTargetState: null, // true → should turn on, false → turn off
+    scenarioActionInProgress: false, // scenario is currently changing lights
+    scenarioTargetState: null, // true → should turn on, false → turn off
     syncingLightOn: false, // flag to prevent recursion when syncing lightOn
     lightOffTimerId: null, // timer ID for turning off lights
     logicEnableTimerId: null, // timer ID for re-enabling automation logic
@@ -924,12 +924,12 @@ function lightOnHandler(self, newValue, devName, cellName) {
   var isLightSwitchedOff = newValue === false;
 
   if (isLightSwitchedOn) {
-    self.ctx.ruleActionInProgress = true;
-    self.ctx.ruleTargetState = true;
+    self.ctx.scenarioActionInProgress = true;
+    self.ctx.scenarioTargetState = true;
     setValueAllDevicesByBehavior(self.cfg.lightDevices, true);
   } else if (isLightSwitchedOff) {
-    self.ctx.ruleActionInProgress = true;
-    self.ctx.ruleTargetState = false;
+    self.ctx.scenarioActionInProgress = true;
+    self.ctx.scenarioTargetState = false;
     setValueAllDevicesByBehavior(self.cfg.lightDevices, false);
   } else {
     log.error('Light on - has incorrect type: {}', newValue);
@@ -1094,7 +1094,7 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
   var mixedState = !allLightOn && !allLightOff; // partially on/off
 
   // Handle changes initiated by the scenario
-  if (self.ctx.ruleActionInProgress && newValue === internalLightStatus) {
+  if (self.ctx.scenarioActionInProgress && newValue === internalLightStatus) {
     // While the final result hasn't been achieved → PARTIAL_BY_SCENARIO
     if (mixedState) {
       dev[self.genNames.vDevice + '/lastSwitchAction'] =
@@ -1103,26 +1103,26 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
     }
 
     // Final state achieved
-    if (allLightOn && self.ctx.ruleTargetState === true) {
+    if (allLightOn && self.ctx.scenarioTargetState === true) {
       dev[self.genNames.vDevice + '/lastSwitchAction'] =
         lastActionType.SCENARIO_ON;
-    } else if (allLightOff && self.ctx.ruleTargetState === false) {
+    } else if (allLightOff && self.ctx.scenarioTargetState === false) {
       dev[self.genNames.vDevice + '/lastSwitchAction'] =
         lastActionType.SCENARIO_OFF;
     }
 
     // Don't sync the lightOn indicator (it should already be correct)
     if (
-      dev[self.genNames.vDevice + '/lightOn'] !== self.ctx.ruleTargetState
+      dev[self.genNames.vDevice + '/lightOn'] !== self.ctx.scenarioTargetState
     ) {
       log.error('Not correct logic!');
       self.ctx.syncingLightOn = true;
-      dev[self.genNames.vDevice + '/lightOn'] = self.ctx.ruleTargetState;
+      dev[self.genNames.vDevice + '/lightOn'] = self.ctx.scenarioTargetState;
       self.ctx.syncingLightOn = false;
     }
     // scenario finished switching
-    self.ctx.ruleActionInProgress = false;
-    self.ctx.ruleTargetState = null;
+    self.ctx.scenarioActionInProgress = false;
+    self.ctx.scenarioTargetState = null;
     return;
   }
 
