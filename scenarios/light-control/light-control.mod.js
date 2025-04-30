@@ -1174,30 +1174,24 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
  * @param {string} cellName - Cell name
  */
 function lastSwitchActionHandler(self, newValue, devName, cellName) {
-  var curAction = newValue;
+  var curActionType = newValue;
 
   // All light devices turned off externally
-  if (curAction === lastActionType.EXT_OFF) {
-    // Reset light timer
+  if (curActionType === lastActionType.EXT_OFF) {
     if (self.ctx.lightOffTimerId) {
       clearTimeout(self.ctx.lightOffTimerId);
       resetLightOffTimer(self);
     }
-
-    // Reset logic block timer
     if (self.ctx.logicEnableTimerId) {
       clearTimeout(self.ctx.logicEnableTimerId);
       resetLogicEnableTimer(self);
     }
 
-    // Remove automation block
-    if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] === true) {
-      dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
-    }
-
-    // Reset motion flag, for new motion can triggered turn on the light
     if (dev[self.genNames.vDevice + '/motionInProgress'] === true) {
       dev[self.genNames.vDevice + '/motionInProgress'] = false;
+    }
+    if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] === true) {
+      dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
     }
 
     // Sync lightOn indicator if needed
