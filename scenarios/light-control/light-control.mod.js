@@ -1210,38 +1210,6 @@ function lastSwitchActionHandler(self, newValue, devName, cellName) {
     return;
   }
 
-  // All light devices turned on externally
-  if (curAction === lastActionType.EXT_ON) {
-    // If it's a wall switch (logicBlocked=true)
-    // leave TIMERS set by logicDisabledHandler untouched
-    if (dev[self.genNames.vDevice + '/logicDisabledByWallSwitch']) {
-      log.debug('lastSwitchActionHandler: detected wall switch');
-      startLightOffTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
-      startLogicEnableTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
-      return; // exit, don't touch anything
-    }
-
-    // Start timer only if
-    // - rule is active,
-    // - automation is not blocked,
-    // - motion is detected at the time of turning on.
-    var isRuleEnabled = dev[self.genNames.vDevice + '/rule_enabled'];
-    var isMotionInProgress =
-      dev[self.genNames.vDevice + '/motionInProgress'];
-    if (isRuleEnabled && isMotionInProgress) {
-      startLightOffTimer(self, self.cfg.delayByMotionSensors * 1000);
-    } else {
-      // If timer was accidentally started earlier - reset it
-      // to avoid turning off the light manually.
-      if (self.ctx.lightOffTimerId) {
-        clearTimeout(self.ctx.lightOffTimerId);
-        resetLightOffTimer(self);
-      }
-    }
-
-    return;
-  }
-
   // Other values 'lastActionType' don't require a reaction
 }
 
