@@ -47,28 +47,37 @@ function initializeScenario(scenarioCfg) {
     openingSensors: scenarioCfg.openingSensors.sensorObjects,
     lightSwitches: scenarioCfg.lightSwitches.sensorObjects,
   };
-  var isInitSuccess = scenario.init(scenarioCfg.name, cfg);
 
-  if (isInitSuccess !== true) {
-    log.error(
-      'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
+  try {
+    var isInitSuccess = scenario.init(scenarioCfg.name, cfg);
+
+    if (isInitSuccess !== true) {
+      log.error(
+        'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
+        scenarioCfg.name,
+        scenarioCfg.id_prefix
+      );
+      return;
+    }
+
+    log.debug(
+      'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
       scenarioCfg.name,
       scenarioCfg.id_prefix
     );
-    return;
+
+    var scenarioStorage = scHelpers.getGlobalScenarioStore(
+      CFG.scenarioTypeStr
+    );
+    scenarioStorage[scenarioCfg.id_prefix] = scenario;
+    log.debug('Stored in global registry with ID: ' + scenarioCfg.id_prefix);
+  } catch (error) {
+    log.error(
+      'Exception during scenario initialization: "{}" for scenario: "{}"', 
+      error.message || error, 
+      scenarioCfg.name
+    );
   }
-
-  log.debug(
-    'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
-    scenarioCfg.name,
-    scenarioCfg.id_prefix
-  );
-
-  var scenarioStorage = scHelpers.getGlobalScenarioStore(
-    CFG.scenarioTypeStr
-  );
-  scenarioStorage[scenarioCfg.id_prefix] = scenario;
-  log.debug('Stored in global registry with ID: ' + scenarioCfg.id_prefix);
 }
 
 function main() {
