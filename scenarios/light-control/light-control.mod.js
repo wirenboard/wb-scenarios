@@ -1228,7 +1228,8 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start all required rules creation');
   var rulesCreated = createRules(this, cfg);
 
-  log.debug('Light control scenario initialized');
+  this.setState(ScenarioState.NORMAL);
+  log.debug('Light control scenario initialized successfully');
   return rulesCreated;
 };
 
