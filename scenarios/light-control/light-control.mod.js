@@ -16,20 +16,6 @@ var loggerFileLabel = 'WBSC-light-control-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
- * Enum for tracking the last action type in the light control system
- * @enum {number}
- */
-var lastActionType = {
-  NOT_USED: 0, // Not used yet (set immediately after start)
-  RULE_ON: 1, // Scenario turned everything on
-  RULE_OFF: 2, // Scenario turned everything off
-  EXT_ON: 3, // Externally turned everything on
-  EXT_OFF: 4, // Externally turned everything off
-  PARTIAL_EXT: 5, // Partially changed by external actions
-  PARTIAL_BY_RULE: 6, // Partially changed by Scenario
-};
-
-/**
  * @typedef {Object} LightControlConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
@@ -61,9 +47,6 @@ function LightControlScenario() {
    * @type {Object}
    */
   this.ctx = {
-    ruleActionInProgress: false, // scenario is currently changing lights
-    ruleTargetState: null, // true → should turn on, false → turn off
-    syncingLightOn: false, // flag to prevent recursion when syncing lightOn
     lightOffTimerId: null, // timer ID for turning off lights
     logicEnableTimerId: null, // timer ID for re-enabling automation logic
   };
@@ -262,32 +245,6 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       order: 7,
     });
   }
-
-  // Add last switch action tracker
-  self.vd.devObj.addControl('lastSwitchAction', {
-    title: {
-      en: 'Last switch action',
-      ru: 'Тип последнего переключения',
-    },
-    type: 'value',
-    readonly: true,
-    forceDefault: true, // always start from the default enum value
-    value: lastActionType.NOT_USED,
-    enum: {
-      // All operations done by the scenario itself
-      0: { en: 'Not used', ru: 'Не используется' },
-      1: { en: 'Rule turned ON', ru: 'Сценарий включил' },
-      2: { en: 'Rule turned OFF', ru: 'Сценарий выключил' },
-      // At least one lamp forced ON
-      3: { en: 'Turn‑on externally', ru: 'Включили извне' },
-      // All lamps forced OFF
-      4: { en: 'Turn‑off externally', ru: 'Выключили извне' },
-      // Mixed external states, minimum one lamp externaly changed
-      5: { en: 'Partial external', ru: 'Частично извне' },
-      6: { en: 'Partial by rule', ru: 'Частично сценарий' },
-    },
-    order: 8,
-  });
 }
 
 /**
@@ -873,19 +830,12 @@ function remainingTimeToLightOffHandler(self, newValue, devName, cellName) {
  * @param {string} cellName - Cell name
  */
 function lightOnHandler(self, newValue, devName, cellName) {
-  // Don't react if we updated the indicator ourselves
-  if (self.ctx.syncingLightOn) return true;
-
   var isLightSwitchedOn = newValue === true;
   var isLightSwitchedOff = newValue === false;
 
   if (isLightSwitchedOn) {
-    self.ctx.ruleActionInProgress = true;
-    self.ctx.ruleTargetState = true;
     setValueAllDevicesByBehavior(self.cfg.lightDevices, true);
   } else if (isLightSwitchedOff) {
-    self.ctx.ruleActionInProgress = true;
-    self.ctx.ruleTargetState = false;
     setValueAllDevicesByBehavior(self.cfg.lightDevices, false);
   } else {
     log.error('Light on - has incorrect type: {}', newValue);
