@@ -6,6 +6,7 @@
  */
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
+var ScenarioState = require('wbsc-scenario-base.mod').ScenarioState;
 var vdHelpers = require('virtual-device-helpers.mod');
 var aTable = require('registry-action-resolvers.mod');
 var Logger = require('logger.mod').Logger;
