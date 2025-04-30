@@ -256,8 +256,7 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function() {
     throw new Error(errMsg);
   }
 
-  this.setState(ScenarioState.NORMAL);
-  log.info('Scenario "{}" initialized successfully', this.name);
+  log.info('Scenario "{}" base initialization completed', this.name);
   return true;
 };
 

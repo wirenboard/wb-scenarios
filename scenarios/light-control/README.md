@@ -68,9 +68,10 @@
 Вы можете использовать функционал управления светом из своих правил wb-rules
 Для этого нужно сделать 3 шага:
 
-1) Подключить модуль
-2) Создать объект настроек где прописать что вы хотите использовать
-3) Инициализировать алгоритм указав
+1) Импортировать класс кастомного сценария управления светом
+2) Создать новый инстанс класса управления светом
+3) Создать объект настроек где прописать что вы хотите использовать
+4) Инициализировать алгоритм указав
    - Имя виртуального устройства
    - Созданный объект конфигурации
 
@@ -79,13 +80,16 @@
  * @file: light_init.js
  */
 
-// Step 1: include light module
-var lightControl = require('light-control.mod');
+// Step 1: import light module
+var CustomTypeSc = require('light-control.mod').LightControlScenario;
 
 function main() {
   log.debug('Start init logic for: Bathroom light');
 
-  // Step 2: Configure algorithm for light
+  // Step 2: Create new instance with scenario class
+  var scenario = new CustomTypeSc();
+
+  // Step 3: Configure algorithm for light
   var cfg = {
     idPrefix: 'bathroom_light',
     isDebugEnabled: false,
@@ -131,14 +135,15 @@ function main() {
   };
 
   
-  // Step 3: init light algorithm
-  var isInitSucess = lightControl.init('Bathroom light', cfg);
-  if (!isInitSucess) {
+  // Step 4: init light algorithm
+  try {
+    var isInitSuccess = scenario.init('Bathroom light', cfg);
+  } catch (error) {
     log.error(
-      'Error: Init operation aborted for scenario with "idPrefix": ' +
-        cfg.idPrefix
+      'Exception during scenario initialization: "{}" for scenario: "{}"', 
+      error.message || error, 
+      scenarioCfg.name
     );
-    return;
   }
 
   log.debug('Initialization successful for: Bathroom light');
