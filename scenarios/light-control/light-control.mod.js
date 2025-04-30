@@ -16,6 +16,20 @@ var loggerFileLabel = 'WBSC-light-control-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
+ * Enum for tracking the last action type in the light control system
+ * @enum {number}
+ */
+var lastActionType = {
+  NOT_USED: 0, // Not used yet (set immediately after start)
+  RULE_ON: 1, // Scenario turned everything on
+  RULE_OFF: 2, // Scenario turned everything off
+  EXT_ON: 3, // Externally turned everything on
+  EXT_OFF: 4, // Externally turned everything off
+  PARTIAL_EXT: 5, // Partially changed by external actions
+  PARTIAL_BY_RULE: 6, // Partially changed by Scenario
+};
+
+/**
  * @typedef {Object} LightControlConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
@@ -47,6 +61,9 @@ function LightControlScenario() {
    * @type {Object}
    */
   this.ctx = {
+    ruleActionInProgress: false, // scenario is currently changing lights
+    ruleTargetState: null, // true → should turn on, false → turn off
+    syncingLightOn: false, // flag to prevent recursion when syncing lightOn
     lightOffTimerId: null, // timer ID for turning off lights
     logicEnableTimerId: null, // timer ID for re-enabling automation logic
   };
@@ -245,6 +262,32 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       order: 7,
     });
   }
+
+  // Add last switch action tracker
+  self.vd.devObj.addControl('lastSwitchAction', {
+    title: {
+      en: 'Last switch action',
+      ru: 'Тип последнего переключения',
+    },
+    type: 'value',
+    readonly: true,
+    forceDefault: true, // always start from the default enum value
+    value: lastActionType.NOT_USED,
+    enum: {
+      // All operations done by the scenario itself
+      0: { en: 'Not used', ru: 'Не используется' },
+      1: { en: 'Rule turned ON', ru: 'Сценарий включил' },
+      2: { en: 'Rule turned OFF', ru: 'Сценарий выключил' },
+      // At least one lamp forced ON
+      3: { en: 'Turn‑on externally', ru: 'Включили извне' },
+      // All lamps forced OFF
+      4: { en: 'Turn‑off externally', ru: 'Выключили извне' },
+      // Mixed external states, minimum one lamp externaly changed
+      5: { en: 'Partial external', ru: 'Частично извне' },
+      6: { en: 'Partial by rule', ru: 'Частично сценарий' },
+    },
+    order: 8,
+  });
 }
 
 /**
@@ -727,7 +770,45 @@ function createRules(self, cfg) {
   );
   self.addRule(ruleIdLogicDisabled);
 
-  // TODO:(vg) Insert other rules in this place
+  // Rule for light devices changes
+  ruleName = self.genNames.ruleLightDevsChange;
+  var ruleIdLightDevsChange = defineRule(ruleName, {
+    whenChanged: lightDevTopics,
+    then: function (newValue, devName, cellName) {
+      lightDevicesHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLightDevsChange) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdLightDevsChange +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdLightDevsChange);
+
+  // Rule for last switch action changes
+  ruleName = self.genNames.ruleLastSwitchActionChange;
+  var ruleIdLastSwitchActionChange = defineRule(ruleName, {
+    whenChanged: self.genNames.vDevice + '/lastSwitchAction',
+    then: function (newValue, devName, cellName) {
+      lastSwitchActionHandler(self, newValue, devName, cellName);
+    },
+  });
+  if (!ruleIdLastSwitchActionChange) {
+    log.error('WB-rule "' + ruleName + '" not created');
+    return false;
+  }
+  log.debug(
+    'WB-rule with IdNum "' +
+      ruleIdLastSwitchActionChange +
+      '" was successfully created'
+  );
+  self.addRule(ruleIdLastSwitchActionChange);
+
+  return true;
 }
 
 /**
@@ -830,12 +911,19 @@ function remainingTimeToLightOffHandler(self, newValue, devName, cellName) {
  * @param {string} cellName - Cell name
  */
 function lightOnHandler(self, newValue, devName, cellName) {
+  // Don't react if we updated the indicator ourselves
+  if (self.ctx.syncingLightOn) return true;
+
   var isLightSwitchedOn = newValue === true;
   var isLightSwitchedOff = newValue === false;
 
   if (isLightSwitchedOn) {
+    self.ctx.ruleActionInProgress = true;
+    self.ctx.ruleTargetState = true;
     setValueAllDevicesByBehavior(self.cfg.lightDevices, true);
   } else if (isLightSwitchedOff) {
+    self.ctx.ruleActionInProgress = true;
+    self.ctx.ruleTargetState = false;
     setValueAllDevicesByBehavior(self.cfg.lightDevices, false);
   } else {
     log.error('Light on - has incorrect type: {}', newValue);
@@ -975,6 +1063,191 @@ function logicDisabledHandler(self, newValue, devName, cellName) {
     startLightOffTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
     startLogicEnableTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
   }
+  return true;
+}
+
+/**
+ * Handler for light devices changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {any} newValue - New value of the changed device
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function lightDevicesHandler(self, newValue, devName, cellName) {
+  var internalLightStatus = dev[self.genNames.vDevice + '/lightOn'];
+
+  // 1. Calculate the actual state of the entire group
+  var onCnt = 0;
+  for (var i = 0; i < self.cfg.lightDevices.length; i++) {
+    if (dev[self.cfg.lightDevices[i].mqttTopicName] === true) {
+      onCnt++;
+    }
+  }
+
+  var allLightOn = onCnt === self.cfg.lightDevices.length; // all on
+  var allLightOff = onCnt === 0; // all off
+  var mixedState = !allLightOn && !allLightOff; // partially on/off
+
+  // 2. Handle changes initiated by the scenario
+  if (self.ctx.ruleActionInProgress && newValue === internalLightStatus) {
+    // If the change was initiated by the scenario itself - exit
+
+    // 2.1. While the final result hasn't been achieved → PARTIAL_BY_RULE
+    if (mixedState) {
+      dev[self.genNames.vDevice + '/lastSwitchAction'] =
+        lastActionType.PARTIAL_BY_RULE;
+      return; // wait for more changes to complete
+    }
+
+    // 2.2. Final state achieved
+    if (allLightOn && self.ctx.ruleTargetState === true) {
+      dev[self.genNames.vDevice + '/lastSwitchAction'] =
+        lastActionType.RULE_ON;
+    } else if (allLightOff && self.ctx.ruleTargetState === false) {
+      dev[self.genNames.vDevice + '/lastSwitchAction'] =
+        lastActionType.RULE_OFF;
+    }
+
+    // 2.3. Don't sync the lightOn indicator (it should already be correct)
+    if (
+      dev[self.genNames.vDevice + '/lightOn'] !== self.ctx.ruleTargetState
+    ) {
+      log.error('Not correct logic!');
+      self.ctx.syncingLightOn = true;
+      dev[self.genNames.vDevice + '/lightOn'] = self.ctx.ruleTargetState;
+      self.ctx.syncingLightOn = false;
+    }
+
+    // scenario finished switching
+    self.ctx.ruleActionInProgress = false;
+    self.ctx.ruleTargetState = null;
+    return;
+  }
+
+  // 3. External change
+  var topicName = devName + '/' + cellName;
+  log.debug('External change detected for device: "{}"' + topicName);
+  log.debug('newValue: ' + newValue);
+
+  if (newValue === false) {
+    log.debug(
+      'External control detected: Minimum one light turn-OFF externally'
+    );
+  } else if (newValue === true) {
+    log.debug(
+      'External control detected: Minimum one light turn-ON externally'
+    );
+  }
+
+  // 3.1. Determine action type
+  if (mixedState) {
+    dev[self.genNames.vDevice + '/lastSwitchAction'] =
+      lastActionType.PARTIAL_EXT;
+    // Don't change lightOn in "partial" state
+  } else if (allLightOn) {
+    dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_ON;
+
+    // Sync lightOn topic (all activated)
+    if (dev[self.genNames.vDevice + '/lightOn'] !== true) {
+      self.ctx.syncingLightOn = true;
+      dev[self.genNames.vDevice + '/lightOn'] = true;
+      self.ctx.syncingLightOn = false;
+    }
+  } else if (allLightOff) {
+    dev[self.genNames.vDevice + '/lastSwitchAction'] =
+      lastActionType.EXT_OFF;
+
+    // Sync lightOn topic (all deactivated)
+    if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
+      self.ctx.syncingLightOn = true;
+      dev[self.genNames.vDevice + '/lightOn'] = false;
+      self.ctx.syncingLightOn = false;
+    }
+  }
+}
+
+/**
+ * Handler for last switch action changes
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {number} newValue - New action type value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function lastSwitchActionHandler(self, newValue, devName, cellName) {
+  var curAction = newValue;
+
+  // 1. All light devices turned off externally
+  if (curAction === lastActionType.EXT_OFF) {
+    // 1.1. Reset light timer
+    if (self.ctx.lightOffTimerId) {
+      clearTimeout(self.ctx.lightOffTimerId);
+      resetLightOffTimer(self);
+    }
+
+    // 1.2. Always reset logic block timer when turned off externally
+    if (self.ctx.logicEnableTimerId) {
+      clearTimeout(self.ctx.logicEnableTimerId);
+      resetLogicEnableTimer(self);
+    }
+
+    // 1.3. Remove automation block
+    var logicBlocked =
+      dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
+    if (logicBlocked === true) {
+      dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
+    }
+
+    // 1.4. Reset motion flag so new motion will turn on the light again
+    if (dev[self.genNames.vDevice + '/motionInProgress'] === true) {
+      dev[self.genNames.vDevice + '/motionInProgress'] = false;
+    }
+
+    // 1.5. Sync lightOn indicator if needed
+    if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
+      self.ctx.syncingLightOn = true;
+      dev[self.genNames.vDevice + '/lightOn'] = false;
+      self.ctx.syncingLightOn = false;
+    }
+
+    return;
+  }
+
+  // 2. All light devices turned on externally
+  if (curAction === lastActionType.EXT_ON) {
+    // 2.1. If the rule is active and automation is allowed - start timer
+    var isRuleEnabled = dev[self.genNames.vDevice + '/rule_enabled'];
+    var isLogicBlocked =
+      dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
+    var motionNow = dev[self.genNames.vDevice + '/motionInProgress'];
+
+    // If it's a wall switch (logicBlocked=true)
+    // leave TIMERS set by logicDisabledHandler untouched
+    if (isLogicBlocked) {
+      log.debug('lastSwitchActionHandler: detected wall switch');
+      startLightOffTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
+      startLogicEnableTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
+      return true; // exit, don't touch anything
+    }
+
+    // Start timer only if
+    // - rule is active,
+    // - automation is not blocked,
+    // - motion is detected at the time of turning on.
+    if (isRuleEnabled && motionNow === true) {
+      startLightOffTimer(self, self.cfg.delayByMotionSensors * 1000);
+    } else {
+      // If timer was accidentally started earlier - reset it
+      // to avoid turning off the light manually.
+      if (self.ctx.lightOffTimerId) {
+        clearTimeout(self.ctx.lightOffTimerId);
+        resetLightOffTimer(self);
+      }
+    }
+
+    return true;
+  }
+
+  // 3. Other values don't require a reaction
   return true;
 }
 
