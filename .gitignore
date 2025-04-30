@@ -30,6 +30,7 @@
 !/debian/*service
 !/debian/*preinst
 !/debian/*postinst
+!/debian/*.lintian-overrides
 
 # IDE files
 .vscode
