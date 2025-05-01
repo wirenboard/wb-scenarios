@@ -596,224 +596,188 @@ function checkAllMotionSensorsInactive(motionSensors) {
 }
 
 /**
+ * Defines a rule, logs result, and registers the rule ID in the scenario
+ * @param {Object} self - Scenario instance
+ * @param {string} name - Unique rule name
+ * @param {Array|string} topics - MQTT topic(s) to subscribe on change
+ * @param {Function} handler - Handler function to call on topic change
+ * @returns {boolean} Rule created status:
+ *   - True if rule created or skipped
+ *   - False if creation attempted but failed
+ */
+function createAndRegisterRule(self, name, topics, handler) {
+  var isEmptyTopics =
+    (Array.isArray(topics) && topics.length === 0) ||
+    (typeof topics === 'string' && topics.trim() === '');
+
+  if (isEmptyTopics) {
+    log.debug('WB-rule "' + name + '" skipped — no topics defined');
+    return true; // Считается успешным, просто нет смысла создавать правило
+  }
+
+  var ruleId = defineRule(name, {
+    whenChanged: topics,
+    then: function (newValue, devName, cellName) {
+      handler(self, newValue, devName, cellName);
+    },
+  });
+
+  if (!ruleId) {
+    log.error('WB-rule "' + name + '" not created');
+    return false;
+  }
+
+  log.debug('WB-rule with IdNum "' + ruleId + '" was successfully created');
+  self.addRule(ruleId);
+  return true;
+}
+
+/**
  * Creates all required rules for the light control scenario
  * @param {Object} self - Reference to the LightControlScenario instance
  * @param {Object} cfg - Configuration object
  * @returns {boolean} True if rules created successfully, false otherwise
  */
 function createRules(self, cfg) {
+  var gName = self.genNames;
+  var vd = self.genNames.vDevice
+
   var lightDevTopics = extractMqttTopics(cfg.lightDevices);
   var motionTopics = extractMqttTopics(cfg.motionSensors);
   var openingTopics = extractMqttTopics(cfg.openingSensors);
   var switchTopics = extractMqttTopics(cfg.lightSwitches);
 
   // Rule for motion sensors
-  var ruleIdMotion = defineRule(self.genNames.ruleMotion, {
-    whenChanged: motionTopics,
-    then: function (newValue, devName, cellName) {
-      motionSensorHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdMotion) {
-    log.error('WB-rule "' + self.genNames.ruleMotion + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleMotion,
+      motionTopics,
+      motionSensorHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' + ruleIdMotion + '" was successfully created'
-  );
-  self.addRule(ruleIdMotion);
 
   // Rule for motion in progress
-  var ruleIdMotionInProgress = defineRule(
-    self.genNames.ruleMotionInProgress,
-    {
-      whenChanged: [self.genNames.vDevice + '/motionInProgress'],
-      then: function (newValue, devName, cellName) {
-        motionInProgressHandler(self, newValue, devName, cellName);
-      },
-    }
-  );
-  if (!ruleIdMotionInProgress) {
-    log.error(
-      'WB-rule "' + self.genNames.ruleMotionInProgress + '" not created'
-    );
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleMotionInProgress,
+      vd + '/motionInProgress',
+      motionInProgressHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdMotionInProgress +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdMotionInProgress);
 
   // Rule for remaining time to light off changes
-  ruleName = self.genNames.ruleTimeToLightOffChange;
-  var ruleIdRemainingTimeToLightOff = defineRule(ruleName, {
-    whenChanged: self.genNames.vDevice + '/remainingTimeToLightOffInSec',
-    then: function (newValue, devName, cellName) {
-      remainingTimeToLightOffHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdRemainingTimeToLightOff) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleTimeToLightOffChange,
+      vd + '/remainingTimeToLightOffInSec',
+      remainingTimeToLightOffHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdRemainingTimeToLightOff +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdRemainingTimeToLightOff);
 
   // Rule for light on changes
-  ruleName = self.genNames.ruleLightOnChange;
-  var ruleIdLightOnChange = defineRule(ruleName, {
-    whenChanged: self.genNames.vDevice + '/lightOn',
-    then: function (newValue, devName, cellName) {
-      lightOnHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdLightOnChange) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleLightOnChange,
+      vd + '/lightOn',
+      lightOnHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdLightOnChange +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdLightOnChange);
 
   // Rule for opening sensors changes
-  ruleName = self.genNames.ruleOpeningSensorsChange;
-  var ruleIdOpeningSensorsChange = defineRule(ruleName, {
-    whenChanged: openingTopics,
-    then: function (newValue, devName, cellName) {
-      openingSensorHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdOpeningSensorsChange) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleOpeningSensorsChange,
+      openingTopics,
+      openingSensorHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdOpeningSensorsChange +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdOpeningSensorsChange);
 
   // Rule for light switch used
-  ruleName = self.genNames.ruleLightSwitchUsed;
-  var ruleIdLightSwitchUsed = defineRule(ruleName, {
-    whenChanged: switchTopics,
-    then: function (newValue, devName, cellName) {
-      lightSwitchUsedHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdLightSwitchUsed) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleLightSwitchUsed,
+      switchTopics,
+      lightSwitchUsedHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdLightSwitchUsed +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdLightSwitchUsed);
 
   // Rule for remaining time to logic enable changes
-  ruleName = self.genNames.ruleTimeToLogicEnableChange;
-  var ruleIdRemainingTimeToLogicEnableChange = defineRule(ruleName, {
-    whenChanged: self.genNames.vDevice + '/remainingTimeToLogicEnableInSec',
-    then: function (newValue, devName, cellName) {
-      remainingTimeToLogicEnableHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdRemainingTimeToLogicEnableChange) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleTimeToLogicEnableChange,
+      vd + '/remainingTimeToLogicEnableInSec',
+      remainingTimeToLogicEnableHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdRemainingTimeToLogicEnableChange +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdRemainingTimeToLogicEnableChange);
 
   // Rule for door open changes
-  ruleName = self.genNames.ruleDoorOpenChange;
-  var ruleIdDoorOpen = defineRule(ruleName, {
-    whenChanged: self.genNames.vDevice + '/doorOpen',
-    then: function (newValue, devName, cellName) {
-      doorOpenHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdDoorOpen) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleDoorOpenChange,
+      vd + '/doorOpen',
+      doorOpenHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' + ruleIdDoorOpen + '" was successfully created'
-  );
-  self.addRule(ruleIdDoorOpen);
 
   // Rule for logic disabled changes
-  ruleName = self.genNames.ruleLogicDisabledChange;
-  var ruleIdLogicDisabled = defineRule(ruleName, {
-    whenChanged: self.genNames.vDevice + '/logicDisabledByWallSwitch',
-    then: function (newValue, devName, cellName) {
-      logicDisabledHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdLogicDisabled) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleLogicDisabledChange,
+      vd + '/logicDisabledByWallSwitch',
+      logicDisabledHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdLogicDisabled +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdLogicDisabled);
 
   // Rule for light devices changes
-  ruleName = self.genNames.ruleLightDevsChange;
-  var ruleIdLightDevsChange = defineRule(ruleName, {
-    whenChanged: lightDevTopics,
-    then: function (newValue, devName, cellName) {
-      lightDevicesHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdLightDevsChange) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleLightDevsChange,
+      lightDevTopics,
+      lightDevicesHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdLightDevsChange +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdLightDevsChange);
 
   // Rule for last switch action changes
-  ruleName = self.genNames.ruleLastSwitchActionChange;
-  var ruleIdLastSwitchActionChange = defineRule(ruleName, {
-    whenChanged: self.genNames.vDevice + '/lastSwitchAction',
-    then: function (newValue, devName, cellName) {
-      lastSwitchActionHandler(self, newValue, devName, cellName);
-    },
-  });
-  if (!ruleIdLastSwitchActionChange) {
-    log.error('WB-rule "' + ruleName + '" not created');
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleLastSwitchActionChange,
+      vd + '/lastSwitchAction',
+      lastSwitchActionHandler
+    )
+  ) {
     return false;
   }
-  log.debug(
-    'WB-rule with IdNum "' +
-      ruleIdLastSwitchActionChange +
-      '" was successfully created'
-  );
-  self.addRule(ruleIdLastSwitchActionChange);
 
   return true;
 }
@@ -1095,7 +1059,10 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
   var mixedState = !allLightOn && !allLightOff; // partially on/off
 
   // Handle changes initiated by the scenario
-  if (self.ctx.scenarioActionInProgress && newValue === internalLightStatus) {
+  if (
+    self.ctx.scenarioActionInProgress &&
+    newValue === internalLightStatus
+  ) {
     // While the final result hasn't been achieved → PARTIAL_BY_SCENARIO
     if (mixedState) {
       dev[self.genNames.vDevice + '/lastSwitchAction'] =
@@ -1114,7 +1081,8 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
 
     // Don't sync the lightOn indicator (it should already be correct)
     if (
-      dev[self.genNames.vDevice + '/lightOn'] !== self.ctx.scenarioTargetState
+      dev[self.genNames.vDevice + '/lightOn'] !==
+      self.ctx.scenarioTargetState
     ) {
       log.error('Not correct logic!');
       self.ctx.syncingLightOn = true;
