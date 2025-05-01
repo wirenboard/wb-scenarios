@@ -945,9 +945,23 @@ function openingSensorHandler(self, newValue, devName, cellName) {
  * @param {string} cellName - Cell name
  */
 function lightSwitchUsedHandler(self, newValue, devName, cellName) {
-  // For switches, consider any change as toggling the scenario logic state
-  var curValue = dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'];
-  dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = !curValue;
+  // For switches, consider any change (for switch with/withoout state) as toggling the scenario logic state
+  if (self.ctx.lightOffTimerId) {
+    clearTimeout(self.ctx.lightOffTimerId);
+    resetLightOffTimer(self);
+  }
+
+  var newLightState = !dev[self.genNames.vDevice + '/lightOn'];
+  dev[self.genNames.vDevice + '/lightOn'] = newLightState;
+  if (newLightState === false) {
+    dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
+    return true;
+  }
+
+  dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = true;
+  if (self.cfg.isDelayEnabledAfterSwitch === true) {
+    startLightOffTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
+  }
 
   return true;
 }
@@ -1015,23 +1029,12 @@ function doorOpenHandler(self, newValue, devName, cellName) {
  * @param {string} cellName - Cell name
  */
 function logicDisabledHandler(self, newValue, devName, cellName) {
-  if (self.ctx.lightOffTimerId) {
-    clearTimeout(self.ctx.lightOffTimerId);
-    resetLightOffTimer(self);
-  }
   if (self.ctx.logicEnableTimerId) {
     clearTimeout(self.ctx.logicEnableTimerId);
     resetLogicEnableTimer(self);
   }
-
-  if (newValue === false) {
-    dev[self.genNames.vDevice + '/lightOn'] = false;
-    return true;
-  }
-
-  dev[self.genNames.vDevice + '/lightOn'] = true;
-  if (self.cfg.isDelayEnabledAfterSwitch === true) {
-    startLightOffTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
+  
+  if (newValue === true && self.cfg.isDelayEnabledAfterSwitch === true) {
     startLogicEnableTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
   }
   return true;
