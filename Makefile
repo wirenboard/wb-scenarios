@@ -20,6 +20,7 @@ SRC_DIR := src/
 
 # Целевые пути
 CONFIG_DEST := $(DESTDIR)/etc
+WB_CONFIGS_DEST := $(DESTDIR)/etc/wb-configs.d
 IMAGE_DEST := $(DESTDIR)/var/www/images/wb-scenarios
 SCHEMA_DEST := $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas
 # Используем системный путь до скриптов /usr/share/wb-rules-system/rules
@@ -44,6 +45,7 @@ SRC_MODULE_FILES := $(wildcard $(SRC_DIR)*.mod.js)
 CONFIG_FILES := $(wildcard *.conf)
 IMAGE_FILES := $(wildcard $(SCHEMA_DIR)*.png)
 SCHEMA_FILES := $(wildcard $(SCHEMA_DIR)*.schema.json)
+WB_CONFIG_FILE := 45wb-scenarios
 # Файл скрипта сервиса перезагрузки сценариев
 RELOADER_SCRIPT := wb-scenarios-reloader
 
@@ -89,6 +91,9 @@ install:
 	@# Установка скрипта wb-scenarios-reloader
 	@echo "Copying $(RELOADER_SCRIPT) to $(SCRIPTS_DEST)"
 	@install -Dm755 $(RELOADER_SCRIPT) -t $(SCRIPTS_DEST)/
+
+	@echo "Copying $(WB_CONFIG_FILE) to $(WB_CONFIGS_DEST)"
+	@install -Dm644 $(WB_CONFIG_FILE) -t $(WB_CONFIGS_DEST)/
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
