@@ -93,7 +93,7 @@ install:
 	@install -Dm755 $(RELOADER_SCRIPT) -t $(SCRIPTS_DEST)/
 
 	@echo "Copying $(WB_CONFIG_FILE) to $(WB_CONFIGS_DEST)"
-        @install -Dm644 $(WB_CONFIG_FILE) -t $(WB_CONFIGS_DEST)/
+	@install -Dm644 $(WB_CONFIG_FILE) -t $(WB_CONFIGS_DEST)/
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
