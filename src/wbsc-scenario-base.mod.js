@@ -7,8 +7,8 @@
 
 var getIdPrefix = require('scenarios-general-helpers.mod').getIdPrefix;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
-var waitControls = require('wbsc-wait-controls').waitControls; // TODO:(vg) add '.mod' to filename
-var isControlReady = require('wbsc-wait-controls').isControlReady;
+var waitControls = require('wbsc-wait-controls.mod').waitControls; // TODO:(vg) add '.mod' to filename
+var isControlReady = require('wbsc-wait-controls.mod').isControlReady;
 var Logger = require('logger.mod').Logger;
 
 var loggerFileLabel = 'WBSC‑base-mod';
