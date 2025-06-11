@@ -1,0 +1,2 @@
+wb_move /etc/wb-alice-client.conf
+wb_move /etc/wb-alice-devices.conf
