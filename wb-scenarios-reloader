@@ -18,9 +18,7 @@
 # List of files to update
 BASE_DIR="/usr/share/wb-rules-system/rules"
 FILES=(
-  "${BASE_DIR}/init-devices-control.js"
-  "${BASE_DIR}/scenario-init-light-control.js"
-  "${BASE_DIR}/scenario-init-thermostat.js"
+  "${BASE_DIR}/scenario-init-main.js"
   # ... Add other files here as needed ...
 )
 
