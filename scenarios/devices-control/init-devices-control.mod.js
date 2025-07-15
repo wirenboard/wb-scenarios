@@ -100,7 +100,7 @@ function readAndValidateConfig(configPath) {
   return listAllScenarios;
 }
 
-function main() {
+function setup() {
   var listAllScenarios = readAndValidateConfig(CONFIG_PATH);
   if (!listAllScenarios) return;
 
@@ -118,4 +118,4 @@ function main() {
   }
 }
 
-main();
+exports.setup = setup;
