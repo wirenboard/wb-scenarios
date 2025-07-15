@@ -78,7 +78,7 @@ function initializeScenario(scenario) {
   );
 }
 
-function main() {
+function setup() {
   log.debug('Start initialisation "{}" type scenarios', SCENARIO_TYPE_STR);
   var listAllScenarios = helpers.readAndValidateScenariosConfig(
     CONFIG_PATH,
@@ -107,4 +107,4 @@ function main() {
   }
 }
 
-main();
+exports.setup = setup;
