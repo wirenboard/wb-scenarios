@@ -1,5 +1,5 @@
 /**
- * @file input-output-link-scenario.mod.js - ES5 module for wb-rules v2.28
+ * @file devices-control.mod.js - ES5 module for wb-rules v2.34
  * @description Input-Output link scenario class that extends ScenarioBase
  *              Module for initializing connections between multiple input and output
  *              MQTT topics. Supported control types see in tables:
