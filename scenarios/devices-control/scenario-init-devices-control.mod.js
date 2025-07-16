@@ -1,5 +1,5 @@
 /**
- * @file init-devices-control.js - ES5 script for wb-rules v2.28
+ * @file scenario-init-devices-control.mod.js - ES5 module for wb-rules v2.34
  * @description Script for init scenarios of the SCENARIO_TYPE_STR type
  *     This script:
  *     - Loads all scenario configurations of the specific type from a file
