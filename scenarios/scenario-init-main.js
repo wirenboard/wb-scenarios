@@ -17,7 +17,7 @@ var setupLightControl = require("scenario-init-light-control.mod").setup;
 var setupThermostat = require("scenario-init-thermostat.mod").setup;
 var Logger = require('logger.mod').Logger;
 
-var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
+var log = new Logger('WBSC-init-main');
 
 function main() {
   log.debug('Start initialisation all types scenarios');
