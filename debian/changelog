@@ -1,4 +1,4 @@
-wb-scenarios (1.4.3) stable; urgency=medium
+wb-scenarios (1.4.0) stable; urgency=medium
 
   * fix: cleanup of previous MQTT retained messages for virtual devices
   * fix: sequential initialization of scenarios
