@@ -9,7 +9,7 @@
  */
 
 var scHelpers = require('scenarios-general-helpers.mod');
-var CustomTypeSc = require('devices-control.mod').InputOutputLinkScenario;
+var CustomTypeSc = require('devices-control.mod').DevicesControlScenario;
 var Logger = require('logger.mod').Logger;
 
 /**
