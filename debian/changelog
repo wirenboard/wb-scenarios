@@ -1,3 +1,11 @@
+wb-scenarios (1.4.3) stable; urgency=medium
+
+  * fix: cleanup of previous MQTT retained messages for virtual devices
+  * fix: sequential initialization of scenarios
+  * fix: persistent storage reset for scenario devices
+
+ -- Mikhail Burchu <mikhail.burchu@wirenboard.com>  Wed, 16 Jul 2025 09:00:00 +0300
+
 wb-scenarios (1.3.3) stable; urgency=medium
 
   * fix: restore wb-scenarios configuration after updating via FIT file
