@@ -1,3 +1,17 @@
+/**
+ * @file scenario-init-main.js - ES5 script for wb-rules v2.34
+ * @description Main initialization script for WB scenarios management
+ *     This script performs:
+ *     - Cleanup of previous MQTT retained messages for virtual devices
+ *     - Sequential initialization of:
+ *       * Devices control scenarios
+ *       * Light control scenarios
+ *       * Thermostat scenarios
+ *     - Persistent storage reset for scenario devices
+ *
+ * @author Mikhail Burchu <mikhail.burchu@wirenboard.com>
+ */
+
 var DevicesControlSetup = require("scenario-init-devices-control.mod").setup;
 var LightControlSetup = require("scenario-init-light-control.mod").setup;
 var ThermostatSetup = require("scenario-init-thermostat.mod").setup;
