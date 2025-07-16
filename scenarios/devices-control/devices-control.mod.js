@@ -25,7 +25,7 @@ var loggerFileLabel = 'WBSC-input-output-link-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
- * @typedef {Object} InputOutputLinkConfig
+ * @typedef {Object} DevicesControlConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
  * @property {Array<Object>} inControls - Array of input controls to monitor
@@ -41,10 +41,10 @@ var log = new Logger(loggerFileLabel);
 
 /**
  * Input-Output link scenario implementation
- * @class InputOutputLinkScenario
+ * @class DevicesControlScenario
  * @extends ScenarioBase
  */
-function InputOutputLinkScenario() {
+function DevicesControlScenario() {
   ScenarioBase.call(this);
   
   /**
@@ -53,15 +53,15 @@ function InputOutputLinkScenario() {
    */
   this.ctx = {}; // Not used on this time
 }
-InputOutputLinkScenario.prototype = Object.create(ScenarioBase.prototype);
-InputOutputLinkScenario.prototype.constructor = InputOutputLinkScenario;
+DevicesControlScenario.prototype = Object.create(ScenarioBase.prototype);
+DevicesControlScenario.prototype.constructor = DevicesControlScenario;
 
 /**
  * Generates name identifiers for virtual device and rules
  * @param {string} idPrefix - ID prefix for this scenario instance
  * @returns {Object} Generated names
  */
-InputOutputLinkScenario.prototype.generateNames = function(idPrefix) {
+DevicesControlScenario.prototype.generateNames = function(idPrefix) {
   var scenarioPrefix = 'wbsc_';
   var rulePrefix = 'wbru_';
   
@@ -76,7 +76,7 @@ InputOutputLinkScenario.prototype.generateNames = function(idPrefix) {
  * @param {Object} cfg Configuration object
  * @returns {Object} Waiting configuration object
  */
-InputOutputLinkScenario.prototype.defineControlsWaitConfig = function (cfg) {
+DevicesControlScenario.prototype.defineControlsWaitConfig = function (cfg) {
   var allTopics = [];
   
   // Extract input control names
@@ -155,10 +155,10 @@ function validateControls(controls, table) {
 
 /**
  * Configuration validation
- * @param {InputOutputLinkConfig} cfg - Configuration object
+ * @param {DevicesControlConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid, false otherwise
  */
-InputOutputLinkScenario.prototype.validateCfg = function(cfg) {
+DevicesControlScenario.prototype.validateCfg = function(cfg) {
   // Check for array presence
   if (!Array.isArray(cfg.inControls) || !Array.isArray(cfg.outControls)) {
     log.error('Input-output link initialization error: cfg.inControls and cfg.outControls must be arrays');
@@ -190,7 +190,7 @@ InputOutputLinkScenario.prototype.validateCfg = function(cfg) {
 
 /**
  * Creates all required rules for the InputOutputLink scenario
- * @param {Object} self - Reference to the InputOutputLinkScenario instance
+ * @param {Object} self - Reference to the DevicesControlScenario instance
  * @param {Object} cfg - Configuration object
  * @returns {boolean} True if rule created successfully
  */
@@ -220,7 +220,7 @@ function createRules(self, cfg) {
 
 /**
  * Handler for input control changes
- * @param {Object} self - Reference to the InputOutputLinkScenario instance
+ * @param {Object} self - Reference to the DevicesControlScenario instance
  * @param {any} newValue - New value of the input control
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -277,10 +277,10 @@ function inputChangeHandler(self, newValue, devName, cellName) {
 /**
  * Scenario initialization
  * @param {string} deviceTitle - Virtual device title
- * @param {InputOutputLinkConfig} cfg - Configuration object
+ * @param {DevicesControlConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
-InputOutputLinkScenario.prototype.initSpecific = function (deviceTitle, cfg) {
+DevicesControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start init input-output link scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
   
@@ -295,4 +295,4 @@ InputOutputLinkScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   return ruleCreated;
 };
 
-exports.InputOutputLinkScenario = InputOutputLinkScenario;
+exports.DevicesControlScenario = DevicesControlScenario;
