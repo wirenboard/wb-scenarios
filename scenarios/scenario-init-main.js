@@ -12,10 +12,12 @@
  * @author Mikhail Burchu <mikhail.burchu@wirenboard.com>
  */
 
-var DevicesControlSetup = require("scenario-init-devices-control.mod").setup;
-var LightControlSetup = require("scenario-init-light-control.mod").setup;
-var ThermostatSetup = require("scenario-init-thermostat.mod").setup;
+var setupDevicesControl = require("scenario-init-devices-control.mod").setup;
+var setupLightControl = require("scenario-init-light-control.mod").setup;
+var setupThermostat = require("scenario-init-thermostat.mod").setup;
 var Logger = require('logger.mod').Logger;
+
+var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
 
 function main() {
   log.debug('Start initialisation all types scenarios');
@@ -34,9 +36,9 @@ function main() {
     captureOutput: true,
     captureErrorOutput: true,
     exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
-      DevicesControlSetup();
-      LightControlSetup();
-      ThermostatSetup();
+      setupDevicesControl();
+      setupLightControl();
+      setupThermostat();
     }
   });
   psWBSC["VdList"] = null; // Removing all previously created virtual devices from persistent storage
