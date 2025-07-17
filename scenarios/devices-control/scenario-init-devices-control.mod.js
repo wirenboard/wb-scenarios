@@ -78,8 +78,6 @@ function initializeScenario(scenarioCfg) {
  * @param {string} searchScenarioType - Scenario type we are looking for
  * @returns {Array} Array of active scenarios of that type
  */
-//TODO: Need delete not actual activate function from config WEBUI
-//      Then we can use standart scHelpers.findAllScenariosWithType()
 function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
   var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
