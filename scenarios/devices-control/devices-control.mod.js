@@ -17,9 +17,6 @@ var ScenarioState = require('wbsc-scenario-base.mod').ScenarioState;
 var eTable = require("table-handling-events.mod");
 var aTable = require("table-handling-actions.mod");
 var Logger = require('logger.mod').Logger;
-// TODO: Maybe change old struct with name field "control"
-//       to new "mqttTopicName". Then we can use helpers:
-// var extractMqttTopics = require('scenarios-general-helpers.mod').extractMqttTopics;
 
 var loggerFileLabel = 'WBSC-input-output-link-mod';
 var log = new Logger(loggerFileLabel);
