@@ -175,6 +175,15 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
     return null;
   }
 
+  // Saving all created virtual devices to persistent storage
+  var psWBSC = new PersistentStorage("wb-scenarios", {global: true});
+  if (psWBSC["VdList"] !== undefined) {
+    psWBSC["VdList"][vdName] = true;
+  } else {
+    psWBSC["VdList"] = new StorableObject({});
+    psWBSC["VdList"][vdName] = true;
+  }
+  
   var controlCfg = {
     title: {
       en: 'Activate scenario rule',

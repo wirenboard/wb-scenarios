@@ -20,37 +20,50 @@
 Вы можете использовать модуль управления устройствами прямо из своих
 правил `wb-rules`.
 
-Для этого нужно сделать 2 действия:
+Для этого нужно сделать 3 шага:
 
 1) Подключить модуль в коде скрипта
-2) Инициализировать алгоритм с помошью `init()`, указав необходимые параметры,
-   описанные ниже
+2) Создать объект конфигурации
+   В этом объекте нужно прописать
+   - Настройки входних контролов
+   - Настройки выходных контролов
+3) Инициализировать алгоритм указав:
+   - Имя виртуального устройства
+   - Созданный объект конфигурации
 
 ### Описание параметров конфигурации
 
-Функция `init()` имеет 4 параметра:
+Конфигурация имеет 3 параметра, из которых 1 необязательный.
 
-1. `id_prefix` {string} Обязательный параметр (в данном сценарии)
-   Задает строку префикса, добавляемого к идентификаторам
+DevicesControlConfig:
+
+1. `idPrefix` {string} Не обязательный параметр
+   Задает строку префикса добавляемого к идентификаторам
    виртуального устройства и правила:
-   - Вирт. устройство будет иметь имя вида `wbsc_<!id_prefix!>`
-   - Правила будут иметь имена вида `wbru_<!id_prefix!>`
-2. `name` {number} Имя виртуального устройства
-3. `inControls` {Array} Массив входящих отслеживаемых контролов.
+   - Если параметр указан, то вирт. устройство и правило будут иметь
+     одинаковые имена вида `wbsc_<!idPrefix!>`
+   - Если не указан (`undefined`), то правая часть создается методом
+     транслитерации из имени переданного в `init()`
+
+2. `inControls` {Array<Object>} Массив входных контролов для мониторинга
    При возникновении указанного события на любом из контролов, сразу начнется
    выполнение логики над выходными контролами.
-   Каждый элемент имеет два параметра:
-   - `control`: строка MQTT контрола
-   - `behaviorType`: строка с типом отслеживаемого действия.
+   Каждый объект содержит:
+   - `control` {string}: Имя MQTT контрола в формате 'устройство/контрол'
+     Пример: 'wb-gpio/EXT1_IN1'
+   - `behaviorType` {string}: Тип события для отслеживания
      Может быть следующих типов (в скобках разрешенные типы контролов):
-     "whenChange" ('switch', 'value'),
+     "whenChange" (любой тип),
      "whenEnabled" ('switch'),
      "whenDisabled" ('switch')
-4. `outControls` {Array} Массив исходяших управляемых контролов. Над всеми
-   контролами в списке будут произведены указанные пользователем действия.
-   Каждый элемент имеет три параметра:
-   - `control`: строка MQTT контрола
-   - `behaviorType`: строка с типом действия над контролом.
+
+3. `outControls` {Array<Object>} Массив выходных контролов для управления
+   Над всеми контролами в списке будут произведены указанные
+   пользователем действия.
+   Каждый объект содержит:
+   - `control` {string}: Имя MQTT контрола в формате 'устройство/контрол'
+     Пример: 'wb-gpio/EXT1_OUT1'
+   - `behaviorType` {string}: Тип действия для выполнения
      Может быть следующих типов (в скобках разрешенные типы контролов):
      "toggle" ('switch'),
      "setEnable" ('switch'),
@@ -58,7 +71,8 @@
      "setValue" ('value'),
      "increaseValueBy" ('value'),
      "decreaseValueBy" ('value')
-   - `actionValue`: значение используемое в действии (если требуется)
+   - `actionValue` {any}: Значение для установки (используется для setValue)
+     Пример: true, false, 100, "текст"
 
    Например, чтобы сделать мастер выключатель используя выключатель
    без фиксации, который управляет двумя лампами можно указать:
@@ -104,48 +118,63 @@
 
 ```js
 /**
- * @file: devices-control.js
+ * @file: devices-control-example.js
  */
 
-// Step 1: include module
-var scenarioModule = require("devices-control.mod");
+// Step 1: import devices control module
+var CustomTypeSc = require('devices-control.mod').DevicesControlScenario;
 
 function main() {
-  log.debug('Start init logic for: Bathroom light');
+  log.debug('Start init logic for: Master switch');
 
-  // Step 2: init algorithm
-  var inControls = [
+  // Step 2: Create new instance with scenario class
+  var scenario = new CustomTypeSc();
+
+
+function main() {
+  log.debug('Start init logic for: Master switch');
+
+  // Step 3: Configure algorithm for input+output linking
+  var cfg = {
+    idPrefix: 'master_switch',
+    inControls: [
       {
-          "control": "wb-mr6cv3_127/Input 0 counter",
-          "behaviorType": "whenChange"
+        "control": "wb-mr6cv3_127/Input 0 counter",
+        "behaviorType": "whenChange"
       }
-  ];
-
-  var outControls = [
+    ],
+    outControls: [
       {
-          "control": "wb-mr6cv3_127/K5",
-          "behaviorType": "setEnable",
-          "actionValue": 0 // Не используется в случае "setEnable"
+        "control": "wb-mr6cv3_127/K5",
+        "behaviorType": "setEnable",
+        "actionValue": 0 // Не используется в случае "setEnable"
       },
       {
-          "control": "wb-mr6cv3_127/K6",
-          "behaviorType": "setEnable",
-          "actionValue": 0 // Не используется в случае "setEnable"
+        "control": "wb-mr6cv3_127/K6",
+        "behaviorType": "setEnable", 
+        "actionValue": 0 // Не используется в случае "setEnable"
       }
-  ];
+    ]
+  };
 
-  var isInitSuccess = moduleInToOut.init('bathroom_light',
-                                        'Bathroom: light',
-                                        inControls,
-                                        outControls);
 
-  var isInitSuccess = scenarioModule.init('Bathroom: heat floor', cfg);
-  if (!isInitSuccess) {
-    log.error('Error: Init aborted for "id_prefix": {}', cfg.id_prefix);
-    return;
+  // Step 4: init devices-control algorithm
+  try {
+    var isInitSuccess = scenario.init('Master switch', cfg);
+    
+    if (!isInitSuccess) {
+      log.error('Init operation aborted for scenario: "Master switch"');
+      return;
+    }
+
+    log.debug('Initialization successful for: Master switch');
+  } catch (error) {
+    log.error(
+      'Exception during scenario initialization: "{}" for scenario: "{}"', 
+      error.message || error, 
+      'Master switch'
+    );
   }
-
-  log.debug('Initialization successful for "id_prefix": {}', cfg.id_prefix);
 }
 
 main();
@@ -215,8 +244,6 @@ main();
 Для действий
 - Выключить переключатель
 - Установить температуру теплого пола на определенное значение
-
-
 
 Для добавления новых типов отслеживаемых событий или действий над контролом - нужно
 1) Изменить WEBUI

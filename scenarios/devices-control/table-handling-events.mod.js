@@ -43,7 +43,7 @@ function whenChange(newValue) {
 */
 var eventsTable = {
   'whenChange': {
-    reqCtrlTypes: ['switch', 'value'],
+    reqCtrlTypes: [], // [] empty - can use any type
     handler: whenChange
   },
   'whenDisabled': {

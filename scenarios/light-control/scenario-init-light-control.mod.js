@@ -80,7 +80,7 @@ function initializeScenario(scenarioCfg) {
   }
 }
 
-function main() {
+function setup() {
   log.debug('Start initialisation "{}" type scenarios', CFG.scenarioTypeStr);
   var listAllScenarios = scHelpers.readAndValidateScenariosConfig(
     CFG.configPath,
@@ -107,4 +107,4 @@ function main() {
   }
 }
 
-main();
+exports.setup = setup;

@@ -138,6 +138,13 @@ function main() {
   // Step 4: init light algorithm
   try {
     var isInitSuccess = scenario.init('Bathroom light', cfg);
+
+    if (!isInitSuccess) {
+      log.error('Init operation aborted for scenario: "Bathroom light"');
+      return;
+    }
+
+    log.debug('Initialization successful for: Bathroom light');
   } catch (error) {
     log.error(
       'Exception during scenario initialization: "{}" for scenario: "{}"', 
@@ -145,8 +152,6 @@ function main() {
       scenarioCfg.name
     );
   }
-
-  log.debug('Initialization successful for: Bathroom light');
 }
 
 main();

@@ -88,6 +88,10 @@ install:
 			install -Dm644 $(file) -t $(MODULES_DEST);) \
 	fi
 
+	@# Установка общего файла инициализации сценариев
+	@echo "Copying scenarios/scenario-init-main.js to $(RULES_DEST)"
+	@install -Dm644 scenarios/scenario-init-main.js -t $(RULES_DEST)/
+
 	@# Установка скрипта wb-scenarios-reloader
 	@echo "Copying $(RELOADER_SCRIPT) to $(SCRIPTS_DEST)"
 	@install -Dm755 $(RELOADER_SCRIPT) -t $(SCRIPTS_DEST)/
