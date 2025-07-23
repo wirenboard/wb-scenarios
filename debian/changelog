@@ -1,3 +1,9 @@
+wb-scenarios (1.5.0) stable; urgency=medium
+
+  * hide scenarios in configs list
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Wed, 23 Jul 2025 22:01:00 +0300
+
 wb-scenarios (1.4.0) stable; urgency=medium
 
   * fix: cleanup of previous MQTT retained messages for virtual devices
