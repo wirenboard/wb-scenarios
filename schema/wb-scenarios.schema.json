@@ -4,7 +4,8 @@
   "title": "Automation scenarios",
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
-    "service": "wb-scenarios-reloader"
+    "service": "wb-scenarios-reloader",
+    "hide":true
   },
   "options": {
     "wb": {
