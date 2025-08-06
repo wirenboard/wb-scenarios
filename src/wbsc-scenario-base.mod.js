@@ -14,6 +14,12 @@ var Logger = require('logger.mod').Logger;
 var loggerFileLabel = 'WBSC‑base-mod';
 var log = new Logger(loggerFileLabel);
 
+// Scenario defaults value
+var SC_DEF = {
+  CONTROLS_WAIT_TIMEOUT: 60000,
+  CONTROLS_WAIT_PERIOD: 5000
+};
+
 /**
  * Abstract base class for all scenarios
  * This class provides core functionality that all scenarios should inherit
@@ -187,18 +193,21 @@ ScenarioBase.prototype.init = function (name, cfg) {
     this.setState(ScenarioState.WAITING_CONTROLS);
 
     var self = this;
+    var effectiveTimeout = waitConfig.timeout || SC_DEF.CONTROLS_WAIT_TIMEOUT;
+    var effectivePeriod = waitConfig.period || SC_DEF.CONTROLS_WAIT_PERIOD;
+
     waitControls(
       waitConfig.controls,
       { 
-        timeout: waitConfig.timeout || 60000, 
-        period: waitConfig.period || 5000 
+        timeout: effectiveTimeout, 
+        period: effectivePeriod 
       },
       function(err) {
         if (err) {
           log.error('Controls not ready within timeout: {}', err.notReadyCtrlList.join(', '));
           self.setState(ScenarioState.LINKED_CONTROLS_TIMEOUT);
           self.vd.setTotalError('Linked controls not ready in ' + 
-                              ((waitConfig.timeout || 60000) / 1000) + 's: ' + 
+                              (effectiveTimeout / 1000) + 's: ' + 
                               err.notReadyCtrlList.join(', '));
 
           self.disable();
@@ -328,12 +337,12 @@ ScenarioBase.prototype.initSpecific = function (name, cfg) {
  * 
  * @example Returned object structure:
  *   - List of controls to wait for
- *   - Maximum wait time in milliseconds (default 10000 ms = 10s)
- *   - Polling period in milliseconds (default 500 ms)
+ *   - Maximum wait time in milliseconds (default from SC_DEF.CONTROLS_WAIT_TIMEOUT)
+ *   - Polling period in milliseconds (default from SC_DEF.CONTROLS_WAIT_PERIOD)
  * {
  *   controls: ['device1/control1', 'device2/control2'],
- *   timeout: 10000,  // Optional - default 5000 (5s)
- *   period: 500  // Optional - default 100 (0.1s)
+ *   timeout: 10000,  // Optional
+ *   period: 500  // Optional
  * }
  */
 ScenarioBase.prototype.defineControlsWaitConfig = function(cfg) {
