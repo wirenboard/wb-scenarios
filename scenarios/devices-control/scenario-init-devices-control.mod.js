@@ -47,7 +47,7 @@ function initializeScenario(scenarioCfg) {
       log.error(
         'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
         scenarioCfg.name,
-        scenarioCfg.id_prefix
+        scenario.idPrefix
       );
       return;
     }
@@ -55,14 +55,14 @@ function initializeScenario(scenarioCfg) {
     log.debug(
       'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
       scenarioCfg.name,
-      scenarioCfg.id_prefix
+      scenario.idPrefix
     );
 
     var scenarioStorage = scHelpers.getGlobalScenarioStore(
       CFG.scenarioTypeStr
     );
-    scenarioStorage[scenarioCfg.id_prefix] = scenario;
-    log.debug('Stored in global registry with ID: {}', scenarioCfg.id_prefix);
+    scenarioStorage[scenario.idPrefix] = scenario;
+    log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
   } catch (error) {
     log.error(
       'Exception during scenario initialization: "{}" for scenario: "{}"', 
