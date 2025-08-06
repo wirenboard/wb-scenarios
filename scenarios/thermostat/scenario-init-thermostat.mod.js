@@ -1,107 +1,103 @@
 /**
- * @file scenario-init-thermostat.js - script for WirenBoard wb-rules 2.0
+ * @file scenario-init-thermostat.js - ES5 module for wb-rules v2.34
  * @description Script for init scenarios of the SCENARIO_TYPE_STR type
  *     This script:
  *     - Loads all scenario configurations of the specific type from a file
- *     - Finds all active scenarios of this type
  *     - Initializes them according to the settings specified in each scenario
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link Comments formatted in JSDoc <https://jsdoc.app/> - Google styleguide
  */
 
-var helpers = require('scenarios-general-helpers.mod');
-var scenarioModule = require('thermostat.mod');
+var scHelpers = require('scenarios-general-helpers.mod');
+var CustomTypeSc = require('thermostat.mod').ThermostatScenario;
 var Logger = require('logger.mod').Logger;
 
 /**
- * Required version of the common scenario configuration file structure
- *   The version changes rarely, only when there are modifications
- *   to the schema at the same level as the scenarios[] array
- * @type {number}
+ * Scenario initialization configuration parameters
+ * @typedef {Object} ScenarioConfig
  */
-var REQUIRED_GENERAL_CFG_VER = 1;
+var CFG = {
+  reqVerGeneralCfg: 1, // Required version of common config structure
+  reqVerScenario: 1, // Required version of this scenario type config
+  configPath: '/etc/wb-scenarios.conf',
+  scenarioTypeStr: 'thermostat'
+};
 
-/**
- * Required version of the configuration for this type of scenarios
- *   The version changes every time the structure of the configuration
- *   for this scenario type is modified
- * @type {number}
- */
-var REQUIRED_SCENARIO_CFG_VER = 1;
-
-/**
- * String of the absolute path to the scenario configuration file
- * @type {string}
- */
-var CONFIG_PATH = '/etc/wb-scenarios.conf';
-
-/**
- * Scenario type for searching in the array of all scenario configurations
- * @type {string}
- */
-var SCENARIO_TYPE_STR = 'thermostat';
-var log = new Logger('WBSC-' + SCENARIO_TYPE_STR + '-init');
+var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
 
 /**
  * Initializes a scenario using the specified settings
- * @param {object} scenario - The scenario object containing the settings
+ * @param {object} scenarioCfg - The scenario object containing the settings
  * @returns {void}
  */
-function initializeScenario(scenario) {
-  log.debug('Processing scenario config: "{}"', JSON.stringify(scenario));
+function initializeScenario(scenarioCfg) {
+  log.debug('Processing scenario config: "{}"', JSON.stringify(scenarioCfg));
 
+  var scenario = new CustomTypeSc();
   var cfg = {
-    idPrefix: scenario.idPrefix,
-    targetTemp: scenario.targetTemperature,
-    tempLimitsMin: scenario.temperatureLimits.min,
-    tempLimitsMax: scenario.temperatureLimits.max,
-    hysteresis: scenario.hysteresis,
-    tempSensor: scenario.temperatureSensor,
-    actuator: scenario.actuator,
+    idPrefix: scenarioCfg.idPrefix,
+    targetTemp: scenarioCfg.targetTemperature,
+    tempLimitsMin: scenarioCfg.temperatureLimits.min,
+    tempLimitsMax: scenarioCfg.temperatureLimits.max,
+    hysteresis: scenarioCfg.hysteresis,
+    tempSensor: scenarioCfg.temperatureSensor,
+    actuator: scenarioCfg.actuator,
   };
-  var isInitSuccess = scenarioModule.init(scenario.name, cfg);
 
-  if (isInitSuccess !== true) {
-    log.error(
-      'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
-      scenario.name,
-      scenario.idPrefix
+  try {
+    var isInitSuccess = scenario.init(scenarioCfg.name, cfg);
+
+    if (isInitSuccess !== true) {
+      log.error(
+        'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
+        scenarioCfg.name,
+        scenarioCfg.idPrefix
+      );
+      return;
+    }
+
+    log.debug(
+      'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
+      scenarioCfg.name,
+      scenarioCfg.idPrefix
     );
-    return;
-  }
 
-  log.debug(
-    'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
-    scenario.name,
-    scenario.idPrefix
-  );
+    var scenarioStorage = scHelpers.getGlobalScenarioStore(
+      CFG.scenarioTypeStr
+    );
+    scenarioStorage[scenarioCfg.idPrefix] = scenario;
+    log.debug('Stored in global registry with ID: ' + scenarioCfg.idPrefix);
+  } catch (error) {
+    log.error(
+      'Exception during scenario initialization: "{}" for scenario: "{}"', 
+      error.message || error, 
+      scenarioCfg.name
+    );
+  }
 }
 
 function setup() {
-  log.debug('Start initialisation "{}" type scenarios', SCENARIO_TYPE_STR);
-  var listAllScenarios = helpers.readAndValidateScenariosConfig(
-    CONFIG_PATH,
-    REQUIRED_GENERAL_CFG_VER
+  log.debug('Start initialisation "{}" type scenarios', CFG.scenarioTypeStr);
+  var listAllScenarios = scHelpers.readAndValidateScenariosConfig(
+    CFG.configPath,
+    CFG.reqVerGeneralCfg
   );
   if (!listAllScenarios) return;
 
-  var matchedScenarios = helpers.findAllScenariosWithType(
+  var matchedScenarios = scHelpers.findAllScenariosWithType(
     listAllScenarios,
-    SCENARIO_TYPE_STR,
-    REQUIRED_SCENARIO_CFG_VER
+    CFG.scenarioTypeStr,
+    CFG.reqVerScenario
   );
   if (matchedScenarios.length === 0) {
     log.debug(
       'No correct and active scenarios of type "{}" found',
-      SCENARIO_TYPE_STR
+      CFG.scenarioTypeStr
     );
     return;
   }
-
+  
   log.debug('Number of matched scenarios: {}', matchedScenarios.length);
-  log.debug('Matched scenarios JSON: "{}"', JSON.stringify(matchedScenarios));
-
   for (var i = 0; i < matchedScenarios.length; i++) {
     initializeScenario(matchedScenarios[i]);
   }
