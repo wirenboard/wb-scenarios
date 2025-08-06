@@ -7,27 +7,12 @@
 
 var getIdPrefix = require('scenarios-general-helpers.mod').getIdPrefix;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
+var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var waitControls = require('wbsc-wait-controls.mod').waitControls;
-var isControlReady = require('wbsc-wait-controls.mod').isControlReady;
 var Logger = require('logger.mod').Logger;
 
 var loggerFileLabel = 'WBSC‑base-mod';
 var log = new Logger(loggerFileLabel);
-
-/**
- * Scenario state enum - defines all possible scenario states
- * Used for setting and checking scenario state in the virtual device
- * @enum {number}
- */
-var ScenarioState = {
-  CREATED: 0,
-  INIT_STARTED: 1,
-  WAITING_CONTROLS: 2,
-  LINKED_CONTROLS_READY: 3,
-  CONFIG_INVALID: 4,
-  LINKED_CONTROLS_TIMEOUT: 5,
-  NORMAL: 6,
-};
 
 /**
  * Abstract base class for all scenarios
@@ -205,15 +190,15 @@ ScenarioBase.prototype.init = function (name, cfg) {
     waitControls(
       waitConfig.controls,
       { 
-        timeout: waitConfig.timeout || 5000, 
-        period: waitConfig.period || 500 
+        timeout: waitConfig.timeout || 60000, 
+        period: waitConfig.period || 5000 
       },
       function(err) {
         if (err) {
           log.error('Controls not ready within timeout: {}', err.notReadyCtrlList.join(', '));
           self.setState(ScenarioState.LINKED_CONTROLS_TIMEOUT);
           self.vd.setTotalError('Linked controls not ready in ' + 
-                              ((waitConfig.timeout || 5000) / 1000) + 's: ' + 
+                              ((waitConfig.timeout || 60000) / 1000) + 's: ' + 
                               err.notReadyCtrlList.join(', '));
 
           self.disable();
@@ -355,5 +340,4 @@ ScenarioBase.prototype.defineControlsWaitConfig = function(cfg) {
   return {}; // Empty object by default - no waiting
 };
 
-exports.ScenarioState = ScenarioState;
 exports.ScenarioBase = ScenarioBase;

@@ -6,10 +6,42 @@
  */
 
 /**
- * Check if a control is ready
+ * Check if a control is ready (initialized)
+ * @param {string} controlPath - Control path like "device/control"
+ * @returns {boolean} True if control is initialized
  **/
 function isControlReady(controlPath) {
   return dev[controlPath] !== null;
+  // NOTE: May check for this goal and
+  //       dev[topic + '#type'] !== null
+}
+
+/**
+ * Checks if the given error value contains a critical error.
+ * A critical error is defined as a string containing 'r' or 'w'
+ * @param {string|undefined} errorVal - The error value to check
+ * @returns {boolean} True if there is a critical error, false otherwise
+ */
+function hasCriticalErr(errorVal) {
+  if (typeof errorVal !== 'string') {
+    return false;
+  }
+  return (errorVal.indexOf('r') !== -1 || errorVal.indexOf('w') !== -1);
+}
+
+/**
+ * Check if a control is ready and has no critical errors
+ * @param {string} controlPath - Control path like "device/control"
+ * @returns {boolean} True if control is ready and healthy
+ */
+function isControlHealthy(controlPath) {
+  if (!isControlReady(controlPath)) {
+    return false;
+  }
+  if (hasCriticalErr(dev[controlPath  + '#error'])) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -25,8 +57,8 @@ function isControlReady(controlPath) {
  *
  * @param {string[]} controls - Array of control paths, e.g. ["wb-gpio/Relay_1", "wb-gpio/Relay_2"]
  * @param {Object} [options] - Configuration options
- * @param {number} [options.timeout=5000] - Max waiting time in milliseconds
- * @param {number} [options.period=500] - Polling period in milliseconds
+ * @param {number} [options.timeout=60000] - Max waiting time in milliseconds
+ * @param {number} [options.period=5000] - Polling period in milliseconds
  * @param {Function} callback - Callback called upon success or timeout
  *                                Signature: callback(err, param1, param2, ...)
  *                                where err is null on success or ControlsTimeoutError on failure
@@ -35,7 +67,7 @@ function isControlReady(controlPath) {
  * @example
  *   // Without options - used default timeout and polling period options
  *   waitControls(controls, callback, param1);
- *   // With options - change default 5000ms/500ms to 9000ms/100ms
+ *   // With options - change default 60000ms/5000ms to 9000ms/100ms
  *   waitControls(controls, { timeout: 9000, period: 100 }, callback, param1);
  **/
 function waitControls(controls, options, callback) {
@@ -49,8 +81,8 @@ function waitControls(controls, options, callback) {
   }
 
   options = options || {};
-  var timeout = typeof options.timeout !== 'undefined' ? options.timeout : 5000;
-  var period = typeof options.period !== 'undefined' ? options.period : 500;
+  var timeout = typeof options.timeout !== 'undefined' ? options.timeout : 60000;
+  var period = typeof options.period !== 'undefined' ? options.period : 5000;
 
   if (typeof callback !== 'function') {
     log.error("waitControls() callback parameter is not a function:", 
@@ -71,7 +103,7 @@ function waitControls(controls, options, callback) {
   var intervalId = setInterval(function() {
     var allReady = true;
     for (var i = 0; i < controls.length; i++) {
-      if (!isControlReady(controls[i])) {
+      if (!isControlHealthy(controls[i])) {
         allReady = false;
         break;
       }
@@ -90,7 +122,7 @@ function waitControls(controls, options, callback) {
 
       err.notReadyCtrlList = [];
       for (var i = 0; i < controls.length; i++) {
-        if (!isControlReady(controls[i])) {
+        if (!isControlHealthy(controls[i])) {
           err.notReadyCtrlList.push(controls[i]);
         }
       }
@@ -103,3 +135,4 @@ function waitControls(controls, options, callback) {
 }
 
 exports.waitControls = waitControls;
+exports.hasCriticalErr = hasCriticalErr;

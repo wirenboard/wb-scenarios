@@ -7,6 +7,22 @@
  */
 
 /**
+ * Scenario state enum - defines all possible scenario states
+ * Used for setting and checking scenario state in the virtual device
+ * @enum {number}
+ */
+var ScenarioState = {
+  CREATED: 0,
+  INIT_STARTED: 1,
+  WAITING_CONTROLS: 2,
+  LINKED_CONTROLS_READY: 3,
+  CONFIG_INVALID: 4,
+  LINKED_CONTROLS_TIMEOUT: 5,
+  NORMAL: 6,
+  USED_CONTROL_ERROR: 7,
+};
+
+/**
  * Проверяет, существует ли контрол
  *
  * @param {string} controlName - Имя контрола ('deviceName/cellName')
@@ -215,23 +231,27 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
         ru: 'Инициализация запущена...',
       },
       2: {
-        en: 'Waiting for linked controls 10s...',
-        ru: 'Ожидание связанных контролов 10с...',
+        en: 'Waiting for used channels...',
+        ru: 'Ожидание используемых каналов...',
       },
       3: {
-        en: 'Linked controls ready',
-        ru: 'Связанные контролы готовы' },
+        en: 'Used channels ready',
+        ru: 'Используемые каналы готовы' },
       4: {
         en: 'Config not valid',
         ru: 'Настройки не корректны',
       },
       5: {
-        en: 'Linked controls not ready in 10s',
-        ru: 'Связанные контролы не готовы за 10с',
+        en: 'Used channels not ready',
+        ru: 'Используемые каналы не готовы',
       },
       6: {
         en: 'Normal',
         ru: 'В норме',
+      },
+      7: {
+        en: 'Used channel has error',
+        ru: 'Используемый канал в ошибке',
       },
     },
     order: 100,
@@ -254,6 +274,7 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
   return vdObj;
 }
 
+exports.ScenarioState = ScenarioState;
 exports.addLinkedControlRO = addLinkedControlRO;
 exports.addGroupTitleRO = addGroupTitleRO;
 exports.addAlarm = addAlarm;
