@@ -65,31 +65,34 @@
 
 ## Использование модуля
 
-Вы можете использовать функционал управления светом из своих правил wb-rules
-Для этого нужно сделать 3 шага:
+Вы можете использовать модуль управления светом прямо из своих
+правил `wb-rules`. Для этого нужно сделать 4 шага:
 
-1) Импортировать класс кастомного сценария управления светом
-2) Создать новый инстанс класса управления светом
+1) Импортировать класс кастомного сценария
+2) Создать новый инстанс класса "управление светом"
 3) Создать объект настроек где прописать что вы хотите использовать
-4) Инициализировать алгоритм указав
+4) Инициализировать алгоритм указав:
    - Имя виртуального устройства
    - Созданный объект конфигурации
 
+### Пример кода
+
 ```js
 /**
- * @file: light_init.js
+ * @file: light-init.js
  */
 
-// Step 1: import light module
+// Step 1: import module
 var CustomTypeSc = require('light-control.mod').LightControlScenario;
 
 function main() {
-  log.debug('Start init logic for: Bathroom light');
+  scenarioName = 'Bathroom light';
+  log.debug('Start init logic for: "{}"', scenarioName);
 
   // Step 2: Create new instance with scenario class
   var scenario = new CustomTypeSc();
 
-  // Step 3: Configure algorithm for light
+  // Step 3: Configure algorithm
   var cfg = {
     idPrefix: 'bathroom_light',
     isDebugEnabled: false,
@@ -135,21 +138,21 @@ function main() {
   };
 
   
-  // Step 4: init light algorithm
+  // Step 4: init algorithm
   try {
-    var isInitSuccess = scenario.init('Bathroom light', cfg);
+    var isInitSuccess = scenario.init(scenarioName, cfg);
 
     if (!isInitSuccess) {
-      log.error('Init operation aborted for scenario: "Bathroom light"');
+      log.error('Init operation aborted for scenario: "{}"', scenarioName);
       return;
     }
 
-    log.debug('Initialization successful for: Bathroom light');
+    log.debug('Initialization successful for: "{}"', scenarioName);
   } catch (error) {
     log.error(
       'Exception during scenario initialization: "{}" for scenario: "{}"', 
       error.message || error, 
-      scenarioCfg.name
+      scenarioName
     );
   }
 }
