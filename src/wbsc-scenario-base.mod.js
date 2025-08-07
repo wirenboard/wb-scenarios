@@ -204,7 +204,7 @@ ScenarioBase.prototype.init = function (name, cfg) {
           log.error('Controls not ready within timeout: {}', err.notReadyCtrlList.join(', '));
           self.setState(ScenarioState.LINKED_CONTROLS_TIMEOUT);
           self.vd.setTotalError('Linked controls not ready in ' + 
-                              ((waitConfig.timeout || WAIT_DEF.CONTROLS_WAIT_TIMEOUT) / 1000) + 's: ' + 
+                              ((waitConfig.timeout || WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS) / 1000) + 's: ' + 
                               err.notReadyCtrlList.join(', '));
 
           self.disable();
@@ -334,8 +334,8 @@ ScenarioBase.prototype.initSpecific = function (name, cfg) {
  * 
  * @example Returned object structure:
  *   - List of controls to wait for
- *   - Maximum wait time in milliseconds (default from WAIT_DEF.CONTROLS_WAIT_TIMEOUT)
- *   - Polling period in milliseconds (default from WAIT_DEF.CONTROLS_WAIT_PERIOD)
+ *   - Maximum wait time in milliseconds (default from WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS)
+ *   - Polling period in milliseconds (default from WAIT_DEF.CONTROLS_WAIT_PERIOD_MS)
  * {
  *   controls: ['device1/control1', 'device2/control2'],
  *   timeout: 10000,  // Optional

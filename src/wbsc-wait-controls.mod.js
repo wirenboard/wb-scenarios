@@ -7,8 +7,8 @@
 
 // Defaults values
 var WAIT_DEF = {
-  CONTROLS_WAIT_TIMEOUT: 60000,
-  CONTROLS_WAIT_PERIOD: 5000
+  CONTROLS_WAIT_TIMEOUT_MS: 60000, // Millisecons
+  CONTROLS_WAIT_PERIOD_MS: 5000 // Millisecons
 };
 
 /**
@@ -63,8 +63,8 @@ function isControlHealthy(controlPath) {
  *
  * @param {string[]} controls - Array of control paths, e.g. ["wb-gpio/Relay_1", "wb-gpio/Relay_2"]
  * @param {Object} [options] - Configuration options
- * @param {number} [options.timeout=WAIT_DEF.CONTROLS_WAIT_TIMEOUT] - Max waiting time in milliseconds
- * @param {number} [options.period=WAIT_DEF.CONTROLS_WAIT_PERIOD] - Polling period in milliseconds
+ * @param {number} [options.timeout=WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS] - Max waiting time in milliseconds
+ * @param {number} [options.period=WAIT_DEF.CONTROLS_WAIT_PERIOD_MS] - Polling period in milliseconds
  * @param {Function} callback - Callback called upon success or timeout
  *                                Signature: callback(err, param1, param2, ...)
  *                                where err is null on success or ControlsTimeoutError on failure
@@ -87,8 +87,8 @@ function waitControls(controls, options, callback) {
   }
 
   options = options || {};
-  var timeout = typeof options.timeout !== 'undefined' ? options.timeout : WAIT_DEF.CONTROLS_WAIT_TIMEOUT;
-  var period = typeof options.period !== 'undefined' ? options.period : WAIT_DEF.CONTROLS_WAIT_PERIOD;
+  var timeout = typeof options.timeout !== 'undefined' ? options.timeout : WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS;
+  var period = typeof options.period !== 'undefined' ? options.period : WAIT_DEF.CONTROLS_WAIT_PERIOD_MS;
 
   if (typeof callback !== 'function') {
     log.error("waitControls() callback parameter is not a function:", 
