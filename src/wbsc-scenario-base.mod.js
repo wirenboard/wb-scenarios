@@ -8,17 +8,12 @@
 var getIdPrefix = require('scenarios-general-helpers.mod').getIdPrefix;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
+var WAIT_DEF = require('wbsc-wait-controls.mod').WAIT_DEF;
 var waitControls = require('wbsc-wait-controls.mod').waitControls;
 var Logger = require('logger.mod').Logger;
 
 var loggerFileLabel = 'WBSC‑base-mod';
 var log = new Logger(loggerFileLabel);
-
-// Scenario defaults value
-var SC_DEF = {
-  CONTROLS_WAIT_TIMEOUT: 60000,
-  CONTROLS_WAIT_PERIOD: 5000
-};
 
 /**
  * Abstract base class for all scenarios
@@ -193,21 +188,23 @@ ScenarioBase.prototype.init = function (name, cfg) {
     this.setState(ScenarioState.WAITING_CONTROLS);
 
     var self = this;
-    var effectiveTimeout = waitConfig.timeout || SC_DEF.CONTROLS_WAIT_TIMEOUT;
-    var effectivePeriod = waitConfig.period || SC_DEF.CONTROLS_WAIT_PERIOD;
+    var controlsOptions = {};
+    if (typeof waitConfig.timeout !== 'undefined') {
+      controlsOptions.timeout = waitConfig.timeout;
+    }
+    if (typeof waitConfig.period !== 'undefined') {
+      controlsOptions.period = waitConfig.period;
+    }
 
     waitControls(
       waitConfig.controls,
-      { 
-        timeout: effectiveTimeout, 
-        period: effectivePeriod 
-      },
+      controlsOptions,
       function(err) {
         if (err) {
           log.error('Controls not ready within timeout: {}', err.notReadyCtrlList.join(', '));
           self.setState(ScenarioState.LINKED_CONTROLS_TIMEOUT);
           self.vd.setTotalError('Linked controls not ready in ' + 
-                              (effectiveTimeout / 1000) + 's: ' + 
+                              ((waitConfig.timeout || WAIT_DEF.CONTROLS_WAIT_TIMEOUT) / 1000) + 's: ' + 
                               err.notReadyCtrlList.join(', '));
 
           self.disable();
@@ -337,8 +334,8 @@ ScenarioBase.prototype.initSpecific = function (name, cfg) {
  * 
  * @example Returned object structure:
  *   - List of controls to wait for
- *   - Maximum wait time in milliseconds (default from SC_DEF.CONTROLS_WAIT_TIMEOUT)
- *   - Polling period in milliseconds (default from SC_DEF.CONTROLS_WAIT_PERIOD)
+ *   - Maximum wait time in milliseconds (default from WAIT_DEF.CONTROLS_WAIT_TIMEOUT)
+ *   - Polling period in milliseconds (default from WAIT_DEF.CONTROLS_WAIT_PERIOD)
  * {
  *   controls: ['device1/control1', 'device2/control2'],
  *   timeout: 10000,  // Optional

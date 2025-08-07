@@ -140,5 +140,6 @@ function waitControls(controls, options, callback) {
   }, period);
 }
 
+exports.WAIT_DEF = WAIT_DEF;
 exports.waitControls = waitControls;
 exports.hasCriticalErr = hasCriticalErr;
