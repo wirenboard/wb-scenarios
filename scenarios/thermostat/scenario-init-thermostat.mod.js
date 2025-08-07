@@ -45,11 +45,11 @@ function initializeScenario(scenarioCfg) {
   };
 
   try {
-    var isInitSuccess = scenario.init(scenarioCfg.name, cfg);
-
-    if (isInitSuccess !== true) {
+    // Returns true if VD created successfully; full initialization continue asynchronously
+    var isVirtualDeviceCreated = scenario.init(scenarioCfg.name, cfg);
+    if (isVirtualDeviceCreated !== true) {
       log.error(
-        'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
+        'Virtual device creation failed for scenario name: "{}" with idPrefix: "{}"',
         scenarioCfg.name,
         scenario.idPrefix
       );
@@ -57,7 +57,7 @@ function initializeScenario(scenarioCfg) {
     }
 
     log.debug(
-      'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
+      'VD created successfully, init continue asynchronously for scenario name: "{}" with idPrefix: "{}"',
       scenarioCfg.name,
       scenario.idPrefix
     );
