@@ -50,8 +50,8 @@ function initializeScenario(scenarioCfg) {
 
   try {
     // Returns true if VD created successfully; full initialization continue asynchronously
-    var isVirtualDeviceCreated = scenario.init(scenarioCfg.name, cfg);
-    if (isVirtualDeviceCreated !== true) {
+    var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
+    if (isBasicVdCreated !== true) {
       log.error(
         'Virtual device creation failed for scenario name: "{}" with idPrefix: "{}"',
         scenarioCfg.name,
