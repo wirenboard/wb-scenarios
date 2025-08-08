@@ -43,6 +43,9 @@
       "type": "object",
       "description": "devicesControl_description",
       "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
       "properties": {
         "scenarioType": {
           "type": "string",
@@ -79,7 +82,7 @@
           "description": "generalScenarioIdPrefixDescription",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
-          "default": "devices_control",
+          "default": "",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 3,
@@ -226,7 +229,6 @@
         "scenarioType",
         "enable",
         "name",
-        "id_prefix",
         "inControls",
         "outControls"
       ]
@@ -285,7 +287,7 @@
           "description": "generalScenarioIdPrefixDescription",
           "_pattern_comment": "Запрещает пробелы, /, +, и #, а также ограничивает строку использованием только цифр, нижнего подчеркивания и английских букв",
           "pattern": "^[0-9a-zA-Z_]+$",
-          "default": "lightControl",
+          "default": "",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 3,

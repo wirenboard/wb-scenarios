@@ -13,10 +13,11 @@
  */
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
-var ScenarioState = require('wbsc-scenario-base.mod').ScenarioState;
+var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
+var Logger = require('logger.mod').Logger;
+
 var eTable = require("table-handling-events.mod");
 var aTable = require("table-handling-actions.mod");
-var Logger = require('logger.mod').Logger;
 
 var loggerFileLabel = 'WBSC-input-output-link-mod';
 var log = new Logger(loggerFileLabel);
@@ -60,17 +61,17 @@ DevicesControlScenario.prototype.constructor = DevicesControlScenario;
  */
 DevicesControlScenario.prototype.generateNames = function(idPrefix) {
   var scenarioPrefix = 'wbsc_';
-  var rulePrefix = 'wbru_';
+  var baseRuleName = scenarioPrefix + idPrefix + '_';
   
   return {
     vDevice: scenarioPrefix + idPrefix,
-    ruleMain: rulePrefix + idPrefix
+    ruleMain: baseRuleName + 'mainRule',
   };
 };
 
 /**
  * Get configuration for waiting for controls
- * @param {Object} cfg Configuration object
+ * @param {Object} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
 DevicesControlScenario.prototype.defineControlsWaitConfig = function (cfg) {

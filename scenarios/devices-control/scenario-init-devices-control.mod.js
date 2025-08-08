@@ -41,28 +41,28 @@ function initializeScenario(scenarioCfg) {
   };
 
   try {
-    var isInitSuccess = scenario.init(scenarioCfg.name, cfg);
-
-    if (isInitSuccess !== true) {
+    // Returns true if VD created successfully; full initialization continue asynchronously
+    var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
+    if (isBasicVdCreated !== true) {
       log.error(
-        'Init operation aborted for scenario name: "{}" with idPrefix: "{}"',
+        'Virtual device creation failed for scenario name: "{}" with idPrefix: "{}"',
         scenarioCfg.name,
-        scenarioCfg.id_prefix
+        scenario.idPrefix
       );
       return;
     }
 
     log.debug(
-      'Initialization successful for scenario name: "{}" with idPrefix: "{}"',
+      'VD created successfully, init continue asynchronously for scenario name: "{}" with idPrefix: "{}"',
       scenarioCfg.name,
-      scenarioCfg.id_prefix
+      scenario.idPrefix
     );
 
     var scenarioStorage = scHelpers.getGlobalScenarioStore(
       CFG.scenarioTypeStr
     );
-    scenarioStorage[scenarioCfg.id_prefix] = scenario;
-    log.debug('Stored in global registry with ID: {}', scenarioCfg.id_prefix);
+    scenarioStorage[scenario.idPrefix] = scenario;
+    log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
   } catch (error) {
     log.error(
       'Exception during scenario initialization: "{}" for scenario: "{}"', 

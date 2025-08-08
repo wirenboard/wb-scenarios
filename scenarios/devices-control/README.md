@@ -9,25 +9,25 @@
 
 Конфигурация выглядит следующим образом
 
-![alt text](doc/scenario-config.png)
+![Scenario config](doc/scenario-config.png)
 
 Каждому сценарию создается виртуальное устройство
 
-![virtual-device](doc/virtual-device.png)
+![Virtual device](doc/virtual-device.png)
 
 ## Использование модуля
 
 Вы можете использовать модуль управления устройствами прямо из своих
 правил `wb-rules`.
 
-Для этого нужно сделать 3 шага:
+Для этого нужно сделать 4 шага:
 
-1) Подключить модуль в коде скрипта
-2) Создать объект конфигурации
-   В этом объекте нужно прописать
+1) Импортировать класс кастомного сценария
+2) Создать новый инстанс класса "управление устройствами"
+3) Создать объект настроек где прописать что вы хотите использовать:
    - Настройки входних контролов
    - Настройки выходных контролов
-3) Инициализировать алгоритм указав:
+4) Инициализировать алгоритм указав:
    - Имя виртуального устройства
    - Созданный объект конфигурации
 
@@ -121,20 +121,17 @@ DevicesControlConfig:
  * @file: devices-control-example.js
  */
 
-// Step 1: import devices control module
+// Step 1: import module
 var CustomTypeSc = require('devices-control.mod').DevicesControlScenario;
 
 function main() {
-  log.debug('Start init logic for: Master switch');
+  scenarioName = 'Master switch';
+  log.debug('Start init logic for: "{}"', scenarioName);
 
   // Step 2: Create new instance with scenario class
   var scenario = new CustomTypeSc();
 
-
-function main() {
-  log.debug('Start init logic for: Master switch');
-
-  // Step 3: Configure algorithm for input+output linking
+  // Step 3: Configure algorithm
   var cfg = {
     idPrefix: 'master_switch',
     inControls: [
@@ -158,21 +155,21 @@ function main() {
   };
 
 
-  // Step 4: init devices-control algorithm
+  // Step 4: init algorithm
   try {
-    var isInitSuccess = scenario.init('Master switch', cfg);
+    var isInitSuccess = scenario.init(scenarioName, cfg);
     
     if (!isInitSuccess) {
-      log.error('Init operation aborted for scenario: "Master switch"');
+      log.error('Init operation aborted for scenario: "{}"', scenarioName);
       return;
     }
 
-    log.debug('Initialization successful for: Master switch');
+    log.debug('Initialization successful for: "{}"', scenarioName);
   } catch (error) {
     log.error(
       'Exception during scenario initialization: "{}" for scenario: "{}"', 
       error.message || error, 
-      'Master switch'
+      scenarioName
     );
   }
 }

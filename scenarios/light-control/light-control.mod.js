@@ -6,29 +6,16 @@
  */
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
-var ScenarioState = require('wbsc-scenario-base.mod').ScenarioState;
+var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
+var Logger = require('logger.mod').Logger;
+
 var vdHelpers = require('virtual-device-helpers.mod');
 var aTable = require('registry-action-resolvers.mod');
-var Logger = require('logger.mod').Logger;
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
 
 var loggerFileLabel = 'WBSC-light-control-mod';
 var log = new Logger(loggerFileLabel);
-
-/**
- * Enum for tracking the last action type in the light control system
- * @enum {number}
- */
-var lastActionType = {
-  NOT_USED: 0, // Not used yet (set immediately after start)
-  SCENARIO_ON: 1, // Scenario turned everything on
-  SCENARIO_OFF: 2, // Scenario turned everything off
-  EXT_ON: 3, // Externally turned everything on
-  EXT_OFF: 4, // Externally turned everything off
-  PARTIAL_EXT: 5, // Partially changed by external actions
-  PARTIAL_BY_SCENARIO: 6, // Partially changed by Scenario
-};
 
 /**
  * @typedef {Object} LightControlConfig
@@ -73,6 +60,20 @@ LightControlScenario.prototype = Object.create(ScenarioBase.prototype);
 LightControlScenario.prototype.constructor = LightControlScenario;
 
 /**
+ * Enum for tracking the last action type in the light control system
+ * @enum {number}
+ */
+var lastActionType = {
+  NOT_USED: 0, // Not used yet (set immediately after start)
+  SCENARIO_ON: 1, // Scenario turned everything on
+  SCENARIO_OFF: 2, // Scenario turned everything off
+  EXT_ON: 3, // Externally turned everything on
+  EXT_OFF: 4, // Externally turned everything off
+  PARTIAL_EXT: 5, // Partially changed by external actions
+  PARTIAL_BY_SCENARIO: 6, // Partially changed by Scenario
+};
+
+/**
  * Generates name identifiers for virtual device and rules
  * @param {string} idPrefix - ID prefix for this scenario instance
  * @returns {Object} Generated names
@@ -101,9 +102,8 @@ LightControlScenario.prototype.generateNames = function (idPrefix) {
 
 /**
  * Get configuration for waiting for controls
- *
- * @param {Object} cfg Configuration object
- * @returns {Object} Waiting configuration object or empty object for no wait
+ * @param {Object} cfg - Configuration object
+ * @returns {Object} Waiting configuration object
  */
 LightControlScenario.prototype.defineControlsWaitConfig = function (cfg) {
   var lightDevTopics = extractMqttTopics(cfg.lightDevices || []);
@@ -117,6 +117,7 @@ LightControlScenario.prototype.defineControlsWaitConfig = function (cfg) {
     openingTopics,
     switchTopics
   );
+
   return { controls: allTopics };
 };
 
@@ -179,9 +180,9 @@ LightControlScenario.prototype.validateCfg = function (cfg) {
 };
 
 /**
- * Adds required controls to the virtual device
+ * Adds required custom controls cells to the virtual device
  * @param {Object} self - Reference to the LightControlScenario instance
- * @param {Object} cfg - Configuration object
+ * @param {LightControlConfig} cfg - Configuration object
  */
 function addCustomControlsToVirtualDevice(self, cfg) {
   // Add basic lightOn control
@@ -633,10 +634,10 @@ function createAndRegisterRule(self, name, topics, handler) {
 }
 
 /**
- * Creates all required rules for the light control scenario
+ * Creates all required rules for current type scenario
  * @param {Object} self - Reference to the LightControlScenario instance
- * @param {Object} cfg - Configuration object
- * @returns {boolean} True if rules created successfully, false otherwise
+ * @param {LightControlConfig} cfg - Configuration object
+ * @returns {boolean} True if all rules created successfully, false otherwise
  */
 function createRules(self, cfg) {
   var gName = self.genNames;

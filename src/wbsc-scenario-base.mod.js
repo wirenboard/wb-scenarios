@@ -7,27 +7,13 @@
 
 var getIdPrefix = require('scenarios-general-helpers.mod').getIdPrefix;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
+var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
+var WAIT_DEF = require('wbsc-wait-controls.mod').WAIT_DEF;
 var waitControls = require('wbsc-wait-controls.mod').waitControls;
-var isControlReady = require('wbsc-wait-controls.mod').isControlReady;
 var Logger = require('logger.mod').Logger;
 
 var loggerFileLabel = 'WBSC‑base-mod';
 var log = new Logger(loggerFileLabel);
-
-/**
- * Scenario state enum - defines all possible scenario states
- * Used for setting and checking scenario state in the virtual device
- * @enum {number}
- */
-var ScenarioState = {
-  CREATED: 0,
-  INIT_STARTED: 1,
-  WAITING_CONTROLS: 2,
-  LINKED_CONTROLS_READY: 3,
-  CONFIG_INVALID: 4,
-  LINKED_CONTROLS_TIMEOUT: 5,
-  NORMAL: 6,
-};
 
 /**
  * Abstract base class for all scenarios
@@ -202,18 +188,23 @@ ScenarioBase.prototype.init = function (name, cfg) {
     this.setState(ScenarioState.WAITING_CONTROLS);
 
     var self = this;
+    var controlsOptions = {};
+    if (typeof waitConfig.timeout !== 'undefined') {
+      controlsOptions.timeout = waitConfig.timeout;
+    }
+    if (typeof waitConfig.period !== 'undefined') {
+      controlsOptions.period = waitConfig.period;
+    }
+
     waitControls(
       waitConfig.controls,
-      { 
-        timeout: waitConfig.timeout || 5000, 
-        period: waitConfig.period || 500 
-      },
+      controlsOptions,
       function(err) {
         if (err) {
           log.error('Controls not ready within timeout: {}', err.notReadyCtrlList.join(', '));
           self.setState(ScenarioState.LINKED_CONTROLS_TIMEOUT);
           self.vd.setTotalError('Linked controls not ready in ' + 
-                              ((waitConfig.timeout || 5000) / 1000) + 's: ' + 
+                              ((waitConfig.timeout || WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS) / 1000) + 's: ' + 
                               err.notReadyCtrlList.join(', '));
 
           self.disable();
@@ -343,17 +334,16 @@ ScenarioBase.prototype.initSpecific = function (name, cfg) {
  * 
  * @example Returned object structure:
  *   - List of controls to wait for
- *   - Maximum wait time in milliseconds (default 10000 ms = 10s)
- *   - Polling period in milliseconds (default 500 ms)
+ *   - Maximum wait time in milliseconds (default from WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS)
+ *   - Polling period in milliseconds (default from WAIT_DEF.CONTROLS_WAIT_PERIOD_MS)
  * {
  *   controls: ['device1/control1', 'device2/control2'],
- *   timeout: 10000,  // Optional - default 5000 (5s)
- *   period: 500  // Optional - default 100 (0.1s)
+ *   timeout: 10000,  // Optional
+ *   period: 500  // Optional
  * }
  */
 ScenarioBase.prototype.defineControlsWaitConfig = function(cfg) {
   return {}; // Empty object by default - no waiting
 };
 
-exports.ScenarioState = ScenarioState;
 exports.ScenarioBase = ScenarioBase;

@@ -113,17 +113,15 @@
 
 ## Использование модуля
 
-Вы можете использовать модуль термостата для управления нагревом прямо
-из своих правил `wb-rules`.
+Вы можете использовать модуль термостата прямо из своих
+правил `wb-rules`. Для этого нужно сделать 4 шага:
 
-Для этого нужно сделать 3 шага:
-
-1) Подключить модуль в коде скрипта
-2) Создать объект конфигурации
-   В этом объекте нужно прописать
+1) Импортировать класс кастомного сценария
+2) Создать новый инстанс класса "термостат"
+3) Создать объект настроек где прописать что вы хотите использовать:
    - общие настройки целевой температуры и тд
    - топики которые вы хотите использовать для датчика и нагревателя
-3) Инициализировать алгоритм указав:
+4) Инициализировать алгоритм указав:
    - Имя виртуального устройства
    - Созданный объект конфигурации
 
@@ -158,13 +156,17 @@ ThermostatConfig:
  * @file: init-heating.js
  */
 
-// Step 1: include module
-var scenarioModule = require('thermostat.mod');
+// Step 1: import module
+var CustomTypeSc = require('thermostat.mod').ThermostatScenario;
 
 function main() {
-  log.debug('Start init logic for: Bathroom light');
+  var scenarioName = 'Bathroom: heat floor';
+  log.debug('Start init logic for: "{}"', scenarioName);
 
-  // Step 2: Configure algorithm
+  // Step 2: Create new instance with scenario class
+  var scenario = new CustomTypeSc();
+
+  // Step 3: Configure algorithm
   var cfg = {
     idPrefix: 'bathroom_floor',// Не обязательный параметр, можно не указывать
     targetTemp: 22,
@@ -175,14 +177,23 @@ function main() {
     actuator: 'wb-mr6cv3_127/K6',
   };
 
-  // Step 3: init algorithm
-  var isInitSuccess = scenarioModule.init('Bathroom: heat floor', cfg);
-  if (!isInitSuccess) {
-    log.error('Error: Init aborted for "idPrefix": {}', cfg.idPrefix);
-    return;
-  }
+  // Step 4: init algorithm
+  try {
+    var isInitSuccess = scenario.init(scenarioName, cfg);
 
-  log.debug('Initialization successful for "idPrefix": {}', cfg.idPrefix);
+    if (!isInitSuccess) {
+      log.error('Init operation aborted for scenario: "{}"', scenarioName);
+      return;
+    }
+
+    log.debug('Initialization successful for: "{}"', scenarioName);
+  } catch (error) {
+    log.error(
+      'Exception during scenario initialization: "{}" for scenario: "{}"', 
+      error.message || error, 
+      scenarioName
+    );
+  }
 }
 
 main();
