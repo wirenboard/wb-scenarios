@@ -13,6 +13,7 @@ var vdHelpers = require('virtual-device-helpers.mod');
 var aTable = require('registry-action-resolvers.mod');
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
+var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
 
 var loggerFileLabel = 'WBSC-light-control-mod';
 var log = new Logger(loggerFileLabel);
@@ -54,6 +55,8 @@ function LightControlScenario() {
     syncingLightOn: false, // flag to prevent recursion when syncing lightOn
     lightOffTimerId: null, // timer ID for turning off lights
     logicEnableTimerId: null, // timer ID for re-enabling automation logic
+    errorTimers: {}, // Timers for error handling debounce
+    errorCheckTimeoutMs: 10000 // 10s debounce time for errors
   };
 }
 LightControlScenario.prototype = Object.create(ScenarioBase.prototype);
@@ -97,6 +100,10 @@ LightControlScenario.prototype.generateNames = function (idPrefix) {
     ruleOpeningSensorsChange: baseRuleName + 'openingSensorsChange',
     ruleMotionInProgress: baseRuleName + 'motionInProgress',
     ruleLogicDisabledByWallSwitch: baseRuleName + 'logicDisabledByWallSwitch',
+    ruleLightDevErrorsBase: baseRuleName + 'light_dev_error_',
+    ruleMotionSensorErrorsBase: baseRuleName + 'motion_sensor_error_',
+    ruleOpeningSensorErrorsBase: baseRuleName + 'opening_sensor_error_',
+    ruleLightSwitchErrorsBase: baseRuleName + 'light_switch_error_',
   };
 };
 
@@ -634,6 +641,141 @@ function createAndRegisterRule(self, name, topics, handler) {
 }
 
 /**
+ * Updates the readonly state of the rule enable control
+ * Removes readonly only when all errors (sensors, switches, lights) are cleared
+ * @param {Object} vdCtrlEnable - Control "Enable rules" in scenario virtual dev
+ * @param {LightControlConfig} cfg - Configuration parameters
+ */
+function tryClearReadonly(vdCtrlEnable, cfg) {
+  var hasAnyError = false;
+  
+  // Check light devices for errors
+  for (var i = 0; i < cfg.lightDevices.length; i++) {
+    var lightTopic = cfg.lightDevices[i].mqttTopicName;
+    if (hasCriticalErr(dev[lightTopic + '#error'])) {
+      hasAnyError = true;
+      break;
+    }
+  }
+  
+  // Check motion sensors for errors
+  if (!hasAnyError) {
+    for (var j = 0; j < cfg.motionSensors.length; j++) {
+      var motionTopic = cfg.motionSensors[j].mqttTopicName;
+      if (hasCriticalErr(dev[motionTopic + '#error'])) {
+        hasAnyError = true;
+        break;
+      }
+    }
+  }
+  
+  // Check opening sensors for errors
+  if (!hasAnyError) {
+    for (var k = 0; k < cfg.openingSensors.length; k++) {
+      var openingTopic = cfg.openingSensors[k].mqttTopicName;
+      if (hasCriticalErr(dev[openingTopic + '#error'])) {
+        hasAnyError = true;
+        break;
+      }
+    }
+  }
+  
+  // Check light switches for errors
+  if (!hasAnyError) {
+    for (var l = 0; l < cfg.lightSwitches.length; l++) {
+      var switchTopic = cfg.lightSwitches[l].mqttTopicName;
+      if (hasCriticalErr(dev[switchTopic + '#error'])) {
+        hasAnyError = true;
+        break;
+      }
+    }
+  }
+  
+  if (!hasAnyError) {
+    vdCtrlEnable.setReadonly(false);
+  }
+}
+
+/**
+ * Creates an error handling rule for a control
+ * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {string} ruleName - The name of the rule to be created
+ * @param {string} sourceErrTopic - The MQTT topic where error events published
+ * @param {Object} vdCtrlEnable - Control "Enable rules" in scenario virtual dev
+ * @param {LightControlConfig} cfg - Configuration parameters
+ * @returns {boolean} True if rule created successfully
+ */
+function createErrChangeRule(
+  self,
+  ruleName,
+  sourceErrTopic,
+  vdCtrlEnable,
+  cfg
+) {
+  var ruleCfg = {
+    whenChanged: [sourceErrTopic],
+    then: function (newValue, devName, cellName) {
+      if (!hasCriticalErr(newValue)) {
+        log.debug(
+          'Error cleared or non-critical error detected for topic "{}". New state: "{}"',
+          sourceErrTopic,
+          newValue
+        );
+        tryClearReadonly(vdCtrlEnable, cfg);
+        self.setState(ScenarioState.NORMAL);
+
+
+        if (self.ctx.errorTimers[sourceErrTopic]) {
+          clearTimeout(self.ctx.errorTimers[sourceErrTopic]);
+          self.ctx.errorTimers[sourceErrTopic] = null;
+          log.debug(
+            'Debounce timer for error for topic "{}" disabled',
+            sourceErrTopic
+          );
+        }
+        return;
+      }
+
+      log.warning(
+        'Get critical error (r/w) for topic "{}". New error state: "{}"',
+        sourceErrTopic,
+        newValue
+      );
+
+      // Create new timer only if not have running already
+      if (self.ctx.errorTimers[sourceErrTopic]) {
+        return;
+      }
+
+      self.ctx.errorTimers[sourceErrTopic] = setTimeout(function () {
+        // When timer stop - check still critical errors r/w
+        var currentErrorVal = dev[sourceErrTopic];
+        if (hasCriticalErr(currentErrorVal)) {
+          log.error(
+            'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
+            sourceErrTopic,
+            self.ctx.errorCheckTimeoutMs,
+            currentErrorVal
+          );
+          self.setState(ScenarioState.USED_CONTROL_ERROR);
+          vdCtrlEnable.setReadonly(true);
+          vdCtrlEnable.setValue(false);
+        } else {
+          log.debug(
+            'Error in topic "{}" cleared before timer disabled. Scenario still running.',
+            sourceErrTopic
+          );
+        }
+        self.ctx.errorTimers[sourceErrTopic] = null;
+      }, self.ctx.errorCheckTimeoutMs);
+    },
+  };
+
+  var ruleId = defineRule(ruleName, ruleCfg);
+  return ruleId;
+}
+
+/**
  * Creates all required rules for current type scenario
  * @param {Object} self - Reference to the LightControlScenario instance
  * @param {LightControlConfig} cfg - Configuration object
@@ -778,6 +920,89 @@ function createRules(self, cfg) {
     )
   ) {
     return false;
+  }
+
+  // Create error handling rules for all devices
+  var vdCtrlEnable = self.vd.devObj.getControl('rule_enabled');
+  
+  // Error handling rules for light devices
+  for (var i = 0; i < cfg.lightDevices.length; i++) {
+    var lightTopic = cfg.lightDevices[i].mqttTopicName;
+    var lightErrTopic = lightTopic + '#error';
+    var lightErrRuleName = gName.ruleLightDevErrorsBase + i;
+    
+    var lightErrRuleId = createErrChangeRule(
+      self,
+      lightErrRuleName,
+      lightErrTopic,
+      vdCtrlEnable,
+      cfg
+    );
+    if (!lightErrRuleId) {
+      log.error('Failed to create light device error handling rule for: {}', lightTopic);
+      return false;
+    }
+    log.debug('Light device error handling rule created with ID="{}"', lightErrRuleId);
+  }
+  
+  // Error handling rules for motion sensors
+  for (var j = 0; j < cfg.motionSensors.length; j++) {
+    var motionTopic = cfg.motionSensors[j].mqttTopicName;
+    var motionErrTopic = motionTopic + '#error';
+    var motionErrRuleName = gName.ruleMotionSensorErrorsBase + j;
+    
+    var motionErrRuleId = createErrChangeRule(
+      self,
+      motionErrRuleName,
+      motionErrTopic,
+      vdCtrlEnable,
+      cfg
+    );
+    if (!motionErrRuleId) {
+      log.error('Failed to create motion sensor error handling rule for: {}', motionTopic);
+      return false;
+    }
+    log.debug('Motion sensor error handling rule created with ID="{}"', motionErrRuleId);
+  }
+  
+  // Error handling rules for opening sensors
+  for (var k = 0; k < cfg.openingSensors.length; k++) {
+    var openingTopic = cfg.openingSensors[k].mqttTopicName;
+    var openingErrTopic = openingTopic + '#error';
+    var openingErrRuleName = gName.ruleOpeningSensorErrorsBase + k;
+    
+    var openingErrRuleId = createErrChangeRule(
+      self,
+      openingErrRuleName,
+      openingErrTopic,
+      vdCtrlEnable,
+      cfg
+    );
+    if (!openingErrRuleId) {
+      log.error('Failed to create opening sensor error handling rule for: {}', openingTopic);
+      return false;
+    }
+    log.debug('Opening sensor error handling rule created with ID="{}"', openingErrRuleId);
+  }
+  
+  // Error handling rules for light switches
+  for (var l = 0; l < cfg.lightSwitches.length; l++) {
+    var switchTopic = cfg.lightSwitches[l].mqttTopicName;
+    var switchErrTopic = switchTopic + '#error';
+    var switchErrRuleName = gName.ruleLightSwitchErrorsBase + l;
+    
+    var switchErrRuleId = createErrChangeRule(
+      self,
+      switchErrRuleName,
+      switchErrTopic,
+      vdCtrlEnable,
+      cfg
+    );
+    if (!switchErrRuleId) {
+      log.error('Failed to create light switch error handling rule for: {}', switchTopic);
+      return false;
+    }
+    log.debug('Light switch error handling rule created with ID="{}"', switchErrRuleId);
   }
 
   return true;
