@@ -1,3 +1,9 @@
+wb-scenarios (1.6.1) stable; urgency=medium
+
+  * fix Russian and English translations
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Fri, 17 Oct 2025 12:02:00 +0300
+
 wb-scenarios (1.6.0) stable; urgency=medium
 
   * fix: increase wait controls timeout to 60s and actualize thermostat
