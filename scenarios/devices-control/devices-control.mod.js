@@ -18,6 +18,7 @@ var Logger = require('logger.mod').Logger;
 
 var eTable = require("table-handling-events.mod");
 var aTable = require("table-handling-actions.mod");
+var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
 
 var loggerFileLabel = 'WBSC-input-output-link-mod';
 var log = new Logger(loggerFileLabel);
@@ -49,7 +50,10 @@ function DevicesControlScenario() {
    * Context object for storing scenario runtime state
    * @type {Object}
    */
-  this.ctx = {}; // Not used on this time
+  this.ctx = {
+    errorTimers: {}, // Timers for error handling debounce
+    errorCheckTimeoutMs: 10000 // 10s debounce time for errors
+  };
 }
 DevicesControlScenario.prototype = Object.create(ScenarioBase.prototype);
 DevicesControlScenario.prototype.constructor = DevicesControlScenario;
@@ -66,6 +70,8 @@ DevicesControlScenario.prototype.generateNames = function(idPrefix) {
   return {
     vDevice: scenarioPrefix + idPrefix,
     ruleMain: baseRuleName + 'mainRule',
+    ruleInputErrorsBase: baseRuleName + 'input_error_',
+    ruleOutputErrorsBase: baseRuleName + 'output_error_',
   };
 };
 
@@ -187,6 +193,117 @@ DevicesControlScenario.prototype.validateCfg = function(cfg) {
 };
 
 /**
+ * Updates the readonly state of the rule enable control
+ * Removes readonly only when all errors (input and output controls) are cleared
+ * @param {Object} vdCtrlEnable - Control "Enable rules" in scenario virtual dev
+ * @param {DevicesControlConfig} cfg - Configuration parameters
+ */
+function tryClearReadonly(vdCtrlEnable, cfg) {
+  var hasAnyError = false;
+  
+  // Check input controls for errors
+  for (var i = 0; i < cfg.inControls.length; i++) {
+    if (hasCriticalErr(dev[cfg.inControls[i].control + '#error'])) {
+      hasAnyError = true;
+      break;
+    }
+  }
+  
+  // Check output controls for errors if no input errors found
+  if (!hasAnyError) {
+    for (var j = 0; j < cfg.outControls.length; j++) {
+      if (hasCriticalErr(dev[cfg.outControls[j].control + '#error'])) {
+        hasAnyError = true;
+        break;
+      }
+    }
+  }
+  
+  if (!hasAnyError) {
+    vdCtrlEnable.setReadonly(false);
+  }
+}
+
+/**
+ * Creates an error handling rule for a control
+ * @param {Object} self - Reference to the DevicesControlScenario instance
+ * @param {string} ruleName - The name of the rule to be created
+ * @param {string} sourceErrTopic - The MQTT topic where error events published
+ * @param {Object} vdCtrlEnable - Control "Enable rules" in scenario virtual dev
+ * @param {DevicesControlConfig} cfg - Configuration parameters
+ * @returns {boolean} True if rule created successfully
+ */
+function createErrChangeRule(
+  self,
+  ruleName,
+  sourceErrTopic,
+  vdCtrlEnable,
+  cfg
+) {
+  var ruleCfg = {
+    whenChanged: [sourceErrTopic],
+    then: function (newValue, devName, cellName) {
+      if (!hasCriticalErr(newValue)) {
+        log.debug(
+          'Error cleared or non-critical error detected for topic "{}". New state: "{}"',
+          sourceErrTopic,
+          newValue
+        );
+        tryClearReadonly(vdCtrlEnable, cfg);
+        self.setState(ScenarioState.NORMAL);
+
+        // If on this topic was running timer - disable this timer
+        if (self.ctx.errorTimers[sourceErrTopic]) {
+          clearTimeout(self.ctx.errorTimers[sourceErrTopic]);
+          self.ctx.errorTimers[sourceErrTopic] = null;
+          log.debug(
+            'Debounce timer for error for topic "{}" disabled',
+            sourceErrTopic
+          );
+        }
+        return;
+      }
+
+      log.warning(
+        'Get critical error (r/w) for topic "{}". New error state: "{}"',
+        sourceErrTopic,
+        newValue
+      );
+
+      // Create new timer only if not have running already
+      if (self.ctx.errorTimers[sourceErrTopic]) {
+        return;
+      }
+
+      self.ctx.errorTimers[sourceErrTopic] = setTimeout(function () {
+        // When timer stop - check still critical errors r/w
+        var currentErrorVal = dev[sourceErrTopic];
+        if (hasCriticalErr(currentErrorVal)) {
+          log.error(
+            'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
+            sourceErrTopic,
+            self.ctx.errorCheckTimeoutMs,
+            currentErrorVal
+          );
+          self.setState(ScenarioState.USED_CONTROL_ERROR);
+          vdCtrlEnable.setReadonly(true);
+          vdCtrlEnable.setValue(false);
+        } else {
+          log.debug(
+            'Error in topic "{}" cleared before timer disabled. Scenario still running.',
+            sourceErrTopic
+          );
+        }
+        self.ctx.errorTimers[sourceErrTopic] = null;
+      }, self.ctx.errorCheckTimeoutMs);
+    },
+  };
+
+  var ruleId = defineRule(ruleName, ruleCfg);
+  return ruleId;
+}
+
+/**
  * Creates all required rules for the InputOutputLink scenario
  * @param {Object} self - Reference to the DevicesControlScenario instance
  * @param {Object} cfg - Configuration object
@@ -213,6 +330,47 @@ function createRules(self, cfg) {
   
   log.debug('Main rule created successfully with ID: ' + ruleId);
   self.addRule(ruleId);
+  
+  // Create error handling rules for input controls
+  var vdCtrlEnable = self.vd.devObj.getControl('rule_enabled');
+  
+  for (var j = 0; j < cfg.inControls.length; j++) {
+    var inControlErrTopic = cfg.inControls[j].control + '#error';
+    var inErrRuleName = self.genNames.ruleInputErrorsBase + j;
+    
+    ruleId = createErrChangeRule(
+      self,
+      inErrRuleName,
+      inControlErrTopic,
+      vdCtrlEnable,
+      cfg
+    );
+    if (!ruleId) {
+      log.error('Failed to create input control error handling rule for: {}', cfg.inControls[j].control);
+      return false;
+    }
+    log.debug('Input control error handling rule created with ID="{}"', ruleId);
+  }
+  
+  // Create error handling rules for output controls
+  for (var k = 0; k < cfg.outControls.length; k++) {
+    var outControlErrTopic = cfg.outControls[k].control + '#error';
+    var outErrRuleName = self.genNames.ruleOutputErrorsBase + k;
+    
+    ruleId = createErrChangeRule(
+      self,
+      outErrRuleName,
+      outControlErrTopic,
+      vdCtrlEnable,
+      cfg
+    );
+    if (!ruleId) {
+      log.error('Failed to create output control error handling rule for: {}', cfg.outControls[k].control);
+      return false;
+    }
+    log.debug('Output control error handling rule created with ID="{}"', ruleId);
+  }
+  
   return true;
 }
 
