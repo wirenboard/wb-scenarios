@@ -25,6 +25,9 @@
         },
         {
           "$ref": "#/definitions/thermostat"
+        },
+        {
+          "$ref": "#/definitions/schedule"
         }
       ],
       "_format": "wb-multiple",
@@ -778,6 +781,262 @@
         "temperatureSensor",
         "actuator"
       ]
+    },
+    "schedule": {
+      "type": "object",
+      "title": "scheduleScenarioName",
+      "description": "scheduleScenarioDescription",
+      "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
+      "properties": {
+        "scenarioType": {
+          "type": "string",
+          "enum": ["schedule"],
+          "default": "schedule",
+          "options": {
+            "hidden": true
+          }
+        },
+        "componentVersion": {
+          "type": "integer",
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "enable": {
+          "title": "generalScenarioGenerateRuleTitle",
+          "type": "boolean",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "name": {
+          "title": "generalScenarioName",
+          "type": "string",
+          "default": "Расписание",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "id_prefix": {
+          "title": "generalScenarioIdPrefixTitle",
+          "type": "string",
+          "description": "generalScenarioIdPrefixDescription",
+          "pattern": "^[0-9a-zA-Z_]+$",
+          "default": "",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
+          }
+        },
+        "scheduleTime": {
+          "title": "scheduleTimeTitle",
+          "type": "object",
+          "propertyOrder": 4,
+          "_format": "grid",
+          "options": {
+            "grid_columns": 12,
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "hours": {
+              "title": "scheduleHoursTitle",
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 23,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 4
+              }
+            },
+            "minutes": {
+              "title": "scheduleMinutesTitle", 
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 59,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 4
+              }
+            },
+            "seconds": {
+              "title": "scheduleSecondsTitle",
+              "type": "integer", 
+              "default": 0,
+              "minimum": 0,
+              "maximum": 59,
+              "propertyOrder": 3,
+              "options": {
+                "grid_columns": 4
+              }
+            }
+          },
+          "required": ["hours", "minutes", "seconds"]
+        },
+        "weekDays": {
+          "title": "scheduleWeekDaysTitle",
+          "type": "object",
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 12,
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "monday": {
+              "title": "scheduleMonday",
+              "type": "boolean",
+              "default": true,
+              "_format": "checkbox",
+              "propertyOrder": 1
+            },
+            "tuesday": {
+              "title": "scheduleTuesday",
+              "type": "boolean", 
+              "default": true,
+              "_format": "checkbox",
+              "propertyOrder": 2
+            },
+            "wednesday": {
+              "title": "scheduleWednesday",
+              "type": "boolean",
+              "default": true,
+              "_format": "checkbox",
+              "propertyOrder": 3
+            },
+            "thursday": {
+              "title": "scheduleThursday",
+              "type": "boolean",
+              "default": true,
+              "_format": "checkbox",
+              "propertyOrder": 4
+            },
+            "friday": {
+              "title": "scheduleFriday",
+              "type": "boolean",
+              "default": true,
+              "_format": "checkbox",
+              "propertyOrder": 5
+            },
+            "saturday": {
+              "title": "scheduleSaturday",
+              "type": "boolean",
+              "default": true,
+              "_format": "checkbox",
+              "propertyOrder": 6
+            },
+            "sunday": {
+              "title": "scheduleSunday",
+              "type": "boolean",
+              "default": true,
+              "_format": "checkbox",
+              "propertyOrder": 7
+            }
+          },
+          "required": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        },
+        "outControls": {
+          "type": "array",
+          "minItems": 1,
+          "propertyOrder": 6,
+          "_title_note": "When options-> compact: true - this title not shown",
+          "title": "scheduleActionsTitle",
+          "description": "scheduleActionsDescription",
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "scheduleActionObjTitle",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "generalMqttTopicNameTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "outControls_behaviorType_title",
+                "enum": [
+                  "toggle",
+                  "setEnable",
+                  "setDisable",
+                  "setValue",
+                  "increaseValueBy",
+                  "decreaseValueBy"
+                ],
+                "default": "setDisable",
+                "options": {
+                  "enum_titles": [
+                    "Toggle (switch)",
+                    "Enable (switch)",
+                    "Disable (switch)",
+                    "generalEnumSetValue",
+                    "Increase Value By",
+                    "Decrease Value By"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "generalActionValueTitle",
+                "description": "outControls_actionValue_description",
+                "default": 0
+              }
+            },
+            "required": ["control", "behaviorType"]
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "enable", 
+        "name",
+        "scheduleTime",
+        "weekDays",
+        "outControls"
+      ]
     }
   },
   "properties": {
@@ -865,7 +1124,25 @@
       "thermostatHysteresisTitle": "Hysteresis (°C)",
       "thermostatHysteresisDescription": "Turn on = Set temperature - Hysteresis.<br>Turn off = Set temperature + Hysteresis.",
       "thermostatTemperatureSensorTitle": "Temperature channel",
-      "thermostatActuatorTitle": "Heater channel"
+      "thermostatActuatorTitle": "Heater channel",
+
+      "scheduleScenarioName": "Schedule",
+      "scheduleScenarioDescription": "Execute actions on schedule with time and weekday selection support.",
+      "scheduleTimeTitle": "Execution Time",
+      "scheduleHoursTitle": "Hours (0-23)",
+      "scheduleMinutesTitle": "Minutes (0-59)",
+      "scheduleSecondsTitle": "Seconds (0-59)",
+      "scheduleWeekDaysTitle": "Weekdays",
+      "scheduleMonday": "Mon",
+      "scheduleTuesday": "Tue",
+      "scheduleWednesday": "Wed",
+      "scheduleThursday": "Thu",
+      "scheduleFriday": "Fri",
+      "scheduleSaturday": "Sat",
+      "scheduleSunday": "Sun",
+      "scheduleActionsTitle": "Actions",
+      "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
+      "scheduleActionObjTitle": "Action"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -938,7 +1215,25 @@
       "thermostatHysteresisTitle": "Гистерезис (°C)",
       "thermostatHysteresisDescription": "Включение = Заданная температура - Гистерезис.<br>Выключение = Заданная температура + Гистерезис.",
       "thermostatTemperatureSensorTitle": "Канал температуры",
-      "thermostatActuatorTitle": "Канал нагревателя"
+      "thermostatActuatorTitle": "Канал нагревателя",
+
+      "scheduleScenarioName": "Расписание",
+      "scheduleScenarioDescription": "Выполнение действий по расписанию с поддержкой выбора времени и дней недели.",
+      "scheduleTimeTitle": "Время выполнения",
+      "scheduleHoursTitle": "Часы (0-23)",
+      "scheduleMinutesTitle": "Минуты (0-59)",
+      "scheduleSecondsTitle": "Секунды (0-59)",
+      "scheduleWeekDaysTitle": "Дни недели",
+      "scheduleMonday": "Пн",
+      "scheduleTuesday": "Вт",
+      "scheduleWednesday": "Ср",
+      "scheduleThursday": "Чт",
+      "scheduleFriday": "Пт",
+      "scheduleSaturday": "Сб",
+      "scheduleSunday": "Вс",
+      "scheduleActionsTitle": "Действия",
+      "scheduleActionsDescription": "Действия, которые будут выполнены в назначенное время:",
+      "scheduleActionObjTitle": "Действие"
     }
   }
 }
