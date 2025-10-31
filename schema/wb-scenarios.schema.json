@@ -5,7 +5,7 @@
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
     "service": "wb-scenarios-reloader",
-    "hide":true
+    "hide": true
   },
   "options": {
     "wb": {
@@ -52,7 +52,9 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": ["devicesControl"],
+          "enum": [
+            "devicesControl"
+          ],
           "default": "devicesControl",
           "options": {
             "hidden": true
@@ -125,7 +127,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -138,7 +140,11 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "generalBehaviorTypeTitle",
-                "enum": ["whenChange", "whenDisabled", "whenEnabled"],
+                "enum": [
+                  "whenChange",
+                  "whenDisabled",
+                  "whenEnabled"
+                ],
                 "default": "whenChange",
                 "options": {
                   "enum_titles": [
@@ -149,7 +155,10 @@
                 }
               }
             },
-            "required": ["control", "behaviorType"]
+            "required": [
+              "control",
+              "behaviorType"
+            ]
           }
         },
         "outControls": {
@@ -183,7 +192,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -224,7 +233,10 @@
                 "default": 0
               }
             },
-            "required": ["control", "behaviorType"]
+            "required": [
+              "control",
+              "behaviorType"
+            ]
           }
         }
       },
@@ -257,7 +269,9 @@
         },
         "scenarioType": {
           "type": "string",
-          "enum": ["lightControl"],
+          "enum": [
+            "lightControl"
+          ],
           "default": "lightControl",
           "options": {
             "hidden": true
@@ -340,7 +354,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -353,7 +367,10 @@
                     "type": "string",
                     "propertyOrder": 2,
                     "title": "outControls_behaviorType_title",
-                    "enum": ["setEnable", "setValueNumericInput"],
+                    "enum": [
+                      "setEnable",
+                      "setValueNumericInput"
+                    ],
                     "default": "setEnable",
                     "options": {
                       "enum_titles": [
@@ -370,12 +387,17 @@
                     "default": 0,
                     "options": {
                       "dependencies": {
-                        "behaviorType": ["setValueNumericInput"]
+                        "behaviorType": [
+                          "setValueNumericInput"
+                        ]
                       }
                     }
                   }
                 },
-                "required": ["mqttTopicName", "behaviorType"]
+                "required": [
+                  "mqttTopicName",
+                  "behaviorType"
+                ]
               }
             }
           }
@@ -439,7 +461,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -449,7 +471,9 @@
                     "minLength": 3
                   }
                 },
-                "required": ["mqttTopicName"]
+                "required": [
+                  "mqttTopicName"
+                ]
               }
             }
           }
@@ -503,7 +527,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -515,7 +539,10 @@
                   "behaviorType": {
                     "type": "string",
                     "title": "generalBehaviorTypeTitle",
-                    "enum": ["whileValueHigherThanThreshold", "whenEnabled"],
+                    "enum": [
+                      "whileValueHigherThanThreshold",
+                      "whenEnabled"
+                    ],
                     "options": {
                       "enum_titles": [
                         "lightControlMotionSensorsEnumWhileValue",
@@ -532,12 +559,17 @@
                     "propertyOrder": 3,
                     "options": {
                       "dependencies": {
-                        "behaviorType": ["whileValueHigherThanThreshold"]
+                        "behaviorType": [
+                          "whileValueHigherThanThreshold"
+                        ]
                       }
                     }
                   }
                 },
-                "required": ["mqttTopicName", "behaviorType"]
+                "required": [
+                  "mqttTopicName",
+                  "behaviorType"
+                ]
               }
             }
           }
@@ -591,7 +623,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -605,7 +637,10 @@
                     "propertyOrder": 2,
                     "title": "generalBehaviorTypeTitle",
                     "description": "lightControlOpeningSensorsBehaviorTypeDescription",
-                    "enum": ["whenDisabled", "whenEnabled"],
+                    "enum": [
+                      "whenDisabled",
+                      "whenEnabled"
+                    ],
                     "default": "whenEnabled",
                     "options": {
                       "enum_titles": [
@@ -615,7 +650,10 @@
                     }
                   }
                 },
-                "required": ["mqttTopicName", "behaviorType"]
+                "required": [
+                  "mqttTopicName",
+                  "behaviorType"
+                ]
               }
             }
           }
@@ -652,7 +690,9 @@
         },
         "scenarioType": {
           "type": "string",
-          "enum": ["thermostat"],
+          "enum": [
+            "thermostat"
+          ],
           "default": "thermostat",
           "options": {
             "hidden": true
@@ -743,7 +783,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder":  "generalMqttTopicNamePlaceholder"
+              "placeholder": "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -761,7 +801,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder":  "generalMqttTopicNamePlaceholder"
+              "placeholder": "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -793,7 +833,9 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": ["schedule"],
+          "enum": [
+            "schedule"
+          ],
           "default": "schedule",
           "options": {
             "hidden": true
@@ -842,115 +884,47 @@
           }
         },
         "scheduleTime": {
-          "title": "scheduleTimeTitle",
-          "type": "object",
+          "title": "scheduleHoursTitle",
+          "type": "string",
+          "_format": "time",
+          "default": "12:00",
           "propertyOrder": 4,
-          "_format": "grid",
           "options": {
-            "grid_columns": 12,
-            "disable_collapse": true,
-            "disable_edit_json": true,
-            "disable_properties": true
-          },
-          "properties": {
-            "hours": {
-              "title": "scheduleHoursTitle",
-              "type": "integer",
-              "default": 0,
-              "minimum": 0,
-              "maximum": 23,
-              "propertyOrder": 1,
-              "options": {
-                "grid_columns": 4
-              }
-            },
-            "minutes": {
-              "title": "scheduleMinutesTitle", 
-              "type": "integer",
-              "default": 0,
-              "minimum": 0,
-              "maximum": 59,
-              "propertyOrder": 2,
-              "options": {
-                "grid_columns": 4
-              }
-            },
-            "seconds": {
-              "title": "scheduleSecondsTitle",
-              "type": "integer", 
-              "default": 0,
-              "minimum": 0,
-              "maximum": 59,
-              "propertyOrder": 3,
-              "options": {
-                "grid_columns": 4
-              }
-            }
-          },
-          "required": ["hours", "minutes", "seconds"]
+            "grid_columns": 1
+          }
         },
         "weekDays": {
           "title": "scheduleWeekDaysTitle",
-          "type": "object",
+          "type": "array",
+          "_format": "checkbox",
+          "uniqueItems": true,
           "propertyOrder": 5,
-          "options": {
-            "grid_columns": 12,
-            "disable_collapse": true,
-            "disable_edit_json": true,
-            "disable_properties": true
+                    "options": {
+            "grid_columns": 12
           },
-          "properties": {
-            "monday": {
-              "title": "scheduleMonday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 1
-            },
-            "tuesday": {
-              "title": "scheduleTuesday",
-              "type": "boolean", 
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 2
-            },
-            "wednesday": {
-              "title": "scheduleWednesday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 3
-            },
-            "thursday": {
-              "title": "scheduleThursday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 4
-            },
-            "friday": {
-              "title": "scheduleFriday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 5
-            },
-            "saturday": {
-              "title": "scheduleSaturday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 6
-            },
-            "sunday": {
-              "title": "scheduleSunday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 7
+          "items": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "options": {
+              "enum_titles": [
+                "MondayTitle",
+                "TuesdayTitle",
+                "WednesdayTitle",
+                "ThursdayTitle",
+                "FridayTitle",
+                "SaturdayTitle",
+                "SundayTitle"
+              ]
             }
-          },
-          "required": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+          }
         },
         "outControls": {
           "type": "array",
@@ -983,7 +957,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1024,14 +998,17 @@
                 "default": 0
               }
             },
-            "required": ["control", "behaviorType"]
+            "required": [
+              "control",
+              "behaviorType"
+            ]
           }
         }
       },
       "required": [
         "scenarioType",
         "componentVersion",
-        "enable", 
+        "enable",
         "name",
         "scheduleTime",
         "weekDays",
@@ -1065,7 +1042,10 @@
       "_format": "tabs"
     }
   },
-  "required": ["configVersion", "scenarios"],
+  "required": [
+    "configVersion",
+    "scenarios"
+  ],
   "translations": {
     "en": {
       "generalScenarioGenerateRuleTitle": "Activate scenario (creates a virtual device and a scenario rule)",
@@ -1081,7 +1061,6 @@
       "generalErrorRegexpPatternMessageMqttTopicName": "Does not match the format <device>/<control>",
       "generalEnumSetValue": "Set Value",
       "generalSensorArrTitle": "Elements list",
-
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
@@ -1091,7 +1070,6 @@
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
-
       "lightControlScenarioName": "Light control",
       "lightControlScenarioDescription": "The scenario controls lights via switch, motion-, or door-sensors.",
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Light devices</p>",
@@ -1114,7 +1092,6 @@
       "lightControlLightSwitchesDelayTitle": "Delay after switch press before lights off & sensor control resumes (s).",
       "lightControlLightSwitchesArrDescription": "Switch overrides sensors;<br> control returns after timer or next press.",
       "lightControlLightSwitchesObjTitle": "Switch",
-
       "thermostatScenarioName": "Thermostat",
       "thermostatScenarioDescription": "Maintaining a set temperature with hysteresis",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
@@ -1125,7 +1102,6 @@
       "thermostatHysteresisDescription": "Turn on = Set temperature - Hysteresis.<br>Turn off = Set temperature + Hysteresis.",
       "thermostatTemperatureSensorTitle": "Temperature channel",
       "thermostatActuatorTitle": "Heater channel",
-
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Execute actions on schedule with time and weekday selection support.",
       "scheduleTimeTitle": "Execution Time",
@@ -1142,7 +1118,9 @@
       "scheduleSunday": "Sun",
       "scheduleActionsTitle": "Actions",
       "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
-      "scheduleActionObjTitle": "Action"
+      "scheduleActionObjTitle": "Action",
+      "MondayTitle": "Monday_en"
+
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1158,7 +1136,6 @@
       "generalErrorRegexpPatternMessageMqttTopicName": "Не соответствует формату <устройство>/<контрол>",
       "generalEnumSetValue": "Установить значение",
       "generalSensorArrTitle": "Список элементов",
-
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
@@ -1181,7 +1158,6 @@
       "Disable (switch)": "Выключить (для переключателей)",
       "Increase Value By": "Увеличить значение на",
       "Decrease Value By": "Уменьшить  значение на",
-
       "lightControlScenarioName": "Управление светом",
       "lightControlScenarioDescription": "Сценарий управляет светом через выключатели, датчики движения и открытия.",
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Устройства освещения</p>",
@@ -1205,7 +1181,6 @@
       "lightControlOpeningSensorsBehaviorTypeDescription": "Событие при открытии двери",
       "lightControlOpeningSensorsEnumWhenDisabled": "Когда отключилось",
       "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
-
       "thermostatScenarioName": "Термостат",
       "thermostatScenarioDescription": "Поддержание заданной температуры с гистерезисом.",
       "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
@@ -1216,7 +1191,6 @@
       "thermostatHysteresisDescription": "Включение = Заданная температура - Гистерезис.<br>Выключение = Заданная температура + Гистерезис.",
       "thermostatTemperatureSensorTitle": "Канал температуры",
       "thermostatActuatorTitle": "Канал нагревателя",
-
       "scheduleScenarioName": "Расписание",
       "scheduleScenarioDescription": "Выполнение действий по расписанию с поддержкой выбора времени и дней недели.",
       "scheduleTimeTitle": "Время выполнения",
@@ -1233,7 +1207,8 @@
       "scheduleSunday": "Вс",
       "scheduleActionsTitle": "Действия",
       "scheduleActionsDescription": "Действия, которые будут выполнены в назначенное время:",
-      "scheduleActionObjTitle": "Действие"
+      "scheduleActionObjTitle": "Действие",
+      "MondayTitle": "Понедельник"
     }
   }
 }
