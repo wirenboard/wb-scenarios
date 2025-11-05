@@ -1,5 +1,5 @@
 /**
- * @file link-in-to-out.mod.js
+ * @file link-in-to-out.mod.js - ES5 script for wb-rules 2.35
  * @description Module for initializing link-in-to-out algorithm
  *     based on user-specified parameters
  *

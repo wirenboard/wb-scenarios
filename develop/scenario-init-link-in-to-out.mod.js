@@ -1,5 +1,5 @@
 /**
- * @file scenario-init-link-in-to-out.mod.js
+ * @file scenario-init-link-in-to-out.mod.js - ES5 script for wb-rules 2.35
  * @description Module for initializing scenarios with SCENARIO_TYPE_STR type
  *
  * @author Ivan Ivanov <ivan.ivanov@wirenboard.com>         //@todo:Change 1
