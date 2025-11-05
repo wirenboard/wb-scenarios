@@ -1,3 +1,9 @@
+wb-scenarios (1.6.2) stable; urgency=medium
+
+  * rewite docs, split README into several files with links
+
+ -- Ivan Praulov <ivan.praulov@wirenboard.com>  Wed, 5 Nov 2025 12:00:00 +0300
+
 wb-scenarios (1.6.1) stable; urgency=medium
 
   * fix Russian and English translations
