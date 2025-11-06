@@ -1109,17 +1109,16 @@
       "scheduleMinutesTitle": "None use",
       "scheduleSecondsTitle": "None use",
       "scheduleWeekDaysTitle": "Weekdays",
-      "scheduleMonday": "Mon",
-      "scheduleTuesday": "Tue",
-      "scheduleWednesday": "Wed",
-      "scheduleThursday": "Thu",
-      "scheduleFriday": "Fri",
-      "scheduleSaturday": "Sat",
-      "scheduleSunday": "Sun",
+      "MondayTitle": "Mon",
+      "TuesdayTitle": "Tue",
+      "WednesdayTitle": "Wed",
+      "ThursdayTitle": "Thu",
+      "FridayTitle": "Fri",
+      "SaturdayTitle": "Sat",
+      "SundayTitle": "Sun",
       "scheduleActionsTitle": "Actions",
       "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
-      "scheduleActionObjTitle": "Action",
-      "MondayTitle": "Monday_en"
+      "scheduleActionObjTitle": "Action"
 
     },
     "ru": {
@@ -1198,17 +1197,16 @@
       "scheduleMinutesTitle": "None use",
       "scheduleSecondsTitle": "None use",
       "scheduleWeekDaysTitle": "Дни недели",
-      "scheduleMonday": "Пн",
-      "scheduleTuesday": "Вт",
-      "scheduleWednesday": "Ср",
-      "scheduleThursday": "Чт",
-      "scheduleFriday": "Пт",
-      "scheduleSaturday": "Сб",
-      "scheduleSunday": "Вс",
+      "MondayTitle": "Пн",
+      "TuesdayTitle": "Вт",
+      "WednesdayTitle": "Ср",
+      "ThursdayTitle": "Чт",
+      "FridayTitle": "Пт",
+      "SaturdayTitle": "Сб",
+      "SundayTitle": "Вс",
       "scheduleActionsTitle": "Действия",
       "scheduleActionsDescription": "Действия, которые будут выполнены в назначенное время:",
-      "scheduleActionObjTitle": "Действие",
-      "MondayTitle": "Понедельник"
-    }
+      "scheduleActionObjTitle": "Действие"
+        }
   }
 }
