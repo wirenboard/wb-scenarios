@@ -793,7 +793,9 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": ["schedule"],
+          "enum": [
+            "schedule"
+          ],
           "default": "schedule",
           "options": {
             "hidden": true
@@ -843,114 +845,46 @@
         },
         "scheduleTime": {
           "title": "scheduleTimeTitle",
-          "type": "object",
+          "type": "string",
+          "_format": "time",
+          "default": "12:00",
           "propertyOrder": 4,
-          "_format": "grid",
           "options": {
-            "grid_columns": 12,
-            "disable_collapse": true,
-            "disable_edit_json": true,
-            "disable_properties": true
-          },
-          "properties": {
-            "hours": {
-              "title": "scheduleHoursTitle",
-              "type": "integer",
-              "default": 0,
-              "minimum": 0,
-              "maximum": 23,
-              "propertyOrder": 1,
-              "options": {
-                "grid_columns": 4
-              }
-            },
-            "minutes": {
-              "title": "scheduleMinutesTitle", 
-              "type": "integer",
-              "default": 0,
-              "minimum": 0,
-              "maximum": 59,
-              "propertyOrder": 2,
-              "options": {
-                "grid_columns": 4
-              }
-            },
-            "seconds": {
-              "title": "scheduleSecondsTitle",
-              "type": "integer", 
-              "default": 0,
-              "minimum": 0,
-              "maximum": 59,
-              "propertyOrder": 3,
-              "options": {
-                "grid_columns": 4
-              }
-            }
-          },
-          "required": ["hours", "minutes", "seconds"]
+            "grid_columns": 1
+          }
         },
         "weekDays": {
           "title": "scheduleWeekDaysTitle",
-          "type": "object",
+          "type": "array",
+          "_format": "checkbox",
+          "uniqueItems": true,
           "propertyOrder": 5,
-          "options": {
-            "grid_columns": 12,
-            "disable_collapse": true,
-            "disable_edit_json": true,
-            "disable_properties": true
+                    "options": {
+            "grid_columns": 12
           },
-          "properties": {
-            "monday": {
-              "title": "scheduleMonday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 1
-            },
-            "tuesday": {
-              "title": "scheduleTuesday",
-              "type": "boolean", 
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 2
-            },
-            "wednesday": {
-              "title": "scheduleWednesday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 3
-            },
-            "thursday": {
-              "title": "scheduleThursday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 4
-            },
-            "friday": {
-              "title": "scheduleFriday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 5
-            },
-            "saturday": {
-              "title": "scheduleSaturday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 6
-            },
-            "sunday": {
-              "title": "scheduleSunday",
-              "type": "boolean",
-              "default": true,
-              "_format": "checkbox",
-              "propertyOrder": 7
+          "items": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "options": {
+              "enum_titles": [
+                "MondayTitle",
+                "TuesdayTitle",
+                "WednesdayTitle",
+                "ThursdayTitle",
+                "FridayTitle",
+                "SaturdayTitle",
+                "SundayTitle"
+              ]
             }
-          },
-          "required": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+          }
         },
         "outControls": {
           "type": "array",
@@ -983,7 +917,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1024,14 +958,17 @@
                 "default": 0
               }
             },
-            "required": ["control", "behaviorType"]
+            "required": [
+              "control",
+              "behaviorType"
+            ]
           }
         }
       },
       "required": [
         "scenarioType",
         "componentVersion",
-        "enable", 
+        "enable",
         "name",
         "scheduleTime",
         "weekDays",
@@ -1129,17 +1066,14 @@
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Execute actions on schedule with time and weekday selection support.",
       "scheduleTimeTitle": "Execution Time",
-      "scheduleHoursTitle": "Hours (0-23)",
-      "scheduleMinutesTitle": "Minutes (0-59)",
-      "scheduleSecondsTitle": "Seconds (0-59)",
       "scheduleWeekDaysTitle": "Weekdays",
-      "scheduleMonday": "Mon",
-      "scheduleTuesday": "Tue",
-      "scheduleWednesday": "Wed",
-      "scheduleThursday": "Thu",
-      "scheduleFriday": "Fri",
-      "scheduleSaturday": "Sat",
-      "scheduleSunday": "Sun",
+      "MondayTitle": "Mon",
+      "TuesdayTitle": "Tue",
+      "WednesdayTitle": "Wed",
+      "ThursdayTitle": "Thu",
+      "FridayTitle": "Fri",
+      "SaturdayTitle": "Sat",
+      "SundayTitle": "Sun",
       "scheduleActionsTitle": "Actions",
       "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
       "scheduleActionObjTitle": "Action"
@@ -1224,13 +1158,13 @@
       "scheduleMinutesTitle": "Минуты (0-59)",
       "scheduleSecondsTitle": "Секунды (0-59)",
       "scheduleWeekDaysTitle": "Дни недели",
-      "scheduleMonday": "Пн",
-      "scheduleTuesday": "Вт",
-      "scheduleWednesday": "Ср",
-      "scheduleThursday": "Чт",
-      "scheduleFriday": "Пт",
-      "scheduleSaturday": "Сб",
-      "scheduleSunday": "Вс",
+      "MondayTitle": "Пн",
+      "TuesdayTitle": "Вт",
+      "WednesdayTitle": "Ср",
+      "ThursdayTitle": "Чт",
+      "FridayTitle": "Пт",
+      "SaturdayTitle": "Сб",
+      "SundayTitle": "Вс",
       "scheduleActionsTitle": "Действия",
       "scheduleActionsDescription": "Действия, которые будут выполнены в назначенное время:",
       "scheduleActionObjTitle": "Действие"

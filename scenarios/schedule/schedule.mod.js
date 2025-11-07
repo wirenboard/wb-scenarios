@@ -17,17 +17,9 @@ var log = new Logger(loggerFileLabel);
  * @typedef {Object} ScheduleConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
- * @property {number} hours - Hour to trigger (0-23)
- * @property {number} minutes - Minute to trigger (0-59) 
- * @property {number} seconds - Second to trigger (0-59)
- * @property {Object} weekDays - Days of week to trigger
- *   - monday: boolean
- *   - tuesday: boolean
- *   - wednesday: boolean
- *   - thursday: boolean
- *   - friday: boolean
- *   - saturday: boolean
- *   - sunday: boolean
+ * @property {string} scheduleTime - Time to trigger in HH:MM format
+ * @property {Array<string>} weekDays - Array of selected weekdays
+ *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
  * @property {Array<Object>} outControls - Array of output controls to change
  *   Each object contains:
  *   - control: Control name ('device/control')
@@ -68,6 +60,7 @@ ScheduleScenario.prototype.generateNames = function(idPrefix) {
   return {
     vDevice: scenarioPrefix + idPrefix,
     ruleMain: baseRuleName + 'mainRule',
+    ruleManual: baseRuleName + 'manualRule',
   };
 };
 
@@ -146,11 +139,48 @@ function validateControls(controls, table) {
 }
 
 /**
+ * Parses scheduleTime string and adds hours/minutes/seconds to config
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {boolean} True if parsing successful, false otherwise
+ */
+function parseScheduleTime(cfg) {
+  if (typeof cfg.scheduleTime !== 'string') {
+    log.error('Schedule validation error: scheduleTime must be a string');
+    return false;
+  }
+  
+  var timeParts = cfg.scheduleTime.split(':');
+  if (timeParts.length !== 2) {
+    log.error('Schedule validation error: scheduleTime must be in HH:MM format');
+    return false;
+  }
+  
+  var hours = parseInt(timeParts[0], 10);
+  var minutes = parseInt(timeParts[1], 10);
+  
+  if (isNaN(hours) || isNaN(minutes)) {
+    log.error('Schedule validation error: invalid time format in scheduleTime');
+    return false;
+  }
+  
+  cfg.hours = hours;
+  cfg.minutes = minutes;
+  cfg.seconds = 0; // Always set seconds to 0 for schedule scenarios
+  
+  return true;
+}
+
+/**
  * Configuration validation
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid, false otherwise
  */
 ScheduleScenario.prototype.validateCfg = function(cfg) {
+  // Parse scheduleTime first
+  if (!parseScheduleTime(cfg)) {
+    return false;
+  }
+  
   // Check time values
   if (typeof cfg.hours !== 'number' || cfg.hours < 0 || cfg.hours > 23) {
     log.error('Schedule validation error: hours must be a number between 0 and 23');
@@ -167,29 +197,26 @@ ScheduleScenario.prototype.validateCfg = function(cfg) {
     return false;
   }
   
-  // Check weekDays object
-  if (!cfg.weekDays || typeof cfg.weekDays !== 'object') {
-    log.error('Schedule validation error: weekDays must be an object');
+  // Check weekDays array
+  if (!Array.isArray(cfg.weekDays)) {
+    log.error('Schedule validation error: weekDays must be an array');
     return false;
   }
   
-  // Check that at least one day is enabled
-  var weekDaysArray = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  var hasEnabledDay = false;
-  for (var i = 0; i < weekDaysArray.length; i++) {
-    var day = weekDaysArray[i];
-    if (typeof cfg.weekDays[day] !== 'boolean') {
-      log.error('Schedule validation error: weekDays.' + day + ' must be a boolean');
+  // Check that at least one day is selected
+  if (cfg.weekDays.length === 0) {
+    log.error('Schedule validation error: at least one day of the week must be selected');
+    return false;
+  }
+  
+  // Validate weekDays values
+  var validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  for (var i = 0; i < cfg.weekDays.length; i++) {
+    var day = cfg.weekDays[i];
+    if (typeof day !== 'string' || validDays.indexOf(day) === -1) {
+      log.error('Schedule validation error: invalid weekDay value: ' + day);
       return false;
     }
-    if (cfg.weekDays[day]) {
-      hasEnabledDay = true;
-    }
-  }
-  
-  if (!hasEnabledDay) {
-    log.error('Schedule validation error: at least one day of the week must be enabled');
-    return false;
   }
   
   // Check outControls array
@@ -219,7 +246,7 @@ ScheduleScenario.prototype.validateCfg = function(cfg) {
  * Creates the main cron rule for the schedule
  * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
  * @param {ScheduleConfig} cfg - Configuration object
- * @returns {boolean} True if rule creation succeeded
+ * @returns {boolean} True if rule created successfully, false otherwise
  */
 function createCronRule(self, cfg) {
   log.debug('Creating cron rule for schedule scenario');
@@ -231,12 +258,13 @@ function createCronRule(self, cfg) {
     return false;
   }
   log.debug('Cron expression built: ' + cronExpression);
-  log.info('Created cron expression: "' + cronExpression + '" for scenario: ' + self.idPrefix);
 
   var ruleId = defineRule(self.genNames.ruleMain, {
     when: cron(cronExpression),
     then: function() {
-      scheduleHandler(self, cfg);
+      // Trigger the button press programmatically
+      log.debug('Cron triggered, pressing execute button for scenario: ' + self.idPrefix);
+      dev[self.genNames.vDevice + "/execute_now"] = true;
     }
   });
   
@@ -247,7 +275,129 @@ function createCronRule(self, cfg) {
   
   log.debug('Cron rule created successfully with ID: ' + ruleId);
   self.addRule(ruleId);
+  
+  // Create manual trigger rule for the button
+  var manualRuleId = defineRule(self.genNames.ruleManual, {
+    whenChanged: [self.genNames.vDevice + "/execute_now"],
+    then: function(newValue, devName, cellName) {
+      if (newValue) {
+        log.debug('Button execution triggered for scenario: ' + self.idPrefix);
+        scheduleHandler(self, cfg);
+      }
+    }
+  });
+  
+  if (!manualRuleId) {
+    log.error('Failed to create manual trigger rule');
+    return false;
+  }
+  
+  log.debug('Manual trigger rule created successfully');
+  self.addRule(manualRuleId);
+  
   return true;
+}
+
+/**
+ * Calculates next execution time based on schedule configuration
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {Date|null} Next execution date or null if invalid
+ */
+function getNextExecutionTime(cfg) {
+  var now = new Date();
+  var currentDay = now.getDay(); // 0=Sunday, 1=Monday, etc.
+  
+  log.debug('Calculating next execution. Current time: ' + now.toISOString() + ', current day: ' + currentDay);
+  log.debug('Schedule: ' + cfg.scheduleTime + ' on days: [' + cfg.weekDays.join(', ') + ']');
+  
+  var dayNameToNumber = {
+    'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+    'thursday': 4, 'friday': 5, 'saturday': 6
+  };
+  
+  // Convert weekDays array to day numbers and sort
+  var scheduledDays = [];
+  for (var i = 0; i < cfg.weekDays.length; i++) {
+    var dayName = cfg.weekDays[i];
+    if (dayNameToNumber.hasOwnProperty(dayName)) {
+      scheduledDays.push(dayNameToNumber[dayName]);
+    }
+  }
+  
+  if (scheduledDays.length === 0) {
+    log.error('No valid scheduled days found');
+    return null;
+  }
+  
+  scheduledDays.sort(function(a, b) { return a - b; });
+  log.debug('Scheduled day numbers (sorted): [' + scheduledDays.join(', ') + ']');
+  
+  // Create potential execution time for today
+  var todayExecution = new Date(now.getTime());
+  todayExecution.setHours(cfg.hours, cfg.minutes, cfg.seconds, 0);
+  
+  // Check if we can execute today
+  if (scheduledDays.indexOf(currentDay) !== -1 && todayExecution > now) {
+    log.debug('Next execution is today: ' + todayExecution.toISOString());
+    return todayExecution;
+  }
+  
+  // Find next scheduled day
+  var nextDay = null;
+  for (var j = 0; j < scheduledDays.length; j++) {
+    if (scheduledDays[j] > currentDay) {
+      nextDay = scheduledDays[j];
+      break;
+    }
+  }
+  
+  // If no day found this week, take first day of next week
+  if (nextDay === null) {
+    nextDay = scheduledDays[0];
+  }
+  
+  log.debug('Next scheduled day number: ' + nextDay);
+  
+  // Calculate days until next execution
+  var daysUntilNext;
+  if (nextDay > currentDay) {
+    daysUntilNext = nextDay - currentDay;
+  } else {
+    // Next week
+    daysUntilNext = 7 - currentDay + nextDay;
+  }
+  
+  log.debug('Days until next execution: ' + daysUntilNext);
+  
+  // Create next execution date
+  var nextExecution = new Date(now.getTime());
+  nextExecution.setDate(nextExecution.getDate() + daysUntilNext);
+  nextExecution.setHours(cfg.hours, cfg.minutes, cfg.seconds, 0);
+  
+  log.debug('Calculated next execution: ' + nextExecution.toISOString());
+  return nextExecution;
+}
+
+/**
+ * Formats date for display
+ * @param {Date} date - Date to format
+ * @returns {string} Formatted date string in format "YYYY-MM-DD HH:MM DayName"
+ */
+function formatNextExecution(date) {
+  if (!date) {
+    return 'Invalid schedule';
+  }
+  
+  var fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var dayName = fullDays[date.getDay()];
+  
+  var day = ('0' + date.getDate()).slice(-2);
+  var month = ('0' + (date.getMonth() + 1)).slice(-2);
+  var year = date.getFullYear();
+  var hours = ('0' + date.getHours()).slice(-2);
+  var minutes = ('0' + date.getMinutes()).slice(-2);
+  
+  return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ' ' + dayName;
 }
 
 /**
@@ -271,17 +421,26 @@ function buildCronExpression(cfg) {
   }
   
   // Build day of week string (0=Sunday, 1=Monday, etc.)
+  var dayMap = {
+    'sunday': '0',
+    'monday': '1', 
+    'tuesday': '2',
+    'wednesday': '3',
+    'thursday': '4',
+    'friday': '5',
+    'saturday': '6'
+  };
+  
   var daysOfWeek = [];
-  if (cfg.weekDays.sunday) daysOfWeek.push('0');
-  if (cfg.weekDays.monday) daysOfWeek.push('1');
-  if (cfg.weekDays.tuesday) daysOfWeek.push('2');
-  if (cfg.weekDays.wednesday) daysOfWeek.push('3');
-  if (cfg.weekDays.thursday) daysOfWeek.push('4');
-  if (cfg.weekDays.friday) daysOfWeek.push('5');
-  if (cfg.weekDays.saturday) daysOfWeek.push('6');
+  for (var i = 0; i < cfg.weekDays.length; i++) {
+    var dayName = cfg.weekDays[i];
+    if (dayMap[dayName]) {
+      daysOfWeek.push(dayMap[dayName]);
+    }
+  }
   
   if (daysOfWeek.length === 0) {
-    log.error('No days of week selected');
+    log.error('No valid days of week found');
     return null;
   }
   
@@ -326,6 +485,11 @@ function scheduleHandler(self, cfg) {
     }
   }
   
+  // Update next execution time display
+  var nextExecution = getNextExecutionTime(cfg);
+  var nextExecutionText = formatNextExecution(nextExecution);
+  dev[self.genNames.vDevice + "/next_execution"] = nextExecutionText;
+  
   log.debug("Schedule actions completed for scenario: " + self.idPrefix);
 }
 
@@ -347,6 +511,30 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     this.setState(ScenarioState.ERROR);
     return false;
   }
+  
+  // Add manual execution button to virtual device
+  this.vd.devObj.addControl('execute_now', {
+    title: {
+      en: 'Execute now',
+      ru: 'Выполнить сейчас'
+    },
+    type: 'pushbutton',
+    order: 2
+  });
+  
+  // Add next execution time display control
+  var nextExecution = getNextExecutionTime(cfg);
+  var nextExecutionText = formatNextExecution(nextExecution);
+  this.vd.devObj.addControl('next_execution', {
+    title: {
+      en: 'Next execution',
+      ru: 'Следующее выполнение'
+    },
+    type: 'text',
+    value: nextExecutionText,
+    readonly: true,
+    order: 3
+  });
   
   log.debug('Start cron rule creation');
   var ruleCreated = createCronRule(this, cfg);

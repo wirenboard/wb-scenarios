@@ -32,18 +32,8 @@ function initializeScenario(scenarioCfg) {
   var scenario = new CustomTypeSc();
   var cfg = {
     idPrefix: scenarioCfg.id_prefix,
-    hours: scenarioCfg.scheduleTime ? scenarioCfg.scheduleTime.hours : (scenarioCfg.hours || 0),
-    minutes: scenarioCfg.scheduleTime ? scenarioCfg.scheduleTime.minutes : (scenarioCfg.minutes || 0),
-    seconds: scenarioCfg.scheduleTime ? scenarioCfg.scheduleTime.seconds : (scenarioCfg.seconds || 0),
-    weekDays: scenarioCfg.weekDays || {
-      monday: false,
-      tuesday: false,
-      wednesday: false,
-      thursday: false,
-      friday: false,
-      saturday: false,
-      sunday: false
-    },
+    scheduleTime: scenarioCfg.scheduleTime || "12:00",
+    weekDays: scenarioCfg.weekDays || [],
     outControls: scenarioCfg.outControls || []
   };
 
