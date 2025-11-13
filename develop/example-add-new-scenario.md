@@ -5,49 +5,55 @@
 уже имеющихся сценариев - поэтому ОБЯЗАТЕЛЬНО сделайте копию работающего
 конфиг файла!
 
-Цель данного мануала - предоставить пример добавления базового сценария
-для пользователей. Данный сценарий рабочий и уже на базе этого готового
-простого сценария можно создать свой кастомный изменив его логику работы.
+Цель данного мануала - предоставить пример добавления базового простого сценария,
+на основе которого можно создать свой кастомный изменив его логику работы.
 
-@todo: Синхронизировать схему с кодом
-       На данный момент схема приведена для прмера и не синхронизирована с кодом
+## Связанная документация
 
-Ниже показано как создать сценарий связывающий один вход с одним выходом путем
-копирования значения входа на выход. Сценарий и все пути указаны относительно
-репозитория. Для того чтобы проверять данные файлы - их нужно скопировать на
-контроллер в соотстветствующие папки расположения схем, скриптов и модулей.
+Данный файл является практическим примером. Для полного понимания процесса разработки рекомендуется изучить:
 
-Что куда копировать на контроллере для проверки:
+- **[Архитектура сценариев](architecture-guide.md)** - подробная информация о базовой архитектуре ScenarioBase
+- **[Процесс разработки сценария](development-process.md)** - различные подходы к разработке и лучшие практики
+- **[Окружение разработчика](environment-guide.md)** - настройка линтеров, форматтеров и стиля кода
 
-1) Schema
-- Отсюда `schema/wb-scenarios.schema.json`
-- На контроллер `usr/share/wb-mqtt-confed/schemas/wb-scenarios.schema.json`
+## Структура проекта
 
-2) Script
-- Отсюда `scenarios/link-in-to-out/scenario-init-link-in-to-out.js`
-- На контроллер `usr/share/wb-rules-system/rules/scenario-init-link-in-to-out.js`
+Структура проекта сценариев предполагает что файлы каждого сценария находятся
+в подпапках каталога `scenarios`. Поэтому для нового сценария нужно создать
+отдельную папку, например `scenarios/link-in-to-out`. Важно что имена файлов
+и папок нужно писать через тире кебаб кейсом.
 
-3) Module
-- Отсюда `scenarios/link-in-to-out/link-in-to-out.mod.js`
-- На контроллер `usr/share/wb-rules-modules/link-in-to-out.mod.js`
+**Важно:** Директория `scenarios` и её подпапки имеют смысл только для 
+разработки в репозитории. На контроллере файлы размещаются по другим путям:
+
+- **Модули** размещаются в `/usr/share/wb-rules-modules/`
+- **Модуль инициализации** подключается в `/usr/share/wb-rules-system/rules/scenario-init-main.js`
+- **Схема** размещается в `/usr/share/wb-mqtt-confed/schemas/wb-scenarios.schema.json`
+
+При разработке в репозитории используйте структуру:
+- `scenarios/link-in-to-out/` - папка конкретного сценария
+- `src/` - общие файлы для нескольких сценариев
+
+## Этапы создания сценария
 
 Архитектурно каждый сценарий должен иметь модуль который инициализирует работу
 сценария, поэтому создание нового сценария разделено на несколько этапов:
 
 - Добавляем в схему новый сценарий
 - Создание дирректории нового сценария
-- Создание скрипта инициализации
-- Добавляем модуль
+- Создание модуля инициализации
+- Создание модуля сценария
 - Проверить работу базового сценария из примера
 - Добавить свой кастомный фукнционал
 
-Заранее обратим внимание на используемый стиль:
+## Стиль кода
+
+Заранее обратим внимание на используемый стиль (подробнее см. [environment-guide.md](environment-guide.md)):
 
 - Файлы нужно именовать кебаб кейсом `custom-file.js`
 - Элементы и переменные внутри json и js файлов камел кейсом `customVar`
 - Внутри js кода нужно использовать для строк одиночные скобки `'` а не `"`
-- При программировании js нужно соответствоать стилю airbnb es5
-  https://github.com/airbnb/javascript/tree/es5-deprecated/es5  
+- При программировании js нужно соответствоать стилю [Airbnb ES5](https://github.com/airbnb/javascript/tree/es5-deprecated/es5)  
 
 ## 1. Добавляем в схему новый сценарий
 
@@ -314,272 +320,117 @@
 
 Все файлы общие для нескольких сценариев нужно распологать в папке `src`.
 
-## 3. Создание скрипта инициализации
+## 3. Создание модуля инициализации
 
-Ниже приведен пример файла инициализации сценария.
+Архитектура инициализации сценариев построена на централизованном подходе:
 
-Так как архитектура сценариев подразумевает что каждый сценарий должен иметь
-модуль - чтобы его можно было использовать из других правил wb-rules, то нужно
-создать файл инициализации сценария который должен выполнить несколько задач:
+1. **Главный файл инициализации** `scenarios/scenario-init-main.js` запускается 
+   автоматически и подключает все модули инициализации сценариев.
 
-- Открыть общий файл конфигурации сценариев
-- Проверить общую версию конфига, чтобы она совпала с REQUIRED_GENERAL_CFG_VER
-- Выбрать из файла все сценарии данного типа - в нашем случае "linkInToOut"
-- Проверить чтобы каждый сценарий имел версию равную REQUIRED_SCENARIO_CFG_VER
-- Отфильтровать только сценарии, включенные галочкой "enable"
-- Для инициализации и начала работы вызвать последовательно
-  `initializeScenario()` передавая каждый объект из выбранных сценариев
-  в функцию init(), которая реализована уже внутри модуля.
+2. **Модуль инициализации** для каждого типа сценария создается отдельно 
+   и импортируется в главный файл.
 
-Данный файл не должен иметь никакого функционала кроме передачи данных функции
-инициализации. Отдельно отметим, что он не должен содержать проверок топиков
-это все должно быть уже внутри модуля которому вы передадите настройки
-пользователя, иначе при работе с модулем из других правил wb-rules, модуль
-не будет работать корректно.
+### 3.1. Создание модуля инициализации
 
-- Создаем новый файл js скрипта в папке сценария - полный путь получится
-  `scenarios\link-in-to-out\scenario-init-link-in-to-out.js`
-- Вставляем туда код написанный ниже
+Для нового сценария нужно создать модуль инициализации, который будет:
 
-```javascript
-/**
- * @file scenario-init-link-in-to-out.js
- * @description Скрипт для инициализации сценариев с типом SCENARIO_TYPE_STR
- *     Этот скрипт:
- *     - Загружает все конфигурации сценарииев с типом
- *       SCENARIO_TYPE_STR из файла
- *     - Находит все активные сценарии данного типа
- *     - Инициализирует их согласно настройкам, указанным
- *       в каждом сценарии
- * @author Ivan Ivanov <ivan.ivanov@wirenboard.com>         //@todo:Change 1
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
- */
+- Открывать общий файл конфигурации сценариев
+- Проверять версию конфига
+- Выбирать все сценарии данного типа (например "linkInToOut")
+- Фильтровать только активные сценарии (enable = true)
+- Инициализировать каждый сценарий через его модуль
 
-/**
- * Требуемая версия общей структуры файла конфигурации сценариев
- *   Версия меняется редко, только при изменениях в схеме
- *   на одном уровне с array scenarios[]
- * @type {number}
- */
-var REQUIRED_GENERAL_CFG_VER = 1;
+**Создаем файл:** `scenarios/link-in-to-out/scenario-init-link-in-to-out.mod.js`
 
-/**
- * Требуемая версия конфигурации данного вида сценариев
- *   Версия меняется каждый раз когда изменяется структура конфига
- *   данного типа сценария
- * @type {number}
- */
-var REQUIRED_SCENARIO_CFG_VER = 1;
+**Полный код модуля инициализации:** [scenario-init-link-in-to-out.mod.js](scenario-init-link-in-to-out.mod.js)
 
-/**
- * Строка абсолютного пути расположения файла конфигурации сценариев
- * @type {string}
- */
-var CONFIG_PATH = '/etc/wb-scenarios.conf';
+Основные элементы кода:
+- Импорт необходимых модулей (`scHelpers`, `LinkInToOutScenario`, `Logger`)
+- Конфигурация CFG с параметрами инициализации
+- Функция `initializeScenario()` для создания экземпляра сценария
+- Функция `setup()` для загрузки и инициализации всех сценариев типа
+- Обработка ошибок и логирование
+- Сохранение сценариев в глобальном хранилище
 
-/**
- * Строка типа сценария для поиска в массиве конфигов всех сценариев
- * @type {string}
- */
-var SCENARIO_TYPE_STR = 'linkInToOut';                      //@todo:Change 2
+**Глобальное хранилище сценариев**
 
-var helpers = require('scenarios-general-helpers.mod');
-var linkInToOut = require('link-in-to-out.mod');            //@todo:Change 3,4
-
-/**
- * Инициализирует сценарий с использованием указанных настроек
- * @param {object} scenario - Объект сценария, содержащий настройки
- * @returns {void}
- */
-function initializeScenario(scenario) {
-  log.debug('Processing scenario: ' + JSON.stringify(scenario));
-
-  var isInitSucess = linkInToOut.init(scenario.id_prefix,   //@todo:Change 5
-                                      scenario.name,
-                                      scenario.inControl,
-                                      scenario.outControl,
-                                      scenario.inverseLink);
-
-  if (isInitSucess !== true) {
-    log.error(
-      'Error: Init operation aborted for ' +
-      'scenario name: "' + scenario.name + '" ' +
-      'with idPrefix: "' + scenario.id_prefix + '"'
-    );
-    return;
-  }
-
-  log.debug('Initialization successful for: ' + scenario.name);
-}
-
-function main() {
-  log.debug('Start initialisation ' + SCENARIO_TYPE_STR + ' scenario');
-  var listAllScenarios = helpers.readAndValidateScenariosConfig(CONFIG_PATH,
-                                                                REQUIRED_GENERAL_CFG_VER);
-  if (!listAllScenarios) return;
-
-  var matchedScenarios = helpers.findAllActiveScenariosWithType(listAllScenarios,
-                                                                SCENARIO_TYPE_STR,
-                                                                REQUIRED_SCENARIO_CFG_VER);
-  if (matchedScenarios.length === 0) {
-    log.debug('No correct and active scenarios of type "' + SCENARIO_TYPE_STR + '" found');
-    return;
-  }
-  
-  log.debug('Number of matched scenarios: ' + JSON.stringify(matchedScenarios.length));
-  log.debug('Matched scenarios JSON: ' + JSON.stringify(matchedScenarios));
-
-  for (var i = 0; i < matchedScenarios.length; i++) {
-    initializeScenario(matchedScenarios[i]);
-  }
-}
-
-main();
-
-```
-
-## 4. Добавляем модуль
-
-Модуль должен содержать только функцию `init()`, внутри которой реализовано
-три части:
-
-1) Создание виртуального устройства с контролом активации правила сценария
-2) Логика работы сценария в правиле - чаше всего состоит из двух частей
-   - Отслеживание входных контролов для поиска нужных событий
-   - Когда произошло событие - выполнение действий над выходными контролами
-3) Создание правила wb-rules
-
-Так же не забудьте в конце файла указать экспотрт функции с учетом
-возвращаемого значения.
-
-Обратите внимание, что в js в отличие от других языков, например от Си - можно
-класть функции после их использования. Поэтому используя эту тонкость
-мы разделим функцию `init()` на две части: в первой будет описана логика
-инициализации, а во второй после разделителя будут все определения
-используемых функций - это упрощает понимание общего алгоритма.
-
-- Создаем файл `scenarios/link-in-to-out/link-in-to-out.mod.js`
-- Вставляем в файл код ниже
+Каждый инициализированный сценарий сохраняется в глобальном хранилище через:
 
 ```javascript
-/**
- * @file link-in-to-out.mod.js
- * @description Модуль для инициализации алгоритма соединения входа
- *     и выхода (link-in-to-out) на основе указанных пользователем параметров
- *
- * @author Ivan Ivanov <ivan.ivanov@wirenboard.com>           //@todo:Change 1
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
- */
-
-
-/**
- * Инициализирует виртуальное устройство и определяет правило для управления
- * устройством
- * @param {string} idPrefix Префикс сценария, используемый для идентификации
- *     виртуального устройства и правила
- * @param {string} deviceTitle Имя виртуального девайса указанный
- *     пользователем
- * @param {string} inControl Идентификатор входного отслеживаемого контрола,
- *     значение которого следует слушать. Пример: 'vd_wall_switch/enabled'
- * @param {string} outControl Идентификатор выходного контроля, значение
- *     которого следует контролировать. Пример: 'vd_pump/enabled'
- * @param {boolean} inverseLink Указывает, должна ли связь быть
- *     инвертированной
- * @returns {boolean} Возвращает true, при успешной инициализации
- *     иначе false
- */
-function init(idPrefix, deviceTitle, inControl, outControl, inverseLink) {   //@todo:Change 2
-  // @todo: Проверка входящей в функцию конфигурации параметров
-  log.debug('inControl: "' + inControl + '"');
-  log.debug('outControl: "' + outControl + '"');
-  log.debug('inverseLink: "' + inverseLink + '"');
-
-  var genNames = generateNames(idPrefix);
-
-  var vdev = defineVirtualDevice(genNames.vDevice, {
-    title: deviceTitle,
-    cells: {
-      ruleEnabled: {
-        title: {
-          en: 'Enable rule',
-          ru: 'Включить правило'
-        },
-        type: 'switch',
-        value: true,
-        order: 1,
-      },
-    }
-  });
-  if (!vdev) {
-    log.debug('Error: Virtual device "' + deviceTitle + '" not created.');
-    return false;
-  }
-  log.debug('Virtual device "' + deviceTitle + '" created successfully');
-
-  var ruleIdNum = defineRule(genNames.rule, {
-    whenChanged: [inControl], // @todo: изменить на нужный
-    then: thenHandler
-  });
-  if (!ruleIdNum) {
-    log.debug('Error: WB-rule "' + genNames.rule + '" not created.');
-    return false;
-  }
-  log.debug('WB-rule with IdNum "' + ruleIdNum + '" created successfully');
-  return true;
-
-  // ======================================================
-  //                  Определения функций
-  // ======================================================
-
-  function generateNames(idPrefix) {
-    var delimeter = '_';
-    var scenarioPrefix = 'wbsc' + delimeter;
-    var rulePrefix = 'wbru' + delimeter;
-
-    var generatedNames = {
-      vDevice: scenarioPrefix + idPrefix,
-      rule: rulePrefix + idPrefix
-    };
-
-    return generatedNames;
-  }
-
-  function thenHandler(newValue, devName, cellName) {
-    var isActive = dev[genNames.vDevice + '/ruleEnabled'];
-    if (!isActive) {
-      // OK: Сценарий с корректным конфигом, но выключен внутри virtual device
-      return true;
-    }
-    log.debug('WB-rule "' + genNames.rule + '" action handler started');
-
-    // @todo: Выполняем действия нужные в сценарии
-    // Проверка инверсии и присваивание значения в зависимости от него
-    if (inverseLink) {
-      dev[outControl] = !newValue; // Инвертирование входного значения
-    } else {
-      dev[outControl] = newValue; // Прямое присваивание входного значения
-    }
-  }
-}
-
-// @todo: Добавить кастомные параметры
-exports.init = function (
-  idPrefix,
-  deviceTitle,
-  inControl,
-  outControl,
-  inverseLink) {
-  // @todo: Добавить кастомные параметры
-  var res = init(
-    idPrefix,
-    deviceTitle,
-    inControl,
-    outControl,
-    inverseLink);
-  return res;
-};
-
+var scenarioStorage = scHelpers.getGlobalScenarioStore(CFG.scenarioTypeStr);
+scenarioStorage[scenario.idPrefix] = scenario;
 ```
+
+Это хранилище предназначено для:
+- **Просмотра активных сценариев** из внешних скриптов без необходимости кастомного сбора информации
+- **Потенциального управления сценариями** из других частей системы
+- **Предотвращения дублирования** при попытке получить информацию о запущенных сценариях
+
+**Важно:** В данный момент глобальное хранилище используется только для внешнего доступа к информации о сценариях. Сами сценарии его не используют для своей внутренней логики. В будущем эта функциональность может быть перенесена в базовый класс ScenarioBase.
+
+### 3.2. Подключение к главному файлу
+
+После создания модуля инициализации, его нужно подключить в файле 
+`scenarios/scenario-init-main.js`, добавив импорт и вызов:
+
+1. **Добавить импорт** в начало файла рядом с другими импортами:
+
+```javascript
+var setupDevicesControl = require("scenario-init-devices-control.mod").setup;
+var setupLightControl = require("scenario-init-light-control.mod").setup;
+var setupThermostat = require("scenario-init-thermostat.mod").setup;
+var setupLinkInToOut = require("scenario-init-link-in-to-out.mod").setup;  // Добавить эту строку
+```
+
+2. **Добавить вызов** в функции `main()` после других вызовов setup:
+
+```javascript
+  runShellCommand(cmdList, {
+    captureOutput: true,
+    captureErrorOutput: true,
+    exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
+      setupDevicesControl();
+      setupLightControl();
+      setupThermostat();
+      setupLinkInToOut();  // Добавить эту строку
+    }
+  });
+```
+
+## 4. Создание модуля сценария
+
+Модуль сценария строится на базе класса `ScenarioBase` из `wbsc-scenario-base.mod.js`, 
+который предоставляет унифицированный интерфейс для всех сценариев.
+
+### 4.1. Структура модуля
+
+Модуль должен:
+
+1) **Импортировать базовый класс** `ScenarioBase` и другие необходимые модули
+2) **Создать класс сценария**, наследующий от `ScenarioBase`
+3) **Реализовать метод инициализации** с созданием виртуального устройства
+4) **Реализовать логику сценария** в обработчиках событий
+5) **Экспортировать класс сценария** для использования в модуле инициализации
+
+### 4.2. Преимущества использования ScenarioBase
+
+- Унифицированное управление виртуальными устройствами
+- Стандартизированная обработка ошибок и логирование
+- Автоматическое управление жизненным циклом сценария
+- Встроенная поддержка включения/отключения сценариев
+
+**Создаем файл:** `scenarios/link-in-to-out/link-in-to-out.mod.js`
+
+**Полный код модуля сценария:** [link-in-to-out.mod.js](link-in-to-out.mod.js)
+
+Основные элементы кода:
+- Класс `LinkInToOutScenario`, наследующий от `ScenarioBase`
+- Метод `generateNames()` для создания уникальных имен виртуальных устройств и правил
+- Метод `validateCfg()` для проверки корректности конфигурации
+- Метод `defineControlsWaitConfig()` для настройки ожидания контролов
+- Функция `createRules()` для создания правил wb-rules
+- Функция `handleInputChange()` для обработки изменений входного контрола
+- Метод `initSpecific()` для специфичной инициализации сценария
 
 ## 5. Проверить работу базового сценария
 
@@ -751,10 +602,13 @@ defineVirtualDevice(gen_vd_name, {
 3) Папку сценария
   `scenarios\link-in-to-out` -> `scenarios\<!custom-name!>`
 
-4) Файл скрипта инициализации
+4) Файл модуля инициализации
 
    - Имя файла:
-   `scenario-init-link-in-to-out.js` -> `scenario-init-<!custom-name!>.js`
+   `scenario-init-link-in-to-out.mod.js` -> `scenario-init-<!custom-name!>.mod.js`
+   
+   - Подключение в главном файле:
+   Обновить импорт в `scenarios/scenario-init-main.js`
 
 В простом случае - для модификации файла под новый сценарий достаточно сделать
 три действия (Помечены в коде комментарием вида `//@todo:Change X`):
@@ -773,15 +627,13 @@ defineVirtualDevice(gen_vd_name, {
   var SCENARIO_TYPE_STR = 'darkroom';
   ```
 
-- При подключении модуля поправить имя модуля и имя переменной
+- При подключении модуля в scenario-init-....mod.js поправить имя модуля и имя класса
 
   ```javascript
   var linkInToOut = require('link-in-to-out.mod');
   ```
 
-- Внутри функции `initializeScenario()` поправить вызов `init()`
-
-  так чтобы параметры отражали структуру вашей схемы.
+- Внутри функции `initializeScenario()` поправить создание экзепляра и обновить структуру `cfg` объекта так чтобы параметры отражали структуру вашей схемы
 
   ```javascript
   var isInitSucess = darkroom.init(scenario.id_prefix,
