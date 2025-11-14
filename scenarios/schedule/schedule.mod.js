@@ -61,6 +61,7 @@ ScheduleScenario.prototype.generateNames = function(idPrefix) {
     vDevice: scenarioPrefix + idPrefix,
     ruleMain: baseRuleName + 'mainRule',
     ruleManual: baseRuleName + 'manualRule',
+    ruleTimeUpdate: baseRuleName + 'timeUpdateRule',
   };
 };
 
@@ -299,6 +300,34 @@ function createCronRule(self, cfg) {
 }
 
 /**
+ * Creates time update rule to monitor system time changes
+ * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
+ * @returns {boolean} True if rule created successfully, false otherwise
+ */
+function createTimeUpdateRule(self) {
+  log.debug('Creating time update rule for current time display');
+  
+  var timeUpdateRuleId = defineRule(self.genNames.ruleTimeUpdate, {
+    whenChanged: ["system-time/Current time", "system-time/Current date"],
+    then: function(newValue, devName, cellName) {
+      var currentTimeText = formatCurrentTime();
+      dev[self.genNames.vDevice + "/current_time"] = currentTimeText;
+      log.debug('Current time updated: ' + currentTimeText);
+    }
+  });
+  
+  if (!timeUpdateRuleId) {
+    log.error('Failed to create time update rule');
+    return false;
+  }
+  
+  log.debug('Time update rule created successfully');
+  self.addRule(timeUpdateRuleId);
+  
+  return true;
+}
+
+/**
  * Calculates next execution time based on schedule configuration
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {Date|null} Next execution date or null if invalid
@@ -376,6 +405,16 @@ function getNextExecutionTime(cfg) {
   
   log.debug('Calculated next execution: ' + nextExecution.toISOString());
   return nextExecution;
+}
+
+/**
+ * Formats current time for display using system time
+ * @returns {string} Formatted current time string in format "YYYY-MM-DD HH:MM"
+ */
+function formatCurrentTime() {
+  var currentDate = dev["system-time/Current date"];
+  var currentTime = dev["system-time/Current time"];
+  return currentDate + ' ' + currentTime;
 }
 
 /**
@@ -522,6 +561,19 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     order: 2
   });
   
+  // Add current time display control
+  var currentTimeText = formatCurrentTime();
+  this.vd.devObj.addControl('current_time', {
+    title: {
+      en: 'Current time',
+      ru: 'Текущее время'
+    },
+    type: 'text',
+    value: currentTimeText,
+    readonly: true,
+    order: 3
+  });
+  
   // Add next execution time display control
   var nextExecution = getNextExecutionTime(cfg);
   var nextExecutionText = formatNextExecution(nextExecution);
@@ -533,13 +585,21 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     type: 'text',
     value: nextExecutionText,
     readonly: true,
-    order: 3
+    order: 4
   });
   
   log.debug('Start cron rule creation');
   var ruleCreated = createCronRule(this, cfg);
   
   if (!ruleCreated) {
+    this.setState(ScenarioState.ERROR);
+    return false;
+  }
+  
+  log.debug('Start time update rule creation');
+  var timeRuleCreated = createTimeUpdateRule(this);
+  
+  if (!timeRuleCreated) {
     this.setState(ScenarioState.ERROR);
     return false;
   }
