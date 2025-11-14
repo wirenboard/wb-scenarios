@@ -308,7 +308,7 @@ function createTimeUpdateRule(self) {
   log.debug('Creating time update rule for current time display');
   
   var timeUpdateRuleId = defineRule(self.genNames.ruleTimeUpdate, {
-    whenChanged: ["system-time/Current time", "system-time/Current date"],
+    whenChanged: ["system_time/current_time", "system_time/current_date"],
     then: function(newValue, devName, cellName) {
       var currentTimeText = formatCurrentTime();
       dev[self.genNames.vDevice + "/current_time"] = currentTimeText;
@@ -412,8 +412,8 @@ function getNextExecutionTime(cfg) {
  * @returns {string} Formatted current time string in format "YYYY-MM-DD HH:MM"
  */
 function formatCurrentTime() {
-  var currentDate = dev["system-time/Current date"];
-  var currentTime = dev["system-time/Current time"];
+  var currentDate = dev["system_time/current_date"];
+  var currentTime = dev["system_time/current_time"];
   return currentDate + ' ' + currentTime;
 }
 
