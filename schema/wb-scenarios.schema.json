@@ -829,7 +829,7 @@
             "grid_columns": 12
           }
         },
-        "id_prefix": {
+        "idPrefix": {
           "title": "generalScenarioIdPrefixTitle",
           "type": "string",
           "description": "generalScenarioIdPrefixDescription",
@@ -875,13 +875,13 @@
             ],
             "options": {
               "enum_titles": [
-                "MondayTitle",
-                "TuesdayTitle",
-                "WednesdayTitle",
-                "ThursdayTitle",
-                "FridayTitle",
-                "SaturdayTitle",
-                "SundayTitle"
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
               ]
             }
           }
@@ -1064,16 +1064,9 @@
       "thermostatActuatorTitle": "Heater channel",
 
       "scheduleScenarioName": "Schedule",
-      "scheduleScenarioDescription": "Execute actions on schedule with time and weekday selection support.",
+      "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.",
       "scheduleTimeTitle": "Execution Time",
       "scheduleWeekDaysTitle": "Weekdays",
-      "MondayTitle": "Mon",
-      "TuesdayTitle": "Tue",
-      "WednesdayTitle": "Wed",
-      "ThursdayTitle": "Thu",
-      "FridayTitle": "Fri",
-      "SaturdayTitle": "Sat",
-      "SundayTitle": "Sun",
       "scheduleActionsTitle": "Actions",
       "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
       "scheduleActionObjTitle": "Action"
@@ -1152,16 +1145,16 @@
       "thermostatActuatorTitle": "Канал нагревателя",
 
       "scheduleScenarioName": "Расписание",
-      "scheduleScenarioDescription": "Выполнение действий по расписанию с поддержкой выбора времени и дней недели.",
+      "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.",
       "scheduleTimeTitle": "Время выполнения",
       "scheduleWeekDaysTitle": "Дни недели",
-      "MondayTitle": "Пн",
-      "TuesdayTitle": "Вт",
-      "WednesdayTitle": "Ср",
-      "ThursdayTitle": "Чт",
-      "FridayTitle": "Пт",
-      "SaturdayTitle": "Сб",
-      "SundayTitle": "Вс",
+      "Monday": "Понедельник",
+      "Tuesday": "Вторник",
+      "Wednesday": "Среда",
+      "Thursday": "Четверг",
+      "Friday": "Пятница",
+      "Saturday": "Суббота",
+      "Sunday": "Воскресенье",
       "scheduleActionsTitle": "Действия",
       "scheduleActionsDescription": "Действия, которые будут выполнены в назначенное время:",
       "scheduleActionObjTitle": "Действие"

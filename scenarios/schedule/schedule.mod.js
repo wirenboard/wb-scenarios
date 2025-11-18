@@ -8,7 +8,7 @@ var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
-var aTable = require("schedule-table-handling-actions.mod");
+var aTable = require("table-handling-actions.mod");
 
 var loggerFileLabel = 'WBSC-schedule-mod';
 var log = new Logger(loggerFileLabel);
@@ -409,12 +409,17 @@ function getNextExecutionTime(cfg) {
 
 /**
  * Formats current time for display using system time
- * @returns {string} Formatted current time string in format "YYYY-MM-DD HH:MM"
+ * @returns {string} Formatted current time string in format "YYYY-MM-DD HH:MM DayName"
  */
 function formatCurrentTime() {
   var currentDate = dev["system_time/current_date"];
   var currentTime = dev["system_time/current_time"];
-  return currentDate + ' ' + currentTime;
+  
+  var dateParts = currentDate.split(' ');
+  var dateOnly = dateParts[0];
+  var dayName = dateParts[1];
+  
+  return dateOnly + ' ' + currentTime + ' ' + dayName;
 }
 
 /**

@@ -31,7 +31,7 @@ function initializeScenario(scenarioCfg) {
 
   var scenario = new CustomTypeSc();
   var cfg = {
-    idPrefix: scenarioCfg.id_prefix,
+    idPrefix: scenarioCfg.idPrefix,
     scheduleTime: scenarioCfg.scheduleTime || "12:00",
     weekDays: scenarioCfg.weekDays || [],
     outControls: scenarioCfg.outControls || []

@@ -1,14 +1,14 @@
 /**
- * @file Модуль таблицы производимых над контролами действий
+ * @file Module for control actions table handling
  * 
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
- * @link Комментарии в формате JSDoc <https://jsdoc.app/>
+ * @link Comments in JSDoc format <https://jsdoc.app/>
  */
 
 /**
- * Действие отключения контрола
- * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
- * @returns {boolean} Всегда возвращает false
+ * Action to disable the control
+ * @param {boolean} actualValue - Current state of the control
+ * @returns {boolean} Always returns false
  */
 function setDisable(actualValue, actionValue) {
   var newCtrlValue = false;
@@ -16,9 +16,9 @@ function setDisable(actualValue, actionValue) {
 }
 
 /**
- * Действие включения контрола
- * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
- * @returns {boolean} Всегда возвращает true
+ * Action to enable the control
+ * @param {boolean} actualValue - Current state of the control
+ * @returns {boolean} Always returns true
  */
 function setEnable(actualValue, actionValue) {
   var newCtrlValue = true;
@@ -26,9 +26,9 @@ function setEnable(actualValue, actionValue) {
 }
 
 /**
- * Действие переключения состояния контрола
- * @param {boolean} actualValue - Актуальное состояние контрола на данный момент
- * @returns {boolean} Возвращает противоположное текущему состоянию контрола
+ * Action to toggle the control state
+ * @param {boolean} actualValue - Current state of the control
+ * @returns {boolean} Returns the opposite of the current control state
  */
 function toggle(actualValue, actionValue) {
   var newCtrlValue = !actualValue;
@@ -36,10 +36,10 @@ function toggle(actualValue, actionValue) {
 }
 
 /**
- * Действие установки значения контрола величиной в actionValue
- * @param {number} actualValue - Актуальное состояние контрола на данный момент
- * @param {number} actionValue - Значение заданное пользователем
- * @returns {number} Возвращает новое значение контрола
+ * Action to set control value to actionValue
+ * @param {number} actualValue - Current state of the control
+ * @param {number} actionValue - Value set by user
+ * @returns {number} Returns new control value
  */
 function setValue(actualValue, actionValue) {
   var newCtrlValue = actionValue;
@@ -47,10 +47,10 @@ function setValue(actualValue, actionValue) {
 }
 
 /**
- * Действие увеличения значения контрола на величину в actionValue
- * @param {number} actualValue - Актуальное состояние контрола на данный момент
- * @param {number} actionValue - Значение заданное пользователем
- * @returns {number} Возвращает новое значение контрола
+ * Action to increase control value by actionValue amount
+ * @param {number} actualValue - Current state of the control
+ * @param {number} actionValue - Value set by user
+ * @returns {number} Returns new control value
  */
 function increaseValueBy(actualValue, actionValue) {
   var newCtrlValue = actualValue + actionValue;
@@ -58,10 +58,10 @@ function increaseValueBy(actualValue, actionValue) {
 }
 
 /**
- * Действие уменьшения значения контрола на величину в actionValue
- * @param {number} actualValue - Актуальное состояние контрола на данный момент
- * @param {number} actionValue - Значение заданное пользователем
- * @returns {number} Возвращает новое значение контрола
+ * Action to decrease control value by actionValue amount
+ * @param {number} actualValue - Current state of the control
+ * @param {number} actionValue - Value set by user
+ * @returns {number} Returns new control value
  */
 function decreaseValueBy(actualValue, actionValue) {
   var newCtrlValue = actualValue - actionValue;
@@ -69,10 +69,10 @@ function decreaseValueBy(actualValue, actionValue) {
 }
 
 /**
-* Таблица действий
-* Содержит имя действия и соответствующие ему:
-* - Разрешенные типы контрола
-* - Обработчик
+* Actions table
+* Contains action name and its corresponding:
+* - Allowed control types
+* - Handler
 */
 var actionsTable = {
   'toggle': {
