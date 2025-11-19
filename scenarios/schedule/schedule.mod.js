@@ -13,6 +13,16 @@ var aTable = require("table-handling-actions.mod");
 var loggerFileLabel = 'WBSC-schedule-mod';
 var log = new Logger(loggerFileLabel);
 
+var DAY_NAMES = {
+  0: 'Sunday',
+  1: 'Monday', 
+  2: 'Tuesday',
+  3: 'Wednesday',
+  4: 'Thursday',
+  5: 'Friday',
+  6: 'Saturday'
+};
+
 /**
  * @typedef {Object} ScheduleConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
@@ -308,7 +318,7 @@ function createTimeUpdateRule(self) {
   log.debug('Creating time update rule for current time display');
   
   var timeUpdateRuleId = defineRule(self.genNames.ruleTimeUpdate, {
-    whenChanged: ["system_time/current_time", "system_time/current_date"],
+    whenChanged: ["system_time/current_time", "system_time/current_date", "system_time/current_day"],
     then: function(newValue, devName, cellName) {
       var currentTimeText = formatCurrentTime();
       dev[self.genNames.vDevice + "/current_time"] = currentTimeText;
@@ -414,12 +424,10 @@ function getNextExecutionTime(cfg) {
 function formatCurrentTime() {
   var currentDate = dev["system_time/current_date"];
   var currentTime = dev["system_time/current_time"];
+  var currentDayNum = dev["system_time/current_day"];
+  var currentDay = DAY_NAMES[currentDayNum] || 'Unknown';
   
-  var dateParts = currentDate.split(' ');
-  var dateOnly = dateParts[0];
-  var dayName = dateParts[1];
-  
-  return dateOnly + ' ' + currentTime + ' ' + dayName;
+  return currentDay + ' ' + currentDate + ' ' + currentTime;
 }
 
 /**
@@ -440,8 +448,8 @@ function formatNextExecution(date) {
   var year = date.getFullYear();
   var hours = ('0' + date.getHours()).slice(-2);
   var minutes = ('0' + date.getMinutes()).slice(-2);
-  
-  return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ' ' + dayName;
+
+  return dayName + ' ' + year + '-' + month + '-' + day + ' ' + hours + ':' + minutes;
 }
 
 /**
