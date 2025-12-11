@@ -583,6 +583,7 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     },
     type: 'text',
     value: currentTimeText,
+    forceDefault: true, // Always must start from enabled state
     readonly: true,
     order: 3
   });
@@ -597,6 +598,7 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     },
     type: 'text',
     value: nextExecutionText,
+    forceDefault: true, // Always must start from enabled state
     readonly: true,
     order: 4
   });
