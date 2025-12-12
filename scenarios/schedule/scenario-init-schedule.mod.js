@@ -33,7 +33,7 @@ function initializeScenario(scenarioCfg) {
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
     scheduleTime: scenarioCfg.scheduleTime || "12:00",
-    weekDays: scenarioCfg.weekDays || [],
+    scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
     outControls: scenarioCfg.outControls || []
   };
 

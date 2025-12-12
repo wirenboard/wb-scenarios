@@ -853,8 +853,8 @@
             "grid_columns": 1
           }
         },
-        "weekDays": {
-          "title": "scheduleWeekDaysTitle",
+        "scheduleDaysOfWeek": {
+          "title": "scheduleDaysOfWeekTitle",
           "type": "array",
           "_format": "checkbox",
           "uniqueItems": true,
@@ -971,7 +971,7 @@
         "enable",
         "name",
         "scheduleTime",
-        "weekDays",
+        "scheduleDaysOfWeek",
         "outControls"
       ]
     }
@@ -1066,7 +1066,7 @@
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.",
       "scheduleTimeTitle": "Execution Time",
-      "scheduleWeekDaysTitle": "Weekdays",
+      "scheduleDaysOfWeekTitle": "Days of the Week",
       "scheduleActionsTitle": "Actions",
       "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
       "scheduleActionObjTitle": "Action"
@@ -1147,7 +1147,7 @@
       "scheduleScenarioName": "Расписание",
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.",
       "scheduleTimeTitle": "Время выполнения",
-      "scheduleWeekDaysTitle": "Дни недели",
+      "scheduleDaysOfWeekTitle": "Дни недели",
       "Monday": "Понедельник",
       "Tuesday": "Вторник",
       "Wednesday": "Среда",

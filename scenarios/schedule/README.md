@@ -35,7 +35,7 @@
 
 - **scheduleTime** (string): Время выполнения в формате "ЧЧ:ММ"
 
-- **weekDays** (array): Массив дней недели для выполнения
+- **scheduleDaysOfWeek** (array): Массив дней недели для выполнения
   - Формат: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 ### Действия (outControls)
@@ -66,7 +66,7 @@
     ],
     "scenarioType": "schedule",
     "scheduleTime": "08:56",
-    "weekDays": [
+    "scheduleDaysOfWeek": [
         "monday",
         "tuesday",
         "wednesday",

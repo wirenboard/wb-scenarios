@@ -28,7 +28,7 @@ var DAY_NAMES = {
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
  * @property {string} scheduleTime - Time to trigger in HH:MM format
- * @property {Array<string>} weekDays - Array of selected weekdays
+ * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays
  *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
  * @property {Array<Object>} outControls - Array of output controls to change
  *   Each object contains:
@@ -208,24 +208,24 @@ ScheduleScenario.prototype.validateCfg = function(cfg) {
     return false;
   }
   
-  // Check weekDays array
-  if (!Array.isArray(cfg.weekDays)) {
-    log.error('Schedule validation error: weekDays must be an array');
+  // Check scheduleDaysOfWeek array
+  if (!Array.isArray(cfg.scheduleDaysOfWeek)) {
+    log.error('Schedule validation error: scheduleDaysOfWeek must be an array');
     return false;
   }
   
   // Check that at least one day is selected
-  if (cfg.weekDays.length === 0) {
+  if (cfg.scheduleDaysOfWeek.length === 0) {
     log.error('Schedule validation error: at least one day of the week must be selected');
     return false;
   }
   
-  // Validate weekDays values
+  // Validate scheduleDaysOfWeek values
   var validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  for (var i = 0; i < cfg.weekDays.length; i++) {
-    var day = cfg.weekDays[i];
+  for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
+    var day = cfg.scheduleDaysOfWeek[i];
     if (typeof day !== 'string' || validDays.indexOf(day) === -1) {
-      log.error('Schedule validation error: invalid weekDay value: ' + day);
+      log.error('Schedule validation error: invalid scheduleDaysOfWeek value: ' + day);
       return false;
     }
   }
@@ -347,17 +347,17 @@ function getNextExecutionTime(cfg) {
   var currentDay = now.getDay(); // 0=Sunday, 1=Monday, etc.
   
   log.debug('Calculating next execution. Current time: ' + now.toISOString() + ', current day: ' + currentDay);
-  log.debug('Schedule: ' + cfg.scheduleTime + ' on days: [' + cfg.weekDays.join(', ') + ']');
+  log.debug('Schedule: ' + cfg.scheduleTime + ' on days: [' + cfg.scheduleDaysOfWeek.join(', ') + ']');
   
   var dayNameToNumber = {
     'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
     'thursday': 4, 'friday': 5, 'saturday': 6
   };
   
-  // Convert weekDays array to day numbers and sort
+  // Convert scheduleDaysOfWeek array to day numbers and sort
   var scheduledDays = [];
-  for (var i = 0; i < cfg.weekDays.length; i++) {
-    var dayName = cfg.weekDays[i];
+  for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
+    var dayName = cfg.scheduleDaysOfWeek[i];
     if (dayNameToNumber.hasOwnProperty(dayName)) {
       scheduledDays.push(dayNameToNumber[dayName]);
     }
@@ -484,8 +484,8 @@ function buildCronExpression(cfg) {
   };
   
   var daysOfWeek = [];
-  for (var i = 0; i < cfg.weekDays.length; i++) {
-    var dayName = cfg.weekDays[i];
+  for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
+    var dayName = cfg.scheduleDaysOfWeek[i];
     if (dayMap[dayName]) {
       daysOfWeek.push(dayMap[dayName]);
     }
