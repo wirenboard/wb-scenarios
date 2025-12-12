@@ -151,7 +151,7 @@ function initializeScenario(scenarioCfg) {
   var scenario = new YourScenarioClass();
   
   var cfg = {
-    idPrefix: scenarioCfg.id_prefix,
+    idPrefix: scenarioCfg.idPrefix,
     // ... маппинг полей из scenarioCfg
   };
   

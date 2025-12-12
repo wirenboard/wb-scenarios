@@ -137,7 +137,7 @@
           "grid_columns": 12
         }
       },
-      "id_prefix": {
+      "idPrefix": {
         "type": "string",
         "title": "ID Prefix",
         "description": "id_prefix_description",
@@ -193,7 +193,7 @@
         "minLength": 1
       }
     },
-    "required": ["scenarioType", "enable", "name", "id_prefix"]
+    "required": ["scenarioType", "enable", "name", "idPrefix"]
   },
 ```
 
@@ -636,7 +636,7 @@ defineVirtualDevice(gen_vd_name, {
 - Внутри функции `initializeScenario()` поправить создание экзепляра и обновить структуру `cfg` объекта так чтобы параметры отражали структуру вашей схемы
 
   ```javascript
-  var isInitSucess = darkroom.init(scenario.id_prefix,
+  var isInitSucess = darkroom.init(scenario.idPrefix,
                                   scenario.name,
                                   ... custom parameters ...)
   ```

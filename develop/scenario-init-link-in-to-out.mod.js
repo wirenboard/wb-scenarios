@@ -32,7 +32,7 @@ function initializeScenario(scenarioCfg) {
 
   var scenario = new LinkInToOutScenario();   //@todo:Change 5
   var cfg = {
-    idPrefix: scenarioCfg.id_prefix,
+    idPrefix: scenarioCfg.idPrefix,
     inControl: scenarioCfg.inControl,         //@todo:Change 6
     outControl: scenarioCfg.outControl,       //@todo:Change 7
     inverseLink: scenarioCfg.inverseLink,     //@todo:Change 8

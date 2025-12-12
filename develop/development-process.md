@@ -100,7 +100,7 @@ mkdir scenarios/your-scenario-name
             "propertyOrder": 2,
             "options": {"grid_columns": 12}
         },
-        "id_prefix": {
+        "idPrefix": {
             "type": "string",
             "title": "ID Prefix", 
             "pattern": "^[0-9a-zA-Z_]+$",
@@ -116,7 +116,17 @@ mkdir scenarios/your-scenario-name
 }
 ```
 
+Обратите внимание - в новых правилах нужно называть все названия параметров\
+только слитно, например "idPrefix". Не нужно использовать "id_prefix" - это\
+исторически сложившаяся особенность, которая осталась чтобы не ломать уже\
+созданные пользователями конфигурации.
+
+Причина использования такого формата названия параметров заключается в том,\
+что эти названия в конечном итоге превращаются в переменные внутри js кода,\
+а наименования переменных в коде доступно только в виде camelCase.
+
 **Модифицировать oneOf**
+
 ```json
 "oneOf": [
     { "$ref": "#/definitions/yourScenarioName" },
@@ -152,7 +162,7 @@ function initializeScenario(scenarioCfg) {
   
   // Маппинг конфигурации
   var cfg = {
-    idPrefix: scenarioCfg.id_prefix,
+    idPrefix: scenarioCfg.idPrefix,
     inputControl: scenarioCfg.inputControl,
     outputControl: scenarioCfg.outputControl
     // ... другие поля
