@@ -20,7 +20,37 @@
 ### Компоненты сценария
 
 1. **JSON схема** (`wb-scenarios.schema.json`) - описание веб-интерфейса для json-editor
-2. **Конфигурация** (`*.conf`) - сохраненные настройки сценария из веб-интерфейса  
+2. **Конфигурация** (`*.conf`) - сохраненные настройки сценария из веб-интерфейса
+
+Файл конфигурации содержит массив "scenarios", где каждый элемент\
+является полностью описанным отдельным сценарием. Тип сценария определяется\
+полем "scenarioType".
+
+```json
+{
+    "configVersion": 1,
+    "scenarios": [
+        {
+            "componentVersion": 1,
+            "enable": true,
+            "name": "Расписание",
+            "outControls": [
+                {
+                    "actionValue": 0,
+                    "behaviorType": "setEnable",
+                    "control": "buzzer/enabled"
+                }
+            ],
+            "scenarioType": "schedule",
+            "scheduleDaysOfWeek": [
+                "tuesday"
+            ],
+            "scheduleTime": "14:02"
+        }
+    ]
+}
+```
+
 3. **Модуль сценария** (`*.mod.js`) - класс, наследующий от ScenarioBase с бизнес-логикой
 4. **Модуль инициализации** (`scenario-init-*.mod.js`) - точка входа для инициализации сценариев
 

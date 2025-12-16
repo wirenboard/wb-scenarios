@@ -137,7 +137,7 @@
           "grid_columns": 12
         }
       },
-      "id_prefix": {
+      "idPrefix": {
         "type": "string",
         "title": "ID Prefix",
         "description": "id_prefix_description",
@@ -193,7 +193,7 @@
         "minLength": 1
       }
     },
-    "required": ["scenarioType", "enable", "name", "id_prefix"]
+    "required": ["scenarioType", "enable", "name", "idPrefix"]
   },
 ```
 
@@ -537,8 +537,10 @@ defineVirtualDevice(gen_vd_name, {
 1) Создать README файл для нового сценария по пути
    `scenarios\link-in-to-out\README.md`
    Описание должно содержать:
-   - Внешний вид конфигуратора созданного сценария
-   - Тонкости работы сценария, его логики и тд
+   - Внешний вид конфигуратора созданного сценария (скриншот на английском)
+   - Тонкости работы сценария, его логики
+   - Пример кода для использования модуля сценария из пользовательских скриптов
+
 2) Добавить в общий README файл ссылку на реализованный  сценарий
    - Открыть файл `README.md` находящийся в корне проекта
    - Добавить в список реализованных сценариев ссылку на файл README
@@ -636,7 +638,7 @@ defineVirtualDevice(gen_vd_name, {
 - Внутри функции `initializeScenario()` поправить создание экзепляра и обновить структуру `cfg` объекта так чтобы параметры отражали структуру вашей схемы
 
   ```javascript
-  var isInitSucess = darkroom.init(scenario.id_prefix,
+  var isInitSucess = darkroom.init(scenario.idPrefix,
                                   scenario.name,
                                   ... custom parameters ...)
   ```
