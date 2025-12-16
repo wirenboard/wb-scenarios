@@ -1064,7 +1064,7 @@
       "thermostatActuatorTitle": "Heater channel",
 
       "scheduleScenarioName": "Schedule",
-      "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.",
+      "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
       "scheduleTimeTitle": "Execution Time",
       "scheduleDaysOfWeekTitle": "Days of the Week",
       "scheduleActionsTitle": "Actions",
@@ -1145,7 +1145,7 @@
       "thermostatActuatorTitle": "Канал нагревателя",
 
       "scheduleScenarioName": "Расписание",
-      "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.",
+      "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
       "scheduleTimeTitle": "Время выполнения",
       "scheduleDaysOfWeekTitle": "Дни недели",
       "Monday": "Понедельник",
