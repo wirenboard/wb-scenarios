@@ -48,6 +48,8 @@
 
 ## Пример конфигурации
 
+Объект json используемый в коде
+
 ```json
 {
     "enable": true,
@@ -74,6 +76,33 @@
         "friday",
         "saturday",
         "sunday"
+    ]
+}
+```
+
+Конфигурация записанная в файле *.conf
+
+```json
+{
+    "configVersion": 1,
+    "scenarios": [
+        {
+            "componentVersion": 1,
+            "enable": true,
+            "name": "Расписание",
+            "outControls": [
+                {
+                    "actionValue": 0,
+                    "behaviorType": "setEnable",
+                    "control": "buzzer/enabled"
+                }
+            ],
+            "scenarioType": "schedule",
+            "scheduleDaysOfWeek": [
+                "tuesday"
+            ],
+            "scheduleTime": "14:02"
+        }
     ]
 }
 ```
