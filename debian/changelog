@@ -1,8 +1,8 @@
 wb-scenarios (1.6.3) stable; urgency=medium
 
-  * add new schedule scenario
+  * Add new scenario "schedule"
 
- -- Ivan Praulov <ivan.praulov@wirenboard.com>  Fri, 18 Nov 2025 16:50:00 +0300
+ -- Vitalii Gaponov <vitalii.gaponov@wirenboard.com>  Tue, 16 Dec 2025 16:00:00 +0300
 
 wb-scenarios (1.6.2) stable; urgency=medium
 
