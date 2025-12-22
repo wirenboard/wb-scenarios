@@ -34,6 +34,9 @@ MODULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-modules
 # Целевой путь для скрипта wb-scenarios-reloader
 SCRIPTS_DEST := $(DESTDIR)$(PREFIX)/lib/wb-scenarios
 
+# Целевой путь для пункта меню HomeUI
+HOMEUI_MENU_DEST := $(DESTDIR)$(PREFIX)/share/wb-mqtt-homeui/custom-menu
+
 # Поиск папок сценариев внутри папки scenarios
 SCENARIO_DIRS := $(wildcard $(SCENARIOS_ROOT)*)
 SRC_MODULE_FILES := $(wildcard $(SRC_DIR)*.mod.js)
@@ -48,6 +51,8 @@ SCHEMA_FILES := $(wildcard $(SCHEMA_DIR)*.schema.json)
 WB_CONFIG_FILE := 45wb-scenarios
 # Файл скрипта сервиса перезагрузки сценариев
 RELOADER_SCRIPT := wb-scenarios-reloader
+# Файл меню для HomeUI
+MENU_FILE := scenario-navigation.json
 
 .PHONY: all dummy install
 
@@ -98,6 +103,10 @@ install:
 
 	@echo "Copying $(WB_CONFIG_FILE) to $(WB_CONFIGS_DEST)"
 	@install -Dm644 $(WB_CONFIG_FILE) -t $(WB_CONFIGS_DEST)/
+
+	@# Установка файла меню для HomeUI
+	@echo "Copying $(MENU_FILE) to $(HOMEUI_MENU_DEST)"
+	@install -Dm644 $(MENU_FILE) -t $(HOMEUI_MENU_DEST)/
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
