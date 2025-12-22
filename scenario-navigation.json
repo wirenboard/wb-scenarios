@@ -1,0 +1,13 @@
+{
+  "id": "rules",
+  "children": [
+    {
+      "id": "scenario",
+      "url": "configs/edit/~2Fusr~2Fshare~2Fwb-mqtt-confed~2Fschemas~2Fwb-scenarios.schema.json",
+      "title": {
+        "ru": "Сценарии",
+        "en": "Scenarios"
+      }
+    }
+  ]
+}
