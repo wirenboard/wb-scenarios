@@ -365,19 +365,22 @@ function createErrChangeRule(
 }
 
 /**
- * Restore target temperature from persistent storage (if saved previosly)
- * If the stored value is invalid or missing, we use cfg.targetTemp and save it
+ * Restore target temperature and enable state from persistent storage
+ * Falls back to config defaults if values are missing or invalid
  * @param {Object} self - Reference to the ThermostatScenario instance
  * @param {ThermostatConfig} cfg - Thermostat config
- * @returns {number} The target temperature to use
+ * @returns {Object} Restored values: { targetTemp, enabled }
  */
-function restoreTargetTemperature(self, cfg) {
+function restorePersistentState(self, cfg) {
   if (typeof self.ctx.ps[self.idPrefix] === 'undefined') {
     try {
       self.ctx.ps[self.idPrefix] = StorableObject({});
     } catch (err) {
       log.error('Error on self.ctx.ps[self.idPrefix] assignment: {}', err);
-      return cfg.targetTemp;
+      return {
+        targetTemp: cfg.targetTemp,
+        enabled: true,
+      };
     }
 
     log.debug(
@@ -392,19 +395,10 @@ function restoreTargetTemperature(self, cfg) {
     storedTemp >= cfg.tempLimitsMin &&
     storedTemp <= cfg.tempLimitsMax;
 
-  if (isValidStoredTemp) {
-    log.debug(
-      'Restored targetTemp="{}" for scenario="{}"',
-      storedTemp,
-      self.idPrefix
-    );
-    return storedTemp;
-  } else {
-    // Either no stored value, or it's out of range
-    var usedTemp = cfg.targetTemp;
+  var usedTemp = isValidStoredTemp ? storedTemp : cfg.targetTemp;
+  if (!isValidStoredTemp) {
     self.ctx.ps[self.idPrefix].targetTemp = usedTemp;
 
-    // Show warning only if something was stored but invalid
     if (typeof storedTemp === 'number') {
       log.warning(
         'Stored temp="{}" is out of range or invalid for "{}". Reset to "{}"',
@@ -413,8 +407,25 @@ function restoreTargetTemperature(self, cfg) {
         usedTemp
       );
     }
-    return usedTemp;
+  } else {
+    log.debug(
+      'Restored targetTemp="{}" for scenario="{}"',
+      storedTemp,
+      self.idPrefix
+    );
   }
+
+  var storedEnabled = self.ctx.ps[self.idPrefix].enabled;
+  var isValidEnabled = typeof storedEnabled === 'boolean';
+  var usedEnabled = isValidEnabled ? storedEnabled : true;
+  if (!isValidEnabled) {
+    self.ctx.ps[self.idPrefix].enabled = usedEnabled;
+  }
+
+  return {
+    targetTemp: usedTemp,
+    enabled: usedEnabled,
+  };
 }
 
 /**
@@ -477,6 +488,19 @@ function createRules(self, cfg) {
   ruleCfg = {
     whenChanged: [self.genNames.vDevice + '/' + vdCtrl.ruleEnabled],
     then: function (newValue, devName, cellName) {
+      if (self.ctx.ps && typeof self.ctx.ps[self.idPrefix] !== 'undefined') {
+        try {
+          self.ctx.ps[self.idPrefix].enabled = newValue;
+          log.debug(
+            'Scenario enabled state "{}" saved for scenario="{}"',
+            newValue,
+            self.idPrefix
+          );
+        } catch (err) {
+          log.error('Error saving enabled state to storage: {}', err);
+        }
+      }
+
       if (newValue) {
         var data = {
           curTemp: dev[cfg.tempSensor],
@@ -588,24 +612,33 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   // Initialize persistent storage
   this.ctx.ps = new PersistentStorage('wbscThermostatSettings', { global: true });
 
-  // Restore target temperature from storage
-  var usedTemp = restoreTargetTemperature(this, cfg);
+  // Restore target temperature and enable state from storage
+  var restored = restorePersistentState(this, cfg);
 
   // Add custom controls to virtual device
-  addCustomControlsToVirtualDevice(this, cfg, usedTemp);
+  addCustomControlsToVirtualDevice(this, cfg, restored.targetTemp);
 
   // Create all rules
   log.debug('Start all required rules creation');
   var rulesCreated = createRules(this, cfg);
 
   if (rulesCreated) {
+    var vdCtrlEnable = this.vd.devObj.getControl(vdCtrl.ruleEnabled);
+    if (vdCtrlEnable && vdCtrlEnable.getValue() !== restored.enabled) {
+      vdCtrlEnable.setValue(restored.enabled);
+    }
+
     // Set initial heater state after initialization
     var data = {
       curTemp: dev[cfg.tempSensor],
       targetTemp: dev[this.genNames.vDevice + '/' + vdCtrl.targetTemp],
       hysteresis: cfg.hysteresis,
     };
-    updateHeatingState(cfg.actuator, data);
+    if (vdCtrlEnable && vdCtrlEnable.getValue()) {
+      updateHeatingState(cfg.actuator, data);
+    } else {
+      dev[cfg.actuator] = false;
+    }
 
     this.setState(ScenarioState.NORMAL);
     log.debug('Thermostat scenario initialized successfully for device "{}"', deviceTitle);
