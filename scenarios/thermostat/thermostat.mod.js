@@ -448,12 +448,16 @@ function createRules(self, cfg) {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
       vdCtrlCurTemp.setValue(newValue);
-      var data = {
-        curTemp: newValue,
-        targetTemp: vdCtrlTargetTemp.getValue(),
-        hysteresis: cfg.hysteresis,
-      };
-      updateHeatingState(cfg.actuator, data);
+      
+      // Only update heating state if scenario is enabled
+      if (vdCtrlEnable.getValue()) {
+        var data = {
+          curTemp: newValue,
+          targetTemp: vdCtrlTargetTemp.getValue(),
+          hysteresis: cfg.hysteresis,
+        };
+        updateHeatingState(cfg.actuator, data);
+      }
     },
   };
   ruleId = defineRule(self.genNames.ruleTempChanged, ruleCfg);
