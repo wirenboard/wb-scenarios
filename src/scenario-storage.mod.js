@@ -13,13 +13,43 @@ var _instance = null;
 function ScenarioStorage() {
   this.ps = null;
   this.storageName = "wb-scenarios-common-persistant-data"
-  this.allKeysKey = "all_keys"
+  this.currentKeysKey = "currentKeys"
+  this.allKeysKey = "allKeys"
+  this.userConfigKey = "userConfig"
   this._initStorage();
 }
 
 /**
  * Initialize connection to the global persistent storage
  * @private
+ * 
+ * Example of stored data structure:
+ * {
+ *   "raspisanie": {
+ *     "userConfig": {
+ *       "rule_enabled": false,
+ *     }
+ *   },
+ *   "upravlenie_ustroystvami": {
+ *     "userConfig": {
+ *       "rule_enabled": true,
+ *     }
+ *   },
+ *   "currentKeys": {
+ *     "raspisanie": true,
+ *     "upravlenie_ustroystvami": true
+ *   },
+ *   "allKeys": {
+ *     "raspisanie": true,
+ *     "upravlenie_ustroystvami": true
+ *   }
+ * }
+ * 
+ * Where:
+ * - raspisanie, upravlenie_ustroystvami - idPrefix scenario
+ * - userConfig - Object with settings for a specific scenario
+ * - currentKeys - Utility object for tracking all running scenario
+ * - allKeys - Utility object to keep track of all saved scenario
  */
 ScenarioStorage.prototype._initStorage = function() {
   this.ps = new PersistentStorage(this.storageName, { global: true });
@@ -27,80 +57,102 @@ ScenarioStorage.prototype._initStorage = function() {
 
 /**
    * Get a setting value from persistent storage for specific vdName
-   * @param {string} vdName - The name of the virtual device
-   * @param {string} key - Setting name
-   * @param {any} [defaultValue] - Value to return if key not found
+   * @param {string} idPrefix Scenario ID prefix
+   * @param {string} key Setting name
+   * @param {any} [defaultValue] Value to return if key not found
    * @returns {any} Stored value or default
    */
-ScenarioStorage.prototype.getSetting = function(vdName, key, defaultValue) {
-  if (!this.ps || !this.ps[vdName]) {
+ScenarioStorage.prototype.getSetting = function(idPrefix, key, defaultValue) {
+  // Save the key for currentKeys
+  if (this.ps[this.currentKeysKey] !== undefined) {
+    this.ps[this.currentKeysKey][idPrefix] = true;
+  } else {
+    this.ps[this.currentKeysKey] = new StorableObject({});
+    this.ps[this.currentKeysKey][idPrefix] = true;
+  }
+
+  // If no stored value in the storage, then return defaultValue.
+  if (!this.ps || !this.ps[idPrefix] || !this.ps[idPrefix][this.userConfigKey]) {
     return defaultValue;
   }
   
-  var val = this.ps[vdName][key];
+  var val = this.ps[idPrefix][this.userConfigKey][key];
+
   return (val !== undefined) ? val : defaultValue;
 };
 
 /**
    * Save a setting value to persistent storage for specific vdName
-   * @param {string} vdName - The name of the virtual device
-   * @param {string} key - Setting name
-   * @param {any} value - Value to store
+   * @param {string} idPrefix Scenario ID prefix
+   * @param {string} key Setting name
+   * @param {any} value Value to store
    */
-ScenarioStorage.prototype.setSetting = function(vdName, key, value) {
+ScenarioStorage.prototype.setSetting = function(idPrefix, key, value) {
   if (!this.ps) return;
 
-  var data = this.ps[vdName];
+  var data = this.ps[idPrefix];
 
+  // If StorableObject for the key is not ready, create a new one.
   if (!data) {
     data = new StorableObject({});
-    this.ps[vdName] = data;
+    this.ps[idPrefix] = data;
   }
 
-  data[key] = value;
+  // Make sure userConfigKey exists and is an object
+  if (typeof data[this.userConfigKey] !== 'object' || data[this.userConfigKey] === null) {
+    data[this.userConfigKey] = new StorableObject({});
+  }
+
+  data[this.userConfigKey][key] = value;
 
   // Re-assign object to trigger storage write mechanism in wb-rules
-  this.ps[vdName] = data;
+  this.ps[idPrefix] = data;
 
   // Save the key for subsequent cleaning of the storage from unnecessary keys.
   if (this.ps[this.allKeysKey] !== undefined) {
-    this.ps[this.allKeysKey][vdName] = true;
+    this.ps[this.allKeysKey][idPrefix] = true;
   } else {
     this.ps[this.allKeysKey] = new StorableObject({});
-    this.ps[this.allKeysKey][vdName] = true;
+    this.ps[this.allKeysKey][idPrefix] = true;
   }
 };
 
 /**
  * Completely remove the key from the storage
- * @param {string} vdName - Name of the virtual device to delete settings
+ * @param {string} idPrefix Scenario ID prefix
  * @private
  */
-ScenarioStorage.prototype._deleteKey = function(vdName) {
+ScenarioStorage.prototype._deleteKey = function(idPrefix) {
   // Delete device setting
-  if (this.ps[vdName] !== undefined) {
-    this.ps[vdName] = null;
+  if (this.ps[idPrefix] !== undefined) {
+    this.ps[idPrefix] = null;
   }
   
-  // Remove from the list of keys (if it exists)
-  if (this.ps[this.allKeysKey] !== undefined && this.ps[this.allKeysKey][vdName] !== undefined) {
+  // Remove from the allKeysKey (if it exists)
+  if (this.ps[this.allKeysKey] !== undefined && this.ps[this.allKeysKey][idPrefix] !== undefined) {
     var oldKeys = this.ps[this.allKeysKey];
-    delete oldKeys[vdName];
+    delete oldKeys[idPrefix];
     this.ps[this.allKeysKey] = oldKeys;
   }
 };
 
 /**
-   * Removes all unnecessary keys from the storage, runs once after the scenarios is initialized
-   */
-ScenarioStorage.prototype.selfCleanup = function() {
-  // Get currently active devices from VdList
-  var psWBSC = new PersistentStorage("wb-scenarios", {global: true});
-  var activeDevices = [];
-  
-  if (psWBSC["VdList"] !== undefined) {
-    activeDevices = Object.keys(psWBSC["VdList"]);
-    activeDevices = activeDevices.filter(function(key) {
+ * Preparing for subsequent cleaning
+ */
+ScenarioStorage.prototype.prepareCleanup = function() {
+  this.ps[this.currentKeysKey] = new StorableObject({});
+};
+
+/**
+ * Removes all unnecessary keys from the storage, runs once after the scenarios is initialized
+ */
+ScenarioStorage.prototype.doCleanup = function() {
+  var currentKeys = [];
+
+  // Get all running keys from our storage
+  if (this.ps[this.currentKeysKey] !== undefined) {
+    currentKeys = Object.keys(this.ps[this.currentKeysKey]);
+    currentKeys = currentKeys.filter(function(key) {
       return key !== '_psself' && key !== 'constructor' && key !== 'prototype';
     });
   }
@@ -114,9 +166,9 @@ ScenarioStorage.prototype.selfCleanup = function() {
     });
   }
   
-  // Find keys to delete (present in storedKeys, but not in activeDevices)
+  // Find keys to delete (present in storedKeys, but not in currentKeys)
   var keysToDelete = storedKeys.filter(function(key) {
-    return activeDevices.indexOf(key) === -1;
+    return currentKeys.indexOf(key) === -1;
   });
   
   // Remove every extra key
@@ -124,6 +176,12 @@ ScenarioStorage.prototype.selfCleanup = function() {
     this._deleteKey(key);
   }.bind(this));
 };
+
+// TODO (Valerii) Add a metadata for storing service data
+// ScenarioStorage.prototype.getMeta = function() {
+// };
+// ScenarioStorage.prototype.saveMeta = function() {
+// };
 
 /**
  * Singleton getInstance
