@@ -153,6 +153,7 @@ ScenarioBase.prototype.init = function (name, cfg) {
 
   this.genNames = this.generateNames(this.idPrefix);
 
+  // TODO (Valerii) Need refactor for OOP
   var devObj = createBasicVd(this.genNames.vDevice, this.name, this._rules);
   if (!devObj) {
     throw new Error('Basic VD creation failed');

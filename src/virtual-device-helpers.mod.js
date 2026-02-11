@@ -6,6 +6,8 @@
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  */
 
+var scenarioStorage = require("scenario-storage.mod").getInstance();
+
 /**
  * Scenario state enum - defines all possible scenario states
  * Used for setting and checking scenario state in the virtual device
@@ -200,13 +202,15 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
     psWBSC["VdList"][vdName] = true;
   }
   
+  var initialValue = scenarioStorage.getSetting(vdName, ctrlRuleEnabled, true);
+
   var controlCfg = {
     title: {
       en: 'Activate scenario rule',
       ru: 'Активировать правило сценария',
     },
     type: 'switch',
-    value: true,
+    value: initialValue,
     forceDefault: true, // Always must start from enabled state
     order: 1,
   };
@@ -261,6 +265,7 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
   var ruleId = defineRule(vdName + '_change_' + ctrlRuleEnabled, {
     whenChanged: [vdName + '/' + ctrlRuleEnabled],
     then: function (newValue, devName, cellName) {
+      scenarioStorage.setSetting(vdName, ctrlRuleEnabled, newValue);
       toggleRules(managedRulesId, newValue);
     },
   });

@@ -12,6 +12,7 @@
  * @author Mikhail Burchu <mikhail.burchu@wirenboard.com>
  */
 
+var scenarioStorage = require("scenario-storage.mod").getInstance();
 var setupDevicesControl = require("scenario-init-devices-control.mod").setup;
 var setupLightControl = require("scenario-init-light-control.mod").setup;
 var setupThermostat = require("scenario-init-thermostat.mod").setup;
@@ -41,6 +42,7 @@ function main() {
       setupLightControl();
       setupThermostat();
       setupSchedule();
+      scenarioStorage.selfCleanup()
     }
   });
   psWBSC["VdList"] = null; // Removing all previously created virtual devices from persistent storage
