@@ -38,12 +38,10 @@ function main() {
     captureOutput: true,
     captureErrorOutput: true,
     exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
-      scenarioStorage.prepareCleanup()
       setupDevicesControl();
       setupLightControl();
       setupThermostat();
       setupSchedule();
-      scenarioStorage.doCleanup()
     }
   });
   psWBSC["VdList"] = null; // Removing all previously created virtual devices from persistent storage

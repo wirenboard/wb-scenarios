@@ -202,8 +202,6 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
     psWBSC["VdList"] = new StorableObject({});
     psWBSC["VdList"][vdName] = true;
   }
-  
-  var initialValue = scenarioStorage.getSetting(idPrefix, ctrlRuleEnabled, true);
 
   var controlCfg = {
     title: {
@@ -211,7 +209,7 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
       ru: 'Активировать правило сценария',
     },
     type: 'switch',
-    value: initialValue,
+    value: true,
     forceDefault: true, // Always must start from enabled state
     order: 1,
   };
@@ -266,7 +264,7 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   var ruleId = defineRule(vdName + '_change_' + ctrlRuleEnabled, {
     whenChanged: [vdName + '/' + ctrlRuleEnabled],
     then: function (newValue, devName, cellName) {
-      scenarioStorage.setSetting(idPrefix, ctrlRuleEnabled, newValue);
+      scenarioStorage.setUserSetting(idPrefix, ctrlRuleEnabled, newValue);
       toggleRules(managedRulesId, newValue);
     },
   });

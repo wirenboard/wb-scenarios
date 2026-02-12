@@ -5,6 +5,7 @@
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  */
 
+var scenarioStorage = require("scenario-storage.mod").getInstance();
 var getIdPrefix = require('scenarios-general-helpers.mod').getIdPrefix;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
@@ -248,6 +249,8 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function() {
     throw new Error(errMsg);
   }
 
+  this.setScenarioInitialValue()
+
   log.info('Scenario "{}" base initialization completed', this.name);
   return true;
 };
@@ -278,6 +281,21 @@ ScenarioBase.prototype.disable = function () {
   if (this.vd && this.vd.devObj) {
     var ctrl = this.vd.devObj.getControl('rule_enabled');
     if (ctrl) ctrl.setValue(false);
+  }
+};
+
+/**
+ * Set the scenario status from the storage
+ */
+ScenarioBase.prototype.setScenarioInitialValue = function () {
+  if (this.vd && this.vd.devObj) {
+    var ctrlRuleEnabled = 'rule_enabled'
+    var ctrl = this.vd.devObj.getControl(ctrlRuleEnabled);
+    var initialValue = scenarioStorage.getUserSetting(this.idPrefix, ctrlRuleEnabled, true);
+
+    if (ctrl !== initialValue) {
+      ctrl.setValue(initialValue);
+    }
   }
 };
 
