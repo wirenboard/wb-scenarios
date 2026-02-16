@@ -1,3 +1,9 @@
+wb-scenarios (1.6.5) stable; urgency=medium
+
+  * Translate default values in schema to English
+
+ -- Vitalii Gaponov <vitalii.gaponov@wirenboard.com>  Fri, 13 Feb 2026 22:30:00 +0300
+
 wb-scenarios (1.6.4) stable; urgency=medium
 
   * Added a json file to display the menu item

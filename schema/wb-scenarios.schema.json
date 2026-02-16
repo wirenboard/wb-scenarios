@@ -71,7 +71,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "Управление устройствами",
+          "default": "Device control",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 2,
@@ -276,7 +276,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "Управление светом",
+          "default": "Light control",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 2,
@@ -661,7 +661,7 @@
         "name": {
           "type": "string",
           "title": "generalScenarioName",
-          "default": "Теплый пол в комнате",
+          "default": "Heater",
           "minLength": 1,
           "maxLength": 30,
           "propertyOrder": 2,
@@ -821,7 +821,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "Расписание",
+          "default": "Schedule",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 2,
