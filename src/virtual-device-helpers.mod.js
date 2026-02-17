@@ -6,7 +6,7 @@
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  */
 
-var scenarioStorage = require("scenario-storage.mod").getInstance();
+var scenarioPersistentStorage = require("wbsc-persistent-storage.mod").getInstance();
 
 /**
  * Scenario state enum - defines all possible scenario states
@@ -264,7 +264,7 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   var ruleId = defineRule(vdName + '_change_' + ctrlRuleEnabled, {
     whenChanged: [vdName + '/' + ctrlRuleEnabled],
     then: function (newValue, devName, cellName) {
-      scenarioStorage.setUserSetting(idPrefix, ctrlRuleEnabled, newValue);
+      scenarioPersistentStorage.setUserSetting(idPrefix, ctrlRuleEnabled, newValue);
       toggleRules(managedRulesId, newValue);
     },
   });

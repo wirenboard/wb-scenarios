@@ -5,7 +5,7 @@
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  */
 
-var scenarioStorage = require("scenario-storage.mod").getInstance();
+var scenarioPersistentStorage = require("wbsc-persistent-storage.mod").getInstance();
 var getIdPrefix = require('scenarios-general-helpers.mod').getIdPrefix;
 var createBasicVd = require('virtual-device-helpers.mod').createBasicVd;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
@@ -76,6 +76,12 @@ function ScenarioBase() {
    * @type {Object}
    */
   this.ctx = {};
+
+  /**
+   * Reference to the singleton class for working with the persistent storage
+   * @type {Object}
+   */
+  this._ps = null;
 }
 
 /**
@@ -139,6 +145,7 @@ ScenarioBase.prototype.init = function (name, cfg) {
 
   this.name = name;
   this.cfg = cfg;
+  this._ps = scenarioPersistentStorage;
   this.idPrefix = getIdPrefix(name, cfg);
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
@@ -249,7 +256,7 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function() {
     throw new Error(errMsg);
   }
 
-  this.setScenarioInitialValue()
+  this._setScenarioEnableStatusFromStorage()
 
   log.info('Scenario "{}" base initialization completed', this.name);
   return true;
@@ -285,13 +292,41 @@ ScenarioBase.prototype.disable = function () {
 };
 
 /**
- * Set the scenario status from the storage
+ * Get the user setting value from storage
+ * @param {string} key Setting name
+ * @param {any} [defaultValue] Value to return if key not found
+ * @returns {any} Stored value or default
  */
-ScenarioBase.prototype.setScenarioInitialValue = function () {
+ScenarioBase.prototype.getPsUserSetting = function (key, defaultValue) {
+  if (!this._ps) {
+    return defaultValue;
+  }
+
+  return this._ps.getUserSetting(this.idPrefix, key, defaultValue);
+};
+
+/**
+ * Set the user setting value to storage
+ * @param {string} key Setting name
+ * @param {any} value Value to store
+ * @returns {void}
+ */
+ScenarioBase.prototype.setPsUserSetting = function (key, value) {
+  if (!this._ps) {
+    return;
+  }
+
+  return this._ps.setUserSetting(this.idPrefix, key, value);
+};
+
+/**
+ * Set the scenario enable status from the storage if they differ
+ */
+ScenarioBase.prototype._setScenarioEnableStatusFromStorage = function () {
   if (this.vd && this.vd.devObj) {
     var ctrlRuleEnabled = 'rule_enabled'
     var ctrl = this.vd.devObj.getControl(ctrlRuleEnabled);
-    var initialValue = scenarioStorage.getUserSetting(this.idPrefix, ctrlRuleEnabled, true);
+    var initialValue = this.getPsUserSetting(ctrlRuleEnabled, true);
 
     if (ctrl !== initialValue) {
       ctrl.setValue(initialValue);
