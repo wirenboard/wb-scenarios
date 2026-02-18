@@ -6,6 +6,8 @@
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  */
 
+var scenarioPersistentStorage = require("wbsc-persistent-storage.mod").getInstance();
+
 /**
  * Scenario state enum - defines all possible scenario states
  * Used for setting and checking scenario state in the virtual device
@@ -162,12 +164,13 @@ function setVdTotalError(vdObj, errorMsg) {
 
 /**
  * Creates a basic virtual device with a rule switch if it not already exist
+ * @param {string} idPrefix Scenario ID prefix
  * @param {string} vdName The name of the virtual device
  * @param {string} vdTitle The title of the virtual device
  * @param {Array<number>} managedRulesId Array of rule IDs to toggle on switch
  * @returns {Object|null} The virtual device object if created, otherwise null
  */
-function createBasicVd(vdName, vdTitle, managedRulesId) {
+function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   var ctrlRuleEnabled = 'rule_enabled';
   var ctrlInitStatus = 'state';
 
@@ -199,7 +202,7 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
     psWBSC["VdList"] = new StorableObject({});
     psWBSC["VdList"][vdName] = true;
   }
-  
+
   var controlCfg = {
     title: {
       en: 'Activate scenario rule',
@@ -261,6 +264,7 @@ function createBasicVd(vdName, vdTitle, managedRulesId) {
   var ruleId = defineRule(vdName + '_change_' + ctrlRuleEnabled, {
     whenChanged: [vdName + '/' + ctrlRuleEnabled],
     then: function (newValue, devName, cellName) {
+      scenarioPersistentStorage.setUserSetting(idPrefix, ctrlRuleEnabled, newValue);
       toggleRules(managedRulesId, newValue);
     },
   });

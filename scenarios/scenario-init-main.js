@@ -12,6 +12,7 @@
  * @author Mikhail Burchu <mikhail.burchu@wirenboard.com>
  */
 
+var scenarioPersistentStorage = require("wbsc-persistent-storage.mod").getInstance();
 var setupDevicesControl = require("scenario-init-devices-control.mod").setup;
 var setupLightControl = require("scenario-init-light-control.mod").setup;
 var setupThermostat = require("scenario-init-thermostat.mod").setup;
@@ -31,6 +32,13 @@ function main() {
     VdList.forEach(function(Vdevice) {
       cmdList = cmdList + 'mqtt-delete-retained /devices/' + Vdevice + '/# > /dev/null 2>&1;'
     });
+  }
+
+  var registeredScenarios = scenarioPersistentStorage.getStoredScenarioKeys();
+  if (registeredScenarios.length > 0) {
+    log.debug('Found saved scenarios in storage: ' + registeredScenarios.join(', '));
+  } else {
+    log.debug('Persistent storage registry is empty');
   }
 
   runShellCommand(cmdList, { //Removing all previously created virtual devices from topics
