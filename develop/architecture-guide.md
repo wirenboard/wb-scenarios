@@ -17,6 +17,7 @@
 - **scenarios-general-helpers** - общие вспомогательные функции
 - **virtual-device-helpers** - утилиты для работы с виртуальными устройствами
 - **wbsc-wait-controls** - ожидание готовности контролов
+- **ScenarioPersistentStorage** - [хранилище сценариев](develop/scenario-persistent-storage.md)
 
 ## ScenarioBase - обязательные методы для наследников
 
@@ -108,6 +109,8 @@ YourScenario.prototype.defineControlsWaitConfig = function(cfg) {
 - **`enable()`** - включить все правила сценария
 - **`disable()`** - отключить все правила сценария
 - **`init(name, cfg)`** - основной метод инициализации (**НЕ переопределять!**)
+- **`getPsUserSetting()`** - получить значение сценария по ключу из хранилища
+- **`setPsUserSetting()`** - сохранить значение сценария по ключу в хранилище
 
 ## Жизненный цикл сценария
 

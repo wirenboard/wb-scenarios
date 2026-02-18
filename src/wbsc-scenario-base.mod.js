@@ -161,11 +161,13 @@ ScenarioBase.prototype.init = function (name, cfg) {
 
   this.genNames = this.generateNames(this.idPrefix);
 
-  // TODO (Valerii) Need refactor for OOP
+  // TODO(Valerii): Need refactor for OOP
   var devObj = createBasicVd(this.idPrefix, this.genNames.vDevice, this.name, this._rules);
   if (!devObj) {
     throw new Error('Basic VD creation failed');
   }
+
+  scenarioPersistentStorage.setMeta(this.idPrefix, 'vdName', this.genNames.vDevice);
 
   this.vd = {
     devObj: devObj,
@@ -294,7 +296,7 @@ ScenarioBase.prototype.disable = function () {
 /**
  * Get the user setting value from storage
  * @param {string} key Setting name
- * @param {any} [defaultValue] Value to return if key not found
+ * @param {any} defaultValue Value to return if key not found
  * @returns {any} Stored value or default
  */
 ScenarioBase.prototype.getPsUserSetting = function (key, defaultValue) {

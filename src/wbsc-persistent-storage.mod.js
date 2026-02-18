@@ -17,6 +17,7 @@ function ScenarioPersistentStorage() {
   this.storageName = "wb-scenarios-common-persistent-data"
   this.iterableRootObjKey = "scenariosRegistry"
   this.userSettingsKey = "userSettings"
+  this.metaKey = "meta"
   this._initStorage();
 }
 
@@ -30,11 +31,17 @@ function ScenarioPersistentStorage() {
  *    "raspisanie": {
  *      "userSettings": {
  *        "rule_enabled": false
+ *      },
+ *      "meta": {
+ *        "vdName":"wbsc_raspisanie"
  *      }
  *    },
  *    "upravlenie_ustroystvami": {
  *      "userSettings": {
  *        "rule_enabled": true
+ *      },
+ *      "meta": {
+ *        "vdName":"wbsc_upravlenie_ustroystvami"
  *      }
  *    }
  *   }
@@ -43,22 +50,38 @@ function ScenarioPersistentStorage() {
  * Where:
  * scenariosRegistry - key in the persistent storage that stores all the data about the scenarios
  * raspisanie, upravlenie_ustroystvami - idPrefix scenario
- * userSettings - Object with settings for a specific scenario
+ * userSettings - Object with user settings for a specific scenario
+ * meta - Object with meta settings for a specific scenario
  */
 ScenarioPersistentStorage.prototype._initStorage = function() {
   this.ps = new PersistentStorage(this.storageName, { global: true });
+
+  if (!this.ps[this.iterableRootObjKey]) {
+    this.ps[this.iterableRootObjKey] = new StorableObject({});
+  }
+};
+
+/**
+ * Create a empty storage for scenario
+ * @param {string} idPrefix Scenario ID prefix
+ * @returns {void} Stored value or default
+ */
+ScenarioPersistentStorage.prototype._initScenario = function(idPrefix) {
+  this.ps[this.iterableRootObjKey][idPrefix] = new StorableObject({});
+  this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey] = new StorableObject({});
+  this.ps[this.iterableRootObjKey][idPrefix][this.metaKey] = new StorableObject({});
 };
 
 /**
  * Get a user setting value from persistent storage for specific ID prefix
  * @param {string} idPrefix Scenario ID prefix
  * @param {string} key Setting name
- * @param {any} [defaultValue] Value to return if key not found
+ * @param {any} defaultValue Value to return if key not found
  * @returns {any} Stored value or default
  */
 ScenarioPersistentStorage.prototype.getUserSetting = function(idPrefix, key, defaultValue) {
   // If no stored value in the storage, then return defaultValue
-  if (!this.ps || !this.ps[this.iterableRootObjKey] || !this.ps[this.iterableRootObjKey][idPrefix] || !this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey]) {
+  if (!this.ps[this.iterableRootObjKey][idPrefix] || !this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey]) {
     return defaultValue;
   }
   
@@ -71,18 +94,13 @@ ScenarioPersistentStorage.prototype.getUserSetting = function(idPrefix, key, def
  * Set a user setting value to persistent storage for specific ID prefix
  * @param {string} idPrefix Scenario ID prefix
  * @param {string} key Setting name
+ * @param {any} value Value for setting
  * @returns {void}
  */
 ScenarioPersistentStorage.prototype.setUserSetting = function(idPrefix, key, value) {
-  // If not StorableObject for the scenarios storage, create a new one.
-  if (!this.ps[this.iterableRootObjKey]) {
-    this.ps[this.iterableRootObjKey] = new StorableObject({});
-  }
-
   // If not StorableObject for the specific scenario, create a new one.
   if (!this.ps[this.iterableRootObjKey][idPrefix]) {
-    this.ps[this.iterableRootObjKey][idPrefix] = new StorableObject({});
-    this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey] = new StorableObject({});
+    this._initScenario(idPrefix)
   }
 
   this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey][key] = value;
@@ -103,14 +121,42 @@ ScenarioPersistentStorage.prototype.getStoredScenarioKeys = function() {
   });
 };
 
-// TODO (Valerii) Add auto cleanup for storage
-// ScenarioPersistentStorage.prototype.cleanup = function() {
-// };
+/**
+ * Get a meta setting value from persistent storage for specific ID prefix
+ * @param {string} idPrefix Scenario ID prefix
+ * @param {string} key Setting name
+ * @param {any} defaultValue Value to return if key not found
+ * @returns {any} Stored value or default
+ */
+ScenarioPersistentStorage.prototype.getMeta = function(idPrefix, key, defaultValue) {
+  // If no stored value in the storage, then return defaultValue
+  if (!this.ps[this.iterableRootObjKey][idPrefix] || !this.ps[this.iterableRootObjKey][idPrefix][this.metaKey]) {
+    return defaultValue;
+  }
+  
+  var val = this.ps[this.iterableRootObjKey][idPrefix][this.metaKey][key];
 
-// TODO (Valerii) Add a metadata for storing service data
-// ScenarioPersistentStorage.prototype.getMeta = function() {
-// };
-// ScenarioPersistentStorage.prototype.setMeta = function() {
+  return (val !== undefined) ? val : defaultValue;
+};
+
+/**
+ * Set a meta setting value to persistent storage for specific ID prefix
+ * @param {string} idPrefix Scenario ID prefix
+ * @param {string} key Setting name
+ * @param {any} value Value for setting
+ * @returns {void}
+ */
+ScenarioPersistentStorage.prototype.setMeta = function(idPrefix, key, value) {
+  // If not StorableObject for the specific scenario, create a new one.
+  if (!this.ps[this.iterableRootObjKey][idPrefix]) {
+    this._initScenario(idPrefix)
+  }
+
+  this.ps[this.iterableRootObjKey][idPrefix][this.metaKey][key] = value;
+};
+
+// TODO(Valerii): Add auto cleanup for storage
+// ScenarioPersistentStorage.prototype.cleanup = function() {
 // };
 
 /**
