@@ -1,3 +1,10 @@
+wb-scenarios (1.6.5) stable; urgency=medium
+
+  * Add persistent storage for scenario enable status
+  * Fix scenario status reset after wb-rules or controller restart
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 18 Feb 2026 12:26:26 +0300
+
 wb-scenarios (1.6.4) stable; urgency=medium
 
   * Added a json file to display the menu item
