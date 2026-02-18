@@ -1,9 +1,15 @@
-wb-scenarios (1.6.5) stable; urgency=medium
+wb-scenarios (1.6.6) stable; urgency=medium
 
   * Add persistent storage for scenario enable status
   * Fix scenario status reset after wb-rules or controller restart
 
  -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 18 Feb 2026 12:26:26 +0300
+
+wb-scenarios (1.6.5) stable; urgency=medium
+
+  * Translate default values in schema to English
+
+ -- Vitalii Gaponov <vitalii.gaponov@wirenboard.com>  Fri, 13 Feb 2026 22:30:00 +0300
 
 wb-scenarios (1.6.4) stable; urgency=medium
 
