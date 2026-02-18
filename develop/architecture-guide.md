@@ -17,7 +17,7 @@
 - **scenarios-general-helpers** - общие вспомогательные функции
 - **virtual-device-helpers** - утилиты для работы с виртуальными устройствами
 - **wbsc-wait-controls** - ожидание готовности контролов
-- **ScenarioPersistentStorage** - [хранилище сценариев](develop/scenario-persistent-storage.md)
+- **ScenarioPersistentStorage** - [хранилище сценариев](scenario-persistent-storage.md)
 
 ## ScenarioBase - обязательные методы для наследников
 
