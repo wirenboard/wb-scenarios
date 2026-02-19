@@ -1,6 +1,6 @@
 wb-scenarios (1.6.7) stable; urgency=medium
 
-  * add type range to action (setValue, increaseValueBy, decreaseValueBy)
+  * fix: add type range to action (setValue, increaseValueBy, decreaseValueBy)
 
  -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Thu, 19 Feb 2026 15:52:00 +0300
 
