@@ -75,15 +75,20 @@ function addLinkedControlRO(
   });
 
   // Синхронизируем состояния устройства источника и создаваемого показометра
-  var ruleName = cellBaseName;
-  defineRule(ruleName, {
-    whenChanged: srcMqttControl,
-    then: function (newValue, devName, cellName) {
-      dev[vDevName + '/' + cellBaseName] = newValue;
-    },
-  });
+  var ruleName = vDevName + '_' + cellBaseName;
 
-  return true;
+  try {
+    defineRule(ruleName, {
+      whenChanged: srcMqttControl,
+      then: function (newValue, devName, cellName) {
+        dev[vDevName + '/' + cellBaseName] = newValue;
+      },
+    });
+    return true;
+  } catch (error) {
+    log.error('Error in addLinkedControlRO:', error.message);
+    return false;
+  }
 }
 
 /**
