@@ -88,15 +88,15 @@ var actionsTable = {
     handler: setDisable
   },
   'setValue': {
-    reqCtrlTypes: ['value'],
+    reqCtrlTypes: ['value', 'range'],
     handler: setValue
   },
   'increaseValueBy': {
-    reqCtrlTypes: ['value'],
+    reqCtrlTypes: ['value', 'range'],
     handler: increaseValueBy
   },
   'decreaseValueBy': {
-    reqCtrlTypes: ['value'],
+    reqCtrlTypes: ['value', 'range'],
     handler: decreaseValueBy
   }
 };

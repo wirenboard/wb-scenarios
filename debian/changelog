@@ -1,3 +1,9 @@
+wb-scenarios (1.6.8) stable; urgency=medium
+
+  * fix: add type range to action (setValue, increaseValueBy, decreaseValueBy)
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Thu, 19 Feb 2026 15:52:00 +0300
+
 wb-scenarios (1.6.7) stable; urgency=medium
 
   * Fix verbose "current time updated..." log removed
