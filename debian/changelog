@@ -1,3 +1,10 @@
+wb-scenarios (1.6.9) stable; urgency=medium
+
+  * All days of the week are selected by default
+  * Added an error if no any day is selected
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 23 Feb 2026 14:45:14 +0300
+
 wb-scenarios (1.6.8) stable; urgency=medium
 
   * fix: add type range to action (setValue, increaseValueBy, decreaseValueBy)
