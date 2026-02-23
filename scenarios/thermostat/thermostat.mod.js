@@ -437,12 +437,16 @@ function createRules(self, cfg) {
     whenChanged: [cfg.tempSensor],
     then: function (newValue, devName, cellName) {
       vdCtrlCurTemp.setValue(newValue);
-      var data = {
-        curTemp: newValue,
-        targetTemp: vdCtrlTargetTemp.getValue(),
-        hysteresis: cfg.hysteresis,
-      };
-      updateHeatingState(cfg.actuator, data);
+
+      // Only update heating state if scenario is enabled
+      if (vdCtrlEnable.getValue()) {
+        var data = {
+          curTemp: newValue,
+          targetTemp: vdCtrlTargetTemp.getValue(),
+          hysteresis: cfg.hysteresis,
+        };
+        updateHeatingState(cfg.actuator, data);
+      }
     },
   };
   ruleId = defineRule(self.genNames.ruleTempChanged, ruleCfg);
@@ -451,7 +455,9 @@ function createRules(self, cfg) {
     log.error('Failed to create temperature changed rule');
     return false;
   }
-  self.addRule(ruleId);
+
+  // TODO (Valerii): Delete after choosing a solution in INT-761
+  // self.addRule(ruleId);
   log.debug('Temperature changed rule created success with ID "{}"', ruleId);
 
   // Sync actuator status rule
@@ -467,7 +473,9 @@ function createRules(self, cfg) {
     log.error('Failed to create sync actuator status rule');
     return false;
   }
-  self.addRule(ruleId);
+
+  // TODO (Valerii): Delete after choosing a solution in INT-761
+  // self.addRule(ruleId);
   log.debug(
     'Sync actuator status rule created success with ID "{}"',
     ruleId
@@ -478,18 +486,25 @@ function createRules(self, cfg) {
     whenChanged: [self.genNames.vDevice + '/' + vdCtrl.ruleEnabled],
     then: function (newValue, devName, cellName) {
       if (newValue) {
+        // TODO (Valerii): Delete after choosing a solution in INT-761
+        // dev[cfg.actuator] = false;
+
         var data = {
           curTemp: dev[cfg.tempSensor],
           targetTemp: vdCtrlTargetTemp.getValue(),
           hysteresis: cfg.hysteresis,
         };
         updateHeatingState(cfg.actuator, data);
+
+        // TODO (Valerii): Delete after choosing a solution in INT-761
         /* Sync actual device status with VD **/
-        vdCtrlCurTemp.setValue(dev[cfg.tempSensor]);
+        // vdCtrlCurTemp.setValue(dev[cfg.tempSensor]);
       } else {
         dev[cfg.actuator] = false;
+
+        // TODO (Valerii): Delete after choosing a solution in INT-761
         // Sync vd control state, because actuator sync-rule was disabled
-        vdCtrlActuator.setValue(false);
+        // vdCtrlActuator.setValue(false);
       }
     },
   };
