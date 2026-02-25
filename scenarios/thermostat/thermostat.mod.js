@@ -438,7 +438,8 @@ function createRules(self, cfg) {
     then: function (newValue, devName, cellName) {
       vdCtrlCurTemp.setValue(newValue);
 
-      // Only update heating state if scenario is enabled
+      // Cause this rule is not disabled when the scenario is disabled,
+      // We update heating state only if the scenario is enabled
       if (vdCtrlEnable.getValue()) {
         var data = {
           curTemp: newValue,
@@ -455,7 +456,8 @@ function createRules(self, cfg) {
     log.error('Failed to create temperature changed rule');
     return false;
   }
-
+  
+  // This rule not disable when user use switch in virtual device
   log.debug('Temperature changed rule created success with ID "{}"', ruleId);
 
   // Sync actuator status rule
@@ -471,7 +473,8 @@ function createRules(self, cfg) {
     log.error('Failed to create sync actuator status rule');
     return false;
   }
-
+  
+  // This rule not disable when user use switch in virtual device
   log.debug(
     'Sync actuator status rule created success with ID "{}"',
     ruleId
