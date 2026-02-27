@@ -28,6 +28,9 @@
         },
         {
           "$ref": "#/definitions/schedule"
+        },
+        {
+          "$ref": "#/definitions/astronomicalTimer"
         }
       ],
       "_format": "wb-multiple",
@@ -976,6 +979,320 @@
         "scheduleDaysOfWeek",
         "outControls"
       ]
+    },
+    "astronomicalTimer": {
+      "title": "astroTimerScenarioName",
+      "type": "object",
+      "description": "astroTimerScenarioDescription",
+      "_format": "grid",
+      "defaultProperties": [
+        "componentVersion",
+        "scenarioType",
+        "enable",
+        "name",
+        "idPrefix",
+        "latitude",
+        "longitude",
+        "astroEvent",
+        "offset",
+        "customElevation",
+        "customAngleDirection",
+        "scheduleDaysOfWeek",
+        "outControls"
+      ],
+      "options": {
+        "display_required_only": true
+      },
+      "properties": {
+        "componentVersion": {
+          "type": "integer",
+          "title": "Config version",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "scenarioType": {
+          "type": "string",
+          "enum": ["astronomicalTimer"],
+          "default": "astronomicalTimer",
+          "options": {
+            "hidden": true
+          }
+        },
+        "enable": {
+          "title": "generalScenarioGenerateRuleTitle",
+          "type": "boolean",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "name": {
+          "title": "generalScenarioName",
+          "type": "string",
+          "default": "Astronomical Timer",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "idPrefix": {
+          "title": "generalScenarioIdPrefixTitle",
+          "type": "string",
+          "description": "generalScenarioIdPrefixDescription",
+          "pattern": "^[0-9a-zA-Z_]+$",
+          "default": "",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
+          }
+        },
+        "latitude": {
+          "title": "astroTimerLatitudeTitle",
+          "description": "astroTimerLatitudeDescription",
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "default": 55.7558,
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "longitude": {
+          "title": "astroTimerLongitudeTitle",
+          "description": "astroTimerLongitudeDescription",
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180,
+          "default": 37.6173,
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "astroEvent": {
+          "title": "astroTimerEventTitle",
+          "type": "string",
+          "enum": [
+            "sunrise",
+            "sunset",
+            "dawn",
+            "dusk",
+            "nauticalDawn",
+            "nauticalDusk",
+            "nightEnd",
+            "night",
+            "goldenHour",
+            "goldenHourEnd",
+            "solarNoon",
+            "nadir",
+            "customAngle"
+          ],
+          "default": "sunrise",
+          "propertyOrder": 6,
+          "options": {
+            "enum_titles": [
+              "astroTimerEventSunrise",
+              "astroTimerEventSunset",
+              "astroTimerEventDawn",
+              "astroTimerEventDusk",
+              "astroTimerEventNauticalDawn",
+              "astroTimerEventNauticalDusk",
+              "astroTimerEventNightEnd",
+              "astroTimerEventNight",
+              "astroTimerEventGoldenHour",
+              "astroTimerEventGoldenHourEnd",
+              "astroTimerEventSolarNoon",
+              "astroTimerEventNadir",
+              "astroTimerEventCustomAngle"
+            ],
+            "grid_columns": 6
+          }
+        },
+        "offset": {
+          "title": "astroTimerOffsetTitle",
+          "description": "astroTimerOffsetDescription",
+          "type": "integer",
+          "minimum": -720,
+          "maximum": 720,
+          "default": 0,
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "customElevation": {
+          "title": "astroTimerCustomElevationTitle",
+          "description": "astroTimerCustomElevationDescription",
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90,
+          "default": 0,
+          "propertyOrder": 8,
+          "options": {
+            "grid_columns": 6,
+            "wb": {
+              "show_editor": true
+            },
+            "dependencies": {
+              "astroEvent": ["customAngle"]
+            }
+          }
+        },
+        "customAngleDirection": {
+          "title": "astroTimerCustomDirectionTitle",
+          "type": "string",
+          "enum": ["rising", "setting"],
+          "default": "rising",
+          "propertyOrder": 9,
+          "options": {
+            "enum_titles": [
+              "astroTimerDirectionRising",
+              "astroTimerDirectionSetting"
+            ],
+            "grid_columns": 6,
+            "wb": {
+              "show_editor": true
+            },
+            "dependencies": {
+              "astroEvent": ["customAngle"]
+            }
+          }
+        },
+        "scheduleDaysOfWeek": {
+          "title": "scheduleDaysOfWeekTitle",
+          "type": "array",
+          "_format": "checkbox",
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+          "propertyOrder": 10,
+          "options": {
+            "grid_columns": 12
+          },
+          "items": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "options": {
+              "enum_titles": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
+              ]
+            }
+          }
+        },
+        "outControls": {
+          "type": "array",
+          "minItems": 1,
+          "propertyOrder": 11,
+          "title": "astroTimerActionsTitle",
+          "description": "astroTimerActionsDescription",
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "astroTimerActionObjTitle",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "generalMqttTopicNameTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "outControls_behaviorType_title",
+                "enum": [
+                  "toggle",
+                  "setEnable",
+                  "setDisable",
+                  "setValue",
+                  "increaseValueBy",
+                  "decreaseValueBy"
+                ],
+                "default": "setDisable",
+                "options": {
+                  "enum_titles": [
+                    "Toggle (switch)",
+                    "Enable (switch)",
+                    "Disable (switch)",
+                    "generalEnumSetValue",
+                    "Increase Value By",
+                    "Decrease Value By"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "generalActionValueTitle",
+                "description": "outControls_actionValue_description",
+                "default": 0
+              }
+            },
+            "required": [
+              "control",
+              "behaviorType"
+            ]
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "enable",
+        "name",
+        "latitude",
+        "longitude",
+        "astroEvent",
+        "scheduleDaysOfWeek",
+        "outControls"
+      ]
     }
   },
   "properties": {
@@ -1071,7 +1388,38 @@
       "scheduleDaysOfWeekTitle": "Days of the Week",
       "scheduleActionsTitle": "Actions",
       "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
-      "scheduleActionObjTitle": "Action"
+      "scheduleActionObjTitle": "Action",
+
+      "astroTimerScenarioName": "Astronomical Timer",
+      "astroTimerScenarioDescription": "Executes actions based on astronomical events (sunrise, sunset, twilight, etc.) with optional time offset.<br>Calculations are performed locally using geographic coordinates.",
+      "astroTimerLatitudeTitle": "Latitude",
+      "astroTimerLatitudeDescription": "Location latitude (-90 to 90)",
+      "astroTimerLongitudeTitle": "Longitude",
+      "astroTimerLongitudeDescription": "Location longitude (-180 to 180)",
+      "astroTimerEventTitle": "Astronomical Event",
+      "astroTimerOffsetTitle": "Offset (minutes)",
+      "astroTimerOffsetDescription": "Offset in minutes. Negative = before event, positive = after event.",
+      "astroTimerCustomElevationTitle": "Sun elevation angle (°)",
+      "astroTimerCustomElevationDescription": "Custom sun angle above horizon in degrees. Use positive values if terrain (mountains, buildings) blocks the horizon.",
+      "astroTimerCustomDirectionTitle": "Direction",
+      "astroTimerDirectionRising": "Rising (morning)",
+      "astroTimerDirectionSetting": "Setting (evening)",
+      "astroTimerEventSunrise": "Sunrise",
+      "astroTimerEventSunset": "Sunset",
+      "astroTimerEventDawn": "Civil Dawn (-6°)",
+      "astroTimerEventDusk": "Civil Dusk (-6°)",
+      "astroTimerEventNauticalDawn": "Nautical Dawn (-12°)",
+      "astroTimerEventNauticalDusk": "Nautical Dusk (-12°)",
+      "astroTimerEventNightEnd": "Astronomical Dawn (-18°)",
+      "astroTimerEventNight": "Astronomical Dusk (-18°)",
+      "astroTimerEventGoldenHour": "Golden Hour (evening, +6°)",
+      "astroTimerEventGoldenHourEnd": "Golden Hour End (morning, +6°)",
+      "astroTimerEventSolarNoon": "Solar Noon",
+      "astroTimerEventNadir": "Nadir (darkest moment)",
+      "astroTimerEventCustomAngle": "Custom angle",
+      "astroTimerActionsTitle": "Actions",
+      "astroTimerActionsDescription": "Actions to be executed at the astronomical event time:",
+      "astroTimerActionObjTitle": "Action"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1159,7 +1507,39 @@
       "Sunday": "Воскресенье",
       "scheduleActionsTitle": "Действия",
       "scheduleActionsDescription": "Действия, которые будут выполнены в назначенное время:",
-      "scheduleActionObjTitle": "Действие"
+      "scheduleActionObjTitle": "Действие",
+
+      "astroTimerScenarioName": "Астрономический таймер",
+      "astroTimerScenarioDescription": "Выполняет действия по астрономическим событиям (восход, закат, сумерки и др.) со смещением по времени.<br>Расчёт выполняется локально по географическим координатам.",
+      "astroTimerLatitudeTitle": "Широта",
+      "astroTimerLatitudeDescription": "Широта местоположения (от -90 до 90)",
+      "astroTimerLongitudeTitle": "Долгота",
+      "astroTimerLongitudeDescription": "Долгота местоположения (от -180 до 180)",
+      "astroTimerEventTitle": "Астрономическое событие",
+      "astroTimerOffsetTitle": "Смещение (минуты)",
+      "astroTimerOffsetDescription": "Смещение в минутах. Отрицательное = до события, положительное = после.",
+      "astroTimerCustomElevationTitle": "Угол солнца над горизонтом (°)",
+      "astroTimerCustomElevationDescription": "Свой угол солнца над горизонтом в градусах. Используйте положительные значения если рельеф (горы, здания) загораживает горизонт.",
+      "astroTimerCustomDirectionTitle": "Направление",
+      "astroTimerDirectionRising": "Восход (утро)",
+      "astroTimerDirectionSetting": "Закат (вечер)",
+      "astroTimerEventSunrise": "Восход",
+      "astroTimerEventSunset": "Закат",
+      "astroTimerEventDawn": "Гражданский рассвет (-6°)",
+      "astroTimerEventDusk": "Гражданские сумерки (-6°)",
+      "astroTimerEventNauticalDawn": "Навигационный рассвет (-12°)",
+      "astroTimerEventNauticalDusk": "Навигационные сумерки (-12°)",
+      "astroTimerEventNightEnd": "Астрономический рассвет (-18°)",
+      "astroTimerEventNight": "Астрономические сумерки (-18°)",
+      "astroTimerEventGoldenHour": "Золотой час (вечер, +6°)",
+      "astroTimerEventGoldenHourEnd": "Золотой час конец (утро, +6°)",
+      "astroTimerEventSolarNoon": "Солнечный полдень",
+      "astroTimerEventNadir": "Надир (самый тёмный момент)",
+      "astroTimerEventCustomAngle": "Свой угол",
+      "Astronomical Timer": "Астрономический таймер",
+      "astroTimerActionsTitle": "Действия",
+      "astroTimerActionsDescription": "Действия, которые будут выполнены при наступлении астрономического события:",
+      "astroTimerActionObjTitle": "Действие"
     }
   }
 }
