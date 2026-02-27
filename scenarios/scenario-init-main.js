@@ -85,14 +85,29 @@ function migrateConfig() {
   if (latestVersion > currentVersion) {
     config.configMigrationVersion = latestVersion;
     var json = JSON.stringify(config, null, 4);
-    runShellCommand(
-      "cat > " + CONFIG_PATH + " << 'WBEOF'\n" + json + "\nWBEOF"
-    );
-    log.info(
-      'Config migrated from v{} to v{}',
-      currentVersion,
-      latestVersion
-    );
+    runShellCommand('cat > ' + CONFIG_PATH, {
+      input: json,
+      captureErrorOutput: true,
+      exitCallback: function exitWriteConfig(
+        exitCode,
+        capturedOutput,
+        capturedErrorOutput
+      ) {
+        if (exitCode !== 0) {
+          log.error(
+            'Failed to write migrated config (exit code {}): {}',
+            exitCode,
+            capturedErrorOutput
+          );
+          return;
+        }
+        log.info(
+          'Config migrated from v{} to v{}',
+          currentVersion,
+          latestVersion
+        );
+      },
+    });
   }
 }
 

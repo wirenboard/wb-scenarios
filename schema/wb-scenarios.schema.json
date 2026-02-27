@@ -989,6 +989,15 @@
         "hidden": true
       }
     },
+    "configMigrationVersion": {
+      "type": "integer",
+      "title": "Config migration version",
+      "default": 0,
+      "minimum": 0,
+      "options": {
+        "hidden": true
+      }
+    },
     "scenarios": {
       "type": "array",
       "title": "Scenarios",
