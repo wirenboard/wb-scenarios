@@ -29,9 +29,9 @@ function initializeScenario(scenarioCfg) {
   var scenario = new CustomTypeSc();
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
-    latitude: scenarioCfg.latitude != null ? scenarioCfg.latitude : 55.7558,
+    latitude: scenarioCfg.latitude != null ? scenarioCfg.latitude : 51.1694,
     longitude:
-      scenarioCfg.longitude != null ? scenarioCfg.longitude : 37.6173,
+      scenarioCfg.longitude != null ? scenarioCfg.longitude : 71.4491,
     astroEvent: scenarioCfg.astroEvent || 'sunrise',
     offset: scenarioCfg.offset != null ? scenarioCfg.offset : 0,
     customElevation:
