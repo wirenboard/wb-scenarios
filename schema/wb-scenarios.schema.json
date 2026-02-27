@@ -5,7 +5,7 @@
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
     "service": "wb-scenarios-reloader",
-    "hide":true
+    "hide": true
   },
   "options": {
     "wb": {
@@ -125,7 +125,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -183,7 +183,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -340,7 +340,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -439,7 +439,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -503,7 +503,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -591,7 +591,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -743,7 +743,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder":  "generalMqttTopicNamePlaceholder"
+              "placeholder": "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -761,7 +761,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder":  "generalMqttTopicNamePlaceholder"
+              "placeholder": "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -793,9 +793,7 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": [
-            "schedule"
-          ],
+          "enum": ["schedule"],
           "default": "schedule",
           "options": {
             "hidden": true
@@ -916,7 +914,15 @@
           "_format": "checkbox",
           "uniqueItems": true,
           "minItems": 1,
-          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+          "default": [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday"
+          ],
           "propertyOrder": 9,
           "options": {
             "grid_columns": 12,
@@ -1020,10 +1026,7 @@
                 "default": 0
               }
             },
-            "required": [
-              "control",
-              "behaviorType"
-            ]
+            "required": ["control", "behaviorType"]
           }
         }
       },
