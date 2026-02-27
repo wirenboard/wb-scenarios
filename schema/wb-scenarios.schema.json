@@ -5,7 +5,7 @@
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
     "service": "wb-scenarios-reloader",
-    "hide":true
+    "hide": true
   },
   "options": {
     "wb": {
@@ -125,7 +125,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -183,7 +183,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -340,7 +340,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -439,7 +439,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -503,7 +503,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -591,7 +591,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder":  "generalMqttTopicNamePlaceholder"
+                        "placeholder": "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -743,7 +743,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder":  "generalMqttTopicNamePlaceholder"
+              "placeholder": "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -761,7 +761,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder":  "generalMqttTopicNamePlaceholder"
+              "placeholder": "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -793,9 +793,7 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": [
-            "schedule"
-          ],
+          "enum": ["schedule"],
           "default": "schedule",
           "options": {
             "hidden": true
@@ -803,7 +801,7 @@
         },
         "componentVersion": {
           "type": "integer",
-          "default": 1,
+          "default": 2,
           "options": {
             "hidden": true
           }
@@ -843,26 +841,94 @@
             "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
           }
         },
+        "scheduleMode": {
+          "title": "scheduleModeTitle",
+          "type": "string",
+          "enum": ["absoluteTime", "periodicTimer"],
+          "default": "absoluteTime",
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 12,
+            "enum_titles": [
+              "scheduleModeAbsoluteTime",
+              "scheduleModePeriodicTimer"
+            ]
+          }
+        },
         "scheduleTime": {
           "title": "scheduleTimeTitle",
           "type": "string",
           "_format": "time",
           "default": "12:00",
-          "propertyOrder": 4,
+          "propertyOrder": 5,
           "options": {
-            "grid_columns": 1
+            "grid_columns": 1,
+            "dependencies": {
+              "scheduleMode": ["absoluteTime"]
+            }
+          }
+        },
+        "periodicIntervalMinutes": {
+          "title": "periodicIntervalMinutesTitle",
+          "description": "periodicIntervalMinutesDescription",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440,
+          "default": 60,
+          "propertyOrder": 6,
+          "options": {
+            "grid_columns": 6,
+            "dependencies": {
+              "scheduleMode": ["periodicTimer"]
+            }
+          }
+        },
+        "periodicDurationMinutes": {
+          "title": "periodicDurationMinutesTitle",
+          "description": "periodicDurationMinutesDescription",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1440,
+          "default": 0,
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 6,
+            "dependencies": {
+              "scheduleMode": ["periodicTimer"]
+            }
+          }
+        },
+        "everyDay": {
+          "title": "everyDayTitle",
+          "type": "boolean",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 8,
+          "options": {
+            "grid_columns": 12
           }
         },
         "scheduleDaysOfWeek": {
-          "title": "scheduleDaysOfWeekTitle",
+          "title": " ",
           "type": "array",
           "_format": "checkbox",
           "uniqueItems": true,
           "minItems": 1,
-          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-          "propertyOrder": 5,
+          "default": [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday"
+          ],
+          "propertyOrder": 9,
           "options": {
-            "grid_columns": 12
+            "grid_columns": 12,
+            "dependencies": {
+              "everyDay": [false]
+            }
           },
           "items": {
             "type": "string",
@@ -891,7 +957,7 @@
         "outControls": {
           "type": "array",
           "minItems": 1,
-          "propertyOrder": 6,
+          "propertyOrder": 10,
           "_title_note": "When options-> compact: true - this title not shown",
           "title": "scheduleActionsTitle",
           "description": "scheduleActionsDescription",
@@ -960,10 +1026,7 @@
                 "default": 0
               }
             },
-            "required": [
-              "control",
-              "behaviorType"
-            ]
+            "required": ["control", "behaviorType"]
           }
         }
       },
@@ -972,8 +1035,7 @@
         "componentVersion",
         "enable",
         "name",
-        "scheduleTime",
-        "scheduleDaysOfWeek",
+        "scheduleMode",
         "outControls"
       ]
     }
@@ -1066,8 +1128,16 @@
       "thermostatActuatorTitle": "Heater channel",
 
       "scheduleScenarioName": "Schedule",
-      "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
+      "scheduleScenarioDescription": "Executes actions at a specified time or periodically.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
+      "scheduleModeTitle": "Mode",
+      "scheduleModeAbsoluteTime": "At specified time",
+      "scheduleModePeriodicTimer": "Periodic timer",
       "scheduleTimeTitle": "Execution Time",
+      "periodicIntervalMinutesTitle": "Repeat interval (minutes)",
+      "periodicIntervalMinutesDescription": "Execute actions every N minutes (1-1440)",
+      "periodicDurationMinutesTitle": "ON duration (minutes)",
+      "periodicDurationMinutesDescription": "Auto-reverse actions after N minutes (0 = no auto-reverse). Must be less than the repeat interval.",
+      "everyDayTitle": "Every day",
       "scheduleDaysOfWeekTitle": "Days of the Week",
       "scheduleActionsTitle": "Actions",
       "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
@@ -1147,8 +1217,16 @@
       "thermostatActuatorTitle": "Канал нагревателя",
 
       "scheduleScenarioName": "Расписание",
-      "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
+      "scheduleScenarioDescription": "Выполняет действия в заданное время или периодически.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
+      "scheduleModeTitle": "Режим",
+      "scheduleModeAbsoluteTime": "В заданное время",
+      "scheduleModePeriodicTimer": "Периодический таймер",
       "scheduleTimeTitle": "Время выполнения",
+      "periodicIntervalMinutesTitle": "Интервал повторения (минуты)",
+      "periodicIntervalMinutesDescription": "Выполнять действия каждые N минут (1-1440)",
+      "periodicDurationMinutesTitle": "Длительность включения (минуты)",
+      "periodicDurationMinutesDescription": "Автоотмена действий через N минут (0 = без автоотмены). Должно быть меньше интервала повторения.",
+      "everyDayTitle": "Каждый день",
       "scheduleDaysOfWeekTitle": "Дни недели",
       "Monday": "Понедельник",
       "Tuesday": "Вторник",

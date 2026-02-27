@@ -1,3 +1,11 @@
+wb-scenarios (1.8.0) stable; urgency=medium
+
+  * Added periodic timer mode to schedule scenario
+  * Auto-reverse actions after configurable ON duration
+  * Every day checkbox to simplify day-of-week selection
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Fri, 28 Feb 2026 00:30:00 +0300
+
 wb-scenarios (1.7.1) stable; urgency=medium
 
   * All days of the week are selected by default
