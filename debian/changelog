@@ -1,3 +1,10 @@
+wb-scenarios (1.7.2) stable; urgency=medium
+
+  * Fix: schedule scenarios with empty scheduleDaysOfWeek break web UI on
+    upgrade from v1.7.0. Add config migration system to fill missing days.
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Fri, 27 Feb 2026 12:00:00 +0300
+
 wb-scenarios (1.7.1) stable; urgency=medium
 
   * All days of the week are selected by default
