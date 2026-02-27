@@ -27,9 +27,13 @@ var DAY_NAMES = {
  * @typedef {Object} ScheduleConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
- * @property {string} scheduleTime - Time to trigger in HH:MM format
+ * @property {string} scheduleMode - "absoluteTime" or "periodicTimer"
+ * @property {string} scheduleTime - Time to trigger in HH:MM format (absoluteTime mode)
+ * @property {boolean} everyDay - If true, run on all 7 days
  * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays
  *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+ * @property {number} periodicIntervalMinutes - Repeat interval in minutes (1-1440, periodicTimer mode)
+ * @property {number} periodicDurationMinutes - ON duration in minutes (0-1440, 0=no auto-reverse)
  * @property {Array<Object>} outControls - Array of output controls to change
  *   Each object contains:
  *   - control: Control name ('device/control')
@@ -50,7 +54,12 @@ function ScheduleScenario() {
    * @type {Object}
    */
   this.context = {
-    cronRule: null
+    cronRule: null,
+    autoReverseTimerId: null,
+    savedValues: {},
+    isOnPhaseActive: false,
+    periodicTimerId: null,
+    countdownTimerId: null
   };
 }
 
@@ -72,6 +81,7 @@ ScheduleScenario.prototype.generateNames = function(idPrefix) {
     ruleMain: baseRuleName + 'mainRule',
     ruleManual: baseRuleName + 'manualRule',
     ruleTimeUpdate: baseRuleName + 'timeUpdateRule',
+    ruleAutoReverse: baseRuleName + 'autoReverseRule',
   };
 };
 
@@ -132,13 +142,13 @@ function validateControls(controls, table) {
   for (var i = 0; i < controls.length; i++) {
     var curCtrlName = controls[i].control;
     var curBehaviorType = controls[i].behaviorType;
-    var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
 
-    // behaviorType present in table
     if (!table[curBehaviorType]) {
       log.error("Behavior type '" + curBehaviorType + "' not found in table");
       return false;
     }
+
+    var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
 
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
       log.debug("Error: Control '" + curCtrlName + "' is not of a valid type");
@@ -187,40 +197,58 @@ function parseScheduleTime(cfg) {
  * @returns {boolean} True if configuration is valid, false otherwise
  */
 ScheduleScenario.prototype.validateCfg = function(cfg) {
-  // Parse scheduleTime first
-  if (!parseScheduleTime(cfg)) {
-    return false;
+  // If everyDay is true, force all 7 days
+  if (cfg.everyDay === true) {
+    cfg.scheduleDaysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   }
-  
-  // Check time values
-  if (typeof cfg.hours !== 'number' || cfg.hours < 0 || cfg.hours > 23) {
-    log.error('Schedule validation error: hours must be a number between 0 and 23');
-    return false;
+
+  // Branch validation by mode
+  if (cfg.scheduleMode === 'periodicTimer') {
+    // Validate periodic interval
+    if (typeof cfg.periodicIntervalMinutes !== 'number' ||
+        cfg.periodicIntervalMinutes < 1 || cfg.periodicIntervalMinutes > 1440) {
+      log.error('Schedule validation error: periodicIntervalMinutes must be 1-1440');
+      return false;
+    }
+    // Validate periodic duration
+    if (typeof cfg.periodicDurationMinutes !== 'number' ||
+        cfg.periodicDurationMinutes < 0 || cfg.periodicDurationMinutes > 1440) {
+      log.error('Schedule validation error: periodicDurationMinutes must be 0-1440');
+      return false;
+    }
+    // Duration must be less than interval
+    if (cfg.periodicDurationMinutes > 0 && cfg.periodicDurationMinutes >= cfg.periodicIntervalMinutes) {
+      log.error('Schedule validation error: duration must be less than interval');
+      return false;
+    }
+  } else {
+    // absoluteTime mode — parse scheduleTime
+    if (!parseScheduleTime(cfg)) {
+      return false;
+    }
+    if (typeof cfg.hours !== 'number' || cfg.hours < 0 || cfg.hours > 23) {
+      log.error('Schedule validation error: hours must be a number between 0 and 23');
+      return false;
+    }
+    if (typeof cfg.minutes !== 'number' || cfg.minutes < 0 || cfg.minutes > 59) {
+      log.error('Schedule validation error: minutes must be a number between 0 and 59');
+      return false;
+    }
+    if (typeof cfg.seconds !== 'number' || cfg.seconds < 0 || cfg.seconds > 59) {
+      log.error('Schedule validation error: seconds must be a number between 0 and 59');
+      return false;
+    }
   }
-  
-  if (typeof cfg.minutes !== 'number' || cfg.minutes < 0 || cfg.minutes > 59) {
-    log.error('Schedule validation error: minutes must be a number between 0 and 59');
-    return false;
-  }
-  
-  if (typeof cfg.seconds !== 'number' || cfg.seconds < 0 || cfg.seconds > 59) {
-    log.error('Schedule validation error: seconds must be a number between 0 and 59');
-    return false;
-  }
-  
-  // Check scheduleDaysOfWeek array
+
+  // Check scheduleDaysOfWeek array (used by both modes)
   if (!Array.isArray(cfg.scheduleDaysOfWeek)) {
     log.error('Schedule validation error: scheduleDaysOfWeek must be an array');
     return false;
   }
-  
-  // Check that at least one day is selected
   if (cfg.scheduleDaysOfWeek.length === 0) {
     log.error('Schedule validation error: at least one day of the week must be selected');
     return false;
   }
-  
-  // Validate scheduleDaysOfWeek values
   var validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var day = cfg.scheduleDaysOfWeek[i];
@@ -229,26 +257,24 @@ ScheduleScenario.prototype.validateCfg = function(cfg) {
       return false;
     }
   }
-  
+
   // Check outControls array
   if (!Array.isArray(cfg.outControls)) {
     log.error('Schedule validation error: outControls must be an array');
     return false;
   }
-  
   if (cfg.outControls.length === 0) {
     log.error('Schedule validation error: at least one output control must be specified');
     return false;
   }
-  
+
   // Check control types
   var isOutputControlsValid = validateControls(cfg.outControls, aTable.actionsTable);
-  
   if (!isOutputControlsValid) {
     log.error("One or more controls are not of a valid type");
     return false;
   }
-  
+
   log.debug('Schedule configuration validation successful');
   return true;
 };
@@ -504,30 +530,295 @@ function buildCronExpression(cfg) {
 }
 
 /**
+ * Map of forward action to its reverse action
+ */
+var REVERSE_ACTION_MAP = {
+  'toggle': 'toggle',
+  'setEnable': 'setDisable',
+  'setDisable': 'setEnable',
+  'setValue': 'setValue',           // will use savedValues
+  'increaseValueBy': 'decreaseValueBy',
+  'decreaseValueBy': 'increaseValueBy'
+};
+
+/**
+ * Builds cron expression for periodic timer
+ * Returns null for intervals that can't be expressed in cron
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {string|null} Cron expression or null
+ */
+function buildPeriodicCronExpression(cfg) {
+  var interval = cfg.periodicIntervalMinutes;
+
+  var dayMap = {
+    'sunday': '0', 'monday': '1', 'tuesday': '2', 'wednesday': '3',
+    'thursday': '4', 'friday': '5', 'saturday': '6'
+  };
+  var daysOfWeek = [];
+  for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
+    var dayName = cfg.scheduleDaysOfWeek[i];
+    if (dayMap[dayName]) {
+      daysOfWeek.push(dayMap[dayName]);
+    }
+  }
+  if (daysOfWeek.length === 0) return null;
+  var dayString = daysOfWeek.join(',');
+
+  // Intervals that divide 60 evenly: use minute step
+  if (interval < 60 && (60 % interval === 0)) {
+    return '0 */' + interval + ' * * * ' + dayString;
+  }
+  // Exact hour multiples: use hour step
+  if (interval >= 60 && (interval % 60 === 0)) {
+    var hourStep = interval / 60;
+    if (24 % hourStep === 0) {
+      return '0 0 */' + hourStep + ' * * ' + dayString;
+    }
+  }
+  // Can't express in cron — fallback to setTimeout
+  return null;
+}
+
+/**
+ * Checks if today is a scheduled day
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {boolean}
+ */
+function isTodayScheduled(cfg) {
+  var now = new Date();
+  var currentDay = now.getDay();
+  var dayNumberToName = {
+    0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
+    4: 'thursday', 5: 'friday', 6: 'saturday'
+  };
+  var todayName = dayNumberToName[currentDay];
+  return cfg.scheduleDaysOfWeek.indexOf(todayName) !== -1;
+}
+
+/**
+ * Creates a self-rescheduling setTimeout-based periodic timer
+ * @param {ScheduleScenario} self
+ * @param {ScheduleConfig} cfg
+ */
+function createPeriodicSetTimeoutRule(self, cfg) {
+  var intervalMs = cfg.periodicIntervalMinutes * 60 * 1000;
+
+  function scheduleTick() {
+    self.context.periodicTimerId = setTimeout(function() {
+      if (isTodayScheduled(cfg)) {
+        dev[self.genNames.vDevice + "/execute_now"] = true;
+      }
+      scheduleTick();
+    }, intervalMs);
+  }
+
+  scheduleTick();
+  log.debug('Periodic setTimeout timer created with interval: ' + intervalMs + 'ms');
+}
+
+/**
+ * Saves current values of all output controls before forward actions
+ * @param {ScheduleScenario} self
+ * @param {ScheduleConfig} cfg
+ */
+function saveCurrentValues(self, cfg) {
+  self.context.savedValues = {};
+  for (var i = 0; i < cfg.outControls.length; i++) {
+    var controlName = cfg.outControls[i].control;
+    try {
+      self.context.savedValues[controlName] = dev[controlName];
+      log.debug('Saved value for ' + controlName + ': ' + self.context.savedValues[controlName]);
+    } catch (e) {
+      log.error('Failed to save value for ' + controlName + ': ' + (e.message || e));
+    }
+  }
+}
+
+/**
+ * Executes auto-reverse actions: restores controls to previous state
+ * @param {ScheduleScenario} self
+ * @param {ScheduleConfig} cfg
+ */
+function executeAutoReverse(self, cfg) {
+  log.debug('Executing auto-reverse for scenario: ' + self.idPrefix);
+
+  for (var i = 0; i < cfg.outControls.length; i++) {
+    var outControl = cfg.outControls[i];
+    var controlName = outControl.control;
+    var forwardAction = outControl.behaviorType;
+    var reverseAction = REVERSE_ACTION_MAP[forwardAction];
+
+    if (!reverseAction) {
+      log.error('No reverse action for: ' + forwardAction);
+      continue;
+    }
+
+    try {
+      var actualValue = dev[controlName];
+      var newValue;
+
+      if (forwardAction === 'setValue') {
+        // Restore saved value
+        newValue = self.context.savedValues[controlName];
+        if (newValue === undefined) {
+          log.error('No saved value for ' + controlName + ', skipping reverse');
+          continue;
+        }
+      } else {
+        var actionValue = outControl.actionValue;
+        newValue = aTable.actionsTable[reverseAction].handler(actualValue, actionValue);
+      }
+
+      log.debug('Auto-reverse: ' + controlName + ' -> ' + newValue);
+      dev[controlName] = newValue;
+    } catch (e) {
+      log.error('Failed to auto-reverse ' + controlName + ': ' + (e.message || e));
+    }
+  }
+
+  self.context.isOnPhaseActive = false;
+  self.context.savedValues = {};
+  log.debug('Auto-reverse completed for scenario: ' + self.idPrefix);
+}
+
+/**
+ * Updates countdown timer display, decrementing by 1 second
+ * @param {ScheduleScenario} self
+ */
+function updateCountdown(self) {
+  var remaining = dev[self.genNames.vDevice + '/remaining_on_time'];
+  if (remaining >= 1) {
+    dev[self.genNames.vDevice + '/remaining_on_time'] = remaining - 1;
+  }
+}
+
+/**
+ * Starts the countdown display timer
+ * @param {ScheduleScenario} self
+ * @param {number} durationSec - Duration in seconds
+ */
+function startCountdown(self, durationSec) {
+  dev[self.genNames.vDevice + '/remaining_on_time'] = durationSec;
+  // 1-second tick to update display
+  function tick() {
+    self.context.countdownTimerId = setTimeout(function() {
+      updateCountdown(self);
+      var remaining = dev[self.genNames.vDevice + '/remaining_on_time'];
+      if (remaining >= 1) {
+        tick();
+      }
+    }, 1000);
+  }
+  tick();
+}
+
+/**
+ * Stops countdown and clears display
+ * @param {ScheduleScenario} self
+ */
+function stopCountdown(self) {
+  if (self.context.countdownTimerId) {
+    clearTimeout(self.context.countdownTimerId);
+    self.context.countdownTimerId = null;
+  }
+  dev[self.genNames.vDevice + '/remaining_on_time'] = 0;
+}
+
+/**
+ * Cancels the ON phase: auto-reverse, stop timers
+ * @param {ScheduleScenario} self
+ * @param {ScheduleConfig} cfg
+ */
+function cancelOnPhase(self, cfg) {
+  if (!self.context.isOnPhaseActive) return;
+  log.debug('Cancelling ON phase for scenario: ' + self.idPrefix);
+
+  if (self.context.autoReverseTimerId) {
+    clearTimeout(self.context.autoReverseTimerId);
+    self.context.autoReverseTimerId = null;
+  }
+  stopCountdown(self);
+  executeAutoReverse(self, cfg);
+}
+
+/**
+ * Creates rule to watch rule_enabled and cancel ON phase if disabled
+ * @param {ScheduleScenario} self
+ * @param {ScheduleConfig} cfg
+ */
+function createPeriodicDisableWatchRule(self, cfg) {
+  // NOTE: Do NOT use self.addRule() here — the base class toggleRules()
+  // disables all managed rules when rule_enabled changes, which would
+  // disable this rule before it can fire and execute the auto-reverse.
+  var watchControl = self.genNames.vDevice + "/rule_enabled";
+  defineRule(self.genNames.ruleAutoReverse, {
+    whenChanged: [watchControl],
+    then: function(newValue) {
+      if (!newValue) {
+        // Stop periodic setTimeout chain if running
+        if (self.context.periodicTimerId) {
+          clearTimeout(self.context.periodicTimerId);
+          self.context.periodicTimerId = null;
+        }
+        // Cancel ON phase (auto-reverse + stop countdown)
+        if (self.context.isOnPhaseActive) {
+          log.info('Rule disabled during ON phase, executing immediate reverse');
+          cancelOnPhase(self, cfg);
+        }
+      } else {
+        // Re-enable: restart setTimeout chain if needed (non-cron intervals)
+        if (!self.context.periodicTimerId && !buildPeriodicCronExpression(cfg)) {
+          createPeriodicSetTimeoutRule(self, cfg);
+        }
+      }
+    }
+  });
+}
+
+/**
  * Handler for schedule trigger
  * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
  * @param {ScheduleConfig} cfg - Configuration object
  */
 function scheduleHandler(self, cfg) {
   log.debug('Schedule triggered for scenario: ' + self.idPrefix);
-  
+
   var isActive = dev[self.genNames.vDevice + "/rule_enabled"];
   if (!isActive) {
     log.debug('Scenario is disabled, skipping actions');
     return;
   }
-  
-  // Execute all configured actions
+
+  var isPeriodicWithDuration = (cfg.scheduleMode === 'periodicTimer' && cfg.periodicDurationMinutes > 0);
+
+  // If periodic with duration and ON phase is active — restart the cycle
+  if (isPeriodicWithDuration && self.context.isOnPhaseActive) {
+    log.debug('ON phase active, restarting cycle');
+    if (self.context.autoReverseTimerId) {
+      clearTimeout(self.context.autoReverseTimerId);
+      self.context.autoReverseTimerId = null;
+    }
+    stopCountdown(self);
+    // Execute auto-reverse first, then re-trigger forward actions
+    executeAutoReverse(self, cfg);
+  }
+
+  // Save current values before forward actions (for auto-reverse)
+  if (isPeriodicWithDuration) {
+    saveCurrentValues(self, cfg);
+  }
+
+  // Execute all configured forward actions
   for (var i = 0; i < cfg.outControls.length; i++) {
     var outControl = cfg.outControls[i];
     var curCtrlName = outControl.control;
     var curUserAction = outControl.behaviorType;
     var curActionValue = outControl.actionValue;
-    
+
     try {
       var actualValue = dev[curCtrlName];
       var newCtrlValue = aTable.actionsTable[curUserAction].handler(actualValue, curActionValue);
-      
+
       log.debug("Control " + curCtrlName + " will be updated to state: " + newCtrlValue);
       dev[curCtrlName] = newCtrlValue;
       log.debug("Control " + curCtrlName + " successfully updated");
@@ -535,12 +826,31 @@ function scheduleHandler(self, cfg) {
       log.error("Failed to update control " + curCtrlName + ": " + (error.message || error));
     }
   }
-  
-  // Update next execution time display
-  var nextExecution = getNextExecutionTime(cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
-  dev[self.genNames.vDevice + "/next_execution"] = nextExecutionText;
-  
+
+  // Schedule auto-reverse if periodic mode with duration
+  if (isPeriodicWithDuration) {
+    self.context.isOnPhaseActive = true;
+    var durationMs = cfg.periodicDurationMinutes * 60 * 1000;
+    var durationSec = cfg.periodicDurationMinutes * 60;
+
+    log.debug('Scheduling auto-reverse in ' + cfg.periodicDurationMinutes + ' minutes');
+
+    self.context.autoReverseTimerId = setTimeout(function() {
+      self.context.autoReverseTimerId = null;
+      stopCountdown(self);
+      executeAutoReverse(self, cfg);
+    }, durationMs);
+
+    startCountdown(self, durationSec);
+  }
+
+  // Update next execution time display (absolute time mode only)
+  if (cfg.scheduleMode !== 'periodicTimer') {
+    var nextExecution = getNextExecutionTime(cfg);
+    var nextExecutionText = formatNextExecution(nextExecution);
+    dev[self.genNames.vDevice + "/next_execution"] = nextExecutionText;
+  }
+
   log.debug("Schedule actions completed for scenario: " + self.idPrefix);
 }
 
@@ -555,14 +865,7 @@ function scheduleHandler(self, cfg) {
 ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start init schedule scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
-  
-  // Validate configuration
-  if (!this.validateCfg(cfg)) {
-    log.error('Configuration validation failed');
-    this.setState(ScenarioState.ERROR);
-    return false;
-  }
-  
+
   // Add manual execution button to virtual device
   this.vd.devObj.addControl('execute_now', {
     title: {
@@ -572,7 +875,7 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     type: 'pushbutton',
     order: 2
   });
-  
+
   // Add current time display control
   var currentTimeText = formatCurrentTime();
   this.vd.devObj.addControl('current_time', {
@@ -582,42 +885,107 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     },
     type: 'text',
     value: currentTimeText,
-    forceDefault: true, // Always must start from enabled state
+    forceDefault: true,
     readonly: true,
     order: 3
   });
-  
-  // Add next execution time display control
-  var nextExecution = getNextExecutionTime(cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
-  this.vd.devObj.addControl('next_execution', {
-    title: {
-      en: 'Next execution',
-      ru: 'Следующее выполнение'
-    },
-    type: 'text',
-    value: nextExecutionText,
-    forceDefault: true, // Always must start from enabled state
-    readonly: true,
-    order: 4
-  });
-  
-  log.debug('Start cron rule creation');
-  var ruleCreated = createCronRule(this, cfg);
-  
-  if (!ruleCreated) {
-    this.setState(ScenarioState.ERROR);
-    return false;
+
+  var self = this;
+
+  if (cfg.scheduleMode === 'periodicTimer') {
+    // --- Periodic timer mode ---
+    log.debug('Initializing periodic timer mode');
+
+    // Add remaining ON time display (only if duration > 0)
+    if (cfg.periodicDurationMinutes > 0) {
+      this.vd.devObj.addControl('remaining_on_time', {
+        title: {
+          en: 'Auto-reverse in',
+          ru: 'Автоотмена через'
+        },
+        units: 's',
+        type: 'value',
+        value: 0,
+        forceDefault: true,
+        readonly: true,
+        order: 4
+      });
+    }
+
+    // Try cron first, fall back to setTimeout
+    var periodicCron = buildPeriodicCronExpression(cfg);
+    if (periodicCron) {
+      log.debug('Using cron for periodic timer: ' + periodicCron);
+      var cronRuleId = defineRule(this.genNames.ruleMain, {
+        when: cron(periodicCron),
+        then: function() {
+          dev[self.genNames.vDevice + "/execute_now"] = true;
+        }
+      });
+      if (!cronRuleId) {
+        log.error('Failed to create periodic cron rule');
+        this.setState(ScenarioState.CONFIG_INVALID);
+        return false;
+      }
+      this.addRule(cronRuleId);
+    } else {
+      log.debug('Using setTimeout for periodic timer (interval not cron-friendly)');
+      createPeriodicSetTimeoutRule(this, cfg);
+    }
+
+    // Manual trigger rule (button handler)
+    var manualRuleId = defineRule(this.genNames.ruleManual, {
+      whenChanged: [this.genNames.vDevice + "/execute_now"],
+      then: function(newValue) {
+        if (newValue) {
+          log.debug('Button execution triggered for scenario: ' + self.idPrefix);
+          scheduleHandler(self, cfg);
+        }
+      }
+    });
+    if (!manualRuleId) {
+      log.error('Failed to create manual trigger rule');
+      this.setState(ScenarioState.CONFIG_INVALID);
+      return false;
+    }
+    this.addRule(manualRuleId);
+
+    // Watch rule: stops setTimeout chain + auto-reverse on disable
+    createPeriodicDisableWatchRule(this, cfg);
+
+  } else {
+    // --- Absolute time mode (existing behavior) ---
+
+    // Add next execution time display control
+    var nextExecution = getNextExecutionTime(cfg);
+    var nextExecutionText = formatNextExecution(nextExecution);
+    this.vd.devObj.addControl('next_execution', {
+      title: {
+        en: 'Next execution',
+        ru: 'Следующее выполнение'
+      },
+      type: 'text',
+      value: nextExecutionText,
+      forceDefault: true,
+      readonly: true,
+      order: 4
+    });
+
+    log.debug('Start cron rule creation');
+    var ruleCreated = createCronRule(this, cfg);
+    if (!ruleCreated) {
+      this.setState(ScenarioState.CONFIG_INVALID);
+      return false;
+    }
   }
-  
+
   log.debug('Start time update rule creation');
   var timeRuleCreated = createTimeUpdateRule(this);
-  
   if (!timeRuleCreated) {
-    this.setState(ScenarioState.ERROR);
+    this.setState(ScenarioState.CONFIG_INVALID);
     return false;
   }
-  
+
   this.setState(ScenarioState.NORMAL);
   log.debug('Schedule scenario initialized successfully');
   return true;

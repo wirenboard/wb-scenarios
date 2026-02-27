@@ -14,7 +14,7 @@ var Logger = require('logger.mod').Logger;
  */
 var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
-  reqVerScenario: 1, // Required version of this scenario type config
+  reqVerScenario: 2, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
   scenarioTypeStr: 'schedule'
 };
@@ -32,8 +32,12 @@ function initializeScenario(scenarioCfg) {
   var scenario = new CustomTypeSc();
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
+    scheduleMode: scenarioCfg.scheduleMode || "absoluteTime",
     scheduleTime: scenarioCfg.scheduleTime || "12:00",
+    everyDay: scenarioCfg.everyDay !== undefined ? scenarioCfg.everyDay : true,
     scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
+    periodicIntervalMinutes: scenarioCfg.periodicIntervalMinutes || 60,
+    periodicDurationMinutes: scenarioCfg.periodicDurationMinutes || 0,
     outControls: scenarioCfg.outControls || []
   };
 
