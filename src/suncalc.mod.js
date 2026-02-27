@@ -43,28 +43,17 @@ function toDays(date) {
 var e = rad * 23.4397; // obliquity of the Earth
 
 function rightAscension(l, b) {
-  return atan(
-    sin(l) * cos(e) - tan(b) * sin(e),
-    cos(l)
-  );
+  return atan(sin(l) * cos(e) - tan(b) * sin(e), cos(l));
 }
 function declination(l, b) {
-  return asin(
-    sin(b) * cos(e) + cos(b) * sin(e) * sin(l)
-  );
+  return asin(sin(b) * cos(e) + cos(b) * sin(e) * sin(l));
 }
 
 function azimuth(H, phi, dec) {
-  return atan(
-    sin(H),
-    cos(H) * sin(phi) - tan(dec) * cos(phi)
-  );
+  return atan(sin(H), cos(H) * sin(phi) - tan(dec) * cos(phi));
 }
 function altitude(H, phi, dec) {
-  return asin(
-    sin(phi) * sin(dec) +
-      cos(phi) * cos(dec) * cos(H)
-  );
+  return asin(sin(phi) * sin(dec) + cos(phi) * cos(dec) * cos(H));
 }
 
 function siderealTime(d, lw) {
@@ -75,10 +64,7 @@ function astroRefraction(h) {
   if (h < 0) {
     h = 0;
   }
-  return (
-    0.0002967 /
-    Math.tan(h + 0.00312536 / (h + 0.08901179))
-  );
+  return 0.0002967 / Math.tan(h + 0.00312536 / (h + 0.08901179));
 }
 
 // general sun calculations
@@ -89,11 +75,7 @@ function solarMeanAnomaly(d) {
 
 function eclipticLongitude(M) {
   // equation of center
-  var C =
-    rad *
-    (1.9148 * sin(M) +
-      0.02 * sin(2 * M) +
-      0.0003 * sin(3 * M));
+  var C = rad * (1.9148 * sin(M) + 0.02 * sin(2 * M) + 0.0003 * sin(3 * M));
   var P = rad * 102.9372; // perihelion of the Earth
   return M + C + P + PI;
 }
@@ -152,16 +134,11 @@ function approxTransit(Ht, lw, n) {
   return J0 + (Ht + lw) / (2 * PI) + n;
 }
 function solarTransitJ(ds, M, L) {
-  return (
-    J2000 + ds + 0.0053 * sin(M) - 0.0069 * sin(2 * L)
-  );
+  return J2000 + ds + 0.0053 * sin(M) - 0.0069 * sin(2 * L);
 }
 
 function hourAngle(h, phi, d) {
-  return acos(
-    (sin(h) - sin(phi) * sin(d)) /
-      (cos(phi) * cos(d))
-  );
+  return acos((sin(h) - sin(phi) * sin(d)) / (cos(phi) * cos(d)));
 }
 function observerAngle(height) {
   return (-2.076 * Math.sqrt(height)) / 60;
@@ -236,10 +213,7 @@ function getMoonPosition(date, lat, lng) {
     c = moonCoords(d),
     H = siderealTime(d, lw) - c.ra,
     h = altitude(H, phi, c.dec),
-    pa = atan(
-      sin(H),
-      tan(phi) * cos(c.dec) - sin(c.dec) * cos(H)
-    );
+    pa = atan(sin(H), tan(phi) * cos(c.dec) - sin(c.dec) * cos(H));
 
   return {
     azimuth: azimuth(H, phi, c.dec),
@@ -255,23 +229,17 @@ function getMoonIllumination(date) {
     m = moonCoords(d),
     sdist = 149598000,
     phi = acos(
-      sin(s.dec) * sin(m.dec) +
-        cos(s.dec) * cos(m.dec) * cos(s.ra - m.ra)
+      sin(s.dec) * sin(m.dec) + cos(s.dec) * cos(m.dec) * cos(s.ra - m.ra)
     ),
-    inc = atan(
-      sdist * sin(phi),
-      m.dist - sdist * cos(phi)
-    ),
+    inc = atan(sdist * sin(phi), m.dist - sdist * cos(phi)),
     angle = atan(
       cos(s.dec) * sin(s.ra - m.ra),
-      sin(s.dec) * cos(m.dec) -
-        cos(s.dec) * sin(m.dec) * cos(s.ra - m.ra)
+      sin(s.dec) * cos(m.dec) - cos(s.dec) * sin(m.dec) * cos(s.ra - m.ra)
     );
 
   return {
     fraction: (1 + cos(inc)) / 2,
-    phase:
-      0.5 + (0.5 * inc * (angle < 0 ? -1 : 1)) / PI,
+    phase: 0.5 + (0.5 * inc * (angle < 0 ? -1 : 1)) / PI,
     angle: angle,
   };
 }
@@ -289,21 +257,13 @@ function getMoonTimes(date, lat, lng, inUTC) {
   }
 
   var hc = 0.133 * rad;
-  var h0 =
-    getMoonPosition(t, lat, lng).altitude - hc;
+  var h0 = getMoonPosition(t, lat, lng).altitude - hc;
   var rise, set, ye;
   var i, h1, h2, a, b, xe, d, roots, x1, x2, dx;
 
   for (i = 1; i <= 24; i += 2) {
-    h1 =
-      getMoonPosition(hoursLater(t, i), lat, lng)
-        .altitude - hc;
-    h2 =
-      getMoonPosition(
-        hoursLater(t, i + 1),
-        lat,
-        lng
-      ).altitude - hc;
+    h1 = getMoonPosition(hoursLater(t, i), lat, lng).altitude - hc;
+    h2 = getMoonPosition(hoursLater(t, i + 1), lat, lng).altitude - hc;
 
     a = (h0 + h2) / 2 - h1;
     b = (h2 - h0) / 2;
