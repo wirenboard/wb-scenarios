@@ -1,3 +1,9 @@
+wb-scenarios (1.7.2) stable; urgency=medium
+
+  * Update LICENSE
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Mon, 02 Mar 2026 15:15:00 +0300
+
 wb-scenarios (1.7.1) stable; urgency=medium
 
   * All days of the week are selected by default
