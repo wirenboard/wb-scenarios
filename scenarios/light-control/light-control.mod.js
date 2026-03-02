@@ -302,23 +302,32 @@ function addCustomControlsToVirtualDevice(self, cfg) {
  * Adds all linked device controls to the virtual device for debugging
  * @param {Object} self - Reference to the LightControlScenario instance
  * @param {Object} cfg - Configuration object
+ * @returns {boolean} Indicates whether all device controls were created successfully.
  */
 function addAllLinkedDevicesToVd(self, cfg) {
+  var result;
+
   if (cfg.lightDevices.length > 0) {
-    addLinkedControlsArray(self, cfg.lightDevices, 'light_device');
+    result = addLinkedControlsArray(self, cfg.lightDevices, 'light_device');
+    if (!result) return false;
   }
 
   if (cfg.motionSensors.length > 0) {
-    addLinkedControlsArray(self, cfg.motionSensors, 'motion_sensor');
+    result = addLinkedControlsArray(self, cfg.motionSensors, 'motion_sensor');
+    if (!result) return false;
   }
 
   if (cfg.openingSensors.length > 0) {
-    addLinkedControlsArray(self, cfg.openingSensors, 'opening_sensor');
+    result = addLinkedControlsArray(self, cfg.openingSensors, 'opening_sensor');
+    if (!result) return false;
   }
 
   if (cfg.lightSwitches.length > 0) {
-    addLinkedControlsArray(self, cfg.lightSwitches, 'light_switch');
+    result = addLinkedControlsArray(self, cfg.lightSwitches, 'light_switch');
+    if (!result) return false;
   }
+  
+  return true
 }
 
 /**
@@ -326,8 +335,12 @@ function addAllLinkedDevicesToVd(self, cfg) {
  * @param {Object} self - Reference to the LightControlScenario instance
  * @param {Array} arrayOfControls - Array of controls to link
  * @param {string} cellPrefix - Prefix for control names in the virtual device
+ * @returns {boolean} Indicates whether all controls successfully created
  */
 function addLinkedControlsArray(self, arrayOfControls, cellPrefix) {
+  // Flag to indicate that all controls were created successfully
+  var allControlsCreated = true;
+
   for (var i = 0; i < arrayOfControls.length; i++) {
     var curMqttControl = arrayOfControls[i].mqttTopicName;
     var cellName = cellPrefix + '_' + i;
@@ -342,9 +355,13 @@ function addLinkedControlsArray(self, arrayOfControls, cellPrefix) {
       log.error(
         'Failed to add ' + cellPrefix + ' ctrl for ' + curMqttControl
       );
+      allControlsCreated = false
+    } else {
+      log.debug('Success add ' + cellPrefix + ' ctrl for ' + curMqttControl);
     }
-    log.debug('Success add ' + cellPrefix + ' ctrl for ' + curMqttControl);
   }
+
+  return allControlsCreated
 }
 
 /**
@@ -1195,7 +1212,8 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   if (cfg.isDebugEnabled === true) {
     log.debug('Scenario debug enabled - add extra controls to VD');
     var self = this;
-    addAllLinkedDevicesToVd(self, cfg);
+    ok = addAllLinkedDevicesToVd(self, cfg);
+    if (!ok) return false;
   }
 
   log.debug('Start all required rules creation');

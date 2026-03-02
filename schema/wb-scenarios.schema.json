@@ -858,8 +858,10 @@
           "type": "array",
           "_format": "checkbox",
           "uniqueItems": true,
+          "minItems": 1,
+          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
           "propertyOrder": 5,
-                    "options": {
+          "options": {
             "grid_columns": 12
           },
           "items": {

@@ -322,7 +322,6 @@ function createTimeUpdateRule(self) {
     then: function(newValue, devName, cellName) {
       var currentTimeText = formatCurrentTime();
       dev[self.genNames.vDevice + "/current_time"] = currentTimeText;
-      log.debug('Current time updated: ' + currentTimeText);
     }
   });
   

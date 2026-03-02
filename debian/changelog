@@ -1,3 +1,35 @@
+wb-scenarios (1.7.1) stable; urgency=medium
+
+  * All days of the week are selected by default
+  * Added an error if no any day is selected
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Thu, 26 Feb 2026 11:14:15 +0300
+
+wb-scenarios (1.7.0) stable; urgency=medium
+
+  * Fixed an issue where the second "Light Control" scenario wouldn't work when debug mode was enabled
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Thu, 26 Feb 2026 08:29:23 +0300
+
+wb-scenarios (1.6.9) stable; urgency=medium
+
+  * Added display of the current temperature in the Thermostat scenario
+  * Added display of the current status of the control responsible for heating
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 23 Feb 2026 18:01:43 +0300
+
+wb-scenarios (1.6.8) stable; urgency=medium
+
+  * fix: add type range to action (setValue, increaseValueBy, decreaseValueBy)
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Thu, 19 Feb 2026 15:52:00 +0300
+
+wb-scenarios (1.6.7) stable; urgency=medium
+
+  * Fix verbose "current time updated..." log removed
+
+ -- Victor Fedorov <victor.fedorov@wirenboard.com>  Thu, 19 Feb 2026 17:26:26 +0300
+
 wb-scenarios (1.6.6) stable; urgency=medium
 
   * Add persistent storage for scenario enable status
