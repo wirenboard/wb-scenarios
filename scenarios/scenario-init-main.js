@@ -17,6 +17,7 @@ var setupDevicesControl = require("scenario-init-devices-control.mod").setup;
 var setupLightControl = require("scenario-init-light-control.mod").setup;
 var setupThermostat = require("scenario-init-thermostat.mod").setup;
 var setupSchedule = require("scenario-init-schedule.mod").setup;
+var setupAstronomicalTimer = require("scenario-init-astronomical-timer.mod").setup;
 var Logger = require('logger.mod').Logger;
 
 var log = new Logger('WBSC-init-main');
@@ -49,6 +50,7 @@ function main() {
       setupLightControl();
       setupThermostat();
       setupSchedule();
+      setupAstronomicalTimer();
     }
   });
   psWBSC["VdList"] = null; // Removing all previously created virtual devices from persistent storage
