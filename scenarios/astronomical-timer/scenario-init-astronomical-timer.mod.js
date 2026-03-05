@@ -2,13 +2,18 @@
  * @file scenario-init-astronomical-timer.mod.js
  * @description Script for init scenarios of the
  *   astronomicalTimer type
+ * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
 var scHelpers = require('scenarios-general-helpers.mod');
-// var CustomTypeSc =
-//   require('astronomical-timer.mod').AstronomicalTimerScenario;
+var CustomTypeSc =
+  require('astronomical-timer.mod').AstronomicalTimerScenario;
 var Logger = require('logger.mod').Logger;
 
+/**
+ * Scenario initialization configuration parameters
+ * @typedef {Object} ScenarioConfig
+ */
 var CFG = {
   reqVerGeneralCfg: 1,
   reqVerScenario: 1,
@@ -20,71 +25,67 @@ var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
 
 /**
  * Initializes a scenario using the specified settings
- * @param {object} scenarioCfg
+ * @param {object} scenarioCfg - The scenario object containing the settings
  * @returns {void}
  */
 function initializeScenario(scenarioCfg) {
   log.debug('Processing scenario config: "{}"', JSON.stringify(scenarioCfg));
 
-//   var scenario = new CustomTypeSc();
-//   var cfg = {
-//     idPrefix: scenarioCfg.idPrefix,
-//     latitude: scenarioCfg.latitude != null ? scenarioCfg.latitude : 51.1694,
-//     longitude:
-//       scenarioCfg.longitude != null ? scenarioCfg.longitude : 71.4491,
-//     astroEvent: scenarioCfg.astroEvent || 'sunrise',
-//     offset: scenarioCfg.offset != null ? scenarioCfg.offset : 0,
-//     customElevation:
-//       scenarioCfg.customElevation != null ? scenarioCfg.customElevation : 0,
-//     customAngleDirection: scenarioCfg.customAngleDirection || 'rising',
-//     scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
-//     outControls: scenarioCfg.outControls || [],
-//   };
+  var scenario = new CustomTypeSc();
+  var evtSettings = scenarioCfg.eventSettings || {};
+  var cfg = {
+    idPrefix: scenarioCfg.idPrefix,
+    coordinates: scenarioCfg.coordinates || {},
+    eventSettings: {
+      astroEvent: evtSettings.astroEvent || 'sunrise',
+      offset: evtSettings.offset != null ? evtSettings.offset : 0,
+    },
+    scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
+    outControls: scenarioCfg.outControls || [],
+  };
 
-//   try {
-//     var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
-//     if (isBasicVdCreated !== true) {
-//       log.error(
-//         'VD creation failed for scenario: "{}" idPrefix: "{}"',
-//         scenarioCfg.name,
-//         scenario.idPrefix
-//       );
-//       return;
-//     }
+  try {
+    var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
+    if (isBasicVdCreated !== true) {
+      log.error(
+        'Virtual device creation failed for scenario name: "{}" with idPrefix: "{}"',
+        scenarioCfg.name,
+        scenario.idPrefix
+      );
+      return;
+    }
 
-//     log.debug(
-//       'VD created, init continues async for: "{}" idPrefix: "{}"',
-//       scenarioCfg.name,
-//       scenario.idPrefix
-//     );
+    log.debug(
+      'VD created successfully, init continue asynchronously for scenario name: "{}" with idPrefix: "{}"',
+      scenarioCfg.name,
+      scenario.idPrefix
+    );
 
-//     var scenarioStorage = scHelpers.getGlobalScenarioStore(
-//       CFG.scenarioTypeStr
-//     );
-//     scenarioStorage[scenario.idPrefix] = scenario;
-//     log.debug('Stored in global registry: {}', scenario.idPrefix);
-//   } catch (error) {
-//     log.error(
-//       'Exception during init: "{}" for: "{}"',
-//       error.message || error,
-//       scenarioCfg.name
-//     );
-//   }
+    var scenarioStorage = scHelpers.getGlobalScenarioStore(
+      CFG.scenarioTypeStr
+    );
+    scenarioStorage[scenario.idPrefix] = scenario;
+    log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
+  } catch (error) {
+    log.error(
+      'Exception during scenario initialization: "{}" for scenario: "{}"', 
+      error.message || error, 
+      scenarioCfg.name
+    );
+  }
 }
 
 /**
- * Find all enabled scenarios of the requested type
- * @param {Array} listScenario
- * @param {string} searchScenarioType
- * @returns {Array}
+ * Find and return all enabled scenarios of the requested type
+ * @param {Array} listScenario - Array of all scenarios from the config
+ * @param {string} searchScenarioType - Scenario type we are looking for
+ * @returns {Array} Array of active scenarios of that type
  */
 function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
   var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
     var scenario = listScenario[i];
-    var isTarget =
-      scenario.scenarioType === searchScenarioType &&
-      scenario.enable === true;
+    var isTarget = scenario.scenarioType === searchScenarioType;
     if (isTarget) {
       matchedScenarios.push(scenario);
     }
@@ -122,7 +123,7 @@ function setup() {
     initializeScenario(targetScenarios[i]);
   }
 
-  log.debug('Initialization of "{}" completed', CFG.scenarioTypeStr);
+  log.debug('Initialization of "{}" type scenarios completed', CFG.scenarioTypeStr);
 }
 
 exports.setup = setup;

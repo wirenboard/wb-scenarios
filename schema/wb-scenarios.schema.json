@@ -134,7 +134,7 @@
                     "data": "devices"
                   }
                 },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                 "minLength": 3
               },
               "behaviorType": {
@@ -160,7 +160,7 @@
           "minItems": 1,
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "outControls_arr_title",
+          "title": "generalActionsTitle",
           "description": "outControls_arr_description",
           "_format": "table",
           "options": {
@@ -174,7 +174,7 @@
             }
           },
           "items": {
-            "title": "outControls_obj_title",
+            "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
               "control": {
@@ -192,7 +192,7 @@
                     "data": "devices"
                   }
                 },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                 "minLength": 3
               },
               "behaviorType": {
@@ -358,7 +358,7 @@
                         "data": "devices"
                       }
                     },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                     "minLength": 3
                   },
                   "behaviorType": {
@@ -457,7 +457,7 @@
                         "data": "devices"
                       }
                     },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                     "minLength": 3
                   }
                 },
@@ -521,7 +521,7 @@
                         "data": "devices"
                       }
                     },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                     "minLength": 3
                   },
                   "behaviorType": {
@@ -609,7 +609,7 @@
                         "data": "devices"
                       }
                     },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                     "minLength": 3
                   },
                   "behaviorType": {
@@ -866,7 +866,7 @@
           }
         },
         "scheduleDaysOfWeek": {
-          "title": "scheduleDaysOfWeekTitle",
+          "title": "generalDaysOfWeekTitle",
           "type": "array",
           "_format": "checkbox",
           "uniqueItems": true,
@@ -889,13 +889,13 @@
             ],
             "options": {
               "enum_titles": [
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday"
+                "generalMonday",
+                "generalTuesday",
+                "generalWednesday",
+                "generalThursday",
+                "generalFriday",
+                "generalSaturday",
+                "generalSunday"
               ]
             }
           }
@@ -905,8 +905,8 @@
           "minItems": 1,
           "propertyOrder": 6,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "scheduleActionsTitle",
-          "description": "scheduleActionsDescription",
+          "title": "generalActionsTitle",
+          "description": "generalActionsDescription",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -919,7 +919,7 @@
             }
           },
           "items": {
-            "title": "scheduleActionObjTitle",
+            "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
               "control": {
@@ -937,7 +937,7 @@
                     "data": "devices"
                   }
                 },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                 "minLength": 3
               },
               "behaviorType": {
@@ -1147,7 +1147,7 @@
           "required": ["astroEvent", "offset"]
         },
         "scheduleDaysOfWeek": {
-          "title": "scheduleDaysOfWeekTitle",
+          "title": "generalDaysOfWeekTitle",
           "type": "array",
           "_format": "checkbox",
           "uniqueItems": true,
@@ -1170,13 +1170,13 @@
             ],
             "options": {
               "enum_titles": [
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday"
+                "generalMonday",
+                "generalTuesday",
+                "generalWednesday",
+                "generalThursday",
+                "generalFriday",
+                "generalSaturday",
+                "generalSunday"
               ]
             }
           }
@@ -1186,8 +1186,8 @@
           "minItems": 1,
           "propertyOrder": 6,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "scheduleActionsTitle",
-          "description": "scheduleActionsDescription",
+          "title": "generalActionsTitle",
+          "description": "generalActionsDescription",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -1200,7 +1200,7 @@
             }
           },
           "items": {
-            "title": "scheduleActionObjTitle",
+            "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
               "control": {
@@ -1218,7 +1218,7 @@
                     "data": "devices"
                   }
                 },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                 "minLength": 3
               },
               "behaviorType": {
@@ -1322,13 +1322,22 @@
       "generalErrorRegexpPatternMessageMqttTopicName": "Does not match the format <device>/<control>",
       "generalEnumSetValue": "Set Value",
       "generalSensorArrTitle": "Elements list",
+      "generalActionsTitle": "Actions",
+      "generalActionObjTitle": "Action",
+      "generalActionsDescription": "Actions to be executed at the scheduled time:",
+      "generalDaysOfWeekTitle": "Days of the Week",
+      "generalMonday": "Monday",
+      "generalTuesday": "Tuesday",
+      "generalWednesday": "Wednesday",
+      "generalThursday": "Thursday",
+      "generalFriday": "Friday",
+      "generalSaturday": "Saturday",
+      "generalSunday": "Sunday",
 
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
-      "outControls_arr_title": "Actions",
-      "outControls_obj_title": "Action",
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
@@ -1370,9 +1379,6 @@
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
       "scheduleTimeTitle": "Execution Time",
-      "scheduleDaysOfWeekTitle": "Days of the Week",
-      "scheduleActionsTitle": "Actions",
-      "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
       "scheduleActionObjTitle": "Action",
 
       "astroTimerScenarioName": "Astronomical Timer",
@@ -1413,6 +1419,17 @@
       "generalErrorRegexpPatternMessageMqttTopicName": "Не соответствует формату <устройство>/<контрол>",
       "generalEnumSetValue": "Установить значение",
       "generalSensorArrTitle": "Список элементов",
+      "generalActionsTitle": "Действия",
+      "generalActionObjTitle": "Действие",
+      "generalActionsDescription": "Действия, которые будут выполнены в назначенное время:",
+      "generalDaysOfWeekTitle": "Дни недели",
+      "generalMonday": "Понедельник",
+      "generalTuesday": "Вторник",
+      "generalWednesday": "Среда",
+      "generalThursday": "Четверг",
+      "generalFriday": "Пятница",
+      "generalSaturday": "Суббота",
+      "generalSunday": "Воскресенье",
 
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
@@ -1421,8 +1438,6 @@
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию:",
-      "outControls_arr_title": "Действия",
-      "outControls_obj_title": "Действие",
       "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации:",
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_description": "Если необходимо",
@@ -1475,17 +1490,6 @@
       "scheduleScenarioName": "Расписание",
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
       "scheduleTimeTitle": "Время выполнения",
-      "scheduleDaysOfWeekTitle": "Дни недели",
-      "Monday": "Понедельник",
-      "Tuesday": "Вторник",
-      "Wednesday": "Среда",
-      "Thursday": "Четверг",
-      "Friday": "Пятница",
-      "Saturday": "Суббота",
-      "Sunday": "Воскресенье",
-      "scheduleActionsTitle": "Действия",
-      "scheduleActionsDescription": "Действия, которые будут выполнены в назначенное время:",
-      "scheduleActionObjTitle": "Действие",
 
       "astroTimerScenarioName": "Астрономический таймер",
       "astroTimerScenarioDescription": "Выполняет действия по астрономическим событиям (восход, закат, сумерки и др.) со смещением по времени.<br>Расчёт выполняется локально по географическим координатам.",
