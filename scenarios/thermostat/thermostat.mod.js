@@ -98,7 +98,7 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
 
 /**
  * Get configuration for waiting for controls
- * @param {Object} cfg - Configuration object
+ * @param {ThermostatConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
 ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {

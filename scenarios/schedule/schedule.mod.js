@@ -73,7 +73,7 @@ ScheduleScenario.prototype.generateNames = function(idPrefix) {
 
 /**
  * Get configuration for waiting for controls
- * @param {Object} cfg - Configuration object
+ * @param {ScheduleConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
 ScheduleScenario.prototype.defineControlsWaitConfig = function (cfg) {

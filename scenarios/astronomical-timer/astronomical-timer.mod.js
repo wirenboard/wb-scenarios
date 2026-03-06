@@ -1,5 +1,5 @@
 /**
- * @file astronomical-timer.mod.js - ES5 module for wb-rules
+ * @file astronomical-timer.mod.js - ES5 module for wb-rules 2.38
  * @description Astronomical Timer scenario class that extends
  *   ScenarioBase. Triggers actions based on astronomical events
  *   (sunrise, sunset, twilight, etc.) calculated locally using
@@ -89,7 +89,17 @@ function AstronomicalTimerScenario() {
    * @type {Object}
    */
   this.ctx = {
-    // Add local context variables here for specific scenario instance
+    cachedDate: null,           // Date string of last calculation
+    cachedTzOffset: null,       // Timezone offset at last calculation
+    cachedEventType: null,      // Type of astronomical event
+    cachedOffset: null,         // Offset value in minutes
+    cachedLatitude: null,       // Latitude for last calculation
+    cachedLongitude: null,      // Longitude for last calculation
+    cachedDaysOfWeekStr: '',    // Scheduled days as string
+    cachedEventTimeMs: null,    // Cached event time in milliseconds
+    cachedEventTimeStr: null,   // Cached event time in HH:MM format
+    firedToday: false,          // Whether event has fired today
+    // Add local context variables here for scenario instance
   };
 }
 
@@ -102,9 +112,7 @@ AstronomicalTimerScenario.prototype.constructor = AstronomicalTimerScenario;
  * @param {string} idPrefix - The prefix for generating names
  * @returns {Object} Generated names
  */
-AstronomicalTimerScenario.prototype.generateNames = function generateNames(
-  idPrefix
-) {
+AstronomicalTimerScenario.prototype.generateNames = function (idPrefix) {
   var scenarioPrefix = 'wbsc_';
   var baseRuleName = scenarioPrefix + idPrefix + '_';
 
@@ -121,8 +129,7 @@ AstronomicalTimerScenario.prototype.generateNames = function generateNames(
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
-AstronomicalTimerScenario.prototype.defineControlsWaitConfig =
-  function defineControlsWaitConfig(cfg) {
+AstronomicalTimerScenario.prototype.defineControlsWaitConfig = function (cfg) {
     var allTopics = [];
 
     for (var i = 0; i < (cfg.outControls || []).length; i++) {
@@ -192,7 +199,7 @@ function validateControls(controls, table) {
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid, false otherwise
  */
-AstronomicalTimerScenario.prototype.validateCfg = function validateCfg(cfg) {
+AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
   // Validate coordinates object
   if (!cfg.coordinates || typeof cfg.coordinates !== 'object') {
     log.error('Astronomical Timer validation error: coordinates object is required');
@@ -281,9 +288,126 @@ AstronomicalTimerScenario.prototype.validateCfg = function validateCfg(cfg) {
     return false;
   }
 
+  // After all the format checks, we check that the event actually exists
+  // in the next MAX_DAYS_AHEAD days
+  var eventTime = calculateEventTime(cfg, new Date());
+
+  if (!eventTime) {
+    // If there is no one for today, we will check in the coming days.
+    var nextExecution = getNextExecutionTime(cfg);
+    if (!nextExecution) {
+      log.error(
+        'Astronomical Timer validation error: No events found in next {} days with current configuration. ' +
+        'Check coordinates, event type and offset values.',
+        MAX_DAYS_AHEAD
+      );
+      return false;
+    }
+  }
+
   log.debug('Astronomical Timer configuration validation successful');
   return true;
 };
+
+/**
+ * Adds required custom controls cells to the virtual device
+ * @param {Object} self - Reference to the AstronomicalTimerScenario instance
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if initialization succeeded
+ */
+function addCustomControlsToVirtualDevice(self, cfg) {
+  log.debug('Start add custom controls to virtual device');
+
+  // Add manual execution button to virtual device
+  self.vd.devObj.addControl('execute_now', {
+    title: {
+      en: 'Execute now',
+      ru: 'Выполнить сейчас',
+    },
+    type: 'pushbutton',
+    order: 2,
+  });
+
+  // Add current time display control
+  var currentTimeText = formatCurrentTime();
+  self.vd.devObj.addControl('current_time', {
+    title: {
+      en: 'Current time',
+      ru: 'Текущее время',
+    },
+    type: 'text',
+    value: currentTimeText,
+    forceDefault: true, // Always must start from enabled state
+    readonly: true,
+    order: 3,
+  });
+
+  // Add next execution time display control
+  var nextExecution = getNextExecutionTime(cfg);
+  var nextExecutionText = formatNextExecution(nextExecution);
+  self.vd.devObj.addControl('next_execution', {
+    title: {
+      en: 'Next execution',
+      ru: 'Следующее срабатывание',
+    },
+    type: 'text',
+    value: nextExecutionText,
+    forceDefault: true, // Always must start from enabled state
+    readonly: true,
+    order: 4,
+  });
+
+  // Add raw astronomical event time display (only when offset is used)
+  if (cfg.eventSettings.offset !== 0) {
+    var rawEventTimeStr = '--:--';
+    if (nextExecution) {
+      var initRawTime = new Date(
+        nextExecution.getTime() - cfg.eventSettings.offset * MS_PER_MINUTE
+      );
+      rawEventTimeStr = formatHHMM(initRawTime);
+    }
+    self.vd.devObj.addControl('astro_event_time', {
+      title: {
+        en: 'Astronomical event time',
+        ru: 'Время астрособытия',
+      },
+      type: 'text',
+      value: rawEventTimeStr,
+      forceDefault: true, // Always must start from enabled state
+      readonly: true,
+      order: 5,
+    });
+  }
+
+  // Add event type display with localized enum
+  self.vd.devObj.addControl('event_type', {
+    title: {
+      en: 'Event type',
+      ru: 'Тип события',
+    },
+    type: 'text',
+    value: cfg.eventSettings.astroEvent,
+    enum: ASTRO_EVENT_NAMES,
+    forceDefault: true, // Always must start from enabled state
+    readonly: true,
+    order: 6,
+  });
+
+  // Add offset display (only when offset is used)
+  if (cfg.eventSettings.offset !== 0) {
+    self.vd.devObj.addControl('offset', {
+      title: {
+        en: 'Offset (min)',
+        ru: 'Смещение (мин)',
+      },
+      type: 'text',
+      value: String(cfg.eventSettings.offset),
+      forceDefault: true, // Always must start from enabled state
+      readonly: true,
+      order: 7,
+    });
+  }
+}
 
 /**
  * Calculate astronomical event time for a given date
@@ -341,13 +465,12 @@ function calculateEventTime(cfg, date) {
 }
 
 /**
- * Get saved event time, recalculate if date, timezone,
- * event type, offset, coordinates or days changed
+ * Calculate and cache event time based on current configuration
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
  * @param {AstronomicalTimerConfig} cfg - Configuration object
- * @returns {Date|null} - Saved event time or recalculated
+ * @returns {Date|null} - Calculated event time or null if no event found in next MAX_DAYS_AHEAD days
  */
-function getSavedEventTime(self, cfg) {
+function calculateAndCacheEventTime(self, cfg) {
   var now = new Date();
   var todayStr = now.toDateString();
   var currentTzOffset = now.getTimezoneOffset();
@@ -360,13 +483,14 @@ function getSavedEventTime(self, cfg) {
   var daysCopy = (cfg.scheduleDaysOfWeek || []).slice();
   var currentDaysOfWeekStr = daysCopy.sort().join(',');
 
-  var cachedDate = self.getPsMeta('cachedDate', null);
-  var cachedTzOffset = self.getPsMeta('cachedTzOffset', null);
-  var cachedEventType = self.getPsMeta('cachedEventType', null);
-  var cachedOffset = self.getPsMeta('cachedOffset', null);
-  var cachedLatitude = self.getPsMeta('cachedLatitude', null);
-  var cachedLongitude = self.getPsMeta('cachedLongitude', null);
-  var cachedDaysOfWeekStr = self.getPsMeta('cachedDaysOfWeek', '');
+  // Get values from context
+  var cachedDate = self.ctx.cachedDate;
+  var cachedTzOffset = self.ctx.cachedTzOffset;
+  var cachedEventType = self.ctx.cachedEventType;
+  var cachedOffset = self.ctx.cachedOffset;
+  var cachedLatitude = self.ctx.cachedLatitude;
+  var cachedLongitude = self.ctx.cachedLongitude;
+  var cachedDaysOfWeekStr = self.ctx.cachedDaysOfWeekStr;
 
   // Check if any relevant parameter changed
   var needsRecalculation = 
@@ -378,47 +502,55 @@ function getSavedEventTime(self, cfg) {
     cachedLongitude !== currentLongitude ||
     cachedDaysOfWeekStr !== currentDaysOfWeekStr;
 
-  if (!needsRecalculation) {
-    var cachedMs = self.getPsMeta('cachedEventTimeMs', null);
-    return cachedMs !== null ? new Date(cachedMs) : null;
+  if (!needsRecalculation && self.ctx.cachedEventTimeMs !== null) {
+    return new Date(self.ctx.cachedEventTimeMs);
   }
 
   // Recalculate if any relevant parameter changed
-  log.debug('Recalculating event time for: {} (reason: date:{}, tz:{}, event:{}, offset:{}, lat:{}, lon:{}, days:{})', 
-    todayStr,
-    cachedDate !== todayStr,
-    cachedTzOffset !== currentTzOffset,
-    cachedEventType !== currentEventType,
-    cachedOffset !== currentOffset,
-    cachedLatitude !== currentLatitude,
-    cachedLongitude !== currentLongitude,
-    cachedDaysOfWeekStr !== currentDaysOfWeekStr
-  );
+  if (needsRecalculation) {
+    log.debug('Recalculating event time for: {} (reason: date:{}, tz:{}, event:{}, offset:{}, lat:{}, lon:{}, days:{})', 
+      todayStr,
+      cachedDate !== todayStr,
+      cachedTzOffset !== currentTzOffset,
+      cachedEventType !== currentEventType,
+      cachedOffset !== currentOffset,
+      cachedLatitude !== currentLatitude,
+      cachedLongitude !== currentLongitude,
+      cachedDaysOfWeekStr !== currentDaysOfWeekStr
+    );
+  }
 
   var eventTime = calculateEventTime(cfg, now);
 
   // Reset fired flag if date, tz, event type, offset, coordinates or days changed
-  if (cachedDate !== todayStr || 
-      cachedTzOffset !== currentTzOffset ||
-      cachedEventType !== currentEventType || 
-      cachedOffset !== currentOffset ||
-      cachedLatitude !== currentLatitude ||
-      cachedLongitude !== currentLongitude ||
-      cachedDaysOfWeekStr !== currentDaysOfWeekStr) {
-    self.setPsMeta('firedToday', false);
+  if (needsRecalculation) {
+    self.ctx.firedToday = false;
     log.debug('Reset firedToday flag due to configuration change');
   }
 
-  // Save all parameters to storage
-  self.setPsMeta('cachedDate', todayStr);
-  self.setPsMeta('cachedTzOffset', currentTzOffset);
-  self.setPsMeta('cachedEventType', currentEventType);
-  self.setPsMeta('cachedOffset', currentOffset);
-  self.setPsMeta('cachedLatitude', currentLatitude);
-  self.setPsMeta('cachedLongitude', currentLongitude);
-  self.setPsMeta('cachedDaysOfWeek', currentDaysOfWeekStr !== undefined ? currentDaysOfWeekStr : '');
-  self.setPsMeta('cachedEventTimeMs', eventTime ? eventTime.getTime() : null);
-  self.setPsMeta('cachedEventTimeStr', eventTime ? formatHHMM(eventTime) : null);
+  // Save all parameters to context
+  self.ctx.cachedDate = todayStr;
+  self.ctx.cachedTzOffset = currentTzOffset;
+  self.ctx.cachedEventType = currentEventType;
+  self.ctx.cachedOffset = currentOffset;
+  self.ctx.cachedLatitude = currentLatitude;
+  self.ctx.cachedLongitude = currentLongitude;
+  self.ctx.cachedDaysOfWeekStr = currentDaysOfWeekStr;
+  self.ctx.cachedEventTimeMs = eventTime ? eventTime.getTime() : null;
+  self.ctx.cachedEventTimeStr = eventTime ? formatHHMM(eventTime) : null;
+
+  return eventTime;
+}
+
+/**
+ * Get saved event time, recalculate if date, timezone,
+ * event type, offset, coordinates or days changed
+ * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
+ * @returns {Date|null} - Saved event time or recalculated
+ */
+function getSavedEventTime(self, cfg) {
+  var eventTime = calculateAndCacheEventTime(self, cfg);
 
   // Update VD displays after recalculation
   var nextExecution = getNextExecutionTime(cfg);
@@ -467,7 +599,7 @@ function formatCurrentTime() {
  */
 function formatNextExecution(date) {
   if (!date) {
-    return 'Event does not occur in next ' + MAX_DAYS_AHEAD + ' days';
+    return '--:--';
   }
 
   var dayName = FULL_DAYS[date.getDay()];
@@ -641,7 +773,7 @@ function createCronRule(self, cfg) {
         return;
       }
 
-      if (self.getPsMeta('firedToday', false)) {
+      if (self.ctx.firedToday) {
         log.debug('Event already fired today for: {}', self.idPrefix);
         return;
       }
@@ -653,11 +785,11 @@ function createCronRule(self, cfg) {
 
       var now = new Date();
       var nowHHMM = formatHHMM(now);
-      var cachedEventTimeStr = self.getPsMeta('cachedEventTimeStr', null);
+      var cachedEventTimeStr = self.ctx.cachedEventTimeStr;
 
       if (nowHHMM === cachedEventTimeStr) {
         log.debug('Event time matched: {} for {}', nowHHMM, self.idPrefix);
-        self.setPsMeta('firedToday', true);
+        self.ctx.firedToday = true;
         dev[self.genNames.vDevice + '/execute_now'] = true;
       }
     },
@@ -734,104 +866,6 @@ function createTimeUpdateRule(self) {
 }
 
 /**
- * Adds required custom controls cells to the virtual device
- * @param {Object} self - Reference to the AstronomicalTimerScenario instance
- * @param {AstronomicalTimerConfig} cfg - Configuration object
- * @returns {boolean} True if initialization succeeded
- */
-function addCustomControlsToVirtualDevice(self, cfg) {
-  // Add manual execution button to virtual device
-  self.vd.devObj.addControl('execute_now', {
-    title: {
-      en: 'Execute now',
-      ru: 'Выполнить сейчас',
-    },
-    type: 'pushbutton',
-    order: 2,
-  });
-
-  // Add current time display control
-  var currentTimeText = formatCurrentTime();
-  self.vd.devObj.addControl('current_time', {
-    title: {
-      en: 'Current time',
-      ru: 'Текущее время',
-    },
-    type: 'text',
-    value: currentTimeText,
-    forceDefault: true, // Always must start from enabled state
-    readonly: true,
-    order: 3,
-  });
-
-  // Add next execution time display control
-  var nextExecution = getNextExecutionTime(cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
-  self.vd.devObj.addControl('next_execution', {
-    title: {
-      en: 'Next execution',
-      ru: 'Следующее срабатывание',
-    },
-    type: 'text',
-    value: nextExecutionText,
-    forceDefault: true, // Always must start from enabled state
-    readonly: true,
-    order: 4,
-  });
-
-  // Add raw astronomical event time display (only when offset is used)
-  if (cfg.eventSettings.offset !== 0) {
-    var rawEventTimeStr = '--:--';
-    if (nextExecution) {
-      var initRawTime = new Date(
-        nextExecution.getTime() - cfg.eventSettings.offset * MS_PER_MINUTE
-      );
-      rawEventTimeStr = formatHHMM(initRawTime);
-    }
-    self.vd.devObj.addControl('astro_event_time', {
-      title: {
-        en: 'Astronomical event time',
-        ru: 'Время астрособытия',
-      },
-      type: 'text',
-      value: rawEventTimeStr,
-      forceDefault: true, // Always must start from enabled state
-      readonly: true,
-      order: 5,
-    });
-  }
-
-  // Add event type display with localized enum
-  self.vd.devObj.addControl('event_type', {
-    title: {
-      en: 'Event type',
-      ru: 'Тип события',
-    },
-    type: 'text',
-    value: cfg.eventSettings.astroEvent,
-    enum: ASTRO_EVENT_NAMES,
-    forceDefault: true, // Always must start from enabled state
-    readonly: true,
-    order: 6,
-  });
-
-  // Add offset display (only when offset is used)
-  if (cfg.eventSettings.offset !== 0) {
-    self.vd.devObj.addControl('offset', {
-      title: {
-        en: 'Offset (min)',
-        ru: 'Смещение (мин)',
-      },
-      type: 'text',
-      value: String(cfg.eventSettings.offset),
-      forceDefault: true, // Always must start from enabled state
-      readonly: true,
-      order: 7,
-    });
-  }
-}
-
-/**
  * Creates all required rules for scenario
  * @param {Object} self - Reference to the AstronomicalTimerScenario instance
  * @param {AstronomicalTimerConfig} cfg - Configuration object
@@ -868,15 +902,17 @@ AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
   deviceTitle,
   cfg
 ) {
+  /**
+   * NOTE: This method is executed ONLY when:
+   * - Base initialization is complete
+   * - Configuration is valid
+   * - All referenced controls exist in the system
+   * 
+   * The async initialization chain guarantees that all prerequisites are met.
+   * No need to re-validate or check control existence here.
+   */
   log.debug('Start init astronomical timer scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
-
-  // Validate configuration
-  if (!this.validateCfg(cfg)) {
-    log.error('Configuration validation failed');
-    this.setState(ScenarioState.ERROR);
-    return false;
-  }
 
   // Add custom controls to virtual device
   addCustomControlsToVirtualDevice(this, cfg);
