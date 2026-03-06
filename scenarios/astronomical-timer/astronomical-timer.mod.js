@@ -311,7 +311,7 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
 
 /**
  * Adds required custom controls cells to the virtual device
- * @param {Object} self - Reference to the AstronomicalTimerScenario instance
+ * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
@@ -867,7 +867,7 @@ function createTimeUpdateRule(self) {
 
 /**
  * Creates all required rules for scenario
- * @param {Object} self - Reference to the AstronomicalTimerScenario instance
+ * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if all rules created successfully, false otherwise
  */
@@ -875,17 +875,14 @@ function createRules(self, cfg) {
   log.debug('Start all required rules creation');
 
   if (!createCronRule(self, cfg)) {
-    self.setState(ScenarioState.ERROR);
     return false;
   }
 
   if (!createManualRule(self, cfg)) {
-    self.setState(ScenarioState.ERROR);
     return false;
   }
 
   if (!createTimeUpdateRule(self)) {
-    self.setState(ScenarioState.ERROR);
     return false;
   }
 
@@ -898,10 +895,7 @@ function createRules(self, cfg) {
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
-AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
-  deviceTitle,
-  cfg
-) {
+AstronomicalTimerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   /**
    * NOTE: This method is executed ONLY when:
    * - Base initialization is complete
