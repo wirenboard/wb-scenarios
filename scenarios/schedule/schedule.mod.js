@@ -590,11 +590,11 @@ function addCustomControlsToVirtualDevice(self, cfg) {
 function createRules(self, cfg) {
   log.debug('Start all required rules creation');
   
-  if (!createCronRule(this, cfg)) {
+  if (!createCronRule(self, cfg)) {
     return false;
   }
   
-  if (!createTimeUpdateRule(this)) {
+  if (!createTimeUpdateRule(self)) {
     return false;
   }
 
