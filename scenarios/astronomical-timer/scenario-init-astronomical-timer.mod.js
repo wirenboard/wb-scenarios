@@ -76,7 +76,7 @@ function initializeScenario(scenarioCfg) {
 }
 
 /**
- * Find and return all enabled scenarios of the requested type
+ * Find and return all scenarios of the requested type
  * @param {Array} listScenario - Array of all scenarios from the config
  * @param {string} searchScenarioType - Scenario type we are looking for
  * @returns {Array} Array of active scenarios of that type

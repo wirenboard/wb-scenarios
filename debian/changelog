@@ -1,6 +1,6 @@
 wb-scenarios (1.7.3) stable; urgency=medium
 
-  * Add new scenario "astro-timer"
+  * Add new scenario "astronomical-timer"
 
  -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Thu, 05 Mar 2026 17:05:00 +0300
 

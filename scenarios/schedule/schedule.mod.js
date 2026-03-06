@@ -9,19 +9,15 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
 var aTable = require("table-handling-actions.mod");
+var constants = require('constants.mod');
 
 var loggerFileLabel = 'WBSC-schedule-mod';
 var log = new Logger(loggerFileLabel);
 
-var DAY_NAMES = {
-  0: 'Sunday',
-  1: 'Monday', 
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday'
-};
+var DAY_NAMES = constants.DAY_NAMES;
+var DAY_NAME_TO_NUMBER = constants.DAY_NAME_TO_NUMBER;
+var VALID_DAYS = constants.VALID_DAYS;
+var FULL_DAYS = constants.FULL_DAYS;
 
 /**
  * @typedef {Object} ScheduleConfig
@@ -221,10 +217,9 @@ ScheduleScenario.prototype.validateCfg = function(cfg) {
   }
   
   // Validate scheduleDaysOfWeek values
-  var validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var day = cfg.scheduleDaysOfWeek[i];
-    if (typeof day !== 'string' || validDays.indexOf(day) === -1) {
+    if (typeof day !== 'string' || VALID_DAYS.indexOf(day) === -1) {
       log.error('Schedule validation error: invalid scheduleDaysOfWeek value: ' + day);
       return false;
     }
@@ -348,17 +343,12 @@ function getNextExecutionTime(cfg) {
   log.debug('Calculating next execution. Current time: ' + now.toISOString() + ', current day: ' + currentDay);
   log.debug('Schedule: ' + cfg.scheduleTime + ' on days: [' + cfg.scheduleDaysOfWeek.join(', ') + ']');
   
-  var dayNameToNumber = {
-    'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
-    'thursday': 4, 'friday': 5, 'saturday': 6
-  };
-  
   // Convert scheduleDaysOfWeek array to day numbers and sort
   var scheduledDays = [];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var dayName = cfg.scheduleDaysOfWeek[i];
-    if (dayNameToNumber.hasOwnProperty(dayName)) {
-      scheduledDays.push(dayNameToNumber[dayName]);
+    if (DAY_NAME_TO_NUMBER.hasOwnProperty(dayName)) {
+      scheduledDays.push(DAY_NAME_TO_NUMBER[dayName]);
     }
   }
   
@@ -439,9 +429,7 @@ function formatNextExecution(date) {
     return 'Invalid schedule';
   }
   
-  var fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  var dayName = fullDays[date.getDay()];
-  
+  var dayName = FULL_DAYS[date.getDay()];
   var day = ('0' + date.getDate()).slice(-2);
   var month = ('0' + (date.getMonth() + 1)).slice(-2);
   var year = date.getFullYear();

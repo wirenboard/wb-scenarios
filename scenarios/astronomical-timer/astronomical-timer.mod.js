@@ -12,19 +12,15 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 var SunCalc = require('suncalc.mod');
 var aTable = require('table-handling-actions.mod');
+var constants = require('constants.mod');
 
-var loggerFileLabel = 'WBSC-astro-timer-mod';
+var loggerFileLabel = 'WBSC-astronomical-timer-mod';
 var log = new Logger(loggerFileLabel);
 
-var DAY_NAMES = {
-  0: 'Sunday',
-  1: 'Monday',
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday',
-};
+var DAY_NAMES = constants.DAY_NAMES;
+var DAY_NAME_TO_NUMBER = constants.DAY_NAME_TO_NUMBER;
+var VALID_DAYS = constants.VALID_DAYS;
+var FULL_DAYS = constants.FULL_DAYS;
 
 var ASTRO_EVENT_NAMES = {
   sunrise:       { en: 'Sunrise',          ru: 'Восход' },
@@ -39,16 +35,6 @@ var ASTRO_EVENT_NAMES = {
   goldenHourEnd: { en: 'Golden hour end',  ru: 'Конец золотого часа' },
   solarNoon:     { en: 'Solar noon',       ru: 'Солнечный полдень' },
   nadir:         { en: 'Nadir',            ru: 'Надир' },
-};
-
-var DAY_NAME_TO_NUMBER = {
-  sunday: 0,
-  monday: 1,
-  tuesday: 2,
-  wednesday: 3,
-  thursday: 4,
-  friday: 5,
-  saturday: 6,
 };
 
 var MS_PER_MINUTE = 60000;
@@ -97,6 +83,14 @@ var OFFSET_MAX_MIN = 720;  // +12 hours
  */
 function AstronomicalTimerScenario() {
   ScenarioBase.call(this);
+
+  /**
+   * Context object for storing scenario runtime state
+   * @type {Object}
+   */
+  this.ctx = {
+    // Add local context variables here for specific scenario instance
+  };
 }
 
 // Set up inheritance
@@ -124,7 +118,7 @@ AstronomicalTimerScenario.prototype.generateNames = function generateNames(
 
 /**
  * Get configuration for waiting for controls
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
 AstronomicalTimerScenario.prototype.defineControlsWaitConfig =
@@ -195,7 +189,7 @@ function validateControls(controls, table) {
 
 /**
  * Configuration validation
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid, false otherwise
  */
 AstronomicalTimerScenario.prototype.validateCfg = function validateCfg(cfg) {
@@ -260,17 +254,9 @@ AstronomicalTimerScenario.prototype.validateCfg = function validateCfg(cfg) {
     log.error('Astronomical Timer validation error: at least one day must be selected');
     return false;
   }
-  var validDays = [
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-    'sunday',
-  ];
+
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
-    if (validDays.indexOf(cfg.scheduleDaysOfWeek[i]) === -1) {
+    if (VALID_DAYS.indexOf(cfg.scheduleDaysOfWeek[i]) === -1) {
       log.error(
         'Astronomical Timer validation error: invalid day: {}',
         cfg.scheduleDaysOfWeek[i]
@@ -301,7 +287,7 @@ AstronomicalTimerScenario.prototype.validateCfg = function validateCfg(cfg) {
 
 /**
  * Calculate astronomical event time for a given date
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @param {Date} date - Date now
  * @returns {Date|null} - Calculated event time
  */
@@ -358,7 +344,7 @@ function calculateEventTime(cfg, date) {
  * Get saved event time, recalculate if date, timezone,
  * event type, offset, coordinates or days changed
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {Date|null} - Saved event time or recalculated
  */
 function getSavedEventTime(self, cfg) {
@@ -484,17 +470,7 @@ function formatNextExecution(date) {
     return 'Event does not occur in next ' + MAX_DAYS_AHEAD + ' days';
   }
 
-  var fullDays = [
-    'Sunday',
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-  ];
-  var dayName = fullDays[date.getDay()];
-
+  var dayName = FULL_DAYS[date.getDay()];
   var day = ('0' + date.getDate()).slice(-2);
   var month = ('0' + (date.getMonth() + 1)).slice(-2);
   var year = date.getFullYear();
@@ -518,7 +494,7 @@ function formatNextExecution(date) {
 
 /**
  * Check if today is a scheduled day
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if today is a scheduled day
  */
 function isTodayScheduled(cfg) {
@@ -538,7 +514,7 @@ function isTodayScheduled(cfg) {
 
 /**
  * Calculate next execution time considering days
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {Date|null} - Calculated next execution time
  */
 function getNextExecutionTime(cfg) {
@@ -573,6 +549,8 @@ function getNextExecutionTime(cfg) {
     }
 
     // Determine what day of the week the event actually falls on
+    // Important: The check is performed AFTER applying the offset, because the offset
+    // may move the event to a different day
     var actualDay = eventTime.getDay();
 
     // Let's check if this day is allowed
@@ -599,7 +577,7 @@ function getNextExecutionTime(cfg) {
 /**
  * Handler for astronomical timer trigger
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {void}
  */
 function astroHandler(self, cfg) {
@@ -649,7 +627,7 @@ function astroHandler(self, cfg) {
 /**
  * Create the minute-check cron rule
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if rule created successfully, false otherwise
  */
 function createCronRule(self, cfg) {
@@ -698,7 +676,7 @@ function createCronRule(self, cfg) {
 /**
  * Create manual trigger rule for the button
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
- * @param {Object} cfg - Configuration object
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if rule created successfully, false otherwise
  */
 function createManualRule(self, cfg) {
@@ -756,27 +734,14 @@ function createTimeUpdateRule(self) {
 }
 
 /**
- * Scenario initialization
- * @param {string} deviceTitle - Virtual device title
- * @param {Object} cfg - Configuration object
+ * Adds required custom controls cells to the virtual device
+ * @param {Object} self - Reference to the AstronomicalTimerScenario instance
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
-AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
-  deviceTitle,
-  cfg
-) {
-  log.debug('Start init astronomical timer scenario');
-  log.setLabel(loggerFileLabel + '/' + this.idPrefix);
-
-  // Validate configuration
-  if (!this.validateCfg(cfg)) {
-    log.error('Configuration validation failed');
-    this.setState(ScenarioState.ERROR);
-    return false;
-  }
-
+function addCustomControlsToVirtualDevice(self, cfg) {
   // Add manual execution button to virtual device
-  this.vd.devObj.addControl('execute_now', {
+  self.vd.devObj.addControl('execute_now', {
     title: {
       en: 'Execute now',
       ru: 'Выполнить сейчас',
@@ -787,7 +752,7 @@ AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
 
   // Add current time display control
   var currentTimeText = formatCurrentTime();
-  this.vd.devObj.addControl('current_time', {
+  self.vd.devObj.addControl('current_time', {
     title: {
       en: 'Current time',
       ru: 'Текущее время',
@@ -802,7 +767,7 @@ AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
   // Add next execution time display control
   var nextExecution = getNextExecutionTime(cfg);
   var nextExecutionText = formatNextExecution(nextExecution);
-  this.vd.devObj.addControl('next_execution', {
+  self.vd.devObj.addControl('next_execution', {
     title: {
       en: 'Next execution',
       ru: 'Следующее срабатывание',
@@ -823,7 +788,7 @@ AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
       );
       rawEventTimeStr = formatHHMM(initRawTime);
     }
-    this.vd.devObj.addControl('astro_event_time', {
+    self.vd.devObj.addControl('astro_event_time', {
       title: {
         en: 'Astronomical event time',
         ru: 'Время астрособытия',
@@ -837,7 +802,7 @@ AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
   }
 
   // Add event type display with localized enum
-  this.vd.devObj.addControl('event_type', {
+  self.vd.devObj.addControl('event_type', {
     title: {
       en: 'Event type',
       ru: 'Тип события',
@@ -852,7 +817,7 @@ AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
 
   // Add offset display (only when offset is used)
   if (cfg.eventSettings.offset !== 0) {
-    this.vd.devObj.addControl('offset', {
+    self.vd.devObj.addControl('offset', {
       title: {
         en: 'Offset (min)',
         ru: 'Смещение (мин)',
@@ -864,26 +829,67 @@ AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
       order: 7,
     });
   }
+}
 
-  // Create rules
-  if (!createCronRule(this, cfg)) {
-    this.setState(ScenarioState.ERROR);
+/**
+ * Creates all required rules for scenario
+ * @param {Object} self - Reference to the AstronomicalTimerScenario instance
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if all rules created successfully, false otherwise
+ */
+function createRules(self, cfg) {
+  log.debug('Start all required rules creation');
+
+  if (!createCronRule(self, cfg)) {
+    self.setState(ScenarioState.ERROR);
     return false;
   }
 
-  if (!createManualRule(this, cfg)) {
-    this.setState(ScenarioState.ERROR);
+  if (!createManualRule(self, cfg)) {
+    self.setState(ScenarioState.ERROR);
     return false;
   }
 
-  if (!createTimeUpdateRule(this)) {
-    this.setState(ScenarioState.ERROR);
+  if (!createTimeUpdateRule(self)) {
+    self.setState(ScenarioState.ERROR);
     return false;
   }
 
-  this.setState(ScenarioState.NORMAL);
-  log.debug('Astronomical timer scenario initialized');
   return true;
+}
+
+/**
+ * Scenario initialization
+ * @param {string} deviceTitle - Virtual device title
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if initialization succeeded
+ */
+AstronomicalTimerScenario.prototype.initSpecific = function initSpecific(
+  deviceTitle,
+  cfg
+) {
+  log.debug('Start init astronomical timer scenario');
+  log.setLabel(loggerFileLabel + '/' + this.idPrefix);
+
+  // Validate configuration
+  if (!this.validateCfg(cfg)) {
+    log.error('Configuration validation failed');
+    this.setState(ScenarioState.ERROR);
+    return false;
+  }
+
+  // Add custom controls to virtual device
+  addCustomControlsToVirtualDevice(this, cfg);
+
+  // Create all rules
+  var rulesCreated = createRules(this, cfg);
+
+  if (rulesCreated) {
+    this.setState(ScenarioState.NORMAL);
+    log.debug('Astronomical timer scenario initialized successfully for device "{}"', deviceTitle);
+  }
+
+  return rulesCreated;
 };
 
 exports.AstronomicalTimerScenario = AstronomicalTimerScenario;
