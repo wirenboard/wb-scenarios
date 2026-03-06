@@ -9,19 +9,15 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
 var aTable = require("table-handling-actions.mod");
+var constants = require('constants.mod');
 
 var loggerFileLabel = 'WBSC-schedule-mod';
 var log = new Logger(loggerFileLabel);
 
-var DAY_NAMES = {
-  0: 'Sunday',
-  1: 'Monday', 
-  2: 'Tuesday',
-  3: 'Wednesday',
-  4: 'Thursday',
-  5: 'Friday',
-  6: 'Saturday'
-};
+var DAY_NAMES = constants.DAY_NAMES;
+var DAY_NAME_TO_NUMBER = constants.DAY_NAME_TO_NUMBER;
+var VALID_DAYS = constants.VALID_DAYS;
+var FULL_DAYS = constants.FULL_DAYS;
 
 /**
  * @typedef {Object} ScheduleConfig
@@ -77,7 +73,7 @@ ScheduleScenario.prototype.generateNames = function(idPrefix) {
 
 /**
  * Get configuration for waiting for controls
- * @param {Object} cfg - Configuration object
+ * @param {ScheduleConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
 ScheduleScenario.prototype.defineControlsWaitConfig = function (cfg) {
@@ -221,10 +217,9 @@ ScheduleScenario.prototype.validateCfg = function(cfg) {
   }
   
   // Validate scheduleDaysOfWeek values
-  var validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var day = cfg.scheduleDaysOfWeek[i];
-    if (typeof day !== 'string' || validDays.indexOf(day) === -1) {
+    if (typeof day !== 'string' || VALID_DAYS.indexOf(day) === -1) {
       log.error('Schedule validation error: invalid scheduleDaysOfWeek value: ' + day);
       return false;
     }
@@ -348,17 +343,12 @@ function getNextExecutionTime(cfg) {
   log.debug('Calculating next execution. Current time: ' + now.toISOString() + ', current day: ' + currentDay);
   log.debug('Schedule: ' + cfg.scheduleTime + ' on days: [' + cfg.scheduleDaysOfWeek.join(', ') + ']');
   
-  var dayNameToNumber = {
-    'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
-    'thursday': 4, 'friday': 5, 'saturday': 6
-  };
-  
   // Convert scheduleDaysOfWeek array to day numbers and sort
   var scheduledDays = [];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var dayName = cfg.scheduleDaysOfWeek[i];
-    if (dayNameToNumber.hasOwnProperty(dayName)) {
-      scheduledDays.push(dayNameToNumber[dayName]);
+    if (DAY_NAME_TO_NUMBER.hasOwnProperty(dayName)) {
+      scheduledDays.push(DAY_NAME_TO_NUMBER[dayName]);
     }
   }
   
@@ -439,9 +429,7 @@ function formatNextExecution(date) {
     return 'Invalid schedule';
   }
   
-  var fullDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  var dayName = fullDays[date.getDay()];
-  
+  var dayName = FULL_DAYS[date.getDay()];
   var day = ('0' + date.getDate()).slice(-2);
   var month = ('0' + (date.getMonth() + 1)).slice(-2);
   var year = date.getFullYear();
@@ -544,27 +532,17 @@ function scheduleHandler(self, cfg) {
   log.debug("Schedule actions completed for scenario: " + self.idPrefix);
 }
 
-
-
 /**
- * Scenario initialization
- * @param {string} deviceTitle - Virtual device title
+ * Adds required custom controls cells to the virtual device
+ * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
-ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
-  log.debug('Start init schedule scenario');
-  log.setLabel(loggerFileLabel + '/' + this.idPrefix);
-  
-  // Validate configuration
-  if (!this.validateCfg(cfg)) {
-    log.error('Configuration validation failed');
-    this.setState(ScenarioState.ERROR);
-    return false;
-  }
-  
+function addCustomControlsToVirtualDevice(self, cfg) {
+  log.debug('Start add custom controls to virtual device');
+
   // Add manual execution button to virtual device
-  this.vd.devObj.addControl('execute_now', {
+  self.vd.devObj.addControl('execute_now', {
     title: {
       en: 'Execute now',
       ru: 'Выполнить сейчас'
@@ -575,7 +553,7 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   
   // Add current time display control
   var currentTimeText = formatCurrentTime();
-  this.vd.devObj.addControl('current_time', {
+  self.vd.devObj.addControl('current_time', {
     title: {
       en: 'Current time',
       ru: 'Текущее время'
@@ -590,7 +568,7 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   // Add next execution time display control
   var nextExecution = getNextExecutionTime(cfg);
   var nextExecutionText = formatNextExecution(nextExecution);
-  this.vd.devObj.addControl('next_execution', {
+  self.vd.devObj.addControl('next_execution', {
     title: {
       en: 'Next execution',
       ru: 'Следующее выполнение'
@@ -601,26 +579,59 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     readonly: true,
     order: 4
   });
+}
+
+/**
+ * Creates all required rules for scenario
+ * @param {ScheduleScenario} self - Reference to the AstronomicalTimerScenario instance
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {boolean} True if all rules created successfully, false otherwise
+ */
+function createRules(self, cfg) {
+  log.debug('Start all required rules creation');
   
-  log.debug('Start cron rule creation');
-  var ruleCreated = createCronRule(this, cfg);
-  
-  if (!ruleCreated) {
-    this.setState(ScenarioState.ERROR);
+  if (!createCronRule(self, cfg)) {
     return false;
   }
   
-  log.debug('Start time update rule creation');
-  var timeRuleCreated = createTimeUpdateRule(this);
-  
-  if (!timeRuleCreated) {
-    this.setState(ScenarioState.ERROR);
+  if (!createTimeUpdateRule(self)) {
     return false;
   }
-  
-  this.setState(ScenarioState.NORMAL);
-  log.debug('Schedule scenario initialized successfully');
+
   return true;
+}
+
+/**
+ * Scenario initialization
+ * @param {string} deviceTitle - Virtual device title
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {boolean} True if initialization succeeded
+ */
+ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
+  /**
+   * NOTE: This method is executed ONLY when:
+   * - Base initialization is complete
+   * - Configuration is valid
+   * - All referenced controls exist in the system
+   * 
+   * The async initialization chain guarantees that all prerequisites are met.
+   * No need to re-validate or check control existence here.
+   */
+  log.debug('Start init schedule scenario');
+  log.setLabel(loggerFileLabel + '/' + this.idPrefix);
+
+  // Add custom controls to virtual device
+  addCustomControlsToVirtualDevice(this, cfg);
+
+  // Create all rules
+  var rulesCreated = createRules(this, cfg);
+
+  if (rulesCreated) {
+    this.setState(ScenarioState.NORMAL);
+    log.debug('Astronomical timer scenario initialized successfully for device "{}"', deviceTitle);
+  }
+  
+  return rulesCreated;
 };
 
 exports.ScheduleScenario = ScheduleScenario;

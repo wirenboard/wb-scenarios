@@ -9,6 +9,7 @@
 - [Управление светом](scenarios/light-control/README.md)
 - [Термостат (нагрев)](scenarios/thermostat/README.md)
 - [Расписание](scenarios/schedule/README.md)
+- [Астрономический таймер](scenarios/astronomical-timer/README.md)
 
 ## Установка
 

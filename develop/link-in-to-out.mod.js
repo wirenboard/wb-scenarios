@@ -91,6 +91,8 @@ LinkInToOutScenario.prototype.addCustomControlsToVirtualDevice = function(cfg) {
  * @returns {boolean} True if all rules created successfully
  */
 function createRules(self, cfg) {
+  log.debug('Start all required rules creation');
+
   var gName = self.genNames;
   
   // Rule to track input control changes
@@ -113,7 +115,7 @@ function createRules(self, cfg) {
 
 /**
  * Input control change handler
- * @param {Object} self - Reference to LinkInToOutScenario instance
+ * @param {LinkInToOutScenario} self - Reference to LinkInToOutScenario instance
  * @param {*} newValue New value
  * @param {string} devName Device name
  * @param {string} cellName Control name
@@ -150,6 +152,15 @@ function handleInputChange(self, newValue, devName, cellName) {
  * @returns {boolean} True on successful initialization
  */
 LinkInToOutScenario.prototype.initSpecific = function(deviceTitle, cfg) {
+  /**
+   * NOTE: This method is executed ONLY when:
+   * - Base initialization is complete
+   * - Configuration is valid
+   * - All referenced controls exist in the system
+   * 
+   * The async initialization chain guarantees that all prerequisites are met.
+   * No need to re-validate or check control existence here.
+   */
   log.debug('Start init link-in-to-out scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
   
@@ -162,11 +173,13 @@ LinkInToOutScenario.prototype.initSpecific = function(deviceTitle, cfg) {
   this.addCustomControlsToVirtualDevice(cfg);
   
   // Create rules
-  log.debug('Start rules creation');
   var rulesCreated = createRules(this, cfg);
   
-  this.setState(ScenarioState.NORMAL);
-  log.debug('Link-in-to-out scenario initialized successfully');
+  if (rulesCreated) {
+    this.setState(ScenarioState.NORMAL);
+    log.debug('Link-in-to-out scenario initialized successfully for device "{}"', deviceTitle);
+  }
+
   return rulesCreated;
 };
 

@@ -28,6 +28,9 @@
         },
         {
           "$ref": "#/definitions/schedule"
+        },
+        {
+          "$ref": "#/definitions/astronomicalTimer"
         }
       ],
       "_format": "wb-multiple",
@@ -131,7 +134,7 @@
                     "data": "devices"
                   }
                 },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                 "minLength": 3
               },
               "behaviorType": {
@@ -157,7 +160,7 @@
           "minItems": 1,
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "outControls_arr_title",
+          "title": "generalActionsTitle",
           "description": "outControls_arr_description",
           "_format": "table",
           "options": {
@@ -171,7 +174,7 @@
             }
           },
           "items": {
-            "title": "outControls_obj_title",
+            "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
               "control": {
@@ -189,7 +192,7 @@
                     "data": "devices"
                   }
                 },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                 "minLength": 3
               },
               "behaviorType": {
@@ -221,7 +224,16 @@
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": 0
+                "default": 0,
+                "options": {
+                  "dependencies": {
+                    "behaviorType": [
+                      "setValue",
+                      "increaseValueBy",
+                      "decreaseValueBy"
+                    ]
+                  }
+                }
               }
             },
             "required": ["control", "behaviorType"]
@@ -346,7 +358,7 @@
                         "data": "devices"
                       }
                     },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                     "minLength": 3
                   },
                   "behaviorType": {
@@ -445,7 +457,7 @@
                         "data": "devices"
                       }
                     },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                     "minLength": 3
                   }
                 },
@@ -509,7 +521,7 @@
                         "data": "devices"
                       }
                     },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                     "minLength": 3
                   },
                   "behaviorType": {
@@ -597,7 +609,7 @@
                         "data": "devices"
                       }
                     },
-                    "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                    "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                     "minLength": 3
                   },
                   "behaviorType": {
@@ -664,7 +676,7 @@
           "default": "Heater",
           "minLength": 1,
           "maxLength": 30,
-          "propertyOrder": 2,
+          "propertyOrder": 1,
           "options": {
             "grid_columns": 12
           }
@@ -678,7 +690,7 @@
           "default": "",
           "minLength": 0,
           "maxLength": 15,
-          "propertyOrder": 3,
+          "propertyOrder": 2,
           "options": {
             "grid_columns": 12,
             "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
@@ -688,7 +700,7 @@
           "type": "number",
           "title": "thermostatTargetTemperatureTitle",
           "default": 22,
-          "propertyOrder": 4,
+          "propertyOrder": 3,
           "options": {
             "grid_columns": 12
           }
@@ -696,7 +708,7 @@
         "temperatureLimits": {
           "type": "object",
           "title": "thermostatTempLimitsObjTitle",
-          "propertyOrder": 5,
+          "propertyOrder": 4,
           "_format": "grid",
           "options": {
             "disable_collapse": true,
@@ -729,7 +741,7 @@
           "title": "thermostatHysteresisTitle",
           "description": "thermostatHysteresisDescription",
           "default": 1,
-          "propertyOrder": 6,
+          "propertyOrder": 5,
           "options": {
             "grid_columns": 12
           }
@@ -739,7 +751,7 @@
           "_format": "wb-autocomplete",
           "title": "thermostatTemperatureSensorTitle",
           "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 7,
+          "propertyOrder": 6,
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
@@ -757,7 +769,7 @@
           "_format": "wb-autocomplete",
           "title": "thermostatActuatorTitle",
           "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 9,
+          "propertyOrder": 7,
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
@@ -854,7 +866,7 @@
           }
         },
         "scheduleDaysOfWeek": {
-          "title": "scheduleDaysOfWeekTitle",
+          "title": "generalDaysOfWeekTitle",
           "type": "array",
           "_format": "checkbox",
           "uniqueItems": true,
@@ -877,13 +889,13 @@
             ],
             "options": {
               "enum_titles": [
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday"
+                "generalMonday",
+                "generalTuesday",
+                "generalWednesday",
+                "generalThursday",
+                "generalFriday",
+                "generalSaturday",
+                "generalSunday"
               ]
             }
           }
@@ -893,8 +905,8 @@
           "minItems": 1,
           "propertyOrder": 6,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "scheduleActionsTitle",
-          "description": "scheduleActionsDescription",
+          "title": "generalActionsTitle",
+          "description": "generalActionsDescription",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -907,7 +919,7 @@
             }
           },
           "items": {
-            "title": "scheduleActionObjTitle",
+            "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
               "control": {
@@ -925,7 +937,7 @@
                     "data": "devices"
                   }
                 },
-                "_minLength_note": "Device name (1) + slash (1) + topic name (1)",
+                "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
                 "minLength": 3
               },
               "behaviorType": {
@@ -957,7 +969,16 @@
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": 0
+                "default": 0,
+                "options": {
+                  "dependencies": {
+                    "behaviorType": [
+                      "setValue",
+                      "increaseValueBy",
+                      "decreaseValueBy"
+                    ]
+                  }
+                }
               }
             },
             "required": [
@@ -973,6 +994,287 @@
         "enable",
         "name",
         "scheduleTime",
+        "scheduleDaysOfWeek",
+        "outControls"
+      ]
+    },
+    "astronomicalTimer": {
+      "type": "object",
+      "title": "astroTimerScenarioName",
+      "description": "astroTimerScenarioDescription",
+      "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
+      "properties": {
+        "scenarioType": {
+          "type": "string",
+          "enum": ["astronomicalTimer"],
+          "default": "astronomicalTimer",
+          "options": {
+            "hidden": true
+          }
+        },
+        "componentVersion": {
+          "type": "integer",
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "name": {
+          "title": "generalScenarioName",
+          "type": "string",
+          "default": "Astronomical Timer",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "idPrefix": {
+          "title": "generalScenarioIdPrefixTitle",
+          "type": "string",
+          "description": "generalScenarioIdPrefixDescription",
+          "pattern": "^[0-9a-zA-Z_]+$",
+          "default": "",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
+          }
+        },
+        "coordinates": {
+          "type": "object",
+          "title": "astroTimerCoordinatesTitle",
+          "propertyOrder": 3,
+          "_format": "grid",
+          "options": {
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "required": ["latitude", "longitude"],
+          "properties": {
+            "latitude": {
+              "title": "astroTimerLatitudeTitle",
+              "description": "astroTimerLatitudeDescription",
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 6
+              }
+            },
+            "longitude": {
+              "title": "astroTimerLongitudeTitle",
+              "description": "astroTimerLongitudeDescription",
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 6
+              }
+            }
+          }
+        },
+        "eventSettings": {
+          "type": "object",
+          "title": "astroTimerEventSettingsTitle",
+          "propertyOrder": 4,
+          "_format": "grid",
+          "options": {
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "astroEvent": {
+              "title": "astroTimerEventTitle",
+              "type": "string",
+              "enum": [
+                "sunrise",
+                "sunset",
+                "dawn",
+                "dusk",
+                "nauticalDawn",
+                "nauticalDusk",
+                "nightEnd",
+                "night",
+                "goldenHour",
+                "goldenHourEnd",
+                "solarNoon",
+                "nadir"
+              ],
+              "default": "sunrise",
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 6,
+                "enum_titles": [
+                  "astroTimerEventSunrise",
+                  "astroTimerEventSunset",
+                  "astroTimerEventDawn",
+                  "astroTimerEventDusk",
+                  "astroTimerEventNauticalDawn",
+                  "astroTimerEventNauticalDusk",
+                  "astroTimerEventNightEnd",
+                  "astroTimerEventNight",
+                  "astroTimerEventGoldenHour",
+                  "astroTimerEventGoldenHourEnd",
+                  "astroTimerEventSolarNoon",
+                  "astroTimerEventNadir"
+                ]
+              }
+            },
+            "offset": {
+              "title": "astroTimerOffsetTitle",
+              "description": "astroTimerOffsetDescription",
+              "type": "integer",
+              "minimum": -720,
+              "maximum": 720,
+              "default": 0,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 6
+              }
+            }
+          },
+          "required": ["astroEvent", "offset"]
+        },
+        "scheduleDaysOfWeek": {
+          "title": "generalDaysOfWeekTitle",
+          "type": "array",
+          "_format": "checkbox",
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 12
+          },
+          "items": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "options": {
+              "enum_titles": [
+                "generalMonday",
+                "generalTuesday",
+                "generalWednesday",
+                "generalThursday",
+                "generalFriday",
+                "generalSaturday",
+                "generalSunday"
+              ]
+            }
+          }
+        },
+        "outControls": {
+          "type": "array",
+          "minItems": 1,
+          "propertyOrder": 6,
+          "_title_note": "When options-> compact: true - this title not shown",
+          "title": "generalActionsTitle",
+          "description": "generalActionsDescription",
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "generalActionObjTitle",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "generalMqttTopicNameTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "_minLength_note": "Min length is 3 char = device name (1 char) + slash (1 char) + topic name (1 char)",
+                "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "outControls_behaviorType_title",
+                "enum": [
+                  "toggle",
+                  "setEnable",
+                  "setDisable",
+                  "setValue",
+                  "increaseValueBy",
+                  "decreaseValueBy"
+                ],
+                "default": "setDisable",
+                "options": {
+                  "enum_titles": [
+                    "Toggle (switch)",
+                    "Enable (switch)",
+                    "Disable (switch)",
+                    "generalEnumSetValue",
+                    "Increase Value By",
+                    "Decrease Value By"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "generalActionValueTitle",
+                "description": "outControls_actionValue_description",
+                "default": 0,
+                "options": {
+                  "dependencies": {
+                    "behaviorType": [
+                      "setValue",
+                      "increaseValueBy",
+                      "decreaseValueBy"
+                    ]
+                  }
+                }
+              }
+            },
+            "required": [
+              "control",
+              "behaviorType"
+            ]
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "coordinates",
+        "eventSettings",
         "scheduleDaysOfWeek",
         "outControls"
       ]
@@ -1020,13 +1322,22 @@
       "generalErrorRegexpPatternMessageMqttTopicName": "Does not match the format <device>/<control>",
       "generalEnumSetValue": "Set Value",
       "generalSensorArrTitle": "Elements list",
+      "generalActionsTitle": "Actions",
+      "generalActionObjTitle": "Action",
+      "generalActionsDescription": "Actions to be executed at the scheduled time:",
+      "generalDaysOfWeekTitle": "Days of the Week",
+      "generalMonday": "Monday",
+      "generalTuesday": "Tuesday",
+      "generalWednesday": "Wednesday",
+      "generalThursday": "Thursday",
+      "generalFriday": "Friday",
+      "generalSaturday": "Saturday",
+      "generalSunday": "Sunday",
 
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
-      "outControls_arr_title": "Actions",
-      "outControls_obj_title": "Action",
       "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
@@ -1068,10 +1379,31 @@
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
       "scheduleTimeTitle": "Execution Time",
-      "scheduleDaysOfWeekTitle": "Days of the Week",
-      "scheduleActionsTitle": "Actions",
-      "scheduleActionsDescription": "Actions to be executed at the scheduled time:",
-      "scheduleActionObjTitle": "Action"
+      "scheduleActionObjTitle": "Action",
+
+      "astroTimerScenarioName": "Astronomical Timer",
+      "astroTimerScenarioDescription": "Executes actions based on astronomical events (sunrise, sunset, twilight, etc.) with optional time offset.<br>Calculations are performed locally using geographic coordinates.",
+      "astroTimerLatitudeTitle": "Latitude",
+      "astroTimerLatitudeDescription": "Location latitude (-90 to 90)",
+      "astroTimerLongitudeTitle": "Longitude",
+      "astroTimerLongitudeDescription": "Location longitude (-180 to 180)",
+      "astroTimerEventTitle": "Astronomical Event",
+      "astroTimerOffsetTitle": "Offset (minutes)",
+      "astroTimerOffsetDescription": "Offset in minutes. Negative = before event, positive = after event.",
+      "astroTimerEventSunrise": "Sunrise",
+      "astroTimerEventSunset": "Sunset",
+      "astroTimerEventDawn": "Civil Dawn (-6°)",
+      "astroTimerEventDusk": "Civil Dusk (-6°)",
+      "astroTimerEventNauticalDawn": "Nautical Dawn (-12°)",
+      "astroTimerEventNauticalDusk": "Nautical Dusk (-12°)",
+      "astroTimerEventNightEnd": "Astronomical Dawn (-18°)",
+      "astroTimerEventNight": "Astronomical Dusk (-18°)",
+      "astroTimerEventGoldenHour": "Golden Hour (evening, +6°)",
+      "astroTimerEventGoldenHourEnd": "Golden Hour End (morning, +6°)",
+      "astroTimerEventSolarNoon": "Solar Noon",
+      "astroTimerEventNadir": "Nadir (darkest moment)",
+      "astroTimerCoordinatesTitle": "Location coordinates in decimal degrees (DD) format. For example, for Astana: 51.1694, 71.4491",
+      "astroTimerEventSettingsTitle": "Event settings"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1087,6 +1419,17 @@
       "generalErrorRegexpPatternMessageMqttTopicName": "Не соответствует формату <устройство>/<контрол>",
       "generalEnumSetValue": "Установить значение",
       "generalSensorArrTitle": "Список элементов",
+      "generalActionsTitle": "Действия",
+      "generalActionObjTitle": "Действие",
+      "generalActionsDescription": "Действия, которые будут выполнены в назначенное время:",
+      "generalDaysOfWeekTitle": "Дни недели",
+      "generalMonday": "Понедельник",
+      "generalTuesday": "Вторник",
+      "generalWednesday": "Среда",
+      "generalThursday": "Четверг",
+      "generalFriday": "Пятница",
+      "generalSaturday": "Суббота",
+      "generalSunday": "Воскресенье",
 
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
@@ -1095,8 +1438,6 @@
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию:",
-      "outControls_arr_title": "Действия",
-      "outControls_obj_title": "Действие",
       "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации:",
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_description": "Если необходимо",
@@ -1149,17 +1490,30 @@
       "scheduleScenarioName": "Расписание",
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
       "scheduleTimeTitle": "Время выполнения",
-      "scheduleDaysOfWeekTitle": "Дни недели",
-      "Monday": "Понедельник",
-      "Tuesday": "Вторник",
-      "Wednesday": "Среда",
-      "Thursday": "Четверг",
-      "Friday": "Пятница",
-      "Saturday": "Суббота",
-      "Sunday": "Воскресенье",
-      "scheduleActionsTitle": "Действия",
-      "scheduleActionsDescription": "Действия, которые будут выполнены в назначенное время:",
-      "scheduleActionObjTitle": "Действие"
+
+      "astroTimerScenarioName": "Астрономический таймер",
+      "astroTimerScenarioDescription": "Выполняет действия по астрономическим событиям (восход, закат, сумерки и др.) со смещением по времени.<br>Расчёт выполняется локально по географическим координатам.",
+      "astroTimerLatitudeTitle": "Широта",
+      "astroTimerLatitudeDescription": "Широта местоположения (от -90 до 90)",
+      "astroTimerLongitudeTitle": "Долгота",
+      "astroTimerLongitudeDescription": "Долгота местоположения (от -180 до 180)",
+      "astroTimerEventTitle": "Астрономическое событие",
+      "astroTimerOffsetTitle": "Смещение (минуты)",
+      "astroTimerOffsetDescription": "Смещение в минутах. Отрицательное = до события, положительное = после.",
+      "astroTimerEventSunrise": "Восход",
+      "astroTimerEventSunset": "Закат",
+      "astroTimerEventDawn": "Гражданский рассвет (-6°)",
+      "astroTimerEventDusk": "Гражданские сумерки (-6°)",
+      "astroTimerEventNauticalDawn": "Навигационный рассвет (-12°)",
+      "astroTimerEventNauticalDusk": "Навигационные сумерки (-12°)",
+      "astroTimerEventNightEnd": "Астрономический рассвет (-18°)",
+      "astroTimerEventNight": "Астрономические сумерки (-18°)",
+      "astroTimerEventGoldenHour": "Золотой час (вечер, +6°)",
+      "astroTimerEventGoldenHourEnd": "Золотой час конец (утро, +6°)",
+      "astroTimerEventSolarNoon": "Солнечный полдень",
+      "astroTimerEventNadir": "Надир (самый тёмный момент)",
+      "astroTimerCoordinatesTitle": "Координаты местоположения в формате десятичных градусов (DD). Например, для Москвы: 55.7558, 37.6176",
+      "astroTimerEventSettingsTitle": "Настройки события"
     }
   }
 }

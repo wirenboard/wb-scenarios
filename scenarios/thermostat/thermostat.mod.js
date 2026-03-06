@@ -98,7 +98,7 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
 
 /**
  * Get configuration for waiting for controls
- * @param {Object} cfg - Configuration object
+ * @param {ThermostatConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
 ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {
@@ -173,7 +173,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
 
 /**
  * Adds required custom controls cells to the virtual device
- * @param {Object} self - Reference to the ThermostatScenario instance
+ * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
  * @param {ThermostatConfig} cfg - Configuration object
  * @param {number} initialTemp - Initial value for the target temperature
  */
@@ -281,7 +281,7 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
 
 /**
  * Creates an error handling rule for a sensor or actuator
- * @param {Object} self - Reference to the ThermostatScenario instance
+ * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
  * @param {string} ruleName - The name of the rule to be created
  * @param {string} sourceErrTopic - The MQTT topic where error events published
  *     Example: "temperature_sensor/temperature#error", "relay_module/K2#error"
@@ -367,7 +367,7 @@ function createErrChangeRule(
 /**
  * Restore target temperature from persistent storage (if saved previosly)
  * If the stored value is invalid or missing, we use cfg.targetTemp and save it
- * @param {Object} self - Reference to the ThermostatScenario instance
+ * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
  * @param {ThermostatConfig} cfg - Thermostat config
  * @returns {number} The target temperature to use
  */
@@ -419,11 +419,13 @@ function restoreTargetTemperature(self, cfg) {
 
 /**
  * Creates all required rules for current type scenario
- * @param {Object} self - Reference to the ThermostatScenario instance
+ * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
  * @param {ThermostatConfig} cfg - Configuration object
  * @returns {boolean} True if all rules created successfully, false otherwise
  */
 function createRules(self, cfg) {
+  log.debug('Start all required rules creation');
+
   var vdCtrlCurTemp = self.vd.devObj.getControl(vdCtrl.curTemp);
   var vdCtrlActuator = self.vd.devObj.getControl(vdCtrl.actuatorStatus);
   var vdCtrlTargetTemp = self.vd.devObj.getControl(vdCtrl.targetTemp);
@@ -585,6 +587,15 @@ function createRules(self, cfg) {
  * @returns {boolean} True if initialization succeeded
  */
 ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
+  /**
+   * NOTE: This method is executed ONLY when:
+   * - Base initialization is complete
+   * - Configuration is valid
+   * - All referenced controls exist in the system
+   * 
+   * The async initialization chain guarantees that all prerequisites are met.
+   * No need to re-validate or check control existence here.
+   */
   log.debug('Start init thermostat scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
@@ -598,7 +609,6 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   addCustomControlsToVirtualDevice(this, cfg, usedTemp);
 
   // Create all rules
-  log.debug('Start all required rules creation');
   var rulesCreated = createRules(this, cfg);
 
   if (rulesCreated) {

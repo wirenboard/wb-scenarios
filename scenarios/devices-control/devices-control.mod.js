@@ -71,7 +71,7 @@ DevicesControlScenario.prototype.generateNames = function(idPrefix) {
 
 /**
  * Get configuration for waiting for controls
- * @param {Object} cfg - Configuration object
+ * @param {DevicesControlConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
 DevicesControlScenario.prototype.defineControlsWaitConfig = function (cfg) {
@@ -188,11 +188,13 @@ DevicesControlScenario.prototype.validateCfg = function(cfg) {
 
 /**
  * Creates all required rules for the InputOutputLink scenario
- * @param {Object} self - Reference to the DevicesControlScenario instance
- * @param {Object} cfg - Configuration object
+ * @param {DevicesControlScenario} self - Reference to the DevicesControlScenario instance
+ * @param {DevicesControlConfig} cfg - Configuration object
  * @returns {boolean} True if rule created successfully
  */
 function createRules(self, cfg) {
+  log.debug('Start all required rules creation');
+
   // Extract control names for the rule
   var inControlNames = [];
   for (var i = 0; i < self.cfg.inControls.length; i++) {
@@ -218,7 +220,7 @@ function createRules(self, cfg) {
 
 /**
  * Handler for input control changes
- * @param {Object} self - Reference to the DevicesControlScenario instance
+ * @param {DevicesControlScenario} self - Reference to the DevicesControlScenario instance
  * @param {any} newValue - New value of the input control
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -279,18 +281,29 @@ function inputChangeHandler(self, newValue, devName, cellName) {
  * @returns {boolean} True if initialization succeeded
  */
 DevicesControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
+  /**
+   * NOTE: This method is executed ONLY when:
+   * - Base initialization is complete
+   * - Configuration is valid
+   * - All referenced controls exist in the system
+   * 
+   * The async initialization chain guarantees that all prerequisites are met.
+   * No need to re-validate or check control existence here.
+   */
   log.debug('Start init input-output link scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
   
   // Virtual device already created by base class
   // Additional controls can be added here if needed
   
-  log.debug('Start all required rules creation');
-  var ruleCreated = createRules(this, cfg);
+  var rulesCreated = createRules(this, cfg);
 
-  this.setState(ScenarioState.NORMAL);
-  log.debug('Input-output link scenario initialized successfully');
-  return ruleCreated;
+  if (rulesCreated) {
+    this.setState(ScenarioState.NORMAL);
+    log.debug('Input-output link scenario initialized successfully for device "{}"', deviceTitle);
+  }
+
+  return rulesCreated;
 };
 
 exports.DevicesControlScenario = DevicesControlScenario;

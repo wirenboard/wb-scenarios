@@ -167,7 +167,7 @@ ScenarioBase.prototype.init = function (name, cfg) {
     throw new Error('Basic VD creation failed');
   }
 
-  scenarioPersistentStorage.setMeta(this.idPrefix, 'vdName', this.genNames.vDevice);
+  this.setPsMeta('vdName', this.genNames.vDevice);
 
   this.vd = {
     devObj: devObj,
@@ -319,6 +319,34 @@ ScenarioBase.prototype.setPsUserSetting = function (key, value) {
   }
 
   return this._ps.setUserSetting(this.idPrefix, key, value);
+};
+
+/**
+ * Get the meta value from storage
+ * @param {string} key Meta key name
+ * @param {any} defaultValue Value to return if key not found
+ * @returns {any} Stored value or default
+ */
+ScenarioBase.prototype.getPsMeta = function (key, defaultValue) {
+  if (!this._ps) {
+    return defaultValue;
+  }
+
+  return this._ps.getMeta(this.idPrefix, key, defaultValue);
+};
+
+/**
+ * Set the meta value to storage
+ * @param {string} key Meta key name
+ * @param {any} value Value to store
+ * @returns {void}
+ */
+ScenarioBase.prototype.setPsMeta = function (key, value) {
+  if (!this._ps) {
+    return;
+  }
+
+  return this._ps.setMeta(this.idPrefix, key, value);
 };
 
 /**

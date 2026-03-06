@@ -181,7 +181,7 @@ LightControlScenario.prototype.validateCfg = function (cfg) {
 
 /**
  * Adds required custom controls cells to the virtual device
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {LightControlConfig} cfg - Configuration object
  */
 function addCustomControlsToVirtualDevice(self, cfg) {
@@ -300,8 +300,8 @@ function addCustomControlsToVirtualDevice(self, cfg) {
 
 /**
  * Adds all linked device controls to the virtual device for debugging
- * @param {Object} self - Reference to the LightControlScenario instance
- * @param {Object} cfg - Configuration object
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
+ * @param {LightControlConfig} cfg - Configuration object
  * @returns {boolean} Indicates whether all device controls were created successfully.
  */
 function addAllLinkedDevicesToVd(self, cfg) {
@@ -332,7 +332,7 @@ function addAllLinkedDevicesToVd(self, cfg) {
 
 /**
  * Adds an array of linked controls to the virtual device
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {Array} arrayOfControls - Array of controls to link
  * @param {string} cellPrefix - Prefix for control names in the virtual device
  * @returns {boolean} Indicates whether all controls successfully created
@@ -366,7 +366,7 @@ function addLinkedControlsArray(self, arrayOfControls, cellPrefix) {
 
 /**
  * Updates the remaining time to light off each second
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  */
 function updateRemainingLightOffTime(self) {
   var remainingTime =
@@ -379,7 +379,7 @@ function updateRemainingLightOffTime(self) {
 
 /**
  * Updates the remaining time to logic enable each second
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  */
 function updateRemainingLogicEnableTime(self) {
   var remainingTime =
@@ -392,7 +392,7 @@ function updateRemainingLogicEnableTime(self) {
 
 /**
  * Starts the light off timer
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {number} newDelayMs - Delay in milliseconds
  */
 function startLightOffTimer(self, newDelayMs) {
@@ -403,7 +403,7 @@ function startLightOffTimer(self, newDelayMs) {
 
 /**
  * Starts the logic enable timer
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {number} newDelayMs - Delay in milliseconds
  */
 function startLogicEnableTimer(self, newDelayMs) {
@@ -415,7 +415,7 @@ function startLogicEnableTimer(self, newDelayMs) {
 
 /**
  * Turns off the lights by timeout
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  */
 function turnOffLightsByTimeout(self) {
   dev[self.genNames.vDevice + '/lightOn'] = false;
@@ -424,7 +424,7 @@ function turnOffLightsByTimeout(self) {
 
 /**
  * Enables logic by timeout
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  */
 function enableLogicByTimeout(self) {
   dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
@@ -433,7 +433,7 @@ function enableLogicByTimeout(self) {
 
 /**
  * Resets the light off timer
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  */
 function resetLightOffTimer(self) {
   self.ctx.lightOffTimerId = null;
@@ -442,7 +442,7 @@ function resetLightOffTimer(self) {
 
 /**
  * Resets the logic enable timer
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  */
 function resetLogicEnableTimer(self) {
   self.ctx.logicEnableTimerId = null;
@@ -615,7 +615,7 @@ function checkAllMotionSensorsInactive(motionSensors) {
 
 /**
  * Defines a rule, logs result, and registers the rule ID in the scenario
- * @param {Object} self - Scenario instance
+ * @param {LightControlScenario} self - Scenario instance
  * @param {string} name - Unique rule name
  * @param {Array|string} topics - MQTT topic(s) to subscribe on change
  * @param {Function} handler - Handler function to call on topic change
@@ -652,11 +652,13 @@ function createAndRegisterRule(self, name, topics, handler) {
 
 /**
  * Creates all required rules for current type scenario
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {LightControlConfig} cfg - Configuration object
  * @returns {boolean} True if all rules created successfully, false otherwise
  */
 function createRules(self, cfg) {
+  log.debug('Start all required rules creation');
+
   var gName = self.genNames;
   var vd = self.genNames.vDevice
 
@@ -802,7 +804,7 @@ function createRules(self, cfg) {
 
 /**
  * Handler for motion sensor changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {any} newValue - New sensor value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -839,7 +841,7 @@ function motionSensorHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for motion in progress changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {boolean} newValue - New motion state value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -861,7 +863,7 @@ function motionInProgressHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for remaining time to light off changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {number} newValue - New time value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -894,7 +896,7 @@ function remainingTimeToLightOffHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for light on control changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {boolean} newValue - New light state value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -923,7 +925,7 @@ function lightOnHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for opening sensor changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {any} newValue - New sensor value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -957,7 +959,7 @@ function openingSensorHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for light switch used
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {any} newValue - New switch value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -986,7 +988,7 @@ function lightSwitchUsedHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for remaining time to logic enable changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {number} newValue - New time value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -1018,7 +1020,7 @@ function remainingTimeToLogicEnableHandler(
 
 /**
  * Handler for door open changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {boolean} newValue - New door state value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -1041,7 +1043,7 @@ function doorOpenHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for disabling automation logic when using the switch
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {boolean} newValue - New logic state value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -1060,7 +1062,7 @@ function logicDisabledHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for light devices changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {any} newValue - New value of the changed device
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -1158,7 +1160,7 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
 
 /**
  * Handler for last switch action changes
- * @param {Object} self - Reference to the LightControlScenario instance
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {number} newValue - New action type value
  * @param {string} devName - Device name
  * @param {string} cellName - Cell name
@@ -1204,6 +1206,15 @@ function lastSwitchActionHandler(self, newValue, devName, cellName) {
  * @returns {boolean} True if initialization succeeded
  */
 LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
+  /**
+   * NOTE: This method is executed ONLY when:
+   * - Base initialization is complete
+   * - Configuration is valid
+   * - All referenced controls exist in the system
+   * 
+   * The async initialization chain guarantees that all prerequisites are met.
+   * No need to re-validate or check control existence here.
+   */
   log.debug('Start init light scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
@@ -1216,11 +1227,13 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     if (!ok) return false;
   }
 
-  log.debug('Start all required rules creation');
   var rulesCreated = createRules(this, cfg);
 
-  this.setState(ScenarioState.NORMAL);
-  log.debug('Light control scenario initialized successfully');
+  if (rulesCreated) {
+    this.setState(ScenarioState.NORMAL);
+    log.debug('Light control scenario initialized successfully for device "{}"', deviceTitle);
+  }
+
   return rulesCreated;
 };
 
