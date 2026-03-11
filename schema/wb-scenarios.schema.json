@@ -31,6 +31,9 @@
         },
         {
           "$ref": "#/definitions/astronomicalTimer"
+        },
+        {
+          "$ref": "#/definitions/periodicTimer"
         }
       ],
       "_format": "wb-multiple",
@@ -1279,6 +1282,316 @@
         "outControls"
       ]
     }
+    ,
+    "periodicTimer": {
+      "type": "object",
+      "title": "periodicTimerScenarioName",
+      "description": "periodicTimerScenarioDescription",
+      "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
+      "properties": {
+        "scenarioType": {
+          "type": "string",
+          "enum": ["periodicTimer"],
+          "default": "periodicTimer",
+          "options": {
+            "hidden": true
+          }
+        },
+        "componentVersion": {
+          "type": "integer",
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "name": {
+          "title": "generalScenarioName",
+          "type": "string",
+          "default": "Periodic Timer",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "idPrefix": {
+          "title": "generalScenarioIdPrefixTitle",
+          "type": "string",
+          "description": "generalScenarioIdPrefixDescription",
+          "pattern": "^[0-9a-zA-Z_]+$",
+          "default": "",
+          "minLength": 1,
+          "maxLength": 120,
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
+          }
+        },
+        "activeFrom": {
+          "title": "periodicTimerActiveFromTitle",
+          "description": "periodicTimerActiveFromDescription",
+          "type": "string",
+          "_format": "time",
+          "default": "00:00",
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "activeTo": {
+          "title": "periodicTimerActiveToTitle",
+          "description": "periodicTimerActiveToDescription",
+          "type": "string",
+          "_format": "time",
+          "default": "23:59",
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "interval": {
+          "title": "periodicTimerIntervalTitle",
+          "description": "periodicTimerIntervalDescription",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440,
+          "default": 60,
+          "propertyOrder": 6,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "duration": {
+          "title": "periodicTimerDurationTitle",
+          "description": "periodicTimerDurationDescription",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1440,
+          "default": 0,
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "scheduleDaysOfWeek": {
+          "title": "generalDaysOfWeekTitle",
+          "type": "array",
+          "_format": "checkbox",
+          "uniqueItems": true,
+          "minItems": 1,
+          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+          "propertyOrder": 8,
+          "options": {
+            "grid_columns": 12
+          },
+          "items": {
+            "type": "string",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "options": {
+              "enum_titles": [
+                "generalMonday",
+                "generalTuesday",
+                "generalWednesday",
+                "generalThursday",
+                "generalFriday",
+                "generalSaturday",
+                "generalSunday"
+              ]
+            }
+          }
+        },
+        "startControls": {
+          "type": "array",
+          "minItems": 1,
+          "title": "periodicTimerStartControlsTitle",
+          "description": "periodicTimerStartControlsDescription",
+          "_format": "table",
+          "propertyOrder": 9,
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "generalActionObjTitle",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "generalMqttTopicNameTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "outControls_behaviorType_title",
+                "enum": [
+                  "setEnable",
+                  "setDisable",
+                  "setValue"
+                ],
+                "default": "setEnable",
+                "options": {
+                  "enum_titles": [
+                    "Enable (switch)",
+                    "Disable (switch)",
+                    "generalEnumSetValue"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "generalActionValueTitle",
+                "description": "outControls_actionValue_description",
+                "default": 0,
+                "options": {
+                  "dependencies": {
+                    "behaviorType": [
+                      "setValue"
+                    ]
+                  }
+                }
+              }
+            },
+            "required": [
+              "control",
+              "behaviorType"
+            ]
+          }
+        },
+        "stopControls": {
+          "type": "array",
+          "minItems": 0,
+          "title": "periodicTimerStopControlsTitle",
+          "description": "periodicTimerStopControlsDescription",
+          "_format": "table",
+          "propertyOrder": 10,
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "generalActionObjTitle",
+            "type": "object",
+            "properties": {
+              "control": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "generalMqttTopicNameTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "outControls_behaviorType_title",
+                "enum": [
+                  "setEnable",
+                  "setDisable",
+                  "setValue"
+                ],
+                "default": "setDisable",
+                "options": {
+                  "enum_titles": [
+                    "Enable (switch)",
+                    "Disable (switch)",
+                    "generalEnumSetValue"
+                  ]
+                }
+              },
+              "actionValue": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "generalActionValueTitle",
+                "description": "outControls_actionValue_description",
+                "default": 0,
+                "options": {
+                  "dependencies": {
+                    "behaviorType": [
+                      "setValue"
+                    ]
+                  }
+                }
+              }
+            },
+            "required": [
+              "control",
+              "behaviorType"
+            ]
+          }
+        }
+      },
+      "defaultProperties": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "activeFrom",
+        "activeTo",
+        "interval",
+        "duration",
+        "scheduleDaysOfWeek",
+        "startControls",
+        "stopControls"
+      ],
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "interval",
+        "duration",
+        "scheduleDaysOfWeek",
+        "activeFrom",
+        "activeTo",
+        "startControls"
+      ]
+    }
   },
   "properties": {
     "configVersion": {
@@ -1403,7 +1716,22 @@
       "astroTimerEventSolarNoon": "Solar Noon",
       "astroTimerEventNadir": "Nadir (darkest moment)",
       "astroTimerCoordinatesTitle": "Location coordinates in decimal degrees (DD) format. For example, for Astana: 51.1694, 71.4491",
-      "astroTimerEventSettingsTitle": "Event settings"
+      "astroTimerEventSettingsTitle": "Event settings",
+
+      "periodicTimerScenarioName": "Periodic Timer",
+      "periodicTimerScenarioDescription": "Repeatedly executes actions at a fixed interval. Optionally executes a second set of actions after a delay (e.g. turn on → wait → turn off).",
+      "periodicTimerActiveFromTitle": "Active from",
+      "periodicTimerActiveFromDescription": "Start of the active time window (inclusive). The scenario runs only within this window.",
+      "periodicTimerActiveToTitle": "Active to",
+      "periodicTimerActiveToDescription": "End of the active time window (exclusive). The scenario stops before this time. To fire start at 19:00 with duration 5 min, set to 19:06.",
+      "periodicTimerIntervalTitle": "Interval (min)",
+      "periodicTimerIntervalDescription": "How often to run start actions. Maximum 1440 minutes (24 hours). The sum of interval and delay must not exceed 1440 minutes.",
+      "periodicTimerDurationTitle": "Stop delay (min)",
+      "periodicTimerDurationDescription": "Delay before executing stop actions. Set to 0 to disable the stop phase. Must be less than the interval.",
+      "periodicTimerStartControlsTitle": "Start actions",
+      "periodicTimerStartControlsDescription": "Actions executed at each interval. Only idempotent actions are supported (toggle, increase, decrease are not available):",
+      "periodicTimerStopControlsTitle": "Stop actions",
+      "periodicTimerStopControlsDescription": "Actions executed after the delay. Used only when stop delay > 0. Only idempotent actions are supported:"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1513,7 +1841,22 @@
       "astroTimerEventSolarNoon": "Солнечный полдень",
       "astroTimerEventNadir": "Надир (самый тёмный момент)",
       "astroTimerCoordinatesTitle": "Координаты местоположения в формате десятичных градусов (DD). Например, для Москвы: 55.7558, 37.6176",
-      "astroTimerEventSettingsTitle": "Настройки события"
+      "astroTimerEventSettingsTitle": "Настройки события",
+
+      "periodicTimerScenarioName": "Периодический таймер",
+      "periodicTimerScenarioDescription": "Выполняет набор действий с заданным интервалом. Дополнительно через указанную паузу может выполнить второй набор действий (например: включить → подождать → выключить).",
+      "periodicTimerActiveFromTitle": "Активен с",
+      "periodicTimerActiveFromDescription": "Начало временного окна активности (включительно). Сценарий срабатывает только внутри этого окна.",
+      "periodicTimerActiveToTitle": "Активен до",
+      "periodicTimerActiveToDescription": "Конец временного окна активности (не включается). Сценарий останавливается до наступления этого времени. Чтобы запустить в 19:00 с паузой 5 мин, укажите 19:06.",
+      "periodicTimerIntervalTitle": "Интервал (мин)",
+      "periodicTimerIntervalDescription": "Как часто запускать действия. Максимум 1440 минут (24 часа). Сумма интервала и паузы не должна превышать 1440 минут.",
+      "periodicTimerDurationTitle": "Пауза (мин)",
+      "periodicTimerDurationDescription": "Задержка перед выполнением действий остановки. При нуле — второй блок действий не используется. Должна быть меньше интервала.",
+      "periodicTimerStartControlsTitle": "Действия запуска",
+      "periodicTimerStartControlsDescription": "Действия, выполняемые каждый интервал. Поддерживаются только идемпотентные действия (переключение, увеличение и уменьшение недоступны):",
+      "periodicTimerStopControlsTitle": "Действия остановки",
+      "periodicTimerStopControlsDescription": "Действия, выполняемые после паузы. Используется только если пауза > 0. Поддерживаются только идемпотентные действия:"
     }
   }
 }

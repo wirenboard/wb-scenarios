@@ -37,7 +37,7 @@ var ASTRO_EVENT_NAMES = {
   nadir:         { en: 'Nadir',            ru: 'Надир' },
 };
 
-var MS_PER_MINUTE = 60000;
+var MS_PER_MINUTE = constants.MS_PER_MINUTE;
 var MAX_DAYS_AHEAD = 8; // today + 7
 var OFFSET_MIN_MIN = -720; // -12 hours
 var OFFSET_MAX_MIN = 720;  // +12 hours
