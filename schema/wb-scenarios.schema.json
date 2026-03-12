@@ -74,7 +74,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "devicesControlDefaultName",
+          "default": "devicesControlDefaultInputName",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 2,
@@ -288,7 +288,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "lightControlDefaultName",
+          "default": "lightControlDefaultInputName",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 2,
@@ -673,7 +673,7 @@
         "name": {
           "type": "string",
           "title": "generalScenarioName",
-          "default": "thermostatDefaultName",
+          "default": "thermostatDefaultInputName",
           "minLength": 1,
           "maxLength": 30,
           "propertyOrder": 1,
@@ -833,7 +833,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "scheduleDefaultName",
+          "default": "scheduleDefaultInputName",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 2,
@@ -1025,7 +1025,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "astroTimerDefaultName",
+          "default": "astroTimerDefaultInputName",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 1,
@@ -1335,7 +1335,7 @@
       "generalSunday": "Sunday",
 
       "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
-      "devicesControlDefaultName": "Device control",
+      "devicesControlDefaultInputName": "Device control",
       "inControls_arr_title": "Triggers",
       "inControls_obj_title": "Trigger",
       "inControls_arr_description": "Any of the events listed here will trigger the automation.",
@@ -1345,7 +1345,7 @@
 
       "lightControlScenarioName": "Light control",
       "lightControlScenarioDescription": "The scenario controls lights via switch, motion-, or door-sensors.",
-      "lightControlDefaultName": "Light control",
+      "lightControlDefaultInputName": "Light control",
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Light devices</p>",
       "lightControlLightDevicesArrDescription": "Devices switched on when scenario runs:",
       "lightControlLightDevicesObjTitle": "Light device",
@@ -1369,7 +1369,7 @@
 
       "thermostatScenarioName": "Thermostat",
       "thermostatScenarioDescription": "Maintaining a set temperature with hysteresis",
-      "thermostatDefaultName": "Heater",
+      "thermostatDefaultInputName": "Heater",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
       "thermostatTempLimitsObjTitle": "Temperature adjustment limits in widget",
       "thermostatTempLimitsMinTitle": "Low (°C)",
@@ -1381,13 +1381,13 @@
 
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
-      "scheduleDefaultName": "Schedule",
+      "scheduleDefaultInputName": "Schedule",
       "scheduleTimeTitle": "Execution Time",
       "scheduleActionObjTitle": "Action",
 
       "astroTimerScenarioName": "Astronomical Timer",
       "astroTimerScenarioDescription": "Executes actions based on astronomical events (sunrise, sunset, twilight, etc.) with optional time offset.<br>Calculations are performed locally using geographic coordinates.",
-      "astroTimerDefaultName": "Astronomical Timer",
+      "astroTimerDefaultInputName": "Astronomical Timer",
       "astroTimerLatitudeTitle": "Latitude",
       "astroTimerLatitudeDescription": "Location latitude (-90 to 90)",
       "astroTimerLongitudeTitle": "Longitude",
@@ -1440,7 +1440,7 @@
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
       "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
-      "devicesControlDefaultName": "Управление устройствами",
+      "devicesControlDefaultInputName": "Управление устройствами",
       "inControls_arr_title": "События",
       "inControls_obj_title": "Событие",
       "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию:",
@@ -1460,7 +1460,7 @@
 
       "lightControlScenarioName": "Управление светом",
       "lightControlScenarioDescription": "Сценарий управляет светом через выключатели, датчики движения и открытия.",
-      "lightControlDefaultName": "Управление светом",
+      "lightControlDefaultInputName": "Управление светом",
       "lightControlLightDevicesTitle": "<p style=\"margin-top: 20px; margin-bottom: 0px; font-size: 24px; font-weight: bold\"><img src=\"images/wb-scenarios/scenario-light-control-light-devices.png\" height=\"30\">  Устройства освещения</p>",
       "lightControlLightDevicesArrDescription": "Устройства, включаемые сценарием:",
       "lightControlLightDevicesObjTitle": "Устройство освещения",
@@ -1485,7 +1485,7 @@
 
       "thermostatScenarioName": "Термостат",
       "thermostatScenarioDescription": "Поддержание заданной температуры с гистерезисом.",
-      "thermostatDefaultName": "Теплый пол в комнате",
+      "thermostatDefaultInputName": "Теплый пол в комнате",
       "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
       "thermostatTempLimitsObjTitle": "Границы изменения температуры в виджете",
       "thermostatTempLimitsMinTitle": "Нижняя (°C)",
@@ -1497,12 +1497,12 @@
 
       "scheduleScenarioName": "Расписание",
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
-      "scheduleDefaultName": "Расписание",
+      "scheduleDefaultInputName": "Расписание",
       "scheduleTimeTitle": "Время выполнения",
 
       "astroTimerScenarioName": "Астрономический таймер",
       "astroTimerScenarioDescription": "Выполняет действия по астрономическим событиям (восход, закат, сумерки и др.) со смещением по времени.<br>Расчёт выполняется локально по географическим координатам.",
-      "astroTimerDefaultName": "Астрономический таймер",
+      "astroTimerDefaultInputName": "Астрономический таймер",
       "astroTimerLatitudeTitle": "Широта",
       "astroTimerLatitudeDescription": "Широта местоположения (от -90 до 90)",
       "astroTimerLongitudeTitle": "Долгота",
