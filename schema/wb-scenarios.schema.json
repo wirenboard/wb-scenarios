@@ -1310,7 +1310,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "Periodic Timer",
+          "default": "periodicTimerDefaultInputName",
           "minLength": 1,
           "maxLength": 120,
           "propertyOrder": 2,
@@ -1354,29 +1354,89 @@
             "grid_columns": 6
           }
         },
-        "interval": {
-          "title": "periodicTimerIntervalTitle",
-          "description": "periodicTimerIntervalDescription",
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 1440,
-          "default": 60,
+        "workTime": {
+          "title": "periodicTimerWorkTimeTitle",
+          "type": "object",
+          "_format": "grid",
           "propertyOrder": 6,
           "options": {
-            "grid_columns": 6
-          }
+            "grid_columns": 12,
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "workTimeUnit": {
+              "title": "periodicTimerUnitTitle",
+              "type": "string",
+              "enum": ["hours", "minutes", "seconds"],
+              "default": "minutes",
+              "propertyOrder": 1,
+              "options": {
+                "enum_titles": [
+                  "periodicTimerUnitHours",
+                  "periodicTimerUnitMinutes",
+                  "periodicTimerUnitSeconds"
+                ],
+                "grid_columns": 6
+              }
+            },
+            "workTimeValue": {
+              "title": "periodicTimerValueTitle",
+              "description": "periodicTimerWorkTimeDescription",
+              "type": "integer",
+              "minimum": 1,
+              "default": 5,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 6
+              }
+            }
+          },
+          "required": ["workTimeUnit", "workTimeValue"],
+          "defaultProperties": ["workTimeUnit", "workTimeValue"]
         },
-        "duration": {
-          "title": "periodicTimerDurationTitle",
-          "description": "periodicTimerDurationDescription",
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 1440,
-          "default": 0,
+        "interval": {
+          "title": "periodicTimerIntervalTitle",
+          "type": "object",
+          "_format": "grid",
           "propertyOrder": 7,
           "options": {
-            "grid_columns": 6
-          }
+            "grid_columns": 12,
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "intervalUnit": {
+              "title": "periodicTimerUnitTitle",
+              "type": "string",
+              "enum": ["hours", "minutes", "seconds"],
+              "default": "minutes",
+              "propertyOrder": 1,
+              "options": {
+                "enum_titles": [
+                  "periodicTimerUnitHours",
+                  "periodicTimerUnitMinutes",
+                  "periodicTimerUnitSeconds"
+                ],
+                "grid_columns": 6
+              }
+            },
+            "intervalValue": {
+              "title": "periodicTimerValueTitle",
+              "description": "periodicTimerIntervalDescription",
+              "type": "integer",
+              "minimum": 1,
+              "default": 60,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 6
+              }
+            }
+          },
+          "required": ["intervalUnit", "intervalValue"],
+          "defaultProperties": ["intervalUnit", "intervalValue"]
         },
         "scheduleDaysOfWeek": {
           "title": "generalDaysOfWeekTitle",
@@ -1472,8 +1532,7 @@
               "actionValue": {
                 "type": "number",
                 "propertyOrder": 3,
-                "title": "generalActionValueTitle",
-                "description": "outControls_actionValue_description",
+                "title": "periodicTimerSetValueTitle",
                 "default": 0,
                 "options": {
                   "dependencies": {
@@ -1482,75 +1541,11 @@
                     ]
                   }
                 }
-              }
-            },
-            "required": [
-              "control",
-              "behaviorType"
-            ]
-          }
-        },
-        "stopControls": {
-          "type": "array",
-          "minItems": 0,
-          "title": "periodicTimerStopControlsTitle",
-          "description": "periodicTimerStopControlsDescription",
-          "_format": "table",
-          "propertyOrder": 10,
-          "options": {
-            "disable_collapse": true,
-            "grid_columns": 12,
-            "array_controls_top": true,
-            "disable_array_delete_last_row": true,
-            "disable_array_reorder": true,
-            "wb": {
-              "disable_panel": true
-            }
-          },
-          "items": {
-            "title": "generalActionObjTitle",
-            "type": "object",
-            "properties": {
-              "control": {
-                "type": "string",
-                "propertyOrder": 1,
-                "title": "generalMqttTopicNameTitle",
-                "pattern": "^[^/+#]+/[^/+#]+$",
-                "_format": "wb-autocomplete",
-                "options": {
-                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
-                  "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
-                  },
-                  "wb": {
-                    "data": "devices"
-                  }
-                },
-                "minLength": 3
               },
-              "behaviorType": {
-                "type": "string",
-                "propertyOrder": 2,
-                "title": "outControls_behaviorType_title",
-                "enum": [
-                  "setEnable",
-                  "setDisable",
-                  "setValue"
-                ],
-                "default": "setDisable",
-                "options": {
-                  "enum_titles": [
-                    "Enable (switch)",
-                    "Disable (switch)",
-                    "generalEnumSetValue"
-                  ]
-                }
-              },
-              "actionValue": {
+              "returnValue": {
                 "type": "number",
-                "propertyOrder": 3,
-                "title": "generalActionValueTitle",
-                "description": "outControls_actionValue_description",
+                "propertyOrder": 4,
+                "title": "periodicTimerReturnValueTitle",
                 "default": 0,
                 "options": {
                   "dependencies": {
@@ -1568,24 +1563,12 @@
           }
         }
       },
-      "defaultProperties": [
-        "scenarioType",
-        "componentVersion",
-        "name",
-        "activeFrom",
-        "activeTo",
-        "interval",
-        "duration",
-        "scheduleDaysOfWeek",
-        "startControls",
-        "stopControls"
-      ],
       "required": [
         "scenarioType",
         "componentVersion",
         "name",
+        "workTime",
         "interval",
-        "duration",
         "scheduleDaysOfWeek",
         "activeFrom",
         "activeTo",
@@ -1719,19 +1702,25 @@
       "astroTimerEventSettingsTitle": "Event settings",
 
       "periodicTimerScenarioName": "Periodic Timer",
-      "periodicTimerScenarioDescription": "Repeatedly executes actions at a fixed interval. Optionally executes a second set of actions after a delay (e.g. turn on → wait → turn off).",
+      "periodicTimerScenarioDescription": "Repeatedly activates controls at a fixed interval within a time window. After the work time, each control is automatically restored to its previous state.",
+      "periodicTimerDefaultInputName": "Periodic Timer",
       "periodicTimerActiveFromTitle": "Active from",
       "periodicTimerActiveFromDescription": "Start of the active time window (inclusive). The scenario runs only within this window.",
       "periodicTimerActiveToTitle": "Active to",
-      "periodicTimerActiveToDescription": "End of the active time window (exclusive). The scenario stops before this time. To fire start at 19:00 with duration 5 min, set to 19:06.",
-      "periodicTimerIntervalTitle": "Interval (min)",
-      "periodicTimerIntervalDescription": "How often to run start actions. Maximum 1440 minutes (24 hours). The sum of interval and delay must not exceed 1440 minutes.",
-      "periodicTimerDurationTitle": "Stop delay (min)",
-      "periodicTimerDurationDescription": "Delay before executing stop actions. Set to 0 to disable the stop phase. Must be less than the interval.",
-      "periodicTimerStartControlsTitle": "Start actions",
-      "periodicTimerStartControlsDescription": "Actions executed at each interval. Only idempotent actions are supported (toggle, increase, decrease are not available):",
-      "periodicTimerStopControlsTitle": "Stop actions",
-      "periodicTimerStopControlsDescription": "Actions executed after the delay. Used only when stop delay > 0. Only idempotent actions are supported:"
+      "periodicTimerActiveToDescription": "End of the active time window (exclusive). The scenario stops before this time.",
+      "periodicTimerWorkTimeTitle": "Work time",
+      "periodicTimerWorkTimeDescription": "How long the controls stay in the active state.",
+      "periodicTimerIntervalTitle": "Run every",
+      "periodicTimerIntervalDescription": "How often a new cycle starts.",
+      "periodicTimerUnitTitle": "Unit",
+      "periodicTimerValueTitle": "Value",
+      "periodicTimerUnitHours": "Hours",
+      "periodicTimerUnitMinutes": "Minutes",
+      "periodicTimerUnitSeconds": "Seconds",
+      "periodicTimerSetValueTitle": "Set to",
+      "periodicTimerReturnValueTitle": "Return to",
+      "periodicTimerStartControlsTitle": "Actions",
+      "periodicTimerStartControlsDescription": "Controls activated at each cycle. After the work time, each control is restored to its opposite state. For the Set value action, two values are configured: one to apply on start and one to restore on stop."
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1844,19 +1833,25 @@
       "astroTimerEventSettingsTitle": "Настройки события",
 
       "periodicTimerScenarioName": "Периодический таймер",
-      "periodicTimerScenarioDescription": "Выполняет набор действий с заданным интервалом. Дополнительно через указанную паузу может выполнить второй набор действий (например: включить → подождать → выключить).",
+      "periodicTimerScenarioDescription": "Активирует контролы с заданным интервалом в пределах временного окна. По истечении времени работы каждый контрол автоматически возвращается в предыдущее состояние.",
+      "periodicTimerDefaultInputName": "Периодический таймер",
       "periodicTimerActiveFromTitle": "Активен с",
       "periodicTimerActiveFromDescription": "Начало временного окна активности (включительно). Сценарий срабатывает только внутри этого окна.",
       "periodicTimerActiveToTitle": "Активен до",
-      "periodicTimerActiveToDescription": "Конец временного окна активности (не включается). Сценарий останавливается до наступления этого времени. Чтобы запустить в 19:00 с паузой 5 мин, укажите 19:06.",
-      "periodicTimerIntervalTitle": "Интервал (мин)",
-      "periodicTimerIntervalDescription": "Как часто запускать действия. Максимум 1440 минут (24 часа). Сумма интервала и паузы не должна превышать 1440 минут.",
-      "periodicTimerDurationTitle": "Пауза (мин)",
-      "periodicTimerDurationDescription": "Задержка перед выполнением действий остановки. При нуле — второй блок действий не используется. Должна быть меньше интервала.",
-      "periodicTimerStartControlsTitle": "Действия запуска",
-      "periodicTimerStartControlsDescription": "Действия, выполняемые каждый интервал. Поддерживаются только идемпотентные действия (переключение, увеличение и уменьшение недоступны):",
-      "periodicTimerStopControlsTitle": "Действия остановки",
-      "periodicTimerStopControlsDescription": "Действия, выполняемые после паузы. Используется только если пауза > 0. Поддерживаются только идемпотентные действия:"
+      "periodicTimerActiveToDescription": "Конец временного окна активности (не включается). Сценарий останавливается до наступления этого времени.",
+      "periodicTimerWorkTimeTitle": "Время работы",
+      "periodicTimerWorkTimeDescription": "Как долго контролы остаются в активном состоянии.",
+      "periodicTimerIntervalTitle": "Запускать каждые",
+      "periodicTimerIntervalDescription": "Как часто начинается новый цикл.",
+      "periodicTimerUnitTitle": "Единица",
+      "periodicTimerValueTitle": "Значение",
+      "periodicTimerUnitHours": "Часы",
+      "periodicTimerUnitMinutes": "Минуты",
+      "periodicTimerUnitSeconds": "Секунды",
+      "periodicTimerSetValueTitle": "Установить на",
+      "periodicTimerReturnValueTitle": "Вернуть к",
+      "periodicTimerStartControlsTitle": "Действия",
+      "periodicTimerStartControlsDescription": "Контролы, активируемые в каждом цикле. По истечении времени работы каждый контрол возвращается в противоположное состояние. Для действия «Установить значение» задаются два значения: для включения и для выключения."
     }
   }
 }

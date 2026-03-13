@@ -34,17 +34,23 @@ function initializeScenario(scenarioCfg) {
   );
 
   var scenario = new CustomTypeSc();
+  var rawInterval = scenarioCfg.interval;
+  var rawWorkTime = scenarioCfg.workTime;
+
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
-    interval: scenarioCfg.interval || 60,
-    duration: scenarioCfg.duration != null
-      ? scenarioCfg.duration
-      : 0,
-    activeFrom: scenarioCfg.activeFrom || '00:00',
-    activeTo: scenarioCfg.activeTo || '23:59',
+    interval: {
+      unit: rawInterval.intervalUnit,
+      value: rawInterval.intervalValue,
+    },
+    workTime: {
+      unit: rawWorkTime.workTimeUnit,
+      value: rawWorkTime.workTimeValue,
+    },
+    activeFrom: scenarioCfg.activeFrom,
+    activeTo: scenarioCfg.activeTo,
     scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
     startControls: scenarioCfg.startControls || [],
-    stopControls: scenarioCfg.stopControls || [],
   };
 
   try {

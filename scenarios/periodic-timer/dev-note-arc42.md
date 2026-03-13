@@ -3,34 +3,37 @@
 ## 1. Введение и цели
 
 ### 1.1. Описание задачи
+
 Новый тип сценария **Periodic Timer** для контроллеров Wiren Board.
-Позволяет выполнять циклические действия с заданным интервалом в минутах
-в заданные дни недели внутри настраиваемого временного окна.
-Через заданную паузу после первой группы действий автоматически
-выполняется вторая группа (например: включить → подождать → выключить).
+Выполняет циклические действия с заданным интервалом внутри настраиваемого
+временного окна в выбранные дни недели. После каждой рабочей фазы контролы
+автоматически возвращаются в обратное состояние.
 
 Типичные применения: полив, вентиляция, импульсное управление нагрузкой.
 
 ### 1.2. Функциональные требования
-- Повторяющееся выполнение действий с интервалом N минут (от `activeFrom`)
+
+- Повторяющееся выполнение действий с интервалом N секунд/минут/часов
 - Выбор дней недели, когда сценарий активен
 - Настраиваемое временное окно активности (`activeFrom` / `activeTo`)
-- Первая группа действий (`startControls`) — выполняется в фазе запуска
-- Пауза (`duration`) в минутах — продолжительность фазы запуска
-- Вторая группа действий (`stopControls`) — выполняется в фазе остановки
+- Действия (`startControls`) выполняются при старте цикла
+- По истечении времени работы (`workTime`) каждый контрол автоматически
+  возвращается в обратное состояние (reverse-логика)
 - Очистка состояния при выходе из временного окна
 - Ручной запуск через кнопку в виртуальном устройстве
-- Отображение статуса активности, следующего запуска и отключения
+- Отображение статуса, следующего запуска и отключения
 
 ### 1.3. Качественные цели
+
 | Приоритет | Цель | Описание |
 |---|---|---|
-| 1 | Идемпотентность | Каждую минуту определяем текущую фазу и применяем состояние, а не отслеживаем события |
-| 2 | Предсказуемость | Интервал отсчитывается от `activeFrom` |
+| 1 | Точность таймингов | setTimeout обеспечивает точность до секунды |
+| 2 | Предсказуемость | Первый цикл стартует сразу при входе в окно |
 | 3 | Простота | UI понятен пользователю без документации |
 | 4 | Совместимость | Те же паттерны что у Schedule и AstronomicalTimer |
 
 ### 1.4. Стейкхолдеры
+
 | Роль | Ожидания |
 |---|---|
 | Пользователь контроллера | Простая настройка через WebUI, надёжная циклическая работа |
@@ -42,6 +45,7 @@
 ## 2. Ограничения
 
 ### 2.1. Технические
+
 - **ES5 only** — wb-rules использует Duktape, нет ES6+
 - **JSON Schema Draft-04** — формат схемы UI
 - **Нет npm** — библиотеки нужно включать как .mod.js модули
@@ -50,6 +54,7 @@
 - **ctx не персистентен** — `this.ctx` сбрасывается при перезапуске wb-rules
 
 ### 2.2. Кодстайл (wirenboard/codestyle + локальный eslint/prettier)
+
 - 2 пробела отступ, без табов
 - Single quotes для строк
 - Semicolons обязательны
@@ -61,15 +66,16 @@
 - prettier + eslint (`@wirenboard/eslint`)
 
 ### 2.3. Организационные
+
 - Соблюдение паттернов ScenarioBase
 - Обязательная локализация (en + ru)
-- `duration` должно быть строго меньше `interval`
 
 ---
 
 ## 3. Контекст системы
 
 ### 3.1. Бизнес-контекст
+
 ```
 [Пользователь] --(WebUI)--> [wb-mqtt-confed] --(JSON conf)--> [wb-rules]
                                                                     |
@@ -79,6 +85,7 @@
 ```
 
 ### 3.2. Технический контекст
+
 ```
 wb-scenarios.schema.json  -->  wb-mqtt-confed (WebUI рендер)
          |
@@ -99,161 +106,84 @@ wb-scenarios.conf         -->  scenario-init-main.js
 
 ## 4. Стратегия решения
 
-### 4.1. Ключевое решение: отсчёт интервала
+### 4.1. Ключевое решение: цепочка setTimeout
 
-**Проблема:** Пользователь задаёт интервал в минутах (например, 60).
-Непонятно, от какого момента считать — от старта wb-rules или от начала суток.
+**Проблема:** Интервал может быть задан в секундах, минутах или часах.
+Cron wb-rules срабатывает только раз в минуту — этого недостаточно
+для точных интервалов в секундах.
 
-**Решение: Отсчёт от activeFrom**
+**Решение: setTimeout chain**
 
-Интервал отсчитывается от начала временного окна (`activeFrom`).
-Формула определения фазы:
+Первый цикл стартует немедленно (при входе в окно или при инициализации
+внутри окна). Каждый цикл сам планирует следующий через `setTimeout`:
 
-```js
-var fromMin = timeStrToMinutes(cfg.activeFrom);
-var elapsed = minuteOfDay >= fromMin
-  ? minuteOfDay - fromMin
-  : minuteOfDay + 1440 - fromMin;  // wrap-around
-var phase = elapsed % cfg.interval;
 ```
+startCycle():
+  executeStart()
+  setTimeout(workTimeMs):           ← первый таймер
+    executeReverse()
+    setTimeout(remainingMs):        ← второй таймер
+      startCycle()                  ← рекурсия
+```
+
+Cron (каждую минуту) выполняет только две функции:
+- Вход в окно + цикл не запущен → `startCycle()`
+- Выход из окна или отключение → `stopCycle()`
 
 **Преимущества:**
-- Предсказуемость: первое срабатывание всегда точно в `activeFrom`
-- Независимость от времени старта wb-rules
-- Интуитивно: при interval=60 и activeFrom=22:00 сценарий срабатывает в 22:00, 23:00, 00:00, …
+- Точность до секунды (против минуты у cron-based подхода)
+- Первый цикл запускается сразу, не ждёт следующей минуты
+- Цепочка самодостаточна — не требует внешних триггеров
 
-### 4.2. Идемпотентная фазовая логика
+### 4.2. Reverse-логика
 
-**Проблема:** Нужен механизм для надёжного чередования startControls и
-stopControls без отслеживания событий и без Persistent Storage.
+**Проблема:** Нужно автоматически возвращать контролы в исходное состояние
+после рабочей фазы.
 
-**Решение: Определение фазы по текущему времени**
+**Решение:** Для каждого `behaviorType` определено симметричное обратное действие:
 
-Каждую минуту cron определяет текущую фазу цикла:
+| При старте | При стопе |
+|---|---|
+| `setEnable` | `setDisable` |
+| `setDisable` | `setEnable` |
+| `setValue` с `actionValue` | `setValue` с `returnValue` |
 
-```
-elapsed = minuteOfDay - fromMin  (+ 1440 при wrap-around)
-phase   = elapsed % interval
+Типы `toggle`, `increaseValueBy`, `decreaseValueBy` исключены — у них нет
+однозначного обратного действия.
 
-duration > 0:
-  phase < duration  → startControls (включить)
-  phase >= duration → stopControls  (выключить)
+### 4.3. Флаг inWorkPhase — защита от двойного reverse
 
-duration = 0:
-  phase === 0       → startControls (однократно за интервал)
-```
+**Проблема:** `stopCycle` вызывается и при выходе из окна, и при отключении
+сценария. Если в момент вызова цикл находится в паузе между фазами
+(контролы уже выключены), reverse нельзя вызывать повторно — это
+неожиданно включит их снова.
 
-**Преимущества:**
-- Не требует Persistent Storage — состояние всегда вычисляется из времени
-- Идемпотентность: повторный вызов не меняет состояния
-- Устойчивость к ручному вмешательству: в следующую минуту нужное
-  состояние будет восстановлено
+**Решение:** флаг `ctx.inWorkPhase`:
+- `true` — контролы сейчас включены (между `executeStart` и `executeReverse`)
+- `false` — контролы выключены (пауза между циклами)
 
-**Следствие для типов действий:**
-Так как действия выполняются каждую минуту, они должны быть идемпотентными.
-Поэтому в схеме UI для periodicTimer доступны только `setEnable`, `setDisable`,
-`setValue`. Типы `toggle`, `increaseValueBy`, `decreaseValueBy` исключены —
-их многократный вызов даёт нежелательный накопительный эффект.
+`stopCycle` вызывает `executeReverse` только если `inWorkPhase = true`.
 
-### 4.3. Порядок проверок в cron-тике
-
-```
-cron tick (каждую минуту):
-  1. Вычислить inWindow = isEnabled && isTodayScheduled && isInActiveWindow
-
-  2. Если НЕ inWindow:
-     a. Если ctx.wasInActiveWindow == true (только что вышли из окна):
-        → fire stopControls (очистка хвоста)
-     b. ctx.wasInActiveWindow = false
-     c. Выход
-
-  3. ctx.wasInActiveWindow = true
-
-  4. elapsed = minuteOfDay - fromMin  (+ 1440 при wrap-around)
-     phase = elapsed % interval
-     duration > 0:
-       phase < duration  → fire startControls
-       phase >= duration → fire stopControls
-     duration = 0:
-       phase === 0       → fire startControls
-
-execute_now (ручной запуск):
-  1. Проверить rule_enabled → если выключен → выход
-  2. fire startControls немедленно
-  3. Если duration > 0 → setTimeout(stopControls, duration * 60000)
-```
-
-### 4.4. Ограничения на duration
-
-**duration < interval** — обязательное условие корректной работы.
-
-Если `duration ≥ interval`, фаза запуска (`phase < duration`) перекрывает
-следующий интервал. StartControls и stopControls будут чередоваться
-непредсказуемо в одном и том же цикле.
-
-**Пример:** interval=15 мин, duration=20 мин, phase:
-- 0..14: phase < 20 → startControls (15 минут запуска)
-- Следующий интервал начинается с phase=0 снова → startControls
-
-Логика никогда не доходит до фазы stopControls (phase >= 20 при interval=15
-невозможно). Поведение некорректно.
-
-Проверяется в `validateCfg()`: `duration > 0 && duration >= interval` → ошибка.
-
-Дополнительно: `interval + duration ≤ 1440` — сумма не должна превышать сутки.
-
-### 4.5. duration = 0 → stopControls не используется
-
-Если `duration = 0`, сценарий работает как простой повторяющийся таймер:
-только `startControls` один раз за интервал (`phase === 0`). `stopControls`
-в этом случае не выполняются.
-
-### 4.6. Условное отображение stopControls в UI
-
-`stopControls` всегда показывается в конфигураторе.
-Механизм `options.dependencies` применим только внутри `items` массивов
-и не поддерживает числовые диапазоны, поэтому `if/then/else` не используется.
-Описание поля явно указывает: «Используется только если пауза > 0».
-
-### 4.7. Временное окно активности (`activeFrom` / `activeTo`)
+### 4.4. Временное окно активности (`activeFrom` / `activeTo`)
 
 Поля `activeFrom` и `activeTo` задают временное окно (формат `HH:MM`),
-внутри которого выполняется фазовая логика.
-Реализованы как плоские поля объекта, по аналогии с другими полями конфигурации.
+внутри которого выполняется цикличная логика.
 
 Поддерживается перенос через полночь (`activeFrom > activeTo`),
 например `22:00`–`06:00`. Вычисляется в `isInActiveWindow()`.
 
-**Граница activeTo эксклюзивна**
+**Граница activeTo эксклюзивна** — cron в минуту `activeTo` уже видит
+`isInActiveWindow = false` и останавливает цикл.
 
-`isInActiveWindow` использует `minuteOfDay < toMin` (строгое неравенство).
-Минута `activeTo` уже вне окна. Это означает:
-- статус переключается с «Активен» на «Ожидает» ровно в момент `activeTo`
-- `startControls` никогда не срабатывают в минуту `activeTo`
+### 4.5. Контекст ctx и поведение при перезапуске
 
-Рекомендуемая формула:
+`this.ctx` — объект в памяти экземпляра сценария. При перезапуске wb-rules
+сбрасывается в начальные значения. Последствия:
 
-```
-activeTo = время_последнего_старта + duration + 1 мин
-```
-
-Пример: последний старт в 19:00, duration=5 → activeTo = 19:06.
-При этом:
-- 19:00–19:04: start phase (startControls каждую минуту)
-- 19:05: stop phase (stopControls)
-- 19:06: вне окна, cleanup (idempotent)
-
-Для переноса через полночь аналогично: `activeTo` — первая минута вне окна.
-
-### 4.8. Контекст ctx и поведение при перезапуске
-
-`this.ctx` — объект в памяти экземпляра сценария. Хранит:
-- `wasInActiveWindow` (boolean) — было ли прошлое срабатывание cron внутри окна
-
-При перезапуске wb-rules `ctx` сбрасывается. Последствия:
-- Очистка при выходе из окна (`ctx.wasInActiveWindow → true`) не сработает
-  если wb-rules перезапустился снаружи окна
-- `setTimeout` для ручного запуска не переживает рестарт
+- setTimeout-таймеры не переживают рестарт
+- При рестарте внутри окна `initSpecific` сразу вызывает `startCycle()`
+  (не ждёт следующей минуты cron)
+- При рестарте вне окна — ждём cron на следующей минуте
 
 Это осознанный trade-off в пользу простоты. Persistent Storage не используется.
 
@@ -267,7 +197,8 @@ activeTo = время_последнего_старта + duration + 1 мин
 scenarios/periodic-timer/
 ├── periodic-timer.mod.js                # Класс PeriodicTimerScenario
 ├── scenario-init-periodic-timer.mod.js  # Модуль инициализации
-└── README.md                            # Документация пользователя
+├── README.md                            # Документация пользователя
+└── dev-note-arc42.md                    # Архитектурная документация
 
 schema/
 └── wb-scenarios.schema.json             # Обновлённая схема (+periodicTimer)
@@ -285,44 +216,85 @@ PeriodicTimerScenario extends ScenarioBase
 │   → vDevice, ruleMain, ruleManual, ruleTimeUpdate, ruleDisable
 │
 ├── defineControlsWaitConfig(cfg)
-│   → controls из startControls + stopControls
+│   → controls из startControls
 │
 ├── validateCfg(cfg)
-│   → interval: целое число, >= 1, <= 1440
-│   → duration: целое число, >= 0, < interval (если > 0)
+│   → workTime: объект { unit, value }, unit ∈ {hours|minutes|seconds},
+│              value — положительное целое
+│   → interval: аналогично workTime
 │   → scheduleDaysOfWeek: хотя бы 1 день, все валидные
-│   → startControls: хотя бы 1 элемент, валидные типы
-│   → stopControls: хотя бы 1 элемент, валидные типы (если duration > 0)
+│   → activeFrom / activeTo: формат HH:MM, не равны между собой
+│   → startControls: хотя бы 1 элемент, валидные типы,
+│                    для setValue — actionValue и returnValue числа
 │
-└── initSpecific(name, cfg)
+└── initSpecific(deviceTitle, cfg)
     │
     ├── addCustomControlsToVirtualDevice()
     │   ├── execute_now (pushbutton, order 2)
     │   ├── current_time (text, readonly, order 3)
     │   ├── active_window (text, readonly, order 4)
     │   ├── next_start (text, readonly, order 5)
-    │   └── next_stop (text, readonly, order 6) — только если duration > 0
+    │   └── next_stop (text, readonly, order 6)
     │
     └── createRules()
-        ├── createCronRule()          # cron("0 * * * * *")
+        ├── createCronRule()          # cron("0 * * * * *") — каждую минуту
         │   └── cronTick():
-        │       1. Вычислить inWindow
-        │       2. Если !inWindow → очистка + выход
-        │       3. phase = minuteOfDay % interval
-        │       4. Применить фазу: start или stop
+        │       В окне + !isRunning   → startCycle()
+        │       Вне окна + isRunning  → stopCycle() + refreshDisplay()
         │
         ├── createManualRule()        # whenChanged execute_now
-        │   └── fire startControls + setTimeout(stopControls)
+        │   └── manualHandler():
+        │       stopCycle() → startCycle()
+        │       startCycle сам управляет цепочкой: после work phase проверяет
+        │       окно и продолжает или останавливается без ожидания cron-тика.
         │
-        ├── createTimeUpdateRule()   # whenChanged system_time/*
-        │   └── обновить current_time, state (computeState),
-        │       next_start, next_stop
+        ├── createTimeUpdateRule()    # whenChanged system_time/*
+        │   └── refreshDisplay(): current_time, state, next_start, next_stop
         │
-        └── createDisableRule()      # whenChanged rule_enabled (unmanaged)
-            ├── выключение: если duration > 0 → fire stopControls,
-            │   сбросить wasInActiveWindow; setState(DISABLED)
-            └── включение: setState(computeState), обновить current_time/
-                next_start/next_stop, вызвать cronTick() немедленно
+        └── createDisableRule()       # whenChanged rule_enabled (не в addRule!)
+            ├── выключение: stopCycle() → refreshDisplay() → next_start/next_stop='--:--'
+            └── включение:  refreshDisplay() → cronTick()
+```
+
+### 5.3. Цикл startCycle подробно
+
+```
+startCycle(self, cfg):
+  intervalMs = timeObjToMs(cfg.interval)
+  workTimeMs = timeObjToMs(cfg.workTime)
+
+  Проверяем попадёт ли следующий цикл в окно (для отображения next_start):
+    nextCycleTime = now + intervalMs
+    nextCycleInWindow = isScheduledDay(nextCycleTime) && isInActiveWindow(nextCycleTime)
+
+  ctx.isRunning    = true
+  ctx.inWorkPhase  = true
+  ctx.nextCycleStartMs = nextCycleInWindow ? nextCycleTime : null
+  ctx.workTimeEndMs    = now + workTimeMs
+
+  executeStart()
+  refreshDisplay()
+
+  setTimeout(workTimeMs):                    ← первый таймер
+    ctx.inWorkPhase  = false
+    ctx.workTimeEndMs = null
+    executeReverse()
+
+    if (intervalMs - workTimeMs) < MIN_CYCLE_DELAY_MS:
+      remainingMs = MIN_CYCLE_DELAY_MS
+    else:
+      remainingMs = intervalMs - workTimeMs
+    nextCycleTime = now + remainingMs
+
+    if isInWindow(nextCycleTime):
+      ctx.nextCycleStartMs = now + remainingMs
+      refreshDisplay()
+      setTimeout(remainingMs):               ← второй таймер
+        startCycle()                         ← следующий цикл
+    else:
+      ctx.isRunning = false
+      refreshDisplay()
+      (cronTick возобновит при следующем входе в окно)
 ```
 
 ---
@@ -332,17 +304,30 @@ PeriodicTimerScenario extends ScenarioBase
 Определение `periodicTimer` добавлено в `definitions` и в `oneOf`.
 
 Поля сценария (в порядке отображения):
-- `name` — название сценария (обязательное)
-- `idPrefix` — скрытый, технический (не в `required`, не в `defaultProperties`)
-- `activeFrom` / `activeTo` — временное окно, `_format: "time"`, тип string HH:MM
-- `interval` (integer, 1–1440) — интервал повторения
-- `duration` (integer, 0–1440) — длительность фазы запуска
-- `scheduleDaysOfWeek` — дни недели
-- `startControls` — первая группа действий (только setEnable/setDisable/setValue)
-- `stopControls` — вторая группа действий (только setEnable/setDisable/setValue)
 
-Типы `toggle`, `increaseValueBy`, `decreaseValueBy` исключены из схемы
-periodicTimer — они не идемпотентны и несовместимы с поминутным повтором.
+- `name` — название сценария (обязательное)
+- `idPrefix` — скрытый, технический
+- `activeFrom` / `activeTo` — временное окно, `_format: "time"`, HH:MM
+- `workTime` — объект `{ workTimeUnit, workTimeValue }`, время работы контролов
+- `interval` — объект `{ intervalUnit, intervalValue }`, период повторения
+- `scheduleDaysOfWeek` — дни недели
+- `startControls` — действия (setEnable / setDisable / setValue с returnValue)
+
+Типы `toggle`, `increaseValueBy`, `decreaseValueBy` исключены —
+не имеют однозначного обратного действия.
+
+**Маппинг полей схемы → внутренний формат** (в `scenario-init-periodic-timer.mod.js`):
+
+```js
+interval: {
+  unit:  rawInterval.intervalUnit,   // 'hours'|'minutes'|'seconds'
+  value: rawInterval.intervalValue,  // number
+},
+workTime: {
+  unit:  rawWorkTime.workTimeUnit,
+  value: rawWorkTime.workTimeValue,
+},
+```
 
 ---
 
@@ -353,12 +338,18 @@ periodicTimer — они не идемпотентны и несовместим
 | Контрол | Тип | Описание |
 |---|---|---|
 | `rule_enabled` | switch | Вкл/выкл сценария (из базового класса) |
-| `execute_now` | pushbutton | Ручной запуск startControls |
-| `current_time` | text, readonly | Текущее время системы |
+| `execute_now` | pushbutton | Ручной немедленный запуск |
+| `current_time` | text, readonly | Текущее системное время |
 | `active_window` | text, readonly | Временное окно: «18:00 - 19:00» |
-| `next_start` | text, readonly | Дата и время следующего запуска (формат «Понедельник 2026-03-10 14:00») |
-| `next_stop` | text, readonly | Дата и время следующего отключения (только если duration > 0) |
-| `state` | value, readonly | Состояние из ScenarioState: «Активен» (NORMAL=6) / «Ожидает» (WAITING=8) / «Отключен» (DISABLED=9) |
+| `next_start` | text, readonly | Следующий старт цикла (или открытие окна); `--:--` при отключении |
+| `next_stop` | text, readonly | Конец текущей или следующей рабочей фазы; `--:--` при отключении |
+| `state` | value, readonly | NORMAL=6 / WAITING=8 / DISABLED=9 |
+
+`next_start` и `next_stop` обновляются в реальном времени через ctx:
+- Во время work phase: `next_start` = следующий цикл (если в окне), `next_stop` = конец текущей фазы
+- В паузе между циклами: `next_start` = следующий цикл, `next_stop` = next_start + workTime (но не позже конца окна)
+- Вне окна: `next_start` = следующее открытие окна, `next_stop` = next_start + workTime
+- Сценарий отключён: оба поля = `--:--`
 
 ---
 
@@ -368,22 +359,23 @@ periodicTimer — они не идемпотентны и несовместим
 |---|---|---|---|
 | `name` | string | да | Название сценария |
 | `idPrefix` | string | нет | Технический префикс MQTT-устройства |
-| `activeFrom` | string (HH:MM) | да | Начало временного окна активности |
-| `activeTo` | string (HH:MM) | да | Конец временного окна активности |
-| `interval` | integer (1–1440) | да | Интервал повторения в минутах |
-| `duration` | integer (0–1440) | да | Длительность фазы запуска в минутах. 0 = вторая фаза отключена |
+| `activeFrom` | string (HH:MM) | да | Начало временного окна (включительно) |
+| `activeTo` | string (HH:MM) | да | Конец временного окна (исключительно) |
+| `interval` | объект | да | `{ intervalUnit, intervalValue }` — период повторения |
+| `workTime` | объект | да | `{ workTimeUnit, workTimeValue }` — время работы |
 | `scheduleDaysOfWeek` | array of string | да | Дни недели активности |
-| `startControls` | array of object | да | Действия фазы запуска |
-| `stopControls` | array of object | нет | Действия фазы остановки (игнорируется при duration = 0) |
+| `startControls` | array of object | да | Действия с reverse-логикой |
 
-**Ограничения (проверяются в `validateCfg`):**
-- `interval >= 1`
-- `duration >= 0`
-- `duration < interval` (если `duration > 0`)
-- `interval + duration <= 1440`
-- `startControls` — минимум 1 элемент всегда
-- `stopControls` — минимум 1 элемент только если `duration > 0`
-- `activeFrom !== activeTo`
+**Единицы времени** (`unit`): `"hours"`, `"minutes"`, `"seconds"`
+
+**Структура элемента `startControls`:**
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `control` | string | Имя контрола: `"device/control"` |
+| `behaviorType` | string | `setEnable`, `setDisable`, `setValue` |
+| `actionValue` | number | Для `setValue`: значение при старте |
+| `returnValue` | number | Для `setValue`: значение при стопе |
 
 ---
 
@@ -391,81 +383,104 @@ periodicTimer — они не идемпотентны и несовместим
 
 ### 9.1. Перезапуск wb-rules внутри окна активности
 
-`this.ctx` сбрасывается при перезапуске. Последствия:
-- `ctx.wasInActiveWindow = false` → очистка при выходе из окна **не сработает**
-  если wb-rules перезапустился снаружи окна после того, как был внутри
-- Если wb-rules перезапустился внутри окна, cron подхватит правильную фазу
-  на следующей минуте — логика восстановится автоматически
+`initSpecific` немедленно вызывает `startCycle()` если мы в окне.
+Задержки до следующего cron-тика нет.
 
-Это осознанный trade-off. Persistent Storage намеренно не используется.
+### 9.2. workTime >= interval
 
-### 9.2. interval не делит 1440 нацело
+`remainingMs = intervalMs - workTimeMs` может быть 0 или отрицательным.
+Гарантия через `MIN_CYCLE_DELAY_MS = 100ms` — минимальная пауза между
+циклами. Контролы при этом почти всегда включены (ON почти всё время, OFF 100ms).
 
-Последнее срабатывание за день может дать "неполный" цикл. Например,
-при interval=7 последний startControls может сработать в 23:58,
-а stopControls — уже после полуночи (если duration > 0 и окно позволяет).
-UI это не запрещает.
+Схема не запрещает `workTime >= interval` намеренно — это граничный, но
+валидный кейс. Пользователь видит что происходит.
 
-### 9.3. Ручной запуск через execute_now
+### 9.3. Следующий цикл попадает на границу окна
 
-Выполняет startControls немедленно. При `duration > 0` планирует stopControls
-через `setTimeout` — best-effort, не переживает перезапуск wb-rules.
-Следующий автоматический тик произойдёт в ближайшую минуту независимо
-от ручного запуска.
+`startCycle` заранее проверяет попадёт ли следующий цикл в окно.
+Если нет — `nextCycleStartMs = null` (показывается следующее открытие окна).
+Цепочка завершается, cronTick возобновит её при следующем входе в окно.
 
-### 9.4. Сценарий выключен в середине цикла
+Аналогично `getNextStopTime` капирует результат по `windowEndMs` —
+`next_stop` никогда не показывает время за пределами окна.
 
-Если пользователь отключил сценарий (`rule_enabled = false`), срабатывает
-`createDisableRule` (неуправляемое правило, не зависит от `rule_enabled`):
-- Если `duration > 0` — немедленно выполняются `stopControls` и сбрасывается
-  `ctx.wasInActiveWindow`, чтобы контролы вернулись в состояние остановки.
-- `state` устанавливается в «Отключен» (DISABLED=9).
+### 9.4. Сценарий выключен в середине work phase
 
-При повторном включении `state` сразу обновляется по
-`computeState()` (Активен или Ожидает).
+`createDisableRule` (не зарегистрирован в `addRule`, всегда активен):
+- Вызывает `stopCycle()` — таймеры отменяются, если `inWorkPhase` → reverse
+- Затем `refreshDisplay()` — устанавливает state=DISABLED и `next_start`/`next_stop` = `--:--`
 
-### 9.5. Формула activeTo
+### 9.5. Ручной запуск во время активного цикла
 
-`activeTo` — эксклюзивная граница. Рекомендуемая формула:
-
+`manualHandler` реализован как:
 ```
-activeTo = время_последнего_старта + duration + 1 мин
+stopCycle(self, cfg)   ← отменяет таймеры, делает reverse если inWorkPhase
+startCycle(self, cfg)  ← запускает свежий цикл с полной цепочкой
 ```
 
-**Пример:** interval=60, duration=5, последний старт в 19:00 →
-activeTo = 19:06.
-- 19:00–19:04: start phase ✓
-- 19:05: stop phase ✓ (внутри окна)
-- 19:06: вне окна, cleanup (idempotent)
+`startCycle` обрабатывает всё стандартно: вычисляет `next_start`/`next_stop`,
+запускает таймеры, и после work phase проверяет, попадает ли следующий цикл
+в окно — если да, продолжает цепочку; если нет, останавливается и cronTick
+возобновит её при следующем входе в окно.
+
+### 9.6. Wrap-around окно (22:00–06:00)
+
+`isInActiveWindow` использует OR-логику для переноса через полночь.
+`getWindowEndMs` корректно вычисляет конец окна на следующий день.
+
+**Ограничение: дни недели проверяются по текущему календарному дню.**
+Для окна 22:00–06:00 с расписанием «только понедельник»: в вторник 02:00
+`isTodayScheduled` вернёт `false` (сегодня вторник), хотя фактически мы внутри
+понедельничного окна. Cron в 00:00 (смена суток) остановит цикл через `stopCycle`.
+
+Это осознанное упрощение: проверка по «текущему дню» проста и предсказуема.
+Альтернатива (проверять день начала окна для ночного времени) усложнит логику
+при минимальной практической пользе — большинство пользователей выбирают
+одинаковые дни для обоих «кусков» ночного окна.
 
 ---
 
 ## 10. Статус реализации
 
-### ✅ Этап 1: JSON Schema — выполнено
-- Определение `periodicTimer` добавлено в `wb-scenarios.schema.json`
-- Поля `activeFrom`, `activeTo` добавлены как плоские поля формата `time`
-- `stopControls` всегда отображается (без if/then/else)
-- Типы `toggle`, `increaseValueBy`, `decreaseValueBy` исключены из схемы
+### ✅ Этап 1: JSON Schema
+
+- Определение `periodicTimer` в `wb-scenarios.schema.json`
+- `interval` и `workTime` как объекты с `unit`/`value`
+- `startControls` с `returnValue` для `setValue`
 - Переводы en + ru для всех полей
 
-### ✅ Этап 2: Модуль сценария — выполнено
-- `periodic-timer.mod.js` — класс `PeriodicTimerScenario`
-- Идемпотентная фазовая логика (без Persistent Storage)
-- Очистка при выходе из окна через `ctx.wasInActiveWindow`
-- `setTimeout` для ручного запуска
-- Контрол `state` (Активен/Ожидает/Отключен)
-- Контролы `active_window`, `next_start`, `next_stop`
+### ✅ Этап 2: Модуль сценария
 
-### ✅ Этап 3: Модуль инициализации — выполнено
-- `scenario-init-periodic-timer.mod.js`
+- `periodic-timer.mod.js` — класс `PeriodicTimerScenario`
+- setTimeout-цепочка с reverse-логикой
+- Флаг `inWorkPhase` для защиты от двойного reverse
+- Корректное отображение `next_start` / `next_stop` с учётом окна
+
+### ✅ Этап 3: Модуль инициализации
+
+- `scenario-init-periodic-timer.mod.js` с маппингом полей схемы
 - `scenario-init-main.js` обновлён: добавлен `setupPeriodicTimer()`
 
-### ✅ Этап 4: Тестирование на контроллере — выполнено
-- Базовая инициализация проверена
-- Деплой и рестарт wb-rules без ошибок
+### ✅ Этап 4: Тестирование на контроллере
 
-### ✅ Этап 5: Документация — выполнено
+Тесты выполнены на контроллере 192.168.1.144, 2026-03-13.
+Конфиг теста: `buzzer/frequency`, interval=10s, workTime=5s, окно 11:00–11:16.
+
+- TC1: init вне окна (14:50 MSK, окно 11:00–11:16) — state=WAITING=8,
+  next_start = следующий день 11:00:00 ✅
+- TC2: init внутри окна (14:54 MSK, окно 14:00–15:00) — state=ACTIVE=6,
+  цикл стартует сразу, next_start/next_stop показывают корректные значения ✅
+- TC3: setTimeout chain (interval=10s, workTime=5s) —
+  `buzzer/frequency` меняется 3333→2222→3333→2222... каждые 10s,
+  reverse через 5s, next_start обновляется корректно ✅
+- TC4: execute_now вне окна (окно 11:00–11:16, время ~15:00) —
+  buzzer=3333 (старт), через 5s buzzer=2222 (reverse),
+  next_stop корректно обновился ✅
+- TC5: disable mid-cycle (buzzer=3333 → rule_enabled=0) —
+  buzzer немедленно=2222 (reverse), state=DISABLED=9 ✅
+
+### ✅ Этап 5: Документация
+
 - README написан и актуализирован
 - arc42 актуализирован
 
@@ -475,7 +490,6 @@ activeTo = 19:06.
 
 | Проблема | Приоритет | Предложение |
 |---|---|---|
-| Условное отображение stopControls в UI | Средний | Если wb-mqtt-confed добавит if/then/else или value-based dependencies — скрывать stopControls при duration = 0 |
-| Очистка не выживает перезапуск | Низкий | Если понадобится — добавить PS для `wasInActiveWindow` |
-| setTimeout не выживает перезапуск | Низкий | Для критичных сценариев рассмотреть PS для manual stop |
-| interval не обязан делить 1440 | Низкий | Добавить предупреждение в лог при нестандартном значении |
+| setTimeout не переживает рестарт | Низкий | Для критичных сценариев рассмотреть PS для workTimerId |
+| workTime >= interval не валидируется | Низкий | Добавить предупреждение в лог при конфиге с нулевой паузой |
+| Wrap-around окно + дни недели: при смене суток цикл останавливается | Низкий | см. секцию 9.6 — осознанное упрощение |

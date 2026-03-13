@@ -1,13 +1,11 @@
 /**
  * @file periodic-timer.mod.js - ES5 module for wb-rules 2.38
  * @description Periodic Timer scenario class that extends ScenarioBase.
- *   Executes start actions repeatedly within an active time window.
- *   Every minute inside the window the phase is determined by
- *   elapsed = minuteOfDay - fromMin (+ 1440 on wrap-around),
- *   phase = elapsed % interval: if phase < duration → startControls,
- *   otherwise → stopControls. On window exit stopControls fire once
- *   to clean up. When duration = 0 only startControls fire (at
- *   phase === 0). Interval is counted from activeFrom.
+ *   Activates controls at a fixed interval within an active time window.
+ *   After the work time each control is restored to its previous state.
+ *   Uses a setTimeout chain for precise timing (hours, minutes, or seconds).
+ *   The cron rule fires every minute to detect window entry; the setTimeout
+ *   chain manages subsequent cycles and window-exit cleanup independently.
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
@@ -18,9 +16,8 @@ var aTable = require('table-handling-actions.mod');
 var constants = require('constants.mod');
 
 /**
- * Actions table restricted to idempotent operations only.
- * toggle, increaseValueBy, decreaseValueBy are excluded because the scenario
- * fires controls on every cron tick — non-idempotent actions would accumulate.
+ * Actions table. toggle, increaseValueBy, decreaseValueBy are excluded —
+ * reverse logic is handled explicitly by executeReverse().
  */
 var periodicTimerActionsTable = {
   setEnable:  aTable.actionsTable.setEnable,
@@ -37,69 +34,82 @@ var VALID_DAYS = constants.VALID_DAYS;
 var FULL_DAYS = constants.FULL_DAYS;
 
 var MS_PER_MINUTE = constants.MS_PER_MINUTE;
+var MS_PER_SECOND = 1000;
+var MS_PER_HOUR = MS_PER_MINUTE * 60;
+
+/**
+ * Minimum delay between cycles (ms). Prevents a tight loop when workTime
+ * >= interval (no validation enforces this constraint intentionally).
+ */
+var MIN_CYCLE_DELAY_MS = 100;
 
 var MAX_DAYS_AHEAD = 8; // today + 7
 
+/**
+ * @typedef {Object} TimeObj
+ * @property {'hours'|'minutes'|'seconds'} unit
+ * @property {number} value - positive integer
+ */
+
+/**
+ * @typedef {Object} ControlConfig
+ * @property {string} control - 'device/control'
+ * @property {'setEnable'|'setDisable'|'setValue'} behaviorType
+ * @property {number} [actionValue] - setValue: value to apply on start
+ * @property {number} [returnValue] - setValue: value to restore on stop
+ */
 
 /**
  * @typedef {Object} PeriodicTimerConfig
- * @property {string} [idPrefix] - Optional prefix for scenario identification
- *   If not provided, it will be generated from the scenario name
- * @property {string} activeFrom - Active window start HH:MM
- * @property {string} activeTo - Active window end HH:MM
- * @property {number} interval - Interval in minutes (1–1440)
- * @property {number} duration - Stop delay in minutes (0–1440)
- * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays 
- * Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
- * @property {Array<Object>} startControls - Controls executed at the start of each cycle.
- *   When duration > 0: fired every minute while phase < duration (idempotent).
- *   When duration = 0: fired once per interval when phase === 0.
- *   Also fired immediately on manual execution (execute_now).
- *   At least one item required.
- *   Each object contains:
- *   - control {string}: Control name ('device/control')
- *   - behaviorType {string}: Action type — one of: setEnable, setDisable, setValue
- *   - actionValue {*}: Value to set (used by setValue)
- * @property {Array<Object>} stopControls - Controls executed at the stop phase of each cycle.
- *   Only relevant when duration > 0: fired every minute while phase >= duration (idempotent).
- *   Also fired once when the active window ends (cleanup tick).
- *   After manual execution: fired via setTimeout after duration minutes.
- *   Required when duration > 0, ignored when duration = 0.
- *   Each object contains:
- *   - control {string}: Control name ('device/control')
- *   - behaviorType {string}: Action type — one of: setEnable, setDisable, setValue
- *   - actionValue {*}: Value to set (used by setValue)
+ * @property {string} [idPrefix]
+ * @property {string} activeFrom - HH:MM, start of active window (inclusive)
+ * @property {string} activeTo - HH:MM, end of active window (exclusive)
+ * @property {TimeObj} interval - how often a new cycle starts
+ * @property {TimeObj} workTime - how long controls stay in active state
+ * @property {Array<string>} scheduleDaysOfWeek
+ * @property {Array<ControlConfig>} startControls - at least one item required
  */
 
 /**
- * Periodic Timer scenario implementation
+ * Periodic Timer scenario implementation.
  * @class PeriodicTimerScenario
  * @extends ScenarioBase
- * @description Executes start actions repeatedly within an active time window.
+ * @description Repeatedly activates controls at a fixed interval within a time
+ *   window. After each work phase the controls are automatically reversed.
  */
 function PeriodicTimerScenario() {
   ScenarioBase.call(this);
-  
+
   /**
-   * Context object for storing scenario runtime state
+   * Runtime state. All fields reset to defaults on every wb-rules restart.
    * @type {Object}
-   * @property {boolean} wasInActiveWindow - Whether the scenario was inside
-   *   the active window on the previous cron tick. Used to detect window exit
-   *   and fire stopControls once as a cleanup tick. Reset on restart.
+   * @property {boolean} isRunning - true while the setTimeout chain is active
+   * @property {boolean} inWorkPhase - true while controls are in active state
+   *   (between executeStart and executeReverse). Used to avoid double-reverse.
+   * @property {number|null} workTimerId - setTimeout id for work-time expiry
+   * @property {number|null} nextCycleTimerId - setTimeout id for next cycle
+   * @property {number|null} nextCycleStartMs - epoch ms of scheduled next cycle
+   * @property {number|null} workTimeEndMs - epoch ms when work time expires
    */
   this.ctx = {
-    wasInActiveWindow: false,   // Tracks window presence across cron ticks
+    isRunning: false,
+    inWorkPhase: false,
+    workTimerId: null,
+    nextCycleTimerId: null,
+    nextCycleStartMs: null,
+    workTimeEndMs: null,
   };
 }
 
+// Set up inheritance
 PeriodicTimerScenario.prototype =
   Object.create(ScenarioBase.prototype);
 PeriodicTimerScenario.prototype.constructor = PeriodicTimerScenario;
 
 /**
- * Generate names for virtual device and rules
- * @param {string} idPrefix - Scenario identifier used as MQTT device name suffix
- * @returns {Object} - Object containing vDevice, ruleMain, ruleManual, ruleTimeUpdate, ruleDisable names
+ * Generate names for virtual device and rules.
+ * @param {string} idPrefix - The prefix for generating names
+ * @returns {Object} Generated names
  */
 PeriodicTimerScenario.prototype.generateNames = function(idPrefix) {
   var scenarioPrefix = 'wbsc_';
@@ -114,36 +124,29 @@ PeriodicTimerScenario.prototype.generateNames = function(idPrefix) {
 };
 
 /**
- * Get configuration for waiting for controls
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {Object} - Object with controls array containing all topics
- *                     from startControls and stopControls to wait for
+ * Controls to wait for before init (only startControls).
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {Object} Waiting configuration object
  */
 PeriodicTimerScenario.prototype.defineControlsWaitConfig =
   function(cfg) {
     var allTopics = [];
-    var i;
-    for (i = 0; i < (cfg.startControls || []).length; i++) {
+    for (var i = 0; i < (cfg.startControls || []).length; i++) {
       if (cfg.startControls[i].control) {
         allTopics.push(cfg.startControls[i].control);
-      }
-    }
-    for (i = 0; i < (cfg.stopControls || []).length; i++) {
-      if (cfg.stopControls[i].control) {
-        allTopics.push(cfg.stopControls[i].control);
       }
     }
     return { controls: allTopics };
   };
 
 /**
- * Check if control type is valid for the action
- * @param {string} controlName - Control name in 'device/control' format
- * @param {string[]} reqCtrlTypes - List of allowed control types for the action
- * @returns {boolean} - Returns true if control type matches one of reqCtrlTypes,
- *                      or if reqCtrlTypes is empty (no restriction)
+ * Check if control type is valid for the action.
+ * @param {string} controlName - Control name
+ * @param {string[]} reqCtrlTypes - List of allowed types
+ * @returns {boolean} Returns true if control type is allowed, otherwise false
  */
 function isControlTypeValid(controlName, reqCtrlTypes) {
+  /* If req types in table empty - may use any control type */
   if (!reqCtrlTypes || reqCtrlTypes.length === 0) {
     return true;
   }
@@ -157,83 +160,101 @@ function isControlTypeValid(controlName, reqCtrlTypes) {
 }
 
 /**
- * Validate all controls against periodicTimerActionsTable
- * @param {Object[]} controls - Array of control configurations to validate
- * @param {Object} table - Actions table with allowed behavior types
- *                              and their required control types
- * @returns {boolean} - Returns true if all controls have valid behavior types
- *                      and matching control types, otherwise false
+ * Validate all controls against periodicTimerActionsTable.
+ * For setValue also checks that actionValue and returnValue are numbers.
+ * @param {ControlConfig[]} controls - Array of control configurations
+ * @param {Object} table - Table containing allowed types for each action
+ * @returns {boolean} Returns true if all controls have valid configuration
  */
 function validateControls(controls, table) {
   for (var i = 0; i < controls.length; i++) {
-    var curCtrlName = controls[i].control;
-    var curBehaviorType = controls[i].behaviorType;
-    if (!table[curBehaviorType]) {
+    var ctrl = controls[i];
+    if (!table[ctrl.behaviorType]) {
       log.error(
         "Behavior type '{}' not found in table",
-        curBehaviorType
+        ctrl.behaviorType
       );
       return false;
     }
-    var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
-    if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
+    var reqCtrlTypes = table[ctrl.behaviorType].reqCtrlTypes;
+    if (!isControlTypeValid(ctrl.control, reqCtrlTypes)) {
       log.debug(
         "Control '{}' is not of valid type for '{}'",
-        curCtrlName,
-        curBehaviorType
+        ctrl.control,
+        ctrl.behaviorType
       );
       return false;
+    }
+    if (ctrl.behaviorType === 'setValue') {
+      if (typeof ctrl.actionValue !== 'number') {
+        log.error(
+          "Periodic Timer validation error: " +
+          "control '{}': actionValue must be a number",
+          ctrl.control
+        );
+        return false;
+      }
+      if (typeof ctrl.returnValue !== 'number') {
+        log.error(
+          "Periodic Timer validation error: " +
+          "control '{}': returnValue must be a number",
+          ctrl.control
+        );
+        return false;
+      }
     }
   }
   return true;
 }
 
 /**
- * Configuration validation
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object to validate
- * @returns {boolean} - Returns true if configuration is valid, otherwise false
+ * Validate a TimeObj field.
+ * @param {TimeObj} obj - Object to validate
+ * @param {string} fieldName - Field name used in error messages
+ * @returns {boolean} True if valid, false otherwise
+ */
+function validateTimeObj(obj, fieldName) {
+  var validUnits = ['hours', 'minutes', 'seconds'];
+  if (!obj || typeof obj !== 'object') {
+    log.error(
+      'Periodic Timer validation error: {} must be an object',
+      fieldName
+    );
+    return false;
+  }
+  if (validUnits.indexOf(obj.unit) === -1) {
+    log.error(
+      'Periodic Timer validation error: ' +
+      '{}.unit must be hours, minutes or seconds',
+      fieldName
+    );
+    return false;
+  }
+  if (
+    typeof obj.value !== 'number' ||
+    obj.value < 1 ||
+    obj.value % 1 !== 0
+  ) {
+    log.error(
+      'Periodic Timer validation error: ' +
+      '{}.value must be a positive integer',
+      fieldName
+    );
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Configuration validation.
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if configuration is valid, false otherwise
  */
 PeriodicTimerScenario.prototype.validateCfg = function(cfg) {
-  if (
-    typeof cfg.interval !== 'number' ||
-    cfg.interval < 1 ||
-    cfg.interval > 1440
-  ) {
-    log.error(
-      'Periodic Timer validation error: ' +
-      'interval must be between 1 and 1440'
-    );
+  if (!validateTimeObj(cfg.workTime, 'workTime')) {
     return false;
   }
-
-  if (
-    typeof cfg.duration !== 'number' ||
-    cfg.duration < 0 ||
-    cfg.duration > 1440
-  ) {
-    log.error(
-      'Periodic Timer validation error: ' +
-      'duration must be between 0 and 1440'
-    );
-    return false;
-  }
-
-  if (cfg.duration > 0 && cfg.duration >= cfg.interval) {
-    log.error(
-      'Periodic Timer validation error: ' +
-      'duration ({}) must be less than interval ({})',
-      cfg.duration,
-      cfg.interval
-    );
-    return false;
-  }
-
-  if (cfg.interval + cfg.duration > 1440) {
-    log.error(
-      'Periodic Timer validation error: ' +
-      'interval + duration ({}) must not exceed 1440',
-      cfg.interval + cfg.duration
-    );
+  if (!validateTimeObj(cfg.interval, 'interval')) {
     return false;
   }
 
@@ -301,29 +322,9 @@ PeriodicTimerScenario.prototype.validateCfg = function(cfg) {
   if (!validateControls(cfg.startControls, periodicTimerActionsTable)) {
     log.error(
       'Periodic Timer validation error: ' +
-      'one or more startControls have invalid type'
+      'one or more startControls have invalid configuration'
     );
     return false;
-  }
-
-  if (cfg.duration > 0) {
-    if (
-      !Array.isArray(cfg.stopControls) ||
-      cfg.stopControls.length === 0
-    ) {
-      log.error(
-        'Periodic Timer validation error: ' +
-        'stopControls required when duration > 0'
-      );
-      return false;
-    }
-    if (!validateControls(cfg.stopControls, periodicTimerActionsTable)) {
-      log.error(
-        'Periodic Timer validation error: ' +
-        'one or more stopControls have invalid type'
-      );
-      return false;
-    }
   }
 
   log.debug('Periodic Timer configuration validation successful');
@@ -331,207 +332,9 @@ PeriodicTimerScenario.prototype.validateCfg = function(cfg) {
 };
 
 /**
- * Format current system time for display
- * @returns {string} - Formatted string: "Weekday YYYY-MM-DD HH:MM"
- */
-function formatCurrentTime() {
-  var currentDate = dev['system_time/current_date'];
-  var currentTime = dev['system_time/current_time'];
-  var currentDayNum = dev['system_time/current_day'];
-  var currentDay = DAY_NAMES[currentDayNum] || 'Unknown';
-  return currentDay + ' ' + currentDate + ' ' + currentTime;
-}
-
-/**
- * Convert HH:MM string to minutes from midnight
- * @param {string} timeStr - Time string in HH:MM format
- * @returns {number} - Total minutes elapsed since 00:00
- */
-function timeStrToMinutes(timeStr) {
-  var parts = timeStr.split(':');
-  return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-}
-
-/**
- * Check if minuteOfDay is within [activeFrom, activeTo) window.
- * activeTo is exclusive: the window ends before that minute.
- * Supports wrap-around (e.g. 22:00–06:00).
- * @param {number} minuteOfDay - Current time as minutes from midnight (0–1439)
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean}
- */
-function isInActiveWindow(minuteOfDay, cfg) {
-  var fromMin = timeStrToMinutes(cfg.activeFrom);
-  var toMin = timeStrToMinutes(cfg.activeTo);
-  if (fromMin <= toMin) {
-    return minuteOfDay >= fromMin && minuteOfDay < toMin;
-  }
-  // Wrap-around: e.g. 22:00–06:00
-  return minuteOfDay >= fromMin || minuteOfDay < toMin;
-}
-
-/**
- * Check if a given day of week is in the scheduled days list
- * @param {number} dayOfWeek - Day of week (0=Sunday … 6=Saturday)
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean}
- */
-function isScheduledDay(dayOfWeek, cfg) {
-  for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
-    if (DAY_NAME_TO_NUMBER[cfg.scheduleDaysOfWeek[i]] === dayOfWeek) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Check if today is a scheduled day
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean} - Returns true if today's weekday is in scheduleDaysOfWeek
- */
-function isTodayScheduled(cfg) {
-  return isScheduledDay(new Date().getDay(), cfg);
-}
-
-/**
- * Format date/time for display: "Monday 2026-03-10 14:00"
- * Matches the format used in AstronomicalTimer.
- * @param {Date|null} date - Date object to format, or null if no date available
- * @returns {string} - Formatted string "Weekday YYYY-MM-DD HH:MM",
- *                     or "--:--" if date is null
- */
-function formatNextExecution(date) {
-  if (!date) {
-    return '--:--';
-  }
-  var dayName = FULL_DAYS[date.getDay()];
-  var day = ('0' + date.getDate()).slice(-2);
-  var month = ('0' + (date.getMonth() + 1)).slice(-2);
-  var year = date.getFullYear();
-  var hours = ('0' + date.getHours()).slice(-2);
-  var minutes = ('0' + date.getMinutes()).slice(-2);
-  return (
-    dayName + ' ' + year + '-' + month + '-' + day +
-    ' ' + hours + ':' + minutes
-  );
-}
-
-/**
- * Find the next start time as a Date object.
- * Slots are counted from activeFrom (not from midnight).
- * Supports wrap-around windows: slots spilling past midnight get dayAdjust=1
- * and are checked against the next calendar day's schedule.
- * Searches up to 8 days ahead.
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {Date|null} - Date of the next interval slot inside the active window,
- *                        or null if no slot found within 8 days
- */
-function getNextStartTime(cfg) {
-  var now = new Date();
-  var nowMs = now.getTime();
-  var fromMin = timeStrToMinutes(cfg.activeFrom);
-
-  for (var d = 0; d < MAX_DAYS_AHEAD; d++) {
-    var baseDay = new Date(now);
-    baseDay.setDate(baseDay.getDate() + d);
-
-    for (var offset = 0; offset < 1440; offset += cfg.interval) {
-      var totalMin = fromMin + offset;
-      var minuteInDay = totalMin % 1440;
-      var dayAdjust = Math.floor(totalMin / 1440);
-
-      if (!isInActiveWindow(minuteInDay, cfg)) {
-        continue;
-      }
-
-      var slotDate = new Date(baseDay);
-      slotDate.setDate(slotDate.getDate() + dayAdjust);
-
-      if (!isScheduledDay(slotDate.getDay(), cfg)) {
-        continue;
-      }
-
-      slotDate.setHours(
-        Math.floor(minuteInDay / 60), minuteInDay % 60, 0, 0
-      );
-      if (slotDate.getTime() > nowMs) {
-        return slotDate;
-      }
-    }
-  }
-  return null;
-}
-
-/**
- * Find the next stop time as a Date object.
- * If currently in start phase inside the active window, returns end of
- * the current start phase (intervalStart + duration).
- * Otherwise returns next start time + duration.
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {Date|null} - Date of the next stop, or null if not found
- */
-function getNextStopTime(cfg) {
-  var now = new Date();
-  var minuteOfDay = now.getHours() * 60 + now.getMinutes();
-  if (isTodayScheduled(cfg) && isInActiveWindow(minuteOfDay, cfg)) {
-    var fromMin = timeStrToMinutes(cfg.activeFrom);
-    var elapsed = minuteOfDay >= fromMin
-      ? minuteOfDay - fromMin
-      : minuteOfDay + 1440 - fromMin;
-    var phase = elapsed % cfg.interval;
-    if (phase < cfg.duration) {
-      var stopMinRaw = minuteOfDay - phase + cfg.duration;
-      var stopDate = new Date(now);
-      if (stopMinRaw >= 1440) {
-        stopDate.setDate(stopDate.getDate() + 1);
-        stopMinRaw -= 1440;
-      }
-      stopDate.setHours(
-        Math.floor(stopMinRaw / 60), stopMinRaw % 60, 0, 0
-      );
-      return stopDate;
-    }
-  }
-  var nextStart = getNextStartTime(cfg);
-  if (!nextStart) {
-    return null;
-  }
-  return new Date(nextStart.getTime() + cfg.duration * MS_PER_MINUTE);
-}
-
-/**
- * Format planned stop time as full date/time string.
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {string} - Formatted string "Weekday YYYY-MM-DD HH:MM",
- *                     or "--:--" if no next stop time found
- */
-function formatNextStop(cfg) {
-  return formatNextExecution(getNextStopTime(cfg));
-}
-
-/**
- * Compute scenario state based on current time and config
- * @param {PeriodicTimerScenario} self
- * @param {PeriodicTimerConfig} cfg
- * @returns {number} ScenarioState.NORMAL | WAITING | DISABLED
- */
-function computeState(self, cfg) {
-  var isEnabled = dev[self.genNames.vDevice + '/rule_enabled'];
-  if (!isEnabled) {
-    return ScenarioState.DISABLED;
-  }
-  var now = new Date();
-  var minuteOfDay = now.getHours() * 60 + now.getMinutes();
-  var inWindow =
-    isTodayScheduled(cfg) && isInActiveWindow(minuteOfDay, cfg);
-  return inWindow ? ScenarioState.NORMAL : ScenarioState.WAITING;
-}
-
-/**
- * Add custom controls to virtual device
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
+ * Add scenario-specific controls to the virtual device.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
  */
 function addCustomControlsToVirtualDevice(self, cfg) {
   log.debug('Adding custom controls to virtual device');
@@ -545,6 +348,8 @@ function addCustomControlsToVirtualDevice(self, cfg) {
     order: 2,
   });
 
+  // forceDefault: true prevents wb-rules from restoring a stale cached value
+  // from persistent DB on restart — display controls must always show fresh data
   self.vd.devObj.addControl('current_time', {
     title: {
       en: 'Current time',
@@ -575,62 +380,278 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       ru: 'Следующий запуск',
     },
     type: 'text',
-    value: formatNextExecution(getNextStartTime(cfg)),
+    value: formatNextExecution(getNextStartTime(self, cfg)),
     forceDefault: true,
     readonly: true,
     order: 5,
   });
 
-  if (cfg.duration > 0) {
-    self.vd.devObj.addControl('next_stop', {
-      title: {
-        en: 'Next stop',
-        ru: 'Следующее отключение',
-      },
-      type: 'text',
-      value: formatNextStop(cfg),
-      forceDefault: true,
-      readonly: true,
-      order: 6,
-    });
+  self.vd.devObj.addControl('next_stop', {
+    title: {
+      en: 'Next stop',
+      ru: 'Следующее отключение',
+    },
+    type: 'text',
+    value: formatNextExecution(getNextStopTime(self, cfg)),
+    forceDefault: true,
+    readonly: true,
+    order: 6,
+  });
+}
+
+/**
+ * Convert a TimeObj to milliseconds.
+ * @param {TimeObj} timeObj - Time object with unit and value
+ * @returns {number} Duration in milliseconds
+ */
+function timeObjToMs(timeObj) {
+  if (timeObj.unit === 'hours') {
+    return timeObj.value * MS_PER_HOUR;
   }
+  if (timeObj.unit === 'seconds') {
+    return timeObj.value * MS_PER_SECOND;
+  }
+  return timeObj.value * MS_PER_MINUTE;
+}
+
+/**
+ * Convert HH:MM string to minutes from midnight.
+ * @param {string} timeStr - Time string in HH:MM format
+ * @returns {number} Minutes from midnight
+ */
+function timeStrToMinutes(timeStr) {
+  var parts = timeStr.split(':');
+  return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+}
+
+/**
+ * Format current system time as "Weekday YYYY-MM-DD HH:MM".
+ * Reads from system_time virtual device so the display stays in sync
+ * with the controller clock and the timeUpdateRule trigger.
+ * @returns {string} Formatted current time string
+ */
+function formatCurrentTime() {
+  var currentDate = dev['system_time/current_date'];
+  var currentTime = dev['system_time/current_time'];
+  var currentDayNum = dev['system_time/current_day'];
+  var currentDay = DAY_NAMES[currentDayNum] || 'Unknown';
+  return currentDay + ' ' + currentDate + ' ' + currentTime;
+}
+
+/**
+ * Format a Date as "Weekday YYYY-MM-DD HH:MM:SS".
+ * Seconds are included because interval and workTime can be set in seconds.
+ * @param {Date|null} date - Date to format, or null
+ * @returns {string} Formatted date string, or '--:--' if date is null
+ */
+function formatNextExecution(date) {
+  if (!date) {
+    return '--:--';
+  }
+  var dayName = FULL_DAYS[date.getDay()];
+  var day = ('0' + date.getDate()).slice(-2);
+  var month = ('0' + (date.getMonth() + 1)).slice(-2);
+  var year = date.getFullYear();
+  var hours = ('0' + date.getHours()).slice(-2);
+  var minutes = ('0' + date.getMinutes()).slice(-2);
+  var seconds = ('0' + date.getSeconds()).slice(-2);
+  return (
+    dayName + ' ' + year + '-' + month + '-' + day +
+    ' ' + hours + ':' + minutes + ':' + seconds
+  );
+}
+
+/**
+ * Check if minuteOfDay is within [activeFrom, activeTo).
+ * activeTo is exclusive. Supports wrap-around (e.g. 22:00–06:00).
+ * @param {number} minuteOfDay - Current minute of the day (0–1439)
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if within the active window
+ */
+function isInActiveWindow(minuteOfDay, cfg) {
+  var fromMin = timeStrToMinutes(cfg.activeFrom);
+  var toMin = timeStrToMinutes(cfg.activeTo);
+  if (fromMin <= toMin) {
+    return minuteOfDay >= fromMin && minuteOfDay < toMin;
+  }
+  // Wrap-around window (e.g. 22:00–06:00): active on either side of midnight
+  return minuteOfDay >= fromMin || minuteOfDay < toMin;
+}
+
+/**
+ * Check if a day-of-week number is in scheduleDaysOfWeek.
+ * @param {number} dayOfWeek - 0=Sunday … 6=Saturday
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if the day is scheduled
+ */
+function isScheduledDay(dayOfWeek, cfg) {
+  for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
+    if (DAY_NAME_TO_NUMBER[cfg.scheduleDaysOfWeek[i]] === dayOfWeek) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if today is a scheduled day.
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if today is a scheduled day
+ */
+function isTodayScheduled(cfg) {
+  return isScheduledDay(new Date().getDay(), cfg);
+}
+
+/**
+ * Check if we are currently inside the active window on a scheduled day.
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if currently in active window
+ */
+function isCurrentlyInWindow(cfg) {
+  var now = new Date();
+  var minuteOfDay = now.getHours() * 60 + now.getMinutes();
+  return isTodayScheduled(cfg) && isInActiveWindow(minuteOfDay, cfg);
+}
+
+/**
+ * Find the next time activeFrom occurs on a scheduled day.
+ * Used when no cycle is running to show when the next window opens.
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {Date|null} Date of next window start, or null if none found
+ */
+function getNextWindowStart(cfg) {
+  var now = new Date();
+  var fromMin = timeStrToMinutes(cfg.activeFrom);
+
+  for (var d = 0; d < MAX_DAYS_AHEAD; d++) {
+    var candidate = new Date(now);
+    candidate.setDate(candidate.getDate() + d);
+    candidate.setHours(
+      Math.floor(fromMin / 60), fromMin % 60, 0, 0
+    );
+    if (
+      isScheduledDay(candidate.getDay(), cfg) &&
+      candidate.getTime() > now.getTime()
+    ) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+/**
+ * Get next start time for display.
+ * Returns ctx.nextCycleStartMs if a cycle is scheduled within the current
+ * window, otherwise falls back to the next window opening time.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {Date|null} Next start time
+ */
+function getNextStartTime(self, cfg) {
+  if (self.ctx.nextCycleStartMs) {
+    return new Date(self.ctx.nextCycleStartMs);
+  }
+  return getNextWindowStart(cfg);
+}
+
+/**
+ * Get the epoch ms when the active window ends on the same day as date.
+ * Handles wrap-around windows (e.g. 22:00–06:00).
+ * @param {Date} date - Reference date (typically next cycle start)
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {number} Epoch ms of window end
+ */
+function getWindowEndMs(date, cfg) {
+  var toMin = timeStrToMinutes(cfg.activeTo);
+  var fromMin = timeStrToMinutes(cfg.activeFrom);
+  var end = new Date(date);
+  end.setHours(Math.floor(toMin / 60), toMin % 60, 0, 0);
+  // Wrap-around: activeTo is on the next day relative to activeFrom
+  if (toMin <= fromMin && end.getTime() <= date.getTime()) {
+    end.setDate(end.getDate() + 1);
+  }
+  return end.getTime();
+}
+
+/**
+ * Get next stop time for display.
+ * Returns ctx.workTimeEndMs if controls are currently active, otherwise
+ * next start + workTime, capped at the window end to avoid showing a stop
+ * time that would never be reached (cron exits the window first).
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {Date|null} Next stop time
+ */
+function getNextStopTime(self, cfg) {
+  if (self.ctx.workTimeEndMs) {
+    var windowEndMs = getWindowEndMs(new Date(), cfg);
+    return new Date(Math.min(self.ctx.workTimeEndMs, windowEndMs));
+  }
+  var nextStart = getNextStartTime(self, cfg);
+  if (!nextStart) {
+    return null;
+  }
+  var stopMs = nextStart.getTime() + timeObjToMs(cfg.workTime);
+  var windowEndMs = getWindowEndMs(nextStart, cfg);
+  return new Date(Math.min(stopMs, windowEndMs));
+}
+
+/**
+ * Compute scenario state based on enabled flag and current window position.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {number} ScenarioState constant
+ */
+function computeState(self, cfg) {
+  var isEnabled = dev[self.genNames.vDevice + '/rule_enabled'];
+  if (!isEnabled) {
+    return ScenarioState.DISABLED;
+  }
+  return isCurrentlyInWindow(cfg)
+    ? ScenarioState.NORMAL
+    : ScenarioState.WAITING;
 }
 
 /**
  * Refresh all display controls: current_time, state, next_start, next_stop.
- * Called every minute (timeUpdateRule) and on scenario enable (disableRule).
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
+ * Single point of truth for VD display updates — called from all rule handlers.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
  */
 function refreshDisplay(self, cfg) {
   var vDevName = self.genNames.vDevice;
+  var state = computeState(self, cfg);
   dev[vDevName + '/current_time'] = formatCurrentTime();
-  self.setState(computeState(self, cfg));
-  dev[vDevName + '/next_start'] =
-    formatNextExecution(getNextStartTime(cfg));
-  if (cfg.duration > 0) {
-    dev[vDevName + '/next_stop'] = formatNextStop(cfg);
+  self.setState(state);
+  if (state === ScenarioState.DISABLED) {
+    dev[vDevName + '/next_start'] = '--:--';
+    dev[vDevName + '/next_stop'] = '--:--';
+  } else {
+    dev[vDevName + '/next_start'] =
+      formatNextExecution(getNextStartTime(self, cfg));
+    dev[vDevName + '/next_stop'] =
+      formatNextExecution(getNextStopTime(self, cfg));
   }
 }
 
 /**
- * Execute a list of controls via periodicTimerActionsTable
- * @param {Object[]} controls - Array of control configurations to execute
+ * Execute start actions (activate controls).
+ * Each control is processed independently so one failure does not block others.
+ * @param {ControlConfig[]} controls - Array of control configurations
  */
-function executeControls(controls) {
-  for (var i = 0; i < (controls || []).length; i++) {
+function executeStart(controls) {
+  for (var i = 0; i < controls.length; i++) {
     var ctrl = controls[i];
     try {
-      var actualValue = dev[ctrl.control];
       var newValue = periodicTimerActionsTable[ctrl.behaviorType].handler(
-        actualValue,
+        dev[ctrl.control],
         ctrl.actionValue
       );
-      log.debug('Set {} = {}', ctrl.control, newValue);
+      log.debug('Start: set {} = {}', ctrl.control, newValue);
       dev[ctrl.control] = newValue;
     } catch (error) {
       log.error(
-        'Failed to update control {}: {}',
+        'Failed to activate control {}: {}',
         ctrl.control,
         error.message || error
       );
@@ -639,104 +660,260 @@ function executeControls(controls) {
 }
 
 /**
- * Main per-minute cron tick handler.
+ * Execute reverse actions (restore controls to their previous state).
+ * Reversal is symmetric:
+ *   setEnable  → setDisable
+ *   setDisable → setEnable
+ *   setValue   → setValue with returnValue
+ * @param {ControlConfig[]} controls - Array of control configurations
+ */
+function executeReverse(controls) {
+  for (var i = 0; i < controls.length; i++) {
+    var ctrl = controls[i];
+    try {
+      var newValue;
+      if (ctrl.behaviorType === 'setEnable') {
+        newValue = periodicTimerActionsTable.setDisable.handler(
+          dev[ctrl.control], null
+        );
+      } else if (ctrl.behaviorType === 'setDisable') {
+        newValue = periodicTimerActionsTable.setEnable.handler(
+          dev[ctrl.control], null
+        );
+      } else if (ctrl.behaviorType === 'setValue') {
+        newValue = periodicTimerActionsTable.setValue.handler(
+          dev[ctrl.control], ctrl.returnValue
+        );
+      } else {
+        continue;
+      }
+      log.debug('Reverse: set {} = {}', ctrl.control, newValue);
+      dev[ctrl.control] = newValue;
+    } catch (error) {
+      log.error(
+        'Failed to reverse control {}: {}',
+        ctrl.control,
+        error.message || error
+      );
+    }
+  }
+}
+
+/**
+ * Cancel both pending timers and clear the related ctx fields.
+ * Safe to call at any time — clears only non-null timer ids.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ */
+function cancelTimers(self) {
+  if (self.ctx.workTimerId !== null) {
+    clearTimeout(self.ctx.workTimerId);
+    self.ctx.workTimerId = null;
+  }
+  if (self.ctx.nextCycleTimerId !== null) {
+    clearTimeout(self.ctx.nextCycleTimerId);
+    self.ctx.nextCycleTimerId = null;
+    self.ctx.nextCycleStartMs = null;
+  }
+}
+
+/**
+ * Stop the running cycle: cancel pending timers, reverse controls if currently
+ * in work phase, and reset all ctx flags.
+ * Safe to call when not running (no-op).
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ */
+function stopCycle(self, cfg) {
+  if (!self.ctx.isRunning) {
+    return;
+  }
+
+  // Cancel both timers before any side effects so they cannot fire after stop
+  cancelTimers(self);
+
+  // Reverse only if controls are currently active (inWorkPhase).
+  // If we are in the pause between cycles, controls are already off —
+  // reversing them again would incorrectly turn them on.
+  if (self.ctx.inWorkPhase) {
+    log.debug(
+      'Stopping mid-cycle, reversing controls for: {}',
+      self.idPrefix
+    );
+    executeReverse(cfg.startControls);
+  }
+
+  self.ctx.isRunning = false;
+  self.ctx.inWorkPhase = false;
+  self.ctx.nextCycleStartMs = null;
+  self.ctx.workTimeEndMs = null;
+}
+
+/**
+ * Start a single cycle and chain the next one automatically.
  *
- * Inside the active window the phase determines which controls fire:
- *   elapsed = minuteOfDay - fromMin (+ 1440 on wrap-around)
- *   phase = elapsed % interval
- *   duration > 0:
- *     phase < duration  → startControls (every minute, idempotent)
- *     phase >= duration → stopControls  (every minute, idempotent)
- *   duration = 0:
- *     phase === 0       → startControls (once per interval)
+ * Flow:
+ *   1. Execute start actions immediately.
+ *   2. First setTimeout fires after workTime:
+ *      a. Execute reverse actions.
+ *      b. Check if the next cycle start falls inside the active window.
+ *         - Yes: schedule second setTimeout for the remaining interval gap,
+ *                then recurse into startCycle.
+ *         - No:  mark as not running — cronTick will restart when needed.
  *
- * On the first tick after leaving the window stopControls fire once
- * to clean up (ctx.wasInActiveWindow flag).
- *
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ */
+function startCycle(self, cfg) {
+  var intervalMs = timeObjToMs(cfg.interval);
+  var workTimeMs = timeObjToMs(cfg.workTime);
+
+  // Pre-calculate whether the next cycle will fall inside the window so
+  // next_start can be shown correctly during the current work phase.
+  var nextCycleTime = new Date(Date.now() + intervalMs);
+  var nextMinuteOfDay =
+    nextCycleTime.getHours() * 60 + nextCycleTime.getMinutes();
+  var nextCycleInWindow =
+    isScheduledDay(nextCycleTime.getDay(), cfg) &&
+    isInActiveWindow(nextMinuteOfDay, cfg);
+
+  self.ctx.isRunning = true;
+  self.ctx.inWorkPhase = true;
+  self.ctx.nextCycleStartMs = nextCycleInWindow
+    ? nextCycleTime.getTime()
+    : null;
+  self.ctx.workTimeEndMs = Date.now() + workTimeMs;
+
+  log.debug(
+    'Cycle start, interval={}ms workTime={}ms for: {}',
+    intervalMs, workTimeMs, self.idPrefix
+  );
+
+  executeStart(cfg.startControls);
+  refreshDisplay(self, cfg);
+
+  // First timer: waits for the work phase to end
+  self.ctx.workTimerId = setTimeout(
+    function workTimeExpiredHandler() {
+      self.ctx.inWorkPhase = false;
+      self.ctx.workTimeEndMs = null;
+      self.ctx.workTimerId = null;
+
+      log.debug(
+        'Work time expired, reversing controls for: {}',
+        self.idPrefix
+      );
+      executeReverse(cfg.startControls);
+
+      // Gap between end of work phase and start of next cycle
+      var remainingMs = intervalMs - workTimeMs;
+      if (remainingMs < MIN_CYCLE_DELAY_MS) {
+        remainingMs = MIN_CYCLE_DELAY_MS;
+      }
+
+      var nextScheduledCycleTime = new Date(Date.now() + remainingMs);
+      var nextMinuteOfDay =
+        nextScheduledCycleTime.getHours() * 60 +
+        nextScheduledCycleTime.getMinutes();
+
+      if (
+        isScheduledDay(nextScheduledCycleTime.getDay(), cfg) &&
+        isInActiveWindow(nextMinuteOfDay, cfg)
+      ) {
+        self.ctx.nextCycleStartMs = Date.now() + remainingMs;
+        refreshDisplay(self, cfg);
+
+        // Second timer: waits out the gap, then starts the next cycle
+        self.ctx.nextCycleTimerId = setTimeout(
+          function nextCycleHandler() {
+            self.ctx.nextCycleTimerId = null;
+            self.ctx.nextCycleStartMs = null;
+            startCycle(self, cfg);
+          },
+          remainingMs
+        );
+      } else {
+        // Next cycle would fall outside the window — stop the chain.
+        // cronTick will restart it when the window opens again.
+        log.debug(
+          'Next cycle outside window, stopping for: {}',
+          self.idPrefix
+        );
+        self.ctx.isRunning = false;
+        self.ctx.nextCycleStartMs = null;
+        refreshDisplay(self, cfg);
+      }
+    },
+    workTimeMs
+  );
+}
+
+/**
+ * Cron tick handler — fires every minute at :00 seconds.
+ * Responsible only for window entry and exit transitions:
+ *   - Enters window and cycle not running → start cycle.
+ *   - Exits window (or scenario disabled) and cycle is running → stop cycle.
+ * While the cycle is already running inside the window the setTimeout chain
+ * manages itself; cronTick does not interfere.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
  */
 function cronTick(self, cfg) {
-  var vDevName = self.genNames.vDevice;
-  var isEnabled = dev[vDevName + '/rule_enabled'];
+  var isEnabled = dev[self.genNames.vDevice + '/rule_enabled'];
 
-  var now = new Date();
-  var minuteOfDay = now.getHours() * 60 + now.getMinutes();
-  var inWindow =
-    isEnabled &&
-    isTodayScheduled(cfg) &&
-    isInActiveWindow(minuteOfDay, cfg);
-
-  if (!inWindow) {
-    if (self.ctx.wasInActiveWindow && cfg.duration > 0) {
-      log.debug('Exited active window, firing stopControls (cleanup) for: {}', self.idPrefix);
-      executeControls(cfg.stopControls);
+  if (isEnabled && isCurrentlyInWindow(cfg)) {
+    if (!self.ctx.isRunning) {
+      log.debug('In window, starting cycle for: {}', self.idPrefix);
+      startCycle(self, cfg);
     }
-    self.ctx.wasInActiveWindow = false;
-    return;
-  }
-
-  self.ctx.wasInActiveWindow = true;
-
-  var fromMin = timeStrToMinutes(cfg.activeFrom);
-  var elapsed = minuteOfDay >= fromMin
-    ? minuteOfDay - fromMin
-    : minuteOfDay + 1440 - fromMin;
-  var phase = elapsed % cfg.interval;
-
-  if (cfg.duration === 0) {
-    if (phase === 0) {
-      log.debug('Interval start [0/{}], firing startControls for: {}', cfg.interval, self.idPrefix);
-      executeControls(cfg.startControls);
-    }
-    return;
-  }
-
-  if (phase < cfg.duration) {
-    log.debug('Start phase [{}/{}], firing startControls for: {}', phase, cfg.interval, self.idPrefix);
-    executeControls(cfg.startControls);
   } else {
-    log.debug('Stop phase [{}/{}], firing stopControls for: {}', phase, cfg.interval, self.idPrefix);
-    executeControls(cfg.stopControls);
+    if (self.ctx.isRunning) {
+      log.debug(
+        'Outside window or disabled, stopping cycle for: {}',
+        self.idPrefix
+      );
+      stopCycle(self, cfg);
+      refreshDisplay(self, cfg);
+    }
   }
 }
 
 /**
  * Manual trigger handler (execute_now button).
- * Fires startControls immediately; if duration > 0, schedules
- * stopControls via setTimeout (best-effort, does not survive restarts).
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
+ * Stops any running cycle and immediately starts a fresh one via startCycle,
+ * regardless of the active window. startCycle handles all display updates
+ * and chains subsequent cycles automatically — inside the window the chain
+ * continues; outside it stops and cronTick restarts it at the next window.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
  */
 function manualHandler(self, cfg) {
   var isEnabled = dev[self.genNames.vDevice + '/rule_enabled'];
   if (!isEnabled) {
-    log.debug('Scenario disabled, skipping manual trigger for: {}', self.idPrefix);
+    log.debug(
+      'Scenario disabled, skipping manual trigger for: {}',
+      self.idPrefix
+    );
     return;
   }
 
   log.debug('Manual execution triggered for: {}', self.idPrefix);
-  executeControls(cfg.startControls);
-
-  if (cfg.duration > 0) {
-    setTimeout(function() {
-      log.debug('Manual stop timeout fired for: {}', self.idPrefix);
-      executeControls(cfg.stopControls);
-    }, cfg.duration * MS_PER_MINUTE);
-  }
+  stopCycle(self, cfg);
+  startCycle(self, cfg);
 }
 
 /**
- * Create the per-minute cron rule
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean} - Returns true if rule was created successfully
+ * Create the per-minute cron rule.
+ * Fires every minute at :00 seconds and calls cronTick, which detects
+ * window entry (starts the cycle) and window exit (stops the cycle).
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
  */
 function createCronRule(self, cfg) {
   log.debug('Creating cron rule for periodic timer');
 
   var ruleId = defineRule(self.genNames.ruleMain, {
-    when: cron('0 * * * * *'),
+    when: cron('0 * * * * *'), // Every minute at 0 seconds
     then: function cronTickHandler() {
       cronTick(self, cfg);
     },
@@ -753,10 +930,10 @@ function createCronRule(self, cfg) {
 }
 
 /**
- * Create the manual trigger rule (execute_now button)
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean} - Returns true if rule was created successfully
+ * Create the manual trigger rule (execute_now button).
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
  */
 function createManualRule(self, cfg) {
   log.debug('Creating manual trigger rule');
@@ -781,11 +958,12 @@ function createManualRule(self, cfg) {
 }
 
 /**
- * Create the system time update rule
- * Updates current_time, state, next_start, next_stop every minute.
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean} - Returns true if rule was created successfully
+ * Create the system time update rule.
+ * Refreshes current_time, state, next_start, next_stop whenever the
+ * system clock changes (once per minute).
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
  */
 function createTimeUpdateRule(self, cfg) {
   log.debug('Creating time update rule');
@@ -812,12 +990,15 @@ function createTimeUpdateRule(self, cfg) {
 }
 
 /**
- * Create the disable cleanup rule (rule_enabled switch).
- * When the scenario is disabled and duration > 0, fires stopControls once
- * to restore the controlled devices to their off/stop state.
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean} - Returns true if rule was created successfully
+ * Create the disable/enable rule (rule_enabled switch).
+ * On disable: stops the cycle (with reverse if in work phase) and sets
+ * DISABLED state. On enable: refreshes display and starts cycle immediately
+ * if currently inside the active window.
+ * Intentionally NOT registered via self.addRule() so it remains active
+ * even when the scenario is disabled — otherwise re-enabling would not work.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
  */
 function createDisableRule(self, cfg) {
   log.debug('Creating disable rule');
@@ -827,13 +1008,10 @@ function createDisableRule(self, cfg) {
     then: function disableCleanupHandler(newValue) {
       if (!newValue) {
         log.debug('Scenario disabled for: {}', self.idPrefix);
-        if (cfg.duration > 0) {
-          log.debug('Firing stopControls cleanup for: {}', self.idPrefix);
-          executeControls(cfg.stopControls);
-          self.ctx.wasInActiveWindow = false;
-        }
-        self.setState(ScenarioState.DISABLED);
+        stopCycle(self, cfg);
+        refreshDisplay(self, cfg);
       } else {
+        log.debug('Scenario enabled for: {}', self.idPrefix);
         refreshDisplay(self, cfg);
         cronTick(self, cfg);
       }
@@ -841,21 +1019,19 @@ function createDisableRule(self, cfg) {
   });
 
   if (!disableRuleId) {
-    log.error('Failed to create disable cleanup rule');
+    log.error('Failed to create disable rule');
     return false;
   }
 
-  // Intentionally NOT added via self.addRule() — this rule must stay active
-  // even when the scenario is disabled, so the user can re-enable it.
-  log.debug('Disable cleanup rule created');
+  log.debug('Disable rule created');
   return true;
 }
 
 /**
- * Create all rules for the scenario
- * @param {PeriodicTimerScenario} self - Scenario instance
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean} - Returns true if all rules were created successfully
+ * Create all rules for the scenario.
+ * @param {PeriodicTimerScenario} self - Reference to the scenario instance
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if all rules created successfully, false otherwise
  */
 function createRules(self, cfg) {
   log.debug('Creating all rules');
@@ -877,35 +1053,39 @@ function createRules(self, cfg) {
 }
 
 /**
- * Scenario-specific initialization
- * @param {string} deviceTitle - Human-readable scenario name
- * @param {PeriodicTimerConfig} cfg - Scenario configuration object
- * @returns {boolean} - Returns true if initialization completed successfully
+ * Scenario-specific initialization.
+ * Called by ScenarioBase.init() after VD creation, config validation,
+ * and all referenced controls becoming available.
+ * @param {string} deviceTitle - Virtual device title
+ * @param {PeriodicTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if initialization succeeded
  */
 PeriodicTimerScenario.prototype.initSpecific = function(
   deviceTitle,
   cfg
 ) {
-  /**
-   * NOTE: This method is executed ONLY when:
-   * - Base initialization is complete
-   * - Configuration is valid
-   * - All referenced controls exist in the system
-   * 
-   * The async initialization chain guarantees that all prerequisites are met.
-   * No need to re-validate or check control existence here.
-   */
   log.debug('Start init periodic timer scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-  // Add custom controls to virtual device
   addCustomControlsToVirtualDevice(this, cfg);
 
-  // Create all rules
   var rulesCreated = createRules(this, cfg);
 
   if (rulesCreated) {
     this.setState(computeState(this, cfg));
+
+    // Start the cycle immediately if we are already inside the active window.
+    // Without this check, the first cycle would be delayed until the next
+    // cron tick (up to 60 seconds after restart).
+    var isEnabled = dev[this.genNames.vDevice + '/rule_enabled'];
+    if (isEnabled && isCurrentlyInWindow(cfg)) {
+      log.debug(
+        'Init in active window, starting cycle for: "{}"',
+        deviceTitle
+      );
+      startCycle(this, cfg);
+    }
+
     log.debug(
       'Periodic timer initialized for device "{}"',
       deviceTitle
