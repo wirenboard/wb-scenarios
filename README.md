@@ -10,7 +10,6 @@
 - [Термостат (нагрев)](scenarios/thermostat/README.md)
 - [Расписание](scenarios/schedule/README.md)
 - [Астрономический таймер](scenarios/astronomical-timer/README.md)
-- [Периодический таймер](scenarios/periodic-timer/README.md)
 
 ## Установка
 
