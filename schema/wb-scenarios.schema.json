@@ -1371,7 +1371,7 @@
               "type": "string",
               "enum": ["hours", "minutes", "seconds"],
               "default": "minutes",
-              "propertyOrder": 1,
+              "propertyOrder": 2,
               "options": {
                 "enum_titles": [
                   "periodicTimerUnitHours",
@@ -1387,7 +1387,7 @@
               "type": "integer",
               "minimum": 1,
               "default": 5,
-              "propertyOrder": 2,
+              "propertyOrder": 1,
               "options": {
                 "grid_columns": 6
               }
@@ -1413,7 +1413,7 @@
               "type": "string",
               "enum": ["hours", "minutes", "seconds"],
               "default": "minutes",
-              "propertyOrder": 1,
+              "propertyOrder": 2,
               "options": {
                 "enum_titles": [
                   "periodicTimerUnitHours",
@@ -1429,7 +1429,7 @@
               "type": "integer",
               "minimum": 1,
               "default": 60,
-              "propertyOrder": 2,
+              "propertyOrder": 1,
               "options": {
                 "grid_columns": 6
               }
@@ -1707,25 +1707,25 @@
       "astroTimerEventSettingsTitle": "Event settings",
 
       "periodicTimerScenarioName": "Periodic Timer",
-      "periodicTimerScenarioDescription": "Repeatedly activates controls at a fixed interval within a time window. After the work time, each control is automatically restored to its previous state.",
+      "periodicTimerScenarioDescription": "Periodically turns channels on and off on a schedule.<br>Operates within a configurable time window with a repeating interval.",
       "periodicTimerDefaultInputName": "Periodic Timer",
-      "periodicTimerActiveFromTitle": "Active from",
-      "periodicTimerActiveFromDescription": "Start of the active time window (inclusive). The scenario runs only within this window.",
-      "periodicTimerActiveToTitle": "Active to",
-      "periodicTimerActiveToDescription": "End of the active time window (exclusive). The scenario stops before this time.",
-      "periodicTimerWorkTimeTitle": "Work time",
-      "periodicTimerWorkTimeDescription": "How long the controls stay in the active state.",
-      "periodicTimerIntervalTitle": "Run every",
-      "periodicTimerIntervalDescription": "How often a new cycle starts.",
+      "periodicTimerActiveFromTitle": "Start time",
+      "periodicTimerActiveFromDescription": "When the scenario starts operating.<br>The first cycle will not begin before this time.",
+      "periodicTimerActiveToTitle": "End time",
+      "periodicTimerActiveToDescription": "When the scenario stops operating.<br>All channels will be turned off before this time.",
+      "periodicTimerWorkTimeTitle": "On duration",
+      "periodicTimerWorkTimeDescription": "How long channels stay on during each cycle.",
+      "periodicTimerIntervalTitle": "Repeat every",
+      "periodicTimerIntervalDescription": "Interval between the start of each cycle.",
       "periodicTimerUnitTitle": "Unit",
-      "periodicTimerValueTitle": "Value",
+      "periodicTimerValueTitle": "Time",
       "periodicTimerUnitHours": "Hours",
       "periodicTimerUnitMinutes": "Minutes",
       "periodicTimerUnitSeconds": "Seconds",
-      "periodicTimerSetValueTitle": "Set to",
-      "periodicTimerReturnValueTitle": "Return to",
+      "periodicTimerSetValueTitle": "Set on start",
+      "periodicTimerReturnValueTitle": "Set on stop",
       "periodicTimerStartControlsTitle": "Actions",
-      "periodicTimerStartControlsDescription": "Controls activated at each cycle. After the work time, each control is restored to its opposite state. For the Set value action, two values are configured: one to apply on start and one to restore on stop."
+      "periodicTimerStartControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop."
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1843,25 +1843,25 @@
       "astroTimerEventSettingsTitle": "Настройки события",
 
       "periodicTimerScenarioName": "Периодический таймер",
-      "periodicTimerScenarioDescription": "Активирует контролы с заданным интервалом в пределах временного окна. По истечении времени работы каждый контрол автоматически возвращается в предыдущее состояние.",
+      "periodicTimerScenarioDescription": "Периодически включает и выключает каналы по расписанию.<br>Работает в заданном временном окне с настраиваемым интервалом повторения.",
       "periodicTimerDefaultInputName": "Периодический таймер",
-      "periodicTimerActiveFromTitle": "Активен с",
-      "periodicTimerActiveFromDescription": "Начало временного окна активности (включительно). Сценарий срабатывает только внутри этого окна.",
-      "periodicTimerActiveToTitle": "Активен до",
-      "periodicTimerActiveToDescription": "Конец временного окна активности (не включается). Сценарий останавливается до наступления этого времени.",
-      "periodicTimerWorkTimeTitle": "Время работы",
-      "periodicTimerWorkTimeDescription": "Как долго контролы остаются в активном состоянии.",
-      "periodicTimerIntervalTitle": "Запускать каждые",
-      "periodicTimerIntervalDescription": "Как часто начинается новый цикл.",
-      "periodicTimerUnitTitle": "Единица",
-      "periodicTimerValueTitle": "Значение",
+      "periodicTimerActiveFromTitle": "Начало работы",
+      "periodicTimerActiveFromDescription": "Время начала работы сценария.<br>Первый цикл запустится не раньше этого времени.",
+      "periodicTimerActiveToTitle": "Конец работы",
+      "periodicTimerActiveToDescription": "Время окончания работы сценария.<br>Все каналы будут выключены до наступления этого времени.",
+      "periodicTimerWorkTimeTitle": "Длительность включения",
+      "periodicTimerWorkTimeDescription": "Как долго каналы остаются включёнными в каждом цикле.",
+      "periodicTimerIntervalTitle": "Повторять каждые",
+      "periodicTimerIntervalDescription": "Интервал между началами циклов включения.",
+      "periodicTimerUnitTitle": "Ед. измерения",
+      "periodicTimerValueTitle": "Время",
       "periodicTimerUnitHours": "Часы",
       "periodicTimerUnitMinutes": "Минуты",
       "periodicTimerUnitSeconds": "Секунды",
-      "periodicTimerSetValueTitle": "Установить на",
-      "periodicTimerReturnValueTitle": "Вернуть к",
+      "periodicTimerSetValueTitle": "Включить со значением",
+      "periodicTimerReturnValueTitle": "Выключить со значением",
       "periodicTimerStartControlsTitle": "Действия",
-      "periodicTimerStartControlsDescription": "Контролы, активируемые в каждом цикле. По истечении времени работы каждый контрол возвращается в противоположное состояние. Для действия «Установить значение» задаются два значения: для включения и для выключения."
+      "periodicTimerStartControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении."
     }
   }
 }
