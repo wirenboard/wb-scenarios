@@ -18,6 +18,9 @@
 - **virtual-device-helpers** - утилиты для работы с виртуальными устройствами
 - **wbsc-wait-controls** - ожидание готовности контролов
 - **ScenarioPersistentStorage** - [хранилище сценариев](scenario-persistent-storage.md)
+- **constants** - общие константы: дни недели (`src/constants.mod.js`)
+- **table-handling-actions** - таблица действий для outControls (`src/table-handling-actions.mod.js`)
+- **suncalc** - библиотека расчёта астрособытий (`src/suncalc.mod.js`)
 
 ## ScenarioBase - обязательные методы для наследников
 
@@ -109,8 +112,10 @@ YourScenario.prototype.defineControlsWaitConfig = function(cfg) {
 - **`enable()`** - включить все правила сценария
 - **`disable()`** - отключить все правила сценария
 - **`init(name, cfg)`** - основной метод инициализации (**НЕ переопределять!**)
-- **`getPsUserSetting()`** - получить значение сценария по ключу из хранилища
-- **`setPsUserSetting()`** - сохранить значение сценария по ключу в хранилище
+- **`getPsUserSetting(key, defaultValue)`** - получить значение сценария по ключу из хранилища
+- **`setPsUserSetting(key, value)`** - сохранить значение сценария по ключу в хранилище
+- **`getPsMeta(key, defaultValue)`** - получить мета-информацию сценария из хранилища
+- **`setPsMeta(key, value)`** - сохранить мета-информацию сценария в хранилище
 
 ## Жизненный цикл сценария
 
