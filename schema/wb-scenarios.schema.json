@@ -1066,8 +1066,8 @@
               "title": "astroTimerLatitudeTitle",
               "description": "astroTimerLatitudeDescription",
               "type": "number",
-              "minimum": -90,
-              "maximum": 90,
+              "minimum": -89.9,
+              "maximum": 89.9,
               "propertyOrder": 1,
               "options": {
                 "grid_columns": 6
@@ -1685,7 +1685,7 @@
       "astroTimerScenarioDescription": "Executes actions based on astronomical events (sunrise, sunset, twilight, etc.) with optional time offset.<br>Calculations are performed locally using geographic coordinates.",
       "astroTimerDefaultInputName": "Astronomical Timer",
       "astroTimerLatitudeTitle": "Latitude",
-      "astroTimerLatitudeDescription": "Location latitude (-90 to 90)",
+      "astroTimerLatitudeDescription": "Location latitude (-89.9 to 89.9)",
       "astroTimerLongitudeTitle": "Longitude",
       "astroTimerLongitudeDescription": "Location longitude (-180 to 180)",
       "astroTimerEventTitle": "Astronomical Event",
@@ -1821,7 +1821,7 @@
       "astroTimerScenarioDescription": "Выполняет действия по астрономическим событиям (восход, закат, сумерки и др.) со смещением по времени.<br>Расчёт выполняется локально по географическим координатам.",
       "astroTimerDefaultInputName": "Астрономический таймер",
       "astroTimerLatitudeTitle": "Широта",
-      "astroTimerLatitudeDescription": "Широта местоположения (от -90 до 90)",
+      "astroTimerLatitudeDescription": "Широта местоположения (от -89.9 до 89.9)",
       "astroTimerLongitudeTitle": "Долгота",
       "astroTimerLongitudeDescription": "Долгота местоположения (от -180 до 180)",
       "astroTimerEventTitle": "Астрономическое событие",

@@ -105,9 +105,9 @@ wb-scenarios.conf         -->  scenario-init-main.js
 Создаём cron-правило `0 * * * * *` (каждую минуту, 0-я секунда).
 
 При каждом тике:
-1. Получаем закэшированное время события на сегодня через getSavedEventTime()
-2. Сравниваем nowHHMM с cachedEventTimeStr
-3. Если совпало, день недели подходит и событие ещё не срабатывало → выполняем
+1. Получаем время события через updateEventTimeAndDisplay() (кэш или пересчёт)
+2. Сравниваем floor(now/min) с floor(eventTime/min) — дата и время в одном числе
+3. Если совпало и событие ещё не срабатывало → выполняем
 
 **Почему не setTimeout:** wb-rules не гарантирует сохранение таймеров при перезапуске.
 **Почему не пересоздание cron:** wb-rules не поддерживает удаление/пересоздание правил в runtime.
@@ -115,6 +115,7 @@ wb-scenarios.conf         -->  scenario-init-main.js
 **Оптимизация**: Рассчитываем время события только при изменении параметров
 и кэшируем в контекст. Пересчёт происходит при:
 
+- Протухании кеша (cachedNextExecutionMs <= now — событие уже в прошлом)
 - Смене дня
 - Смене часового пояса
 - Изменении типа события
@@ -156,8 +157,7 @@ wb-scenarios.conf         -->  scenario-init-main.js
 - cachedOffset — смещение
 - cachedLatitude / cachedLongitude — координаты
 - cachedDaysOfWeekStr — дни недели (как строка)
-- cachedEventTimeMs — время события в миллисекундах
-- cachedEventTimeStr — время события в формате HH:MM
+- cachedNextExecutionMs — время следующего срабатывания в миллисекундах (любой будущий день)
 - firedToday — флаг срабатывания за сегодня
 
 ### 4.5. Важный нюанс: проверка дней недели ПОСЛЕ offset
@@ -168,8 +168,10 @@ wb-scenarios.conf         -->  scenario-init-main.js
 в четверг в 23:00. Проверяется именно четверг, а не пятница.
 
 ### 4.6. Разрешенный диапазон смещения
-Offset ограничен ±12 часов (-720..720 минут). Если смещение превышает 24 часа
-в любую сторону, событие не происходит (логируется предупреждение).
+Offset ограничен ±12 часов (-720..720 минут). Offset может свободно переносить
+событие на соседний день — например, `nadir` (01:00) с offset -120 мин сработает
+в 23:00 предыдущего дня. Поиск в `getNextExecutionTime` начинается с вчерашнего
+дня (`i = -1`), чтобы поймать такие случаи.
 
 ### 4.7. Автоматическое определение смены часового пояса
 В отличие от Schedule (требует перезапуска wb-rules), Astronomical Timer
@@ -212,7 +214,7 @@ AstronomicalTimerScenario extends ScenarioBase
 │   → controls из outControls
 │
 ├── validateCfg(cfg)
-│   → lat (-90..90), lon (-180..180)
+│   → lat (-89.9..89.9), lon (-180..180)
 │   → astroEvent (из списка ASTRO_EVENT_NAMES)
 │   → offset (-720..720 минут)
 │   → scheduleDaysOfWeek (хотя бы 1 день, все валидные)
@@ -231,26 +233,34 @@ AstronomicalTimerScenario extends ScenarioBase
 │   └── createRules()
 │       ├── createCronRule()         # cron("0 * * * * *")
 │       │   └── на каждом тике:
-│       │       1. getSavedEventTime() из кэша/пересчёт
-│       │       2. if !firedToday && сегодня разрешено && HH:MM совпало
+│       │       1. updateEventTimeAndDisplay() — кэш/пересчёт + обновление дисплея
+│       │       2. if !firedToday && floor(now/min) === floor(eventTime/min)
 │       │       3. → set firedToday = true
-│       │       4. → dev[execute_now] = true
+│       │       4. → astroHandler() — выполнить outControls
+│       │       (кеш протухнет сам: на следующем тике cachedExpired = true → пересчёт)
 │       │
 │       ├── createManualRule()        # whenChanged execute_now
-│       │   └── astroHandler() — выполнить outControls и обновить next_execution
+│       │   └── astroHandler() — только выполнить outControls (без кэша/дисплея)
 │       │
 │       └── createTimeUpdateRule()    # whenChanged system_time/*
 │           └── обновить current_time display
 │
-├── getSavedEventTime()               # Работа с кэшем
+├── updateEventTimeAndDisplay()       # Пересчёт + обновление VD дисплея
+│   ├── вызывает calculateAndCacheEventTime()
+│   ├── обновляет next_execution и astro_event_time только при изменении
+│   │   (сравнивает cachedNextExecutionMs до и после, избегает лишних MQTT-записей)
+│   └── возвращает nextExecution
+│
+├── calculateAndCacheEventTime()     # Работа с кэшем
+│   ├── проверяет cachedExpired (cachedNextExecutionMs <= now)
 │   ├── сравнивает все параметры (дата, TZ, событие, offset, координаты, дни)
-│   ├── при изменении → пересчёт и сброс firedToday
+│   ├── при изменении или протухании → пересчёт через getNextExecutionTime() и сброс firedToday
 │   └── сохраняет в контекст
 │
 └── getNextExecutionTime()            # Поиск следующего выполнения
-    ├── для каждого дня до MAX_DAYS_AHEAD (8)
+    ├── для каждого дня от -1 (вчера) до MAX_DAYS_AHEAD (365)
     ├── calculateEventTime() с offset
-    ├── проверка фактического дня недели
+    ├── проверка фактического дня недели (ПОСЛЕ offset)
     └── возвращает ближайшее будущее событие
 ```
 
@@ -287,7 +297,13 @@ AstronomicalTimerScenario extends ScenarioBase
 
 ### 8.1. Полярный день/ночь
 `suncalc.getTimes()` возвращает NaN для несуществующих событий.
-Логируем "Event does not occur today at this location" и возвращаем null.
+`calculateEventTime` возвращает null, `getNextExecutionTime` продолжает поиск
+до MAX_DAYS_AHEAD (365). Широта ограничена ±89.9° (безопасный порог SunCalc).
+
+Примеры из тестирования:
+- Медвежий остров (74.5°N, `night`): 199 дней, 85 мс
+- Шпицберген (78°N, `nightEnd`): 209 дней, 90 мс
+- Северный полюс (89.5°N, `sunrise`): 3 дня, 2 мс
 
 ### 8.2. Смена часового пояса
 Автоматическое определение: при каждом пересчёте проверяем TZ offset,
@@ -296,19 +312,23 @@ AstronomicalTimerScenario extends ScenarioBase
 ### 8.3. Изменение конфигурации после запуска
 При изменении любого параметра (событие, offset, координаты, дни) через WebUI:
 
-1. При перезапуске getSavedEventTime() обнаруживает изменения
+1. При перезапуске calculateAndCacheEventTime() обнаруживает изменения
 2. Кэш сбрасывается, firedToday = false
 3. Время пересчитывается с новыми параметрами
 
-### 8.4. Offset, переносящий событие на другой день (Работает только при переносе назад)
-Если событие с offset попадает на другой день, проверяется именно этот
-фактический день. Пример: Надир в пятницу с offset -120 → сработает в четверг
-(если четверг разрешён).
+### 8.4. Offset, переносящий событие на другой день
+Offset может переносить событие на соседний день в обе стороны (вперёд и назад).
+День недели проверяется ПОСЛЕ применения offset — по фактическому дню события.
+Поиск начинается с вчерашнего дня (`i = -1`), чтобы поймать события, сдвинутые
+offset'ом на сегодня.
+
+Пример: Надир в пятницу с offset -120 → сработает в четверг (если четверг разрешён).
 
 ### 8.5. Нет события в ближайшие MAX_DAYS_AHEAD дней
-Если за 8 дней не найдено ни одного подходящего события (например, из-за offset,
-уводящего за пределы дней), выводится сообщение:
-"No event found in next 8 days for: goldenHour"
+Если за 365 дней не найдено ни одного подходящего события (полярный день/ночь
+в сочетании с ограничением по дням недели), выводится сообщение:
+"No event found in next 365 days for: goldenHour"
+Валидация при старте также проверяет наличие события и не допускает запуск сценария.
 
 ---
 
@@ -354,6 +374,5 @@ AstronomicalTimerScenario extends ScenarioBase
 | Проблема | Приоритет | Предложение |
 |---|---|---|
 | Проверка каждую минуту даже когда события нет | Низкий | Добавить адаптивный cron (реже проверять, если событие далеко) |
-| MAX_DAYS_AHEAD = 8 жёстко задано | Низкий | Сделать настраиваемым параметром |
 | Нет обработки customAngle | Средний | Можно добавить позже через SunCalc.addTime() |
 | Дублирование кода валидации с schedule | Средний | Вынести общие функции в helpers |
