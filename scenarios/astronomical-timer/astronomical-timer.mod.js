@@ -290,9 +290,12 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
   var nextExecution = calculateAndCacheEventTime(this, cfg);
   if (!nextExecution) {
     log.error(
-      'Astronomical Timer validation error: No events found in next {} days with current configuration. ' +
-      'Check coordinates and event type.',
-      MAX_DAYS_AHEAD
+      'Astronomical Timer validation error: Event "{}" not found in next {} days ' +
+      'for coordinates (lat: {}, lng: {}). Check coordinates and event type.',
+      cfg.eventSettings.astroEvent,
+      MAX_DAYS_AHEAD,
+      cfg.coordinates.latitude,
+      cfg.coordinates.longitude
     );
     return false;
   }
