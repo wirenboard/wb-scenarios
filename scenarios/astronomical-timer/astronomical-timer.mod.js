@@ -38,13 +38,13 @@ var ASTRO_EVENT_NAMES = {
 };
 
 var MS_PER_MINUTE = 60000;
-var MAX_DAYS_AHEAD = 8; // today + 7
+var MAX_DAYS_AHEAD = 365;
 var OFFSET_MIN_MIN = -720; // -12 hours
 var OFFSET_MAX_MIN = 720;  // +12 hours
 
 /**
  * @typedef {Object} Coordinates
- * @property {number} latitude - Geographic latitude (-90 to 90)
+ * @property {number} latitude - Geographic latitude (-89.9 to 89.9)
  * @property {number} longitude - Geographic longitude (-180 to 180)
  */
 
@@ -96,10 +96,8 @@ function AstronomicalTimerScenario() {
     cachedLatitude: null,       // Latitude for last calculation
     cachedLongitude: null,      // Longitude for last calculation
     cachedDaysOfWeekStr: '',    // Scheduled days as string
-    cachedEventTimeMs: null,    // Cached event time in milliseconds
-    cachedEventTimeStr: null,   // Cached event time in HH:MM format
+    cachedNextExecutionMs: null, // Cached next execution time (ms), any future day
     firedToday: false,          // Whether event has fired today
-    // Add local context variables here for scenario instance
   };
 }
 
@@ -209,10 +207,10 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
   // Validate latitude
   if (
     typeof cfg.coordinates.latitude !== 'number' ||
-    cfg.coordinates.latitude < -90 ||
-    cfg.coordinates.latitude > 90
+    cfg.coordinates.latitude < -89.9 ||
+    cfg.coordinates.latitude > 89.9
   ) {
-    log.error('Astronomical Timer validation error: latitude must be between -90 and 90');
+    log.error('Astronomical Timer validation error: latitude must be between -89.9 and 89.9');
     return false;
   }
 
@@ -288,21 +286,18 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
     return false;
   }
 
-  // After all the format checks, we check that the event actually exists
-  // in the next MAX_DAYS_AHEAD days
-  var eventTime = calculateEventTime(cfg, new Date());
-
-  if (!eventTime) {
-    // If there is no one for today, we will check in the coming days.
-    var nextExecution = getNextExecutionTime(cfg);
-    if (!nextExecution) {
-      log.error(
-        'Astronomical Timer validation error: No events found in next {} days with current configuration. ' +
-        'Check coordinates, event type and offset values.',
-        MAX_DAYS_AHEAD
-      );
-      return false;
-    }
+  // Check that the event actually exists in the next MAX_DAYS_AHEAD days
+  var nextExecution = calculateAndCacheEventTime(this, cfg);
+  if (!nextExecution) {
+    log.error(
+      'Astronomical Timer validation error: Event "{}" not found in next {} days ' +
+      'for coordinates (lat: {}, lng: {}). Check coordinates and event type.',
+      cfg.eventSettings.astroEvent,
+      MAX_DAYS_AHEAD,
+      cfg.coordinates.latitude,
+      cfg.coordinates.longitude
+    );
+    return false;
   }
 
   log.debug('Astronomical Timer configuration validation successful');
@@ -343,7 +338,7 @@ function addCustomControlsToVirtualDevice(self, cfg) {
   });
 
   // Add next execution time display control
-  var nextExecution = getNextExecutionTime(cfg);
+  var nextExecution = calculateAndCacheEventTime(self, cfg);
   var nextExecutionText = formatNextExecution(nextExecution);
   self.vd.devObj.addControl('next_execution', {
     title: {
@@ -426,42 +421,15 @@ function calculateEventTime(cfg, date) {
   var eventTime = times[eventName];
 
   if (!eventTime || isNaN(eventTime.getTime())) {
-    log.warning('Event {} does not occur today at this location', eventName);
     return null;
   }
 
-  // Apply offset
+  // Apply offset (may shift event to next or previous day — that's OK)
   if (cfg.eventSettings.offset) {
     eventTime = new Date(eventTime.getTime() + cfg.eventSettings.offset * MS_PER_MINUTE);
   }
 
-  // Define day boundaries
-  var dayStart = new Date(date);
-  dayStart.setHours(0, 0, 0, 0);
-  
-  var dayEnd = new Date(dayStart);
-  dayEnd.setDate(dayEnd.getDate() + 1);
-  
-  // Define previous day boundary (24 hours before dayStart)
-  var prevDayStart = new Date(dayStart);
-  prevDayStart.setDate(prevDayStart.getDate() - 1);
-
-  // Check if event time is within allowed range (previous day to current day)
-  // Allowed range: from start of previous day to end of current day
-  if (eventTime >= prevDayStart && eventTime < dayEnd) {
-    return eventTime;
-  } else {
-    // Event moved more than 24 hours backward or forward
-    var direction = eventTime < dayStart ? 'earlier' : 'later';
-    log.warning(
-      'Offset of {} minutes moves event {} to {} day for date: {}. Event will not fire',
-      cfg.eventSettings.offset,
-      cfg.eventSettings.astroEvent,
-      direction,
-      date.toDateString()
-    );
-    return null;
-  }
+  return eventTime;
 }
 
 /**
@@ -492,8 +460,13 @@ function calculateAndCacheEventTime(self, cfg) {
   var cachedLongitude = self.ctx.cachedLongitude;
   var cachedDaysOfWeekStr = self.ctx.cachedDaysOfWeekStr;
 
+  // Check if cached event time is in the past
+  var cachedExpired = self.ctx.cachedNextExecutionMs !== null &&
+    self.ctx.cachedNextExecutionMs <= now.getTime();
+
   // Check if any relevant parameter changed
-  var needsRecalculation = 
+  var needsRecalculation =
+    cachedExpired ||
     cachedDate !== todayStr ||
     cachedTzOffset !== currentTzOffset ||
     cachedEventType !== currentEventType ||
@@ -502,31 +475,27 @@ function calculateAndCacheEventTime(self, cfg) {
     cachedLongitude !== currentLongitude ||
     cachedDaysOfWeekStr !== currentDaysOfWeekStr;
 
-  if (!needsRecalculation && self.ctx.cachedEventTimeMs !== null) {
-    return new Date(self.ctx.cachedEventTimeMs);
+  if (!needsRecalculation && self.ctx.cachedNextExecutionMs !== null) {
+    return new Date(self.ctx.cachedNextExecutionMs);
   }
 
-  // Recalculate if any relevant parameter changed
-  if (needsRecalculation) {
-    log.debug('Recalculating event time for: {} (reason: date:{}, tz:{}, event:{}, offset:{}, lat:{}, lon:{}, days:{})', 
-      todayStr,
-      cachedDate !== todayStr,
-      cachedTzOffset !== currentTzOffset,
-      cachedEventType !== currentEventType,
-      cachedOffset !== currentOffset,
-      cachedLatitude !== currentLatitude,
-      cachedLongitude !== currentLongitude,
-      cachedDaysOfWeekStr !== currentDaysOfWeekStr
-    );
-  }
+  log.debug('Recalculating event time for: {} (reason: expired:{}, date:{}, tz:{}, event:{}, offset:{}, lat:{}, lon:{}, days:{})',
+    todayStr,
+    cachedExpired,
+    cachedDate !== todayStr,
+    cachedTzOffset !== currentTzOffset,
+    cachedEventType !== currentEventType,
+    cachedOffset !== currentOffset,
+    cachedLatitude !== currentLatitude,
+    cachedLongitude !== currentLongitude,
+    cachedDaysOfWeekStr !== currentDaysOfWeekStr
+  );
 
-  var eventTime = calculateEventTime(cfg, now);
+  self.ctx.firedToday = false;
+  log.debug('Reset firedToday flag due to configuration change');
 
-  // Reset fired flag if date, tz, event type, offset, coordinates or days changed
-  if (needsRecalculation) {
-    self.ctx.firedToday = false;
-    log.debug('Reset firedToday flag due to configuration change');
-  }
+  // Find next execution time (searches from yesterday up to MAX_DAYS_AHEAD)
+  var nextExecution = getNextExecutionTime(cfg);
 
   // Save all parameters to context
   self.ctx.cachedDate = todayStr;
@@ -536,42 +505,43 @@ function calculateAndCacheEventTime(self, cfg) {
   self.ctx.cachedLatitude = currentLatitude;
   self.ctx.cachedLongitude = currentLongitude;
   self.ctx.cachedDaysOfWeekStr = currentDaysOfWeekStr;
-  self.ctx.cachedEventTimeMs = eventTime ? eventTime.getTime() : null;
-  self.ctx.cachedEventTimeStr = eventTime ? formatHHMM(eventTime) : null;
+  self.ctx.cachedNextExecutionMs = nextExecution ? nextExecution.getTime() : null;
 
-  return eventTime;
+  return nextExecution;
 }
 
 /**
- * Get saved event time, recalculate if date, timezone,
- * event type, offset, coordinates or days changed
+ * Recalculate event time if needed and update virtual device displays
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
  * @param {AstronomicalTimerConfig} cfg - Configuration object
- * @returns {Date|null} - Saved event time or recalculated
+ * @returns {Date|null} - Next execution time or null if no event found
  */
-function getSavedEventTime(self, cfg) {
-  var eventTime = calculateAndCacheEventTime(self, cfg);
+function updateEventTimeAndDisplay(self, cfg) {
+  var prevNextExecutionMs = self.ctx.cachedNextExecutionMs;
+  var nextExecution = calculateAndCacheEventTime(self, cfg);
 
-  // Update VD displays after recalculation
-  var nextExecution = getNextExecutionTime(cfg);
-  dev[self.genNames.vDevice + '/next_execution'] = formatNextExecution(nextExecution);
+  // Update VD displays only when the next execution time actually changed
+  // to avoid unnecessary writes to MQTT on every cron tick
+  if (self.ctx.cachedNextExecutionMs !== prevNextExecutionMs) {
+    dev[self.genNames.vDevice + '/next_execution'] = formatNextExecution(nextExecution);
 
-  if (cfg.eventSettings.offset !== 0) {
-    if (nextExecution) {
-      var rawTime = new Date(nextExecution.getTime() - cfg.eventSettings.offset * MS_PER_MINUTE);
-      dev[self.genNames.vDevice + '/astro_event_time'] = formatHHMM(rawTime);
-    } else {
-      dev[self.genNames.vDevice + '/astro_event_time'] = '--:--';
+    if (cfg.eventSettings.offset !== 0) {
+      if (nextExecution) {
+        var rawTime = new Date(nextExecution.getTime() - cfg.eventSettings.offset * MS_PER_MINUTE);
+        dev[self.genNames.vDevice + '/astro_event_time'] = formatHHMM(rawTime);
+      } else {
+        dev[self.genNames.vDevice + '/astro_event_time'] = '--:--';
+      }
     }
   }
 
-  return eventTime;
+  return nextExecution;
 }
 
 /**
  * Format time as HH:MM
- * @param {Date} date - Raw time for next execution
- * @returns {string} - Formated time
+ * @param {Date} date - Date object to format
+ * @returns {string} - Formatted time string
  */
 function formatHHMM(date) {
   var hours = ('0' + date.getHours()).slice(-2);
@@ -625,26 +595,6 @@ function formatNextExecution(date) {
 }
 
 /**
- * Check if today is a scheduled day
- * @param {AstronomicalTimerConfig} cfg - Configuration object
- * @returns {boolean} True if today is a scheduled day
- */
-function isTodayScheduled(cfg) {
-  var now = new Date();
-  var currentDay = now.getDay();
-
-  var scheduledDays = [];
-  for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
-    var dayName = cfg.scheduleDaysOfWeek[i];
-    if (DAY_NAME_TO_NUMBER.hasOwnProperty(dayName)) {
-      scheduledDays.push(DAY_NAME_TO_NUMBER[dayName]);
-    }
-  }
-
-  return scheduledDays.indexOf(currentDay) !== -1;
-}
-
-/**
  * Calculate next execution time considering days
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {Date|null} - Calculated next execution time
@@ -670,8 +620,9 @@ function getNextExecutionTime(cfg) {
     return a - b;
   });
 
-  // Check up to MAX_DAYS_AHEAD days ahead
-  for (i = 0; i < MAX_DAYS_AHEAD; i++) {
+  // Check from yesterday up to MAX_DAYS_AHEAD days ahead
+  // Start from -1 (yesterday) to catch events shifted to today by offset
+  for (i = -1; i < MAX_DAYS_AHEAD; i++) {
     var checkDate = new Date(now);
     checkDate.setDate(checkDate.getDate() + i);
 
@@ -688,7 +639,7 @@ function getNextExecutionTime(cfg) {
     // Let's check if this day is allowed
     if (scheduledDays.indexOf(actualDay) === -1) {
       // Actual day not allowed - skip
-      log.debug('Event on {} falls on day {} which is not scheduled', 
+      log.debug('Event on {} falls on day {} which is not scheduled',
         eventTime.toDateString(), actualDay);
       continue;
     }
@@ -748,11 +699,6 @@ function astroHandler(self, cfg) {
     }
   }
 
-  // Update next execution time display
-  var nextExecution = getNextExecutionTime(cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
-  dev[self.genNames.vDevice + '/next_execution'] = nextExecutionText;
-
   log.debug('Astro timer actions completed for: {}', self.idPrefix);
 }
 
@@ -768,7 +714,7 @@ function createCronRule(self, cfg) {
   var ruleId = defineRule(self.genNames.ruleMain, {
     when: cron('0 * * * * *'), // Every minute at 0 seconds
     then: function minuteCheckHandler() {
-      var eventTime = getSavedEventTime(self, cfg);
+      var eventTime = updateEventTimeAndDisplay(self, cfg);
       if (!eventTime) {
         return;
       }
@@ -778,19 +724,14 @@ function createCronRule(self, cfg) {
         return;
       }
 
-      if (!isTodayScheduled(cfg)) {
-        log.debug('Today not scheduled for: {}', self.idPrefix);
-        return;
-      }
-
       var now = new Date();
-      var nowHHMM = formatHHMM(now);
-      var cachedEventTimeStr = self.ctx.cachedEventTimeStr;
+      var nowMinutes = Math.floor(now.getTime() / MS_PER_MINUTE);
+      var eventMinutes = Math.floor(eventTime.getTime() / MS_PER_MINUTE);
 
-      if (nowHHMM === cachedEventTimeStr) {
-        log.debug('Event time matched: {} for {}', nowHHMM, self.idPrefix);
+      if (nowMinutes === eventMinutes) {
+        log.debug('Event time matched: {} for {}', formatHHMM(now), self.idPrefix);
         self.ctx.firedToday = true;
-        dev[self.genNames.vDevice + '/execute_now'] = true;
+        astroHandler(self, cfg);
       }
     },
   });
