@@ -4,14 +4,14 @@ set -e
 CONFIG="/etc/wb-scenarios.conf"
 
 # Migration: thermostat actuator (string) -> actuators (array)
-# Added in 1.7.6 (2026-04)
+# Added in 1.7.6 (20-03-2026)
 # Converts old single-actuator config to new multi-actuator format
 if [ "$1" = "configure" ] && [ -n "$2" ] && dpkg --compare-versions "$2" lt "1.7.6"; then
     if [ -f "$CONFIG" ] && command -v jq >/dev/null 2>&1; then
         if jq -e '.scenarios[]? | select(.scenarioType == "thermostat" and .actuator != null)' "$CONFIG" >/dev/null 2>&1; then
             TMP=$(mktemp)
             jq '(.scenarios[] | select(.scenarioType == "thermostat" and .actuator != null)) |=
-                (. + { actuators: [{ control: .actuator, behaviorType: "setEnable" }] } | del(.actuator))
+                (. + { actuators: [{ mqttTopicName: .actuator, behaviorType: "setEnable" }] } | del(.actuator))
             ' "$CONFIG" > "$TMP" && mv "$TMP" "$CONFIG"
             echo "wb-scenarios: migrated thermostat actuator -> actuators"
         fi

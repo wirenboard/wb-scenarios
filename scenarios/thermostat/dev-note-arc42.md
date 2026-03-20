@@ -167,7 +167,7 @@ ThermostatScenario extends ScenarioBase
 │     ruleSetTargetTemp, ruleSensorErr
 │
 ├── defineControlsWaitConfig(cfg)
-│   → [tempSensor, ...actuators[].control]
+│   → [tempSensor, ...actuators[].mqttTopicName]
 │
 ├── validateCfg(cfg)
 │   → limits, targetTemp, hysteresis, sensorType, actuators
@@ -229,7 +229,7 @@ Per-actuator VD контролы НЕ создаются (решение: не �
 { "actuator": "relay_module/K2" }
 
 // Стало (1.7.6+):
-{ "actuators": [{ "control": "relay_module/K2", "behaviorType": "setEnable" }] }
+{ "actuators": [{ "mqttTopicName": "relay_module/K2", "behaviorType": "setEnable" }] }
 ```
 
 Миграция через `jq`: находит все thermostat-сценарии с полем `actuator`,

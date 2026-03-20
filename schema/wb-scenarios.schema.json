@@ -785,7 +785,7 @@
             "title": "thermostatActuatorObjTitle",
             "type": "object",
             "properties": {
-              "control": {
+              "mqttTopicName": {
                 "type": "string",
                 "propertyOrder": 1,
                 "title": "generalMqttTopicNameTitle",
@@ -819,7 +819,7 @@
                 }
               }
             },
-            "required": ["control", "behaviorType"]
+            "required": ["mqttTopicName", "behaviorType"]
           }
         }
       },

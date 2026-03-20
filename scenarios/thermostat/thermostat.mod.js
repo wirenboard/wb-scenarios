@@ -12,6 +12,7 @@ var aTable = require('table-handling-actions.mod');
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
 var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
+var extractMqttTopics = require('scenarios-general-helpers.mod').extractMqttTopics;
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
@@ -27,7 +28,7 @@ var thermostatActionsTable = {
 
 /**
  * @typedef {Object} ActuatorConfig
- * @property {string} control - MQTT topic of the actuator (e.g. 'relay_module/K2')
+ * @property {string} mqttTopicName - MQTT topic of the actuator (e.g. 'relay_module/K2')
  * @property {'setEnable'|'setDisable'} behaviorType - Action when heating is needed
  */
 
@@ -108,14 +109,12 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
  * @returns {Object} Waiting configuration object
  */
 ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {
-  var allTopics = [cfg.tempSensor];
+  var actuatorTopics = extractMqttTopics(cfg.actuators || []);
 
-  for (var i = 0; i < cfg.actuators.length; i++) {
-    if (cfg.actuators[i].control) {
-      allTopics.push(cfg.actuators[i].control);
-    }
-  }
-
+  var allTopics = [].concat(
+    cfg.tempSensor,
+    actuatorTopics
+  );
   return { controls: allTopics };
 };
 
@@ -177,16 +176,16 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
       log.error(
         'Thermostat validation error: invalid behaviorType "{}" for actuator "{}"',
         act.behaviorType,
-        act.control
+        act.mqttTopicName
       );
       isActuatorsValid = false;
       continue;
     }
     var reqCtrlTypes = thermostatActionsTable[act.behaviorType].reqCtrlTypes;
-    if (!isControlTypeValid(act.control, reqCtrlTypes)) {
+    if (!isControlTypeValid(act.mqttTopicName, reqCtrlTypes)) {
       log.error(
         'Thermostat validation error: actuator "{}" must be of type "switch"',
-        act.control
+        act.mqttTopicName
       );
       isActuatorsValid = false;
     }
@@ -260,13 +259,13 @@ function applyHeatingToActuators(actuators, shouldHeat) {
     try {
       // XNOR: setEnable turns ON when heating, setDisable turns OFF when heating
       var desiredValue = shouldHeat === (act.behaviorType === 'setEnable');
-      if (dev[act.control] !== desiredValue) {
-        dev[act.control] = desiredValue;
+      if (dev[act.mqttTopicName] !== desiredValue) {
+        dev[act.mqttTopicName] = desiredValue;
       }
     } catch (error) {
       log.error(
         'Failed to set actuator "{}": {}',
-        act.control,
+        act.mqttTopicName,
         error.message || error
       );
     }
@@ -340,7 +339,7 @@ function turnOffAllActuators(vdCtrlActuator, cfg) {
  */
 function getActuatorsCriticalErr(actuators) {
   for (var i = 0; i < actuators.length; i++) {
-    var errVal = dev[actuators[i].control + '#error'];
+    var errVal = dev[actuators[i].mqttTopicName + '#error'];
     if (hasCriticalErr(errVal)) {
       return errVal;
     }
@@ -480,7 +479,7 @@ function createErrChangeRule(
 function restoreTargetTemperature(self, cfg) {
   var storedTemp = self.getPsUserSetting('targetTemp', undefined);
 
-  // TODO(Valerii 2027-04): Remove old storage migration after one year
+  // TODO(Valerii 20-03-2026): Remove old storage migration after one year
   // Migration from old PersistentStorage('wbscThermostatSettings')
   if (storedTemp === undefined) {
     try {
@@ -658,7 +657,7 @@ function createRules(self, cfg) {
   // Error handling rules for each actuator
   var baseRuleName = 'wbsc_' + self.idPrefix + '_';
   for (var i = 0; i < cfg.actuators.length; i++) {
-    var actuatorErrTopic = cfg.actuators[i].control + '#error';
+    var actuatorErrTopic = cfg.actuators[i].mqttTopicName + '#error';
     var actuatorErrRuleName = baseRuleName + 'actuator_err_' + i;
     ruleId = createErrChangeRule(
       self,
@@ -671,14 +670,14 @@ function createRules(self, cfg) {
     if (!ruleId) {
       log.error(
         'Failed to create error handling rule for actuator "{}"',
-        cfg.actuators[i].control
+        cfg.actuators[i].mqttTopicName
       );
       return false;
     }
     // This rule not disable when user use switch in virtual device
     log.debug(
       'Actuator error handling rule created for "{}" with ID="{}"',
-      cfg.actuators[i].control,
+      cfg.actuators[i].mqttTopicName,
       ruleId
     );
   }

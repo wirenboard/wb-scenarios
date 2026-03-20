@@ -147,7 +147,7 @@ ThermostatConfig:
    - 'wb-msw-v4_34/Temperature'
 7. `actuators` {array} Список управляемых каналов
    Каждый элемент массива содержит:
-   - `control` {string} Имя MQTT-топика управляемого контрола
+   - `mqttTopicName` {string} Имя MQTT-топика управляемого контрола
      Пример: 'wb-mr6cv3_127/K6'
    - `behaviorType` {'setEnable'|'setDisable'} Тип поведения:
      - `setEnable` — включить при нагреве (нормальный режим)
@@ -179,7 +179,7 @@ function main() {
     hysteresis: 2,
     tempSensor: 'wb-msw-v4_34/Temperature',
     actuators: [
-      { control: 'wb-mr6cv3_127/K6', behaviorType: 'setEnable' },
+      { mqttTopicName: 'wb-mr6cv3_127/K6', behaviorType: 'setEnable' },
     ],
   };
 
