@@ -41,7 +41,7 @@ function initializeScenario(scenarioCfg) {
     tempLimitsMax: scenarioCfg.temperatureLimits.max,
     hysteresis: scenarioCfg.hysteresis,
     tempSensor: scenarioCfg.temperatureSensor,
-    actuator: scenarioCfg.actuator,
+    actuators: scenarioCfg.actuators,
   };
 
   try {

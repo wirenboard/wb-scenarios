@@ -216,9 +216,34 @@ function extractMqttTopics(devices) {
   return result;
 }
 
+/**
+ * Check if control type is valid for the action
+ * @param {string} controlName - Control name
+ * @param {Array} reqCtrlTypes - List of allowed types
+ * @returns {boolean} Returns true if control type is allowed, otherwise false
+ */
+function isControlTypeValid(controlName, reqCtrlTypes) {
+  /* If req types in table empty - may use any control type */
+  if (!reqCtrlTypes || reqCtrlTypes.length === 0) {
+    return true;
+  }
+  var controlType = dev[controlName + '#type'];
+
+  // Handle case when control doesn't exist
+  if (!controlType) {
+    log.debug("Control type for {} not found, return: {}", controlName, controlType);
+    return false;
+  }
+
+  log.debug("Control: {} | Type: {}", controlName, controlType);
+
+  return reqCtrlTypes.indexOf(controlType) !== -1;
+}
+
 exports.findAllScenariosWithType = findAllScenariosWithType;
 exports.findAllActiveScenariosWithType = findAllActiveScenariosWithType;
 exports.readAndValidateScenariosConfig = readAndValidateScenariosConfig;
 exports.getIdPrefix = getIdPrefix;
 exports.getGlobalScenarioStore = getGlobalScenarioStore;
 exports.extractMqttTopics = extractMqttTopics;
+exports.isControlTypeValid = isControlTypeValid;
