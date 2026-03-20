@@ -1473,11 +1473,11 @@
             }
           }
         },
-        "startControls": {
+        "outControls": {
           "type": "array",
           "minItems": 1,
-          "title": "periodicTimerStartControlsTitle",
-          "description": "periodicTimerStartControlsDescription",
+          "title": "periodicTimerOutControlsTitle",
+          "description": "periodicTimerOutControlsDescription",
           "_format": "table",
           "propertyOrder": 9,
           "options": {
@@ -1494,7 +1494,7 @@
             "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
-              "control": {
+              "mqttTopicName": {
                 "type": "string",
                 "propertyOrder": 1,
                 "title": "generalMqttTopicNameTitle",
@@ -1529,10 +1529,10 @@
                   ]
                 }
               },
-              "actionValue": {
+              "initValue": {
                 "type": "number",
                 "propertyOrder": 3,
-                "title": "periodicTimerSetValueTitle",
+                "title": "periodicTimerInitValueTitle",
                 "default": 0,
                 "options": {
                   "dependencies": {
@@ -1542,10 +1542,10 @@
                   }
                 }
               },
-              "returnValue": {
+              "reverseValue": {
                 "type": "number",
                 "propertyOrder": 4,
-                "title": "periodicTimerReturnValueTitle",
+                "title": "periodicTimerReverseValueTitle",
                 "default": 0,
                 "options": {
                   "dependencies": {
@@ -1557,7 +1557,7 @@
               }
             },
             "required": [
-              "control",
+              "mqttTopicName",
               "behaviorType"
             ]
           }
@@ -1572,7 +1572,7 @@
         "scheduleDaysOfWeek",
         "activeFrom",
         "activeTo",
-        "startControls"
+        "outControls"
       ]
     }
   },
@@ -1722,10 +1722,10 @@
       "periodicTimerUnitHours": "Hours",
       "periodicTimerUnitMinutes": "Minutes",
       "periodicTimerUnitSeconds": "Seconds",
-      "periodicTimerSetValueTitle": "Set on start",
-      "periodicTimerReturnValueTitle": "Set on stop",
-      "periodicTimerStartControlsTitle": "Actions",
-      "periodicTimerStartControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop."
+      "periodicTimerInitValueTitle": "Set on start",
+      "periodicTimerReverseValueTitle": "Set on stop",
+      "periodicTimerOutControlsTitle": "Actions",
+      "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop."
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1858,10 +1858,10 @@
       "periodicTimerUnitHours": "Часы",
       "periodicTimerUnitMinutes": "Минуты",
       "periodicTimerUnitSeconds": "Секунды",
-      "periodicTimerSetValueTitle": "Включить со значением",
-      "periodicTimerReturnValueTitle": "Выключить со значением",
-      "periodicTimerStartControlsTitle": "Действия",
-      "periodicTimerStartControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении."
+      "periodicTimerInitValueTitle": "Включить со значением",
+      "periodicTimerReverseValueTitle": "Выключить со значением",
+      "periodicTimerOutControlsTitle": "Действия",
+      "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении."
     }
   }
 }

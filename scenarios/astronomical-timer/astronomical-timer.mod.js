@@ -1,5 +1,5 @@
 /**
- * @file astronomical-timer.mod.js - ES5 module for wb-rules 2.38
+ * @file astronomical-timer.mod.js - ES5 module for wb-rules v2.38
  * @description Astronomical Timer scenario class that extends
  *   ScenarioBase. Triggers actions based on astronomical events
  *   (sunrise, sunset, twilight, etc.) calculated locally using

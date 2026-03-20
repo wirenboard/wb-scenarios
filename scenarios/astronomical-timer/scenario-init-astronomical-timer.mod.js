@@ -1,7 +1,6 @@
 /**
  * @file scenario-init-astronomical-timer.mod.js
- * @description Script for init scenarios of the
- *   astronomicalTimer type
+ * @description Script for init scenarios of the SCENARIO_TYPE_STR type
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
@@ -75,54 +74,31 @@ function initializeScenario(scenarioCfg) {
   }
 }
 
-/**
- * Find and return all scenarios of the requested type
- * @param {Array} listScenario - Array of all scenarios from the config
- * @param {string} searchScenarioType - Scenario type we are looking for
- * @returns {Array} Array of active scenarios of that type
- */
-function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
-  var matchedScenarios = [];
-  for (var i = 0; i < listScenario.length; i++) {
-    var scenario = listScenario[i];
-    if (scenario.scenarioType === searchScenarioType) {
-      matchedScenarios.push(scenario);
-    }
-  }
-  return matchedScenarios;
-}
-
 function setup() {
   log.debug('Start initialisation "{}" type scenarios', CFG.scenarioTypeStr);
   var listAllScenarios = scHelpers.readAndValidateScenariosConfig(
     CFG.configPath,
     CFG.reqVerGeneralCfg
   );
-  if (!listAllScenarios) {
-    return;
-  }
+  if (!listAllScenarios) return;
 
-  var targetScenarios = findAllActiveScenariosWithType(
+  var matchedScenarios = scHelpers.findAllScenariosWithType(
     listAllScenarios,
-    CFG.scenarioTypeStr
+    CFG.scenarioTypeStr,
+    CFG.reqVerScenario
   );
-
-  if (targetScenarios.length === 0) {
-    log.debug('No active scenarios found of type: {}', CFG.scenarioTypeStr);
+  if (matchedScenarios.length === 0) {
+    log.debug(
+      'No correct and active scenarios of type "{}" found',
+      CFG.scenarioTypeStr
+    );
     return;
   }
 
-  log.debug(
-    'Found {} active scenarios of type: {}',
-    targetScenarios.length,
-    CFG.scenarioTypeStr
-  );
-
-  for (var i = 0; i < targetScenarios.length; i++) {
-    initializeScenario(targetScenarios[i]);
+  log.debug('Number of matched scenarios: {}', matchedScenarios.length);
+  for (var i = 0; i < matchedScenarios.length; i++) {
+    initializeScenario(matchedScenarios[i]);
   }
-
-  log.debug('Initialization of "{}" type scenarios completed', CFG.scenarioTypeStr);
 }
 
 exports.setup = setup;

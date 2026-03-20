@@ -29,7 +29,7 @@
 
 ```
 Старт цикла:
-  → выполнить startControls (включить контролы)
+  → выполнить outControls (включить контролы)
   → ждать workTime
 
 Конец workTime:
@@ -49,12 +49,12 @@
 |---|---|
 | Включить (`setEnable`) | Выключить (`setDisable`) |
 | Выключить (`setDisable`) | Включить (`setEnable`) |
-| Установить значение (`setValue`, `actionValue`) | Установить значение (`setValue`, `returnValue`) |
+| Установить значение (`setValue`, `initValue`) | Установить значение (`setValue`, `reverseValue`) |
 
 ### Ручной запуск
 
 Кнопка «Выполнить сейчас» немедленно запускает один цикл вне зависимости
-от текущего времени и окна. После окончания рабочей фазы контролы
+от текущего времени и окна (сценарий должен быть включён). После окончания рабочей фазы контролы
 возвращаются в исходное состояние. Если в момент завершения сценарий
 находится внутри активного окна, автоматический цикл возобновляется
 немедленно. Автоматическое расписание не сдвигается.
@@ -96,16 +96,16 @@
 
 Дни, когда сценарий активен. Минимум один день.
 
-### Действия (`startControls`)
+### Действия (`outControls`)
 
 Массив действий, выполняемых при старте каждого цикла. Минимум 1 элемент.
 
 | Поле | Тип | Описание |
 |---|---|---|
-| `control` | string | Имя контрола: `"device/control"` |
+| `mqttTopicName` | string | Имя контрола: `"device/control"` |
 | `behaviorType` | string | `setEnable`, `setDisable`, `setValue` |
-| `actionValue` | number | Для `setValue`: значение при старте |
-| `returnValue` | number | Для `setValue`: значение при стопе |
+| `initValue` | number | Для `setValue`: значение при старте |
+| `reverseValue` | number | Для `setValue`: значение при стопе |
 
 ---
 
@@ -125,9 +125,9 @@
   "scheduleDaysOfWeek": [
     "monday", "tuesday", "wednesday", "thursday", "friday"
   ],
-  "startControls": [
+  "outControls": [
     {
-      "control": "irrigation/pump",
+      "mqttTopicName": "irrigation/pump",
       "behaviorType": "setEnable"
     }
   ]
@@ -149,9 +149,9 @@
     "monday", "tuesday", "wednesday", "thursday",
     "friday", "saturday", "sunday"
   ],
-  "startControls": [
+  "outControls": [
     {
-      "control": "ventilation/fan",
+      "mqttTopicName": "ventilation/fan",
       "behaviorType": "setEnable"
     }
   ]
@@ -237,6 +237,11 @@
 
 `PeriodicTimerConfig`:
 
+> **Примечание:** формат полей `interval` и `workTime` при программном
+> использовании (`unit`/`value`) отличается от формата в конфиг-файле
+> (`intervalUnit`/`intervalValue`, `workTimeUnit`/`workTimeValue`).
+> Маппинг выполняет модуль инициализации `scenario-init-periodic-timer.mod.js`.
+
 1. `idPrefix` {string} — необязательный. Префикс MQTT-имён виртуального
    устройства и правил. Если не указан, генерируется транслитерацией из имени.
 2. `activeFrom` {string} — начало окна активности в формате `HH:MM` (включительно).
@@ -248,11 +253,11 @@
 6. `scheduleDaysOfWeek` {array} — дни недели активности:
    `'monday'`, `'tuesday'`, `'wednesday'`, `'thursday'`,
    `'friday'`, `'saturday'`, `'sunday'`. Минимум один день.
-7. `startControls` {array} — действия с reverse-логикой. Каждый элемент:
-   - `control` {string}: имя контрола `'device/control'`
+7. `outControls` {array} — действия с reverse-логикой. Каждый элемент:
+   - `mqttTopicName` {string}: имя контрола `'device/control'`
    - `behaviorType` {string}: `'setEnable'`, `'setDisable'` или `'setValue'`
-   - `actionValue` {number}: для `setValue` — значение при старте
-   - `returnValue` {number}: для `setValue` — значение при стопе
+   - `initValue` {number}: для `setValue` — значение при старте
+   - `reverseValue` {number}: для `setValue` — значение при стопе
 
 ### Пример кода
 
@@ -261,17 +266,17 @@
  * @file: init-irrigation.js
  */
 
-// Шаг 1: импорт модуля
+// Step 1: import module
 var CustomTypeSc =
   require('periodic-timer.mod').PeriodicTimerScenario;
 
 function main() {
-  var scenarioName = 'Полив газона';
+  var scenarioName = 'Lawn irrigation';
 
-  // Шаг 2: создать экземпляр
+  // Step 2: create instance
   var scenario = new CustomTypeSc();
 
-  // Шаг 3: настройки
+  // Step 3: configuration
   var cfg = {
     idPrefix: 'lawn_irrigation',
     activeFrom: '06:00',
@@ -282,21 +287,23 @@ function main() {
       'monday', 'tuesday', 'wednesday',
       'thursday', 'friday',
     ],
-    startControls: [
+    outControls: [
       {
-        control: 'irrigation/pump',
+        mqttTopicName: 'irrigation/pump',
         behaviorType: 'setEnable',
       },
     ],
   };
 
-  // Шаг 4: инициализация
+  // Step 4: init algorithm
   try {
     var isInitSuccess = scenario.init(scenarioName, cfg);
+
     if (!isInitSuccess) {
       log.error('Init failed for: "{}"', scenarioName);
       return;
     }
+
     log.debug('Init successful for: "{}"', scenarioName);
   } catch (error) {
     log.error(

@@ -1,6 +1,6 @@
 /**
  * @file scenario-init-schedule.mod.js - ES5 module for wb-rules v2.34
- * @description Script for init scenarios of the schedule type
+ * @description Script for init scenarios of the SCENARIO_TYPE_STR type
  * @author Ivan Praulov <ivan.praulov@wirenboard.com>
  */
 
