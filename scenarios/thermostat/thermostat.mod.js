@@ -251,7 +251,10 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
       ru: 'Статус нагрева',
     },
     type: 'switch',
-    value: true,
+    // Always must start from enabled state
+    // Until the first temperature change this value may not reflect
+    // the actual state of the actuators.
+    forceDefault: true,
     order: 4,
     readonly: true,
   };
