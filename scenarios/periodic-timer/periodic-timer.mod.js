@@ -15,6 +15,7 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 var aTable = require('table-handling-actions.mod');
 var constants = require('constants.mod');
+var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
 
@@ -138,26 +139,6 @@ PeriodicTimerScenario.prototype.defineControlsWaitConfig =
     var allTopics = extractMqttTopics(cfg.outControls || []);
     return { controls: allTopics };
   };
-
-/**
- * Check if control type is valid for the action.
- * @param {string} controlName - Control name
- * @param {string[]} reqCtrlTypes - List of allowed types
- * @returns {boolean} Returns true if control type is allowed, otherwise false
- */
-function isControlTypeValid(controlName, reqCtrlTypes) {
-  // If req types in table empty - may use any control type
-  if (!reqCtrlTypes || reqCtrlTypes.length === 0) {
-    return true;
-  }
-  var controlType = dev[controlName + '#type'];
-  if (!controlType) {
-    log.debug('Control type for {} not found', controlName);
-    return false;
-  }
-  log.debug('Control: {} | Type: {}', controlName, controlType);
-  return reqCtrlTypes.indexOf(controlType) !== -1;
-}
 
 /**
  * Validate all controls against periodicTimerActionsTable.

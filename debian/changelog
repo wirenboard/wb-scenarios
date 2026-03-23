@@ -2,7 +2,7 @@ wb-scenarios (1.7.7) stable; urgency=medium
 
   * Add new scenario "periodic-timer"
 
- -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 13 Mar 2026 16:19:00 +0300
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 23 Mar 2026 16:26:00 +0300
 
 wb-scenarios (1.7.6) stable; urgency=medium
 
