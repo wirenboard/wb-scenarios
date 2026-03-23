@@ -596,7 +596,6 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start init schedule scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-  // Add custom controls to virtual device
   addCustomControlsToVirtualDevice(this, cfg);
 
   // Create all rules

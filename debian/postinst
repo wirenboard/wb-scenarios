@@ -4,7 +4,7 @@ set -e
 CONFIG="/etc/wb-scenarios.conf"
 
 # Migration: thermostat actuator (string) -> actuators (array)
-# Added in 1.7.6 (20-03-2026)
+# Added in 1.7.6 (2026-03-20)
 # Converts old single-actuator config to new multi-actuator format
 if [ "$1" = "configure" ] && [ -n "$2" ] && dpkg --compare-versions "$2" lt "1.7.6"; then
     if [ -f "$CONFIG" ] && command -v jq >/dev/null 2>&1; then

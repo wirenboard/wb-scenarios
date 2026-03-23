@@ -61,8 +61,19 @@ function ThermostatScenario() {
    *   this.getPsUserSetting('targetTemp', defaultValue)
    *   this.setPsUserSetting('targetTemp', value)
    *
+   * One persistent-storage for all scenarios of this type,
+   * contains target temperature set by user in virtual device.
    * Stored in common storage "wb-scenarios-common-persistent-data":
-   *   scenariosRegistry[idPrefix].userSettings.targetTemp = <number>
+   * @example
+   *   scenariosRegistry = {
+   *     "bathroom_floor": {
+   *       "userSettings": { "targetTemp": 22 }
+   *     },
+   *     "kitchen_heater": {
+   *       "userSettings": { "targetTemp": 24 }
+   *     },
+   *     ...
+   *   }
    *
    * @type {Object}
    */
@@ -240,7 +251,7 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
       ru: 'Статус нагрева',
     },
     type: 'switch',
-    value: false,
+    value: true,
     order: 4,
     readonly: true,
   };
@@ -294,6 +305,9 @@ function applyHeatingToActuators(actuators, shouldHeat) {
  * @param {HeatingStateData} data - Heating state data
  */
 function updateHeatingState(vdCtrlActuator, cfg, data) {
+  // WARNING: Called on every temperature change. We always recalculate whether
+  // heating should be on or off, but the actual switch (setValue) only fires
+  // when the value needs to change (guarded by getValue() !== target check).
   var upperLimit = data.targetTemp + data.hysteresis;
   var lowerLimit = data.targetTemp - data.hysteresis;
 
@@ -479,7 +493,7 @@ function createErrChangeRule(
 function restoreTargetTemperature(self, cfg) {
   var storedTemp = self.getPsUserSetting('targetTemp', undefined);
 
-  // TODO(Valerii 20-03-2026): Remove old storage migration after one year
+  // TODO(Valerii 2026-03-20): Remove old storage migration after one year
   // Migration from old PersistentStorage('wbscThermostatSettings')
   if (storedTemp === undefined) {
     try {
@@ -707,7 +721,6 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   // Restore target temperature from storage
   var usedTemp = restoreTargetTemperature(this, cfg);
 
-  // Add custom controls to virtual device
   addCustomControlsToVirtualDevice(this, cfg, usedTemp);
 
   // Create all rules

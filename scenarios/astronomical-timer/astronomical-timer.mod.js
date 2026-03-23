@@ -826,7 +826,6 @@ AstronomicalTimerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start init astronomical timer scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-  // Add custom controls to virtual device
   addCustomControlsToVirtualDevice(this, cfg);
 
   // Create all rules
