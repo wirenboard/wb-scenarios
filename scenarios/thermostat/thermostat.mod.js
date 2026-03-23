@@ -8,11 +8,29 @@
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
+var aTable = require('table-handling-actions.mod');
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
+var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
+var extractMqttTopics = require('scenarios-general-helpers.mod').extractMqttTopics;
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
+
+/**
+ * Actions table for thermostat actuators.
+ * Only setEnable and setDisable are allowed.
+ */
+var thermostatActionsTable = {
+  setEnable:  aTable.actionsTable.setEnable,
+  setDisable: aTable.actionsTable.setDisable,
+};
+
+/**
+ * @typedef {Object} ActuatorConfig
+ * @property {string} mqttTopicName - MQTT topic of the actuator (e.g. 'relay_module/K2')
+ * @property {'setEnable'|'setDisable'} behaviorType - Action when heating is needed
+ */
 
 /**
  * @typedef {Object} ThermostatConfig
@@ -25,8 +43,7 @@ var log = new Logger(loggerFileLabel);
  * @property {string} tempSensor - Name of the input control topic - monitored
  *   Example: temperature sensor whose value should be tracked
  *   'temp_sensor/temp_value'
- * @property {string} actuator - Name of the output control topic - controlled
- *   Example: relay output to be controlled - 'relay_module/K2'
+ * @property {Array<ActuatorConfig>} actuators - List of output controls
  */
 
 /**
@@ -39,25 +56,28 @@ function ThermostatScenario() {
 
   /**
    * Context object for storing scenario runtime state
+   *
+   * Target temperature is persisted via ScenarioBase PS API:
+   *   this.getPsUserSetting('targetTemp', defaultValue)
+   *   this.setPsUserSetting('targetTemp', value)
+   *
+   * One persistent-storage for all scenarios of this type,
+   * contains target temperature set by user in virtual device.
+   * Stored in common storage "wb-scenarios-common-persistent-data":
+   * @example
+   *   scenariosRegistry = {
+   *     "bathroom_floor": {
+   *       "userSettings": { "targetTemp": 22 }
+   *     },
+   *     "kitchen_heater": {
+   *       "userSettings": { "targetTemp": 24 }
+   *     },
+   *     ...
+   *   }
+   *
    * @type {Object}
    */
   this.ctx = {
-    /**
-     * One persistent-storage for all scenarios this type
-     * contain target temperature set by user in virtual device
-     * @example
-     *   ps = {
-     *     "bathroom_floor": {
-     *       "targetTemp": 22
-     *     },
-     *     "kitchen_heater": {
-     *       "targetTemp": 24
-     *     },
-     *     ...
-     *   }
-     */
-    ps: null,
-    
     errorTimers: {}, // Timers for error handling debounce
     errorCheckTimeoutMs: 10000 // 10s debounce time for errors
   };
@@ -88,11 +108,9 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
   return {
     vDevice: scenarioPrefix + idPrefix,
     ruleTempChanged: baseRuleName + 'temp_changed',
-    ruleSyncActStatus: baseRuleName + 'sync_act_status',
     ruleSetScStatus: baseRuleName + 'set_sc_status',
     ruleSetTargetTemp: baseRuleName + 'set_target_t',
     ruleSensorErr: baseRuleName + 'sensor_error_changed',
-    ruleActuatorErr: baseRuleName + 'actuator_error_changed',
   };
 };
 
@@ -102,11 +120,12 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
  * @returns {Object} Waiting configuration object
  */
 ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {
+  var actuatorTopics = extractMqttTopics(cfg.actuators || []);
+
   var allTopics = [].concat(
     cfg.tempSensor,
-    cfg.actuator
+    actuatorTopics
   );
-
   return { controls: allTopics };
 };
 
@@ -155,10 +174,32 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
     );
   }
 
-  var actuatorType = dev[cfg.actuator + '#type'];
-  var isActuatorValid = actuatorType === null || actuatorType === 'switch';
-  if (!isActuatorValid) {
-    log.error('Actuator type must be "switch", but got "{}"', actuatorType);
+  // Validate actuators array
+  if (!Array.isArray(cfg.actuators) || cfg.actuators.length === 0) {
+    log.error('Thermostat validation error: at least one actuator is required');
+    return false;
+  }
+
+  var isActuatorsValid = true;
+  for (var i = 0; i < cfg.actuators.length; i++) {
+    var act = cfg.actuators[i];
+    if (!thermostatActionsTable[act.behaviorType]) {
+      log.error(
+        'Thermostat validation error: invalid behaviorType "{}" for actuator "{}"',
+        act.behaviorType,
+        act.mqttTopicName
+      );
+      isActuatorsValid = false;
+      continue;
+    }
+    var reqCtrlTypes = thermostatActionsTable[act.behaviorType].reqCtrlTypes;
+    if (!isControlTypeValid(act.mqttTopicName, reqCtrlTypes)) {
+      log.error(
+        'Thermostat validation error: actuator "{}" must be of type "switch"',
+        act.mqttTopicName
+      );
+      isActuatorsValid = false;
+    }
   }
 
   var isCfgValid =
@@ -166,7 +207,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
     isTargetTempCorrect &&
     isHysteresisCorrect &&
     isTempSensorValid &&
-    isActuatorValid;
+    isActuatorsValid;
 
   return isCfgValid;
 };
@@ -209,12 +250,40 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
       en: 'Heating Status',
       ru: 'Статус нагрева',
     },
-    type: dev[cfg.actuator + '#type'],
-    value: dev[cfg.actuator],
+    type: 'switch',
+    // Always must start from enabled state
+    // Until the first temperature change this value may not reflect
+    // the actual state of the actuators.
+    forceDefault: true,
     order: 4,
     readonly: true,
   };
   self.vd.devObj.addControl(vdCtrl.actuatorStatus, controlCfg);
+}
+
+/**
+ * Apply heating state to all actuators.
+ * Only writes to actuators whose current state differs from desired.
+ * @param {Array<ActuatorConfig>} actuators - List of actuator configurations
+ * @param {boolean} shouldHeat - Whether heating should be active
+ */
+function applyHeatingToActuators(actuators, shouldHeat) {
+  for (var i = 0; i < actuators.length; i++) {
+    var act = actuators[i];
+    try {
+      // XNOR: setEnable turns ON when heating, setDisable turns OFF when heating
+      var desiredValue = shouldHeat === (act.behaviorType === 'setEnable');
+      if (dev[act.mqttTopicName] !== desiredValue) {
+        dev[act.mqttTopicName] = desiredValue;
+      }
+    } catch (error) {
+      log.error(
+        'Failed to set actuator "{}": {}',
+        act.mqttTopicName,
+        error.message || error
+      );
+    }
+  }
 }
 
 /**
@@ -233,47 +302,77 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
 
 /**
  * Updates the heating state based on current temperature, target
- * temperature, and hysteresis. Sets the new state if it has changed
- * @param {string} actuator - The actuator identifier (key in the dev object)
+ * temperature, and hysteresis. Applies new state to all actuators if changed.
+ * @param {Object} vdCtrlActuator - VD control for actuator status
+ * @param {ThermostatConfig} cfg - Configuration object
  * @param {HeatingStateData} data - Heating state data
  */
-function updateHeatingState(actuator, data) {
-  var currentState = dev[actuator];
+function updateHeatingState(vdCtrlActuator, cfg, data) {
+  // WARNING: Called on every temperature change. We always recalculate whether
+  // heating should be on or off, but the actual switch (setValue) only fires
+  // when the value needs to change (guarded by getValue() !== target check).
   var upperLimit = data.targetTemp + data.hysteresis;
   var lowerLimit = data.targetTemp - data.hysteresis;
 
-  // Update state only if it has changed
-  var isNeedTurnOffHeating =
-    data.curTemp >= upperLimit && currentState === true;
-  var isNeedTurnOnHeating =
-    data.curTemp <= lowerLimit && currentState === false;
-
-  if (isNeedTurnOffHeating) {
+  if (data.curTemp >= upperLimit) {
     log.debug(
       'Heater turned OFF, current/target temperatures: "{}"/"{}" °C',
       data.curTemp,
       data.targetTemp
     );
-    dev[actuator] = false;
-  } else if (isNeedTurnOnHeating) {
+    applyHeatingToActuators(cfg.actuators, false);
+    if (vdCtrlActuator.getValue() !== false) {
+      vdCtrlActuator.setValue(false);
+    }
+  } else if (data.curTemp <= lowerLimit) {
     log.debug(
       'Heater turned ON, current/target temperatures: "{}"/"{}" °C',
       data.curTemp,
       data.targetTemp
     );
-    dev[actuator] = true;
+    applyHeatingToActuators(cfg.actuators, true);
+    if (vdCtrlActuator.getValue() !== true) {
+      vdCtrlActuator.setValue(true);
+    }
   }
 }
 
 /**
+ * Turn off all actuators (reverse state)
+ * @param {Object} vdCtrlActuator - VD control for actuator status
+ * @param {ThermostatConfig} cfg - Configuration object
+ */
+function turnOffAllActuators(vdCtrlActuator, cfg) {
+  applyHeatingToActuators(cfg.actuators, false);
+  if (vdCtrlActuator.getValue() !== false) {
+    vdCtrlActuator.setValue(false);
+  }
+}
+
+/**
+ * Get the critical error value of the first broken actuator
+ * @param {Array<ActuatorConfig>} actuators - List of actuator configurations
+ * @returns {string} Error value (truthy) or empty string (falsy)
+ */
+function getActuatorsCriticalErr(actuators) {
+  for (var i = 0; i < actuators.length; i++) {
+    var errVal = dev[actuators[i].mqttTopicName + '#error'];
+    if (hasCriticalErr(errVal)) {
+      return errVal;
+    }
+  }
+  return '';
+}
+
+/**
  * Updates the readonly state of the rule enable control
- * Removes readonly only when both errors (sensor and actuator) are cleared
+ * Removes readonly only when all errors (sensor and all actuators) are cleared
  * @param {Object} vdCtrlEnable - Control "Enable rules" in scenario virtual dev
  * @param {ThermostatConfig} cfg - Configuration parameters
  */
 function tryClearReadonly(vdCtrlEnable, cfg) {
   if (!hasCriticalErr(dev[cfg.tempSensor + '#error']) &&
-       !hasCriticalErr(dev[cfg.actuator + '#error'])
+       !getActuatorsCriticalErr(cfg.actuators)
   ) {
     vdCtrlEnable.setReadonly(false);
   }
@@ -299,10 +398,30 @@ function createErrChangeRule(
   vdCtrlEnable,
   cfg
 ) {
+  // Multiple actuators share one VD control (actuator_status).
+  // On error clear we must check that ALL actuators are clean
+  // before removing the red highlight from the shared control.
+  var isActuatorErrRule =
+    ruleName.indexOf('actuator_err_') !== -1;
+
   var ruleCfg = {
     whenChanged: [sourceErrTopic],
     then: function (newValue, devName, cellName) {
-      targetVdCtrl.setError(newValue);
+      // Sensor: one source per VD control — pass error through
+      // Actuator + critical error (r/w): set error on shared control
+      // Actuator + error cleared or non-critical (p): check ALL
+      //   actuators — keep red if any other still has critical error.
+      //   Using hasCriticalErr (not truthy) to avoid "p" overwriting
+      //   a critical "r"/"w" from another actuator on the shared control
+      if (!isActuatorErrRule) {
+        targetVdCtrl.setError(newValue);
+      } else if (hasCriticalErr(newValue)) {
+        targetVdCtrl.setError(newValue);
+      } else {
+        targetVdCtrl.setError(
+          getActuatorsCriticalErr(cfg.actuators)
+        );
+      }
 
       if (!hasCriticalErr(newValue)) {
         log.debug(
@@ -365,56 +484,69 @@ function createErrChangeRule(
 }
 
 /**
- * Restore target temperature from persistent storage (if saved previosly)
+ * Restore target temperature from persistent storage (if saved previously)
  * If the stored value is invalid or missing, we use cfg.targetTemp and save it
+ *
+ * Includes one-time migration from old PersistentStorage('wbscThermostatSettings')
+ *
  * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
  * @param {ThermostatConfig} cfg - Thermostat config
  * @returns {number} The target temperature to use
  */
 function restoreTargetTemperature(self, cfg) {
-  if (typeof self.ctx.ps[self.idPrefix] === 'undefined') {
-    try {
-      self.ctx.ps[self.idPrefix] = StorableObject({});
-    } catch (err) {
-      log.error('Error on self.ctx.ps[self.idPrefix] assignment: {}', err);
-      return cfg.targetTemp;
-    }
+  var storedTemp = self.getPsUserSetting('targetTemp', undefined);
 
-    log.debug(
-      'Created new record in persistent storage for scenario="{}"',
-      self.idPrefix
-    );
+  // TODO(Valerii 2026-03-20): Remove old storage migration after one year
+  // Migration from old PersistentStorage('wbscThermostatSettings')
+  if (storedTemp === undefined) {
+    try {
+      var oldPs = new PersistentStorage('wbscThermostatSettings', { global: true });
+      if (typeof oldPs[self.idPrefix] !== 'undefined') {
+        var oldTemp = oldPs[self.idPrefix].targetTemp;
+        if (typeof oldTemp === 'number') {
+          storedTemp = oldTemp;
+          oldPs[self.idPrefix] = null;
+          log.debug(
+            'Migrated targetTemp="{}" from old storage for scenario="{}"',
+            storedTemp,
+            self.idPrefix
+          );
+        }
+      }
+    } catch (err) {
+      log.error('Error reading old persistent storage: {}', err);
+    }
   }
 
-  var storedTemp = self.ctx.ps[self.idPrefix].targetTemp;
   var isValidStoredTemp =
     typeof storedTemp === 'number' &&
     storedTemp >= cfg.tempLimitsMin &&
     storedTemp <= cfg.tempLimitsMax;
 
   if (isValidStoredTemp) {
+    self.setPsUserSetting('targetTemp', storedTemp);
     log.debug(
       'Restored targetTemp="{}" for scenario="{}"',
       storedTemp,
       self.idPrefix
     );
     return storedTemp;
-  } else {
-    // Either no stored value, or it's out of range
-    var usedTemp = cfg.targetTemp;
-    self.ctx.ps[self.idPrefix].targetTemp = usedTemp;
-
-    // Show warning only if something was stored but invalid
-    if (typeof storedTemp === 'number') {
-      log.warning(
-        'Stored temp="{}" is out of range or invalid for "{}". Reset to "{}"',
-        storedTemp,
-        self.idPrefix,
-        usedTemp
-      );
-    }
-    return usedTemp;
   }
+
+  // Either no stored value, or it's out of range
+  var usedTemp = cfg.targetTemp;
+  self.setPsUserSetting('targetTemp', usedTemp);
+
+  // Show warning only if something was stored but invalid
+  if (typeof storedTemp === 'number') {
+    log.warning(
+      'Stored temp="{}" is out of range or invalid for "{}". Reset to "{}"',
+      storedTemp,
+      self.idPrefix,
+      usedTemp
+    );
+  }
+  return usedTemp;
 }
 
 /**
@@ -448,7 +580,7 @@ function createRules(self, cfg) {
           targetTemp: vdCtrlTargetTemp.getValue(),
           hysteresis: cfg.hysteresis,
         };
-        updateHeatingState(cfg.actuator, data);
+        updateHeatingState(vdCtrlActuator, cfg, data);
       }
     },
   };
@@ -458,29 +590,9 @@ function createRules(self, cfg) {
     log.error('Failed to create temperature changed rule');
     return false;
   }
-  
+
   // This rule not disable when user use switch in virtual device
   log.debug('Temperature changed rule created success with ID "{}"', ruleId);
-
-  // Sync actuator status rule
-  ruleCfg = {
-    whenChanged: [cfg.actuator],
-    then: function (newValue, devName, cellName) {
-      vdCtrlActuator.setValue(newValue);
-    },
-  };
-  ruleId = defineRule(self.genNames.ruleSyncActStatus, ruleCfg);
-
-  if (!ruleId) {
-    log.error('Failed to create sync actuator status rule');
-    return false;
-  }
-  
-  // This rule not disable when user use switch in virtual device
-  log.debug(
-    'Sync actuator status rule created success with ID "{}"',
-    ruleId
-  );
 
   // Scenario status rule
   ruleCfg = {
@@ -492,9 +604,9 @@ function createRules(self, cfg) {
           targetTemp: vdCtrlTargetTemp.getValue(),
           hysteresis: cfg.hysteresis,
         };
-        updateHeatingState(cfg.actuator, data);
+        updateHeatingState(vdCtrlActuator, cfg, data);
       } else {
-        dev[cfg.actuator] = false;
+        turnOffAllActuators(vdCtrlActuator, cfg);
       }
     },
   };
@@ -513,17 +625,15 @@ function createRules(self, cfg) {
     then: function (newValue, devName, cellName) {
 
       // Save the new temperature to persistent storage
-      if (self.ctx.ps && typeof self.ctx.ps[self.idPrefix] !== 'undefined') {
-        try {
-          self.ctx.ps[self.idPrefix].targetTemp = newValue;
-          log.debug(
-            'Target temperature "{}" saved in persistent storage for scenario="{}"',
-            newValue,
-            self.idPrefix
-          );
-        } catch (err) {
-          log.error('Error saving target temperature to storage: {}', err);
-        }
+      try {
+        self.setPsUserSetting('targetTemp', newValue);
+        log.debug(
+          'Target temperature "{}" saved in persistent storage for scenario="{}"',
+          newValue,
+          self.idPrefix
+        );
+      } catch (err) {
+        log.error('Error saving target temperature to storage: {}', err);
       }
 
       var curTemp = dev[cfg.tempSensor];
@@ -532,7 +642,7 @@ function createRules(self, cfg) {
         targetTemp: newValue,
         hysteresis: cfg.hysteresis,
       };
-      updateHeatingState(cfg.actuator, data);
+      updateHeatingState(vdCtrlActuator, cfg, data);
     },
   };
   ruleId = defineRule(self.genNames.ruleSetTargetTemp, ruleCfg);
@@ -544,7 +654,7 @@ function createRules(self, cfg) {
   self.addRule(ruleId);
   log.debug('Target temp change rule created success with ID "{}"', ruleId);
 
-  // Error handling rules
+  // Error handling rule for temperature sensor
   var sensorErrTopic = cfg.tempSensor + '#error';
   ruleId = createErrChangeRule(
     self,
@@ -561,21 +671,33 @@ function createRules(self, cfg) {
   // This rule not disable when user use switch in virtual device
   log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
 
-  var actuatorErrTopic = cfg.actuator + '#error';
-  ruleId = createErrChangeRule(
-    self,
-    self.genNames.ruleActuatorErr,
-    actuatorErrTopic,
-    vdCtrlActuator,
-    vdCtrlEnable,
-    cfg
-  );
-  if (!ruleId) {
-    log.error('Failed to create actuator error handling rule');
-    return false;
+  // Error handling rules for each actuator
+  var baseRuleName = 'wbsc_' + self.idPrefix + '_';
+  for (var i = 0; i < cfg.actuators.length; i++) {
+    var actuatorErrTopic = cfg.actuators[i].mqttTopicName + '#error';
+    var actuatorErrRuleName = baseRuleName + 'actuator_err_' + i;
+    ruleId = createErrChangeRule(
+      self,
+      actuatorErrRuleName,
+      actuatorErrTopic,
+      vdCtrlActuator,
+      vdCtrlEnable,
+      cfg
+    );
+    if (!ruleId) {
+      log.error(
+        'Failed to create error handling rule for actuator "{}"',
+        cfg.actuators[i].mqttTopicName
+      );
+      return false;
+    }
+    // This rule not disable when user use switch in virtual device
+    log.debug(
+      'Actuator error handling rule created for "{}" with ID="{}"',
+      cfg.actuators[i].mqttTopicName,
+      ruleId
+    );
   }
-  // This rule not disable when user use switch in virtual device
-  log.debug('Actuator error handling rule created with ID="{}"', ruleId);
 
   return true;
 }
@@ -592,20 +714,16 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * - Base initialization is complete
    * - Configuration is valid
    * - All referenced controls exist in the system
-   * 
+   *
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */
   log.debug('Start init thermostat scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-  // Initialize persistent storage
-  this.ctx.ps = new PersistentStorage('wbscThermostatSettings', { global: true });
-
   // Restore target temperature from storage
   var usedTemp = restoreTargetTemperature(this, cfg);
 
-  // Add custom controls to virtual device
   addCustomControlsToVirtualDevice(this, cfg, usedTemp);
 
   // Create all rules
@@ -613,12 +731,14 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   if (rulesCreated) {
     // Set initial heater state after initialization
+    var vdCtrlActuator = this.vd.devObj.getControl(vdCtrl.actuatorStatus);
+    var vdCtrlTargetTemp = this.vd.devObj.getControl(vdCtrl.targetTemp);
     var data = {
       curTemp: dev[cfg.tempSensor],
-      targetTemp: dev[this.genNames.vDevice + '/' + vdCtrl.targetTemp],
+      targetTemp: vdCtrlTargetTemp.getValue(),
       hysteresis: cfg.hysteresis,
     };
-    updateHeatingState(cfg.actuator, data);
+    updateHeatingState(vdCtrlActuator, cfg, data);
 
     this.setState(ScenarioState.NORMAL);
     log.debug('Thermostat scenario initialized successfully for device "{}"', deviceTitle);

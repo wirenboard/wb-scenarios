@@ -10,6 +10,7 @@ var Logger = require('logger.mod').Logger;
 
 var aTable = require("table-handling-actions.mod");
 var constants = require('constants.mod');
+var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
 
 var loggerFileLabel = 'WBSC-schedule-mod';
 var log = new Logger(loggerFileLabel);
@@ -88,31 +89,6 @@ ScheduleScenario.prototype.defineControlsWaitConfig = function (cfg) {
   
   return { controls: allTopics };
 };
-
-/**
- * Checks if control type is in the list of allowed types
- * @private
- * @param {string} controlName - Control name
- * @param {Array<string>} reqCtrlTypes - List of allowed types
- * @returns {boolean} Returns true if control type is allowed, otherwise false
- */
-function isControlTypeValid(controlName, reqCtrlTypes) {
-  /* If req types in table empty - may use any control type */
-  if (!reqCtrlTypes || reqCtrlTypes.length === 0) {
-    return true;
-  }
-  var controlType = dev[controlName + "#type"];
-  
-  // Handle case when control doesn't exist
-  if (!controlType) {
-    log.debug("Control type for " + controlName + " not found, return: " + controlType);
-    return false;
-  }
-  log.debug("Control: " + controlName + " | Type: " + controlType);
-  
-  var isTypeValid = (reqCtrlTypes.indexOf(controlType) !== -1);
-  return isTypeValid;
-}
 
 /**
  * Validates types of all controls in array against
@@ -620,7 +596,6 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start init schedule scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-  // Add custom controls to virtual device
   addCustomControlsToVirtualDevice(this, cfg);
 
   // Create all rules
