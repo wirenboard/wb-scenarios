@@ -145,9 +145,13 @@ ThermostatConfig:
 6. `tempSensor` {string} Имя топика отслеживаемого датчика
    Пример: датчик температуры значение которого следует слушать
    - 'wb-msw-v4_34/Temperature'
-7. `actuator` {string} Имя топика управляемого нагревателя
-   Пример: выход реле которым следует управлять
-   - 'relay_module/K2'
+7. `actuators` {array} Список управляемых каналов
+   Каждый элемент массива содержит:
+   - `mqttTopicName` {string} Имя MQTT-топика управляемого контрола
+     Пример: 'wb-mr6cv3_127/K6'
+   - `behaviorType` {'setEnable'|'setDisable'} Тип поведения:
+     - `setEnable` — включить при нагреве (нормальный режим)
+     - `setDisable` — выключить при нагреве (инвертированная логика)
 
 ### Пример кода
 
@@ -168,13 +172,15 @@ function main() {
 
   // Step 3: Configure algorithm
   var cfg = {
-    idPrefix: 'bathroom_floor',// Не обязательный параметр, можно не указывать
+    idPrefix: 'bathroom_floor',// This is an optional parameter and can be omitted
     targetTemp: 22,
     tempLimitsMin: 16,
     tempLimitsMax: 29,
     hysteresis: 2,
     tempSensor: 'wb-msw-v4_34/Temperature',
-    actuator: 'wb-mr6cv3_127/K6',
+    actuators: [
+      { mqttTopicName: 'wb-mr6cv3_127/K6', behaviorType: 'setEnable' },
+    ],
   };
 
   // Step 4: init algorithm
