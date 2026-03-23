@@ -254,6 +254,7 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
     // Always must start from enabled state
     // Until the first temperature change this value may not reflect
     // the actual state of the actuators.
+    value: true,
     forceDefault: true,
     order: 4,
     readonly: true,
