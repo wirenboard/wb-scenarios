@@ -22,6 +22,8 @@ var ScenarioState = {
   LINKED_CONTROLS_TIMEOUT: 5,
   NORMAL: 6,
   USED_CONTROL_ERROR: 7,
+  WAITING: 8,
+  DISABLED: 9,
 };
 
 /**
@@ -254,12 +256,20 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
         ru: 'Используемые каналы не готовы',
       },
       6: {
-        en: 'Normal',
-        ru: 'В норме',
+        en: 'Active',
+        ru: 'Активен',
       },
       7: {
         en: 'Used channel has error',
         ru: 'Используемый канал в ошибке',
+      },
+      8: {
+        en: 'Waiting',
+        ru: 'Ожидает',
+      },
+      9: {
+        en: 'Disabled',
+        ru: 'Отключен',
       },
     },
     order: 100,

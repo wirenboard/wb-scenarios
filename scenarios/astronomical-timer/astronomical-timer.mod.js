@@ -1,5 +1,5 @@
 /**
- * @file astronomical-timer.mod.js - ES5 module for wb-rules 2.38
+ * @file astronomical-timer.mod.js - ES5 module for wb-rules v2.38
  * @description Astronomical Timer scenario class that extends
  *   ScenarioBase. Triggers actions based on astronomical events
  *   (sunrise, sunset, twilight, etc.) calculated locally using
@@ -38,7 +38,7 @@ var ASTRO_EVENT_NAMES = {
   nadir:         { en: 'Nadir',            ru: 'Надир' },
 };
 
-var MS_PER_MINUTE = 60000;
+var MS_PER_MINUTE = constants.MS_PER_MINUTE;
 var MAX_DAYS_AHEAD = 365;
 var OFFSET_MIN_MIN = -720; // -12 hours
 var OFFSET_MAX_MIN = 720;  // +12 hours
