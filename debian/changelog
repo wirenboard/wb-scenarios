@@ -3,7 +3,7 @@ wb-scenarios (1.7.6) stable; urgency=medium
   * Update thermostat: multiple actuators with inversion support
   * Add postinst migration: actuator -> actuators
 
- -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Fri, 20 Mar 2026 15:00:00 +0300
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 23 Mar 2026 15:56:00 +0300
 
 wb-scenarios (1.7.5) stable; urgency=medium
 
