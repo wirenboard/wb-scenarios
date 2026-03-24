@@ -65,10 +65,10 @@
 ## Структура файлов сценария
 
 ```
-scenarios/your-scenario-name/           # Папка сценария (kebab-case)
-├── your-scenario.mod.js                # Основной модуль сценария  
-├── scenario-init-your-scenario.mod.js  # Модуль инициализации
-└── README.md                           # Документация сценария
+scenarios/your-scenario-name/                # Папка сценария (kebab-case)
+├── your-scenario-name.mod.js                # Основной модуль сценария  
+├── scenario-init-your-scenario-name.mod.js  # Модуль инициализации
+└── README.md                                # Документация сценария
 ```
 
 ## Основные принципы

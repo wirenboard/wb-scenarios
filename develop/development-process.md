@@ -17,46 +17,219 @@
 
 ## Этапы разработки нового сценария
 
-Разработка нового сценария состоит из четырёх этапов. Подробный пример с полным кодом — в [example-add-new-scenario.md](example-add-new-scenario.md).
+Разработка нового сценария состоит из четырёх этапов. Подробный пример с полным кодом — в [Пример добавления сценария](example-add-new-scenario.md).
+
+### 0. Подготовительный этап
+- Сбор требований по сценарию
+- Погружение в предметную область, например изучение работы пид-регулятора, как устроено управление котельными
 
 ### 1. Хардкод логики сценария
 
 - Создаём папку сценария: `mkdir scenarios/your-scenario-name`
-- Создаём модуль сценария (`your-scenario.mod.js`) с бизнес-логикой
-- Используем дефолтные значения вместо конфигурации
-- Проверяем что логика работает на контроллере
+- Пишем скрипт, который создает виртуальное устройство и выполняет требования сценария
 
-> Этот этап необязателен при использовании AI-ассистента — можно сразу переходить к схеме.
-
-### 2. Создание JSON-схемы
+### 2. Создание JSON-схемы для UI
 
 - Добавляем описание сценария в `definitions` файла `schema/wb-scenarios.schema.json`
+```json
+"yourScenarioName": {
+    "type": "object",
+    "title": "Your Scenario Title",
+    "description": "Описание функциональности сценария",
+    "_format": "grid",
+    "properties": {
+        "scenarioType": {
+            "type": "string",
+            "enum": ["yourScenarioName"],
+            "default": "yourScenarioName",
+            "options": {"hidden": true}
+        },
+        "enable": {
+            "type": "boolean",
+            "title": "Enable",
+            "default": true,
+            "_format": "checkbox",
+            "propertyOrder": 1,
+            "options": {"grid_columns": 12}
+        },
+        "name": {
+            "type": "string", 
+            "title": "Scenario name",
+            "default": "Your Scenario",
+            "minLength": 1,
+            "maxLength": 30,
+            "propertyOrder": 2,
+            "options": {"grid_columns": 12}
+        },
+        "idPrefix": {
+            "type": "string",
+            "title": "ID Prefix", 
+            "pattern": "^[0-9a-zA-Z_]+$",
+            "default": "your_scenario",
+            "minLength": 1,
+            "maxLength": 15,
+            "propertyOrder": 3,
+            "options": {"grid_columns": 12}
+        }
+        // ... кастомные поля
+    },
+    "required": ["scenarioType", "enable", "name"]
+}
+```
 - Добавляем ссылку в `oneOf`
+```json
+"oneOf": [
+    { "$ref": "#/definitions/yourScenarioName" },
+    // ... остальные сценарии
+]
+```
 - Добавляем переводы
 - Проверяем отображение в веб-интерфейсе и корректность сохранения конфигурации
 
 Имена параметров — только camelCase (`idPrefix`, не `id_prefix`). Эти имена превращаются в переменные внутри JS-кода.
 
-### 3. Объединение схемы и логики
+### 3. Создание модуля сценария
+- Создаём модуль сценария (`your-scenario-name.mod.js`), используя логику из ранее написанного скрипта
+```javascript
+var ScenarioBase = require('/usr/share/wb-rules-modules/wbsc-scenario-base');
+var ScenarioState = require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
 
-- Создаём модуль инициализации (`scenario-init-your-scenario.mod.js`)
+// Конструктор
+function YourScenario() {
+  ScenarioBase.call(this);
+  this.cfg = null;
+}
+
+// Наследование от ScenarioBase
+YourScenario.prototype = Object.create(ScenarioBase.prototype);
+YourScenario.prototype.constructor = YourScenario;
+
+// ОБЯЗАТЕЛЬНЫЙ: Генерация имен
+YourScenario.prototype.generateNames = function(idPrefix) {
+  return {
+    vDevice: 'wbsc_' + idPrefix,
+    ruleInput: 'wbsc_' + idPrefix + '_input'
+  };
+};
+
+// ОБЯЗАТЕЛЬНЫЙ: Валидация конфигурации
+YourScenario.prototype.validateCfg = function(cfg) {
+  if (!cfg.inputControl) {
+    log.error('Input control is required');
+    return false;
+  }
+  
+  // Проверка существования контролов
+  var parts = cfg.inputControl.split('/');
+  if (parts.length !== 2 || !dev[parts[0]] || !dev[parts[0]][parts[1]]) {
+    log.error('Input control not found: ' + cfg.inputControl);
+    return false;
+  }
+  
+  return true;
+};
+
+// ОБЯЗАТЕЛЬНЫЙ: Специфичная инициализация
+YourScenario.prototype.initSpecific = function(name, cfg) {
+  this.cfg = cfg;
+  
+  // Создание правил
+  var inputRule = defineRule(this.names.ruleInput, {
+    whenChanged: cfg.inputControl,
+    then: function(newValue, devName, cellName) {
+      // Бизнес-логика сценария
+      log.info('Input changed: ' + newValue);
+    }
+  });
+  
+  // Сохранение ID правил
+  this.addRule(inputRule.getId());
+  
+  // Установка рабочего состояния
+  this.setState(ScenarioState.NORMAL);
+  
+  return true;
+};
+
+// НЕОБЯЗАТЕЛЬНЫЙ: Конфигурация ожидания контролов
+YourScenario.prototype.defineControlsWaitConfig = function(cfg) {
+  return {
+    controls: [cfg.inputControl],
+    timeout: 10000
+  };
+};
+
+// Экспорт модуля
+module.exports = YourScenario;
+```
+- Используем дефолтные значения вместо конфигурации
+- Проверяем что логика работает на контроллере
+
+### 4. Объединение схемы и логики
+
+- Создаём модуль инициализации (`scenario-init-your-scenario-name.mod.js`)
+```javascript
+// Подключение зависимостей
+var ScenarioBase = require('/usr/share/wb-rules-modules/wbsc-scenario-base');
+var ScenarioState = require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
+var YourScenarioClass = require('./your-scenario.mod.js');
+
+var CFG = {
+  scenarioTypeStr: 'yourScenarioName',
+  reqVerScenario: 1
+};
+
+function initializeScenario(scenarioCfg) {
+  var scenario = new YourScenarioClass();
+  
+  // Маппинг конфигурации
+  var cfg = {
+    idPrefix: scenarioCfg.idPrefix,
+    inputControl: scenarioCfg.inputControl,
+    outputControl: scenarioCfg.outputControl
+    // ... другие поля
+  };
+  
+  // Инициализация сценария
+  var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
+  if (isBasicVdCreated !== true) {
+    log.error('Virtual device creation failed: ' + scenarioCfg.name);
+    return;
+  }
+}
+
+function setup() {
+  var helpers = require('/usr/share/wb-rules-modules/scenarios-general-helpers');
+  
+  // Чтение и валидация конфигурации
+  var allCfg = helpers.readConfig();
+  if (allCfg === null) {
+    log.error('Failed to read configuration');
+    return;
+  }
+  
+  // Фильтрация и инициализация сценариев
+  var scenarios = helpers.filterScenarios(allCfg, CFG.scenarioTypeStr);
+  scenarios.forEach(initializeScenario);
+  
+  log.info('Initialized ' + scenarios.length + ' scenarios of type: ' + CFG.scenarioTypeStr);
+}
+```
 - Подключаем конфигурацию из схемы к модулю сценария
 - Подключаем в `scenarios/scenario-init-main.js`
 
-### 4. Тестирование
+### 5. Тестирование и отладка
 
 - Проверяем полный цикл: конфигурация → инициализация → работа сценария
 - Тестируем edge-cases и обработку ошибок
 
-### Тестирование и отладка
-
-#### 4.1. Базовое тестирование
+#### 5.1. Базовое тестирование
 1. Установить сценарий на контроллер
 2. Создать конфигурацию через веб-интерфейс
 3. Проверить создание виртуального устройства
 4. Протестировать базовую функциональность
 
-#### 4.2. Отладка
+#### 5.2. Отладка
 
 **Использование логера проекта**
 В проекте используется унифицированная система логирования через модуль `logger.mod.js`. Рекомендуется использовать её вместо стандартного `log`:
