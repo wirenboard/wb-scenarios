@@ -17,6 +17,7 @@ migrate_config() {
             jq '(.scenarios[] | select(.scenarioType == "thermostat" and .actuator != null)) |=
                 (. + { actuators: [{ mqttTopicName: .actuator, behaviorType: "setEnable" }] } | del(.actuator))
             ' "$cfg" > "$TMP" && mv "$TMP" "$cfg"
+            echo "wb-scenarios: migrated thermostat actuator -> actuators"
         fi
     fi
 }
