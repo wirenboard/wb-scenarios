@@ -169,7 +169,6 @@ LinkInToOutScenario.prototype.initSpecific = function(deviceTitle, cfg) {
   this.outControl = cfg.outControl;
   this.inverseLink = cfg.inverseLink || false;
   
-  // Add custom controls to virtual device
   this.addCustomControlsToVirtualDevice(cfg);
   
   // Create rules

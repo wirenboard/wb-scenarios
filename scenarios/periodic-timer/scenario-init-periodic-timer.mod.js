@@ -1,11 +1,15 @@
 /**
- * @file scenario-init-schedule.mod.js - ES5 module for wb-rules v2.34
+ * @file scenario-init-periodic-timer.mod.js - ES5 module for wb-rules v2.38
  * @description Script for init scenarios of the SCENARIO_TYPE_STR type
- * @author Ivan Praulov <ivan.praulov@wirenboard.com>
+ *     This script:
+ *     - Loads all scenario configurations of the specific type from a file
+ *     - Initializes them according to the settings specified in each scenario
+ *
+ * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
 var scHelpers = require('scenarios-general-helpers.mod');
-var CustomTypeSc = require('schedule.mod').ScheduleScenario;
+var CustomTypeSc = require('periodic-timer.mod').PeriodicTimerScenario;
 var Logger = require('logger.mod').Logger;
 
 /**
@@ -15,8 +19,8 @@ var Logger = require('logger.mod').Logger;
 var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
   reqVerScenario: 1, // Required version of this scenario type config
-  configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
-  scenarioTypeStr: 'schedule'
+  configPath: '/etc/wb-scenarios.conf',
+  scenarioTypeStr: 'periodicTimer'
 };
 
 var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
@@ -30,11 +34,23 @@ function initializeScenario(scenarioCfg) {
   log.debug('Processing scenario config: "{}"', JSON.stringify(scenarioCfg));
 
   var scenario = new CustomTypeSc();
+  var rawInterval = scenarioCfg.interval;
+  var rawWorkTime = scenarioCfg.workTime;
+
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
-    scheduleTime: scenarioCfg.scheduleTime || "12:00",
+    interval: {
+      unit: rawInterval.intervalUnit,
+      value: rawInterval.intervalValue,
+    },
+    workTime: {
+      unit: rawWorkTime.workTimeUnit,
+      value: rawWorkTime.workTimeValue,
+    },
+    activeFrom: scenarioCfg.activeFrom,
+    activeTo: scenarioCfg.activeTo,
     scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
-    outControls: scenarioCfg.outControls || []
+    outControls: scenarioCfg.outControls || [],
   };
 
   try {
@@ -62,30 +78,11 @@ function initializeScenario(scenarioCfg) {
     log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization: "{}" for scenario: "{}"', 
-      error.message || error, 
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
+      error.message || error,
       scenarioCfg.name
     );
   }
-}
-
-/**
- * Find and return all enabled scenarios of the requested type
- * @param {Array} listScenario - Array of all scenarios from the config
- * @param {string} searchScenarioType - Scenario type we are looking for
- * @returns {Array} Array of active scenarios of that type
- */
-function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
-  var matchedScenarios = [];
-  for (var i = 0; i < listScenario.length; i++) {
-    var scenario = listScenario[i];
-    var isTarget = (scenario.scenarioType === searchScenarioType) &&
-      (scenario.enable === true);
-    if (isTarget) {
-      matchedScenarios.push(scenario);
-    }
-  }
-  return matchedScenarios;
 }
 
 function setup() {
@@ -96,26 +93,23 @@ function setup() {
   );
   if (!listAllScenarios) return;
 
-  var targetScenarios = findAllActiveScenariosWithType(
-    listAllScenarios, 
-    CFG.scenarioTypeStr
+  var matchedScenarios = scHelpers.findAllScenariosWithType(
+    listAllScenarios,
+    CFG.scenarioTypeStr,
+    CFG.reqVerScenario
   );
-  
-  if (targetScenarios.length === 0) {
-    log.debug('No active scenarios found of type: {}', CFG.scenarioTypeStr);
+  if (matchedScenarios.length === 0) {
+    log.debug(
+      'No correct and active scenarios of type "{}" found',
+      CFG.scenarioTypeStr
+    );
     return;
   }
 
-  log.debug('Found {} active scenarios of type: {}', 
-    targetScenarios.length, 
-    CFG.scenarioTypeStr
-  );
-
-  for (var i = 0; i < targetScenarios.length; i++) {
-    initializeScenario(targetScenarios[i]);
+  log.debug('Number of matched scenarios: {}', matchedScenarios.length);
+  for (var i = 0; i < matchedScenarios.length; i++) {
+    initializeScenario(matchedScenarios[i]);
   }
-  
-  log.debug('Initialization of "{}" type scenarios completed', CFG.scenarioTypeStr);
 }
 
 exports.setup = setup;

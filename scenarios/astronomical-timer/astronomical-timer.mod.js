@@ -1,5 +1,5 @@
 /**
- * @file astronomical-timer.mod.js - ES5 module for wb-rules 2.38
+ * @file astronomical-timer.mod.js - ES5 module for wb-rules v2.38
  * @description Astronomical Timer scenario class that extends
  *   ScenarioBase. Triggers actions based on astronomical events
  *   (sunrise, sunset, twilight, etc.) calculated locally using
@@ -13,6 +13,7 @@ var Logger = require('logger.mod').Logger;
 var SunCalc = require('suncalc.mod');
 var aTable = require('table-handling-actions.mod');
 var constants = require('constants.mod');
+var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
 
 var loggerFileLabel = 'WBSC-astronomical-timer-mod';
 var log = new Logger(loggerFileLabel);
@@ -37,7 +38,7 @@ var ASTRO_EVENT_NAMES = {
   nadir:         { en: 'Nadir',            ru: 'Надир' },
 };
 
-var MS_PER_MINUTE = 60000;
+var MS_PER_MINUTE = constants.MS_PER_MINUTE;
 var MAX_DAYS_AHEAD = 365;
 var OFFSET_MIN_MIN = -720; // -12 hours
 var OFFSET_MAX_MIN = 720;  // +12 hours
@@ -138,30 +139,6 @@ AstronomicalTimerScenario.prototype.defineControlsWaitConfig = function (cfg) {
 
     return { controls: allTopics };
   };
-
-/**
- * Check if control type is valid for the action
- * @param {string} controlName - Control name
- * @param {Array} reqCtrlTypes - List of allowed types
- * @returns {boolean} Returns true if control type is allowed, otherwise false
- */
-function isControlTypeValid(controlName, reqCtrlTypes) {
-  /* If req types in table empty - may use any control type */
-  if (!reqCtrlTypes || reqCtrlTypes.length === 0) {
-    return true;
-  }
-  var controlType = dev[controlName + '#type'];
-
-  // Handle case when control doesn't exist
-  if (!controlType) {
-    log.debug("Control type for {} not found, return: {}", controlName, controlType);
-    return false;
-  }
-
-  log.debug("Control: {} | Type: {}", controlName, controlType);
-
-  return reqCtrlTypes.indexOf(controlType) !== -1;
-}
 
 /**
  * Validate all controls against action table
@@ -849,7 +826,6 @@ AstronomicalTimerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start init astronomical timer scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-  // Add custom controls to virtual device
   addCustomControlsToVirtualDevice(this, cfg);
 
   // Create all rules

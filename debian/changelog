@@ -1,9 +1,40 @@
-wb-scenarios (1.7.6) stable; urgency=medium
+wb-scenarios (1.8.1) stable; urgency=medium
 
   * Update developer documentation, fix outdated paths and typos
   * Add pull-request-workflow guide
 
- -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 18 Mar 2026 17:40:00 +0300
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 25 Mar 2026 15:15:00 +0300
+
+wb-scenarios (1.8.0) stable; urgency=medium
+
+  * Update thermostat migration
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 25 Mar 2026 12:43:00 +0300
+
+wb-scenarios (1.7.9) stable; urgency=medium
+
+  * Fix thermostat migration
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Tue, 24 Mar 2026 18:32:00 +0300
+
+wb-scenarios (1.7.8) stable; urgency=medium
+
+  * Add new scenario "periodic-timer"
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 23 Mar 2026 19:31:00 +0300
+
+wb-scenarios (1.7.7) stable; urgency=medium
+
+  * Fix thermostat heater status
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 23 Mar 2026 19:10:00 +0300
+
+wb-scenarios (1.7.6) stable; urgency=medium
+
+  * Update thermostat: multiple actuators with inversion support
+  * Add postinst migration: actuator -> actuators
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 23 Mar 2026 15:56:00 +0300
 
 wb-scenarios (1.7.5) stable; urgency=medium
 
