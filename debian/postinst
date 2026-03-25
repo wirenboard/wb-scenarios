@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-# CONFIG="/etc/wb-scenarios.conf"
 DATA_CONFIG="/mnt/data/etc/wb-scenarios.conf"
 
 # Должны менять только основной файл от которого идет симлинк. Нужно проверить, что не ломается симлинк
@@ -17,13 +16,11 @@ migrate_config() {
             jq '(.scenarios[] | select(.scenarioType == "thermostat" and .actuator != null)) |=
                 (. + { actuators: [{ mqttTopicName: .actuator, behaviorType: "setEnable" }] } | del(.actuator))
             ' "$cfg" > "$TMP" && mv "$TMP" "$cfg"
-            echo "wb-scenarios: migrated thermostat actuator -> actuators"
         fi
     fi
 }
 
 if [ "$1" = "configure" ]; then
-    # migrate_config "$CONFIG"
     migrate_config "$DATA_CONFIG"
 fi
 

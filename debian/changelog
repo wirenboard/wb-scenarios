@@ -1,6 +1,6 @@
-wb-scenarios (1.7.9) stable; urgency=medium
+wb-scenarios (1.8.0) stable; urgency=medium
 
-  * Fix thermostat migration
+  * Update thermostat migration
 
  -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 25 Mar 2026 12:43:00 +0300
 
