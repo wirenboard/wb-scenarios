@@ -1,7 +1,6 @@
 #!/bin/sh
 set -e
 
-CONFIG="/etc/wb-scenarios.conf"
 DATA_CONFIG="/mnt/data/etc/wb-scenarios.conf"
 
 # Migration: thermostat actuator (string) -> actuators (array)
@@ -21,7 +20,6 @@ migrate_config() {
 }
 
 if [ "$1" = "configure" ]; then
-    migrate_config "$CONFIG"
     migrate_config "$DATA_CONFIG"
 fi
 
