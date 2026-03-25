@@ -1,9 +1,10 @@
 #!/bin/sh
 set -e
 
-CONFIG="/etc/wb-scenarios.conf"
+# CONFIG="/etc/wb-scenarios.conf"
 DATA_CONFIG="/mnt/data/etc/wb-scenarios.conf"
 
+# Должны менять только основной файл от которого идет симлинк. Нужно проверить, что не ломается симлинк
 # Migration: thermostat actuator (string) -> actuators (array)
 # Added in 1.7.6 (2026-03-20)
 # Converts old single-actuator config to new multi-actuator format
@@ -21,7 +22,7 @@ migrate_config() {
 }
 
 if [ "$1" = "configure" ]; then
-    migrate_config "$CONFIG"
+    # migrate_config "$CONFIG"
     migrate_config "$DATA_CONFIG"
 fi
 
