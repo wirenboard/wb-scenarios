@@ -1,0 +1,14 @@
+{
+  "id": "wb-scenarios-v2",
+  "version": "1.0.0",
+  "title": { "ru": "Сценарии V2", "en": "Scenarios V2" },
+  "entrypoint": "index.js?v=7",
+  "menu": {
+    "parentId": "rules",
+    "item": {
+      "id": "scenarios-v2",
+      "url": "plugins/wb-scenarios-v2/ScenariosPage",
+      "title": { "ru": "Сценарии V2", "en": "Scenarios V2" }
+    }
+  }
+}

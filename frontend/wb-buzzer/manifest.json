@@ -1,0 +1,14 @@
+{
+  "id": "wb-buzzer",
+  "version": "1.0.0",
+  "title": { "ru": "Пищалка", "en": "Buzzer" },
+  "entrypoint": "index.js?v=3",
+  "menu": {
+    "parentId": "settings",
+    "item": {
+      "id": "buzzer",
+      "url": "plugins/wb-buzzer/BuzzerPage",
+      "title": { "ru": "Пищалка", "en": "Buzzer" }
+    }
+  }
+}

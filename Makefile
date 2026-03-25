@@ -37,6 +37,12 @@ SCRIPTS_DEST := $(DESTDIR)$(PREFIX)/lib/wb-scenarios
 # Целевой путь для пункта меню HomeUI
 HOMEUI_MENU_DEST := $(DESTDIR)$(PREFIX)/share/wb-mqtt-homeui/custom-menu
 
+# Целевой путь для плагинов HomeUI
+PLUGINS_DEST := $(DESTDIR)$(PREFIX)/share/wb-mqtt-homeui/plugins
+
+# Директория с исходниками плагинов
+FRONTEND_DIR := frontend/
+
 # Поиск папок сценариев внутри папки scenarios
 SCENARIO_DIRS := $(wildcard $(SCENARIOS_ROOT)*)
 SRC_MODULE_FILES := $(wildcard $(SRC_DIR)*.mod.js)
@@ -107,6 +113,15 @@ install:
 	@# Установка файла меню для HomeUI
 	@echo "Copying $(MENU_FILE) to $(HOMEUI_MENU_DEST)"
 	@install -Dm644 $(MENU_FILE) -t $(HOMEUI_MENU_DEST)/
+
+	@# Установка плагинов HomeUI
+	@for plugin_dir in $(FRONTEND_DIR)*/; do \
+		plugin_name=$$(basename $$plugin_dir); \
+		echo "Installing plugin $$plugin_name to $(PLUGINS_DEST)/$$plugin_name"; \
+		install -d $(PLUGINS_DEST)/$$plugin_name; \
+		install -Dm644 $$plugin_dir/manifest.json $(PLUGINS_DEST)/$$plugin_name/manifest.json; \
+		install -Dm644 $$plugin_dir/index.js $(PLUGINS_DEST)/$$plugin_name/index.js; \
+	done
 
 	@# Установка каждого сценария из подпапок
 	@$(foreach dir,$(SCENARIO_DIRS),\
