@@ -34,6 +34,9 @@
         },
         {
           "$ref": "#/definitions/periodicTimer"
+        },
+        {
+          "$ref": "#/definitions/pidController"
         }
       ],
       "_format": "wb-multiple",
@@ -1614,6 +1617,270 @@
         "activeTo",
         "outControls"
       ]
+    },
+    "pidController": {
+      "type": "object",
+      "title": "pidControllerScenarioName",
+      "description": "pidControllerScenarioDescription",
+      "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
+      "properties": {
+        "componentVersion": {
+          "type": "integer",
+          "title": "Config version",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "scenarioType": {
+          "type": "string",
+          "enum": ["pidController"],
+          "default": "pidController",
+          "options": {
+            "hidden": true
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "generalScenarioName",
+          "default": "pidControllerDefaultInputName",
+          "minLength": 1,
+          "maxLength": 30,
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "idPrefix": {
+          "type": "string",
+          "title": "generalScenarioIdPrefixTitle",
+          "description": "generalScenarioIdPrefixDescription",
+          "pattern": "^$|^[0-9a-zA-Z_]+$",
+          "default": "",
+          "minLength": 0,
+          "maxLength": 15,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
+          }
+        },
+        "sensor": {
+          "type": "string",
+          "_format": "wb-autocomplete",
+          "title": "pidControllerSensorTitle",
+          "description": "pidControllerSensorDescription",
+          "pattern": "^[^/+#]+/[^/+#]+$",
+          "propertyOrder": 9,
+          "options": {
+            "grid_columns": 12,
+            "inputAttributes": {
+              "placeholder": "generalMqttTopicNamePlaceholder"
+            },
+            "wb": {
+              "data": "devices"
+            },
+            "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName"
+          },
+          "minLength": 1
+        },
+        "setpoint": {
+          "type": "number",
+          "title": "pidControllerSetpointTitle",
+          "default": 22,
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "deadband": {
+          "type": "number",
+          "title": "pidControllerDeadbandTitle",
+          "description": "pidControllerDeadbandDescription",
+          "default": 0.2,
+          "minimum": 0,
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 6
+          }
+        },
+        "setpointLimits": {
+          "type": "object",
+          "title": "pidControllerSetpointLimitsTitle",
+          "propertyOrder": 5,
+          "_format": "grid",
+          "options": {
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "min": {
+              "type": "number",
+              "title": "thermostatTempLimitsMinTitle",
+              "default": 5,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 6
+              }
+            },
+            "max": {
+              "type": "number",
+              "title": "thermostatTempLimitsMaxTitle",
+              "default": 35,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 6
+              }
+            }
+          }
+        },
+        "pid": {
+          "type": "object",
+          "title": "pidControllerCoefficientsTitle",
+          "description": "pidControllerCoefficientsDescription",
+          "propertyOrder": 6,
+          "_format": "grid",
+          "options": {
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "kp": {
+              "type": "number",
+              "title": "pidControllerKpTitle",
+              "description": "pidControllerKpDescription",
+              "default": 10,
+              "minimum": 0,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 4
+              }
+            },
+            "ki": {
+              "type": "number",
+              "title": "pidControllerKiTitle",
+              "description": "pidControllerKiDescription",
+              "default": 0.005,
+              "minimum": 0,
+              "propertyOrder": 2,
+              "options": {
+                "grid_columns": 4
+              }
+            },
+            "kd": {
+              "type": "number",
+              "title": "pidControllerKdTitle",
+              "description": "pidControllerKdDescription",
+              "default": 2,
+              "minimum": 0,
+              "propertyOrder": 3,
+              "options": {
+                "grid_columns": 4
+              }
+            }
+          }
+        },
+        "pwmPeriod": {
+          "type": "integer",
+          "title": "pidControllerCyclePeriodTitle",
+          "description": "pidControllerCyclePeriodDescription",
+          "default": 300,
+          "minimum": 10,
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "minCycleDuration": {
+          "type": "integer",
+          "title": "pidControllerMinCycleTitle",
+          "description": "pidControllerMinCycleDescription",
+          "default": 0,
+          "minimum": 0,
+          "propertyOrder": 8,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "actuators": {
+          "type": "array",
+          "minItems": 1,
+          "propertyOrder": 10,
+          "title": "pidControllerActuatorsTitle",
+          "description": "pidControllerActuatorsDescription",
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "pidControllerActuatorObjTitle",
+            "type": "object",
+            "properties": {
+              "mqttTopicName": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "generalMqttTopicNameTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "minLength": 3
+              },
+              "behaviorType": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "pidControllerBehaviorTitle",
+                "enum": [
+                  "setEnable",
+                  "setDisable"
+                ],
+                "default": "setEnable",
+                "options": {
+                  "enum_titles": [
+                    "pidControllerEnumEnable",
+                    "pidControllerEnumDisable"
+                  ]
+                }
+              }
+            },
+            "required": ["mqttTopicName", "behaviorType"]
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "setpoint",
+        "deadband",
+        "setpointLimits",
+        "pid",
+        "pwmPeriod",
+        "minCycleDuration",
+        "sensor",
+        "actuators"
+      ]
     }
   },
   "properties": {
@@ -1770,7 +2037,35 @@
       "periodicTimerInitValueTitle": "Set on start",
       "periodicTimerReverseValueTitle": "Set on stop",
       "periodicTimerOutControlsTitle": "Actions",
-      "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop."
+      "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop.",
+      
+      "pidControllerScenarioName": "PID Controller",
+      "pidControllerScenarioDescription": "Maintains setpoint using PID algorithm with PWM output for smooth control without oscillations.",
+      "pidControllerDefaultInputName": "PID Controller",
+      "pidControllerSensorTitle": "Input sensor",
+      "pidControllerSensorDescription": "MQTT control whose value is used as the PID input (process variable).",
+      "pidControllerSetpointTitle": "Setpoint",
+      "pidControllerDeadbandTitle": "Deadband",
+      "pidControllerDeadbandDescription": "Dead zone around setpoint. Inside this zone PID gain is reduced to 10%, preventing micro-switching near target.",
+      "pidControllerSetpointLimitsTitle": "Setpoint limits",
+      "pidControllerCoefficientsTitle": "PID coefficients",
+      "pidControllerCoefficientsDescription": "Proportional (Kp), Integral (Ki), Derivative (Kd) gains.",
+      "pidControllerKpTitle": "Kp",
+      "pidControllerKpDescription": "Proportional gain. Larger = stronger reaction to error.",
+      "pidControllerKiTitle": "Ki",
+      "pidControllerKiDescription": "Integral gain. Eliminates steady-state error over time.",
+      "pidControllerKdTitle": "Kd",
+      "pidControllerKdDescription": "Derivative gain. Dampens overshoot.",
+      "pidControllerCyclePeriodTitle": "Control interval (sec)",
+      "pidControllerCyclePeriodDescription": "PID calculation and output cycle length in seconds. Default 300s (5 min).",
+      "pidControllerMinCycleTitle": "Min ON duration (sec)",
+      "pidControllerMinCycleDescription": "Minimum ON time per cycle. 0 = disabled.",
+      "pidControllerActuatorsTitle": "Actuators",
+      "pidControllerActuatorObjTitle": "Actuator",
+      "pidControllerActuatorsDescription": "Relays or valves controlled by the PID output via PWM.",
+      "pidControllerBehaviorTitle": "Action logic",
+      "pidControllerEnumEnable": "Turn on (switch)",
+      "pidControllerEnumDisable": "Turn off (switch, inverted)"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1911,7 +2206,35 @@
       "periodicTimerInitValueTitle": "Включить со значением",
       "periodicTimerReverseValueTitle": "Выключить со значением",
       "periodicTimerOutControlsTitle": "Действия",
-      "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении."
+      "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении.",
+      
+      "pidControllerScenarioName": "ПИД-регулятор",
+      "pidControllerScenarioDescription": "Поддерживает заданную уставку с помощью ПИД-алгоритма и ШИМ-управления для плавного контроля без колебаний.",
+      "pidControllerDefaultInputName": "ПИД-регулятор",
+      "pidControllerSensorTitle": "Входной датчик",
+      "pidControllerSensorDescription": "MQTT-контрол, значение которого используется как вход ПИД-регулятора (регулируемая величина).",
+      "pidControllerSetpointTitle": "Уставка",
+      "pidControllerDeadbandTitle": "Мёртвая зона",
+      "pidControllerDeadbandDescription": "Зона нечувствительности вокруг уставки. Внутри зоны усиление ПИД снижается до 10%, предотвращая микро-переключения вблизи цели.",
+      "pidControllerSetpointLimitsTitle": "Пределы уставки",
+      "pidControllerCoefficientsTitle": "Коэффициенты ПИД",
+      "pidControllerCoefficientsDescription": "Пропорциональный (Kp), Интегральный (Ki), Дифференциальный (Kd) коэффициенты.",
+      "pidControllerKpTitle": "Kp",
+      "pidControllerKpDescription": "Пропорциональный коэффициент. Больше = сильнее реакция на отклонение.",
+      "pidControllerKiTitle": "Ki",
+      "pidControllerKiDescription": "Интегральный коэффициент. Устраняет постоянное отклонение со временем.",
+      "pidControllerKdTitle": "Kd",
+      "pidControllerKdDescription": "Дифференциальный коэффициент. Гасит перерегулирование.",
+      "pidControllerCyclePeriodTitle": "Интервал регулирования (сек)",
+      "pidControllerCyclePeriodDescription": "Период расчёта ПИД и управления выходом в секундах. По умолчанию 300 сек (5 мин).",
+      "pidControllerMinCycleTitle": "Мин. длительность включения (сек)",
+      "pidControllerMinCycleDescription": "Минимальное время включения за цикл. 0 = отключено.",
+      "pidControllerActuatorsTitle": "Регуляторы",
+      "pidControllerActuatorObjTitle": "Регулятор",
+      "pidControllerActuatorsDescription": "Реле или клапаны, управляемые ПИД-выходом через ШИМ.",
+      "pidControllerBehaviorTitle": "Логика действия",
+      "pidControllerEnumEnable": "Включить (переключатель)",
+      "pidControllerEnumDisable": "Выключить (переключатель, инверсия)"
     }
   }
 }
