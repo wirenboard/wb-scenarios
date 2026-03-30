@@ -34,6 +34,9 @@
         },
         {
           "$ref": "#/definitions/periodicTimer"
+        },
+        {
+          "$ref": "#/definitions/virtualLink"
         }
       ],
       "_format": "wb-multiple",
@@ -1614,6 +1617,125 @@
         "activeTo",
         "outControls"
       ]
+    },
+    "virtualLink": {
+      "type": "object",
+      "title": "virtualLinkScenarioName",
+      "description": "virtualLinkScenarioDescription",
+      "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
+      "properties": {
+        "scenarioType": {
+          "type": "string",
+          "enum": ["virtualLink"],
+          "default": "virtualLink",
+          "options": {
+            "hidden": true
+          }
+        },
+        "componentVersion": {
+          "type": "integer",
+          "title": "Config version",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "name": {
+          "title": "generalScenarioName",
+          "type": "string",
+          "default": "virtualLinkDefaultInputName",
+          "minLength": 1,
+          "maxLength": 30,
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "idPrefix": {
+          "title": "generalScenarioIdPrefixTitle",
+          "type": "string",
+          "description": "generalScenarioIdPrefixDescription",
+          "pattern": "^$|^[0-9a-zA-Z_]+$",
+          "default": "",
+          "minLength": 0,
+          "maxLength": 15,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
+          }
+        },
+        "links": {
+          "type": "array",
+          "minItems": 1,
+          "propertyOrder": 3,
+          "title": "virtualLinkLinksTitle",
+          "description": "virtualLinkLinksDescription",
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "virtualLinkLinkObjTitle",
+            "type": "object",
+            "properties": {
+              "source": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "virtualLinkSourceTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "minLength": 3
+              },
+              "destination": {
+                "type": "string",
+                "propertyOrder": 2,
+                "title": "virtualLinkDestinationTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "minLength": 3
+              }
+            },
+            "required": ["source", "destination"]
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "links"
+      ]
     }
   },
   "properties": {
@@ -1770,7 +1892,16 @@
       "periodicTimerInitValueTitle": "Set on start",
       "periodicTimerReverseValueTitle": "Set on stop",
       "periodicTimerOutControlsTitle": "Actions",
-      "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop."
+      "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop.",
+
+      "virtualLinkScenarioName": "Virtual Link",
+      "virtualLinkScenarioDescription": "Binds MQTT controls together: when a source control changes, its value is automatically copied to the destination control.",
+      "virtualLinkDefaultInputName": "Virtual Link",
+      "virtualLinkLinksTitle": "Links",
+      "virtualLinkLinksDescription": "List of source-to-destination control links:",
+      "virtualLinkLinkObjTitle": "Link",
+      "virtualLinkSourceTitle": "From",
+      "virtualLinkDestinationTitle": "To"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1911,7 +2042,16 @@
       "periodicTimerInitValueTitle": "Включить со значением",
       "periodicTimerReverseValueTitle": "Выключить со значением",
       "periodicTimerOutControlsTitle": "Действия",
-      "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении."
+      "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении.",
+
+      "virtualLinkScenarioName": "Виртуальная связка",
+      "virtualLinkScenarioDescription": "Связывает MQTT-контролы: при изменении источника значение автоматически копируется в приёмник.",
+      "virtualLinkDefaultInputName": "Виртуальная связка",
+      "virtualLinkLinksTitle": "Связки",
+      "virtualLinkLinksDescription": "Список связок откуда → куда:",
+      "virtualLinkLinkObjTitle": "Связка",
+      "virtualLinkSourceTitle": "Откуда",
+      "virtualLinkDestinationTitle": "Куда"
     }
   }
 }
