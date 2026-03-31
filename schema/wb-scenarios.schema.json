@@ -1894,14 +1894,13 @@
       "periodicTimerOutControlsTitle": "Actions",
       "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop.",
 
-      "virtualLinkScenarioName": "Virtual Link",
-      "virtualLinkScenarioDescription": "Binds MQTT controls together: when a source control changes, its value is automatically copied to the destination control.",
-      "virtualLinkDefaultInputName": "Virtual Link",
-      "virtualLinkLinksTitle": "Links",
-      "virtualLinkLinksDescription": "List of source-to-destination control links:",
-      "virtualLinkLinkObjTitle": "Link",
-      "virtualLinkSourceTitle": "From",
-      "virtualLinkDestinationTitle": "To"
+      "virtualLinkScenarioName": "Channel Mapping",
+      "virtualLinkScenarioDescription": "Any value change on the input will be automatically copied to the specified output.",
+      "virtualLinkDefaultInputName": "Channel Mapping",
+      "virtualLinkLinksTitle": "Mapping Table",
+      "virtualLinkLinkObjTitle": "Add",
+      "virtualLinkSourceTitle": "Input Channel",
+      "virtualLinkDestinationTitle": "Output Channel"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -2044,14 +2043,13 @@
       "periodicTimerOutControlsTitle": "Действия",
       "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении.",
 
-      "virtualLinkScenarioName": "Виртуальная связка",
-      "virtualLinkScenarioDescription": "Связывает MQTT-контролы: при изменении источника значение автоматически копируется в приёмник.",
-      "virtualLinkDefaultInputName": "Виртуальная связка",
-      "virtualLinkLinksTitle": "Связки",
-      "virtualLinkLinksDescription": "Список связок откуда → куда:",
-      "virtualLinkLinkObjTitle": "Связка",
-      "virtualLinkSourceTitle": "Откуда",
-      "virtualLinkDestinationTitle": "Куда"
+      "virtualLinkScenarioName": "Маппинг каналов",
+      "virtualLinkScenarioDescription": "Любое изменение значения на входе будет автоматически скопировано в указанный выход.",
+      "virtualLinkDefaultInputName": "Маппинг каналов",
+      "virtualLinkLinksTitle": "Таблица маппинга",
+      "virtualLinkLinkObjTitle": "Добавить",
+      "virtualLinkSourceTitle": "Канал Входа",
+      "virtualLinkDestinationTitle": "Канал Выхода"
     }
   }
 }
