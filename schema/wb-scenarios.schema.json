@@ -1675,7 +1675,6 @@
           "minItems": 1,
           "propertyOrder": 3,
           "title": "virtualLinkLinksTitle",
-          "description": "virtualLinkLinksDescription",
           "_format": "table",
           "options": {
             "disable_collapse": true,
