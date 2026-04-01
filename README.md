@@ -5,7 +5,7 @@
 
 На данный момент реализованы сценарии:
 
-- [Управление устройствами](scenarios/devices-control/README.md)
+- [Правило если-тогда](scenarios/devices-control/README.md)
 - [Управление светом](scenarios/light-control/README.md)
 - [Термостат (нагрев)](scenarios/thermostat/README.md)
 - [Расписание](scenarios/schedule/README.md)
