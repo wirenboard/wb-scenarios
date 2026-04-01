@@ -75,7 +75,7 @@ function initializeScenario(scenarioCfg) {
       CFG.scenarioTypeStr
     );
     scenarioStorage[scenario.idPrefix] = scenario;
-    log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
+    log.debug('Stored in global registry with ID: ' + scenario.idPrefix);
   } catch (error) {
     log.error(
       'Exception during scenario initialization: "{}" for scenario: "{}"',

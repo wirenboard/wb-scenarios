@@ -1,8 +1,8 @@
 /**
- * @file virtual-link.mod.js - ES5 module for wb-rules v2.38
+ * @file channel-map.mod.js - ES5 module for wb-rules v2.38
  * @description Virtual Link scenario class that extends ScenarioBase.
- *   Copies values from source MQTT controls to destination controls.
- *   Uses a single whenChanged rule with a source→destinations lookup map.
+ *   Copies values from mqttTopicInput MQTT controls to mqttTopicOutput controls.
+ *   Uses a single whenChanged rule with a mqttTopicInput→mqttTopicOutputs lookup map.
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
@@ -11,33 +11,33 @@ var ScenarioState =
   require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
-var loggerFileLabel = 'WBSC-virtual-link-mod';
+var loggerFileLabel = 'WBSC-channel-map-mod';
 var log = new Logger(loggerFileLabel);
 
 /**
  * @typedef {Object} LinkEntry
- * @property {string} source - Source MQTT topic 'device/control'
- * @property {string} destination - Destination MQTT topic
+ * @property {string} mqttTopicInput - Source MQTT topic 'device/control'
+ * @property {string} mqttTopicOutput - Destination MQTT topic
  */
 
 /**
- * @typedef {Object} VirtualLinkConfig
+ * @typedef {Object} ChannelMapConfig
  * @property {string} [idPrefix] - Optional prefix for scenario ID
- * @property {Array<LinkEntry>} links - List of links
+ * @property {Array<LinkEntry>} mqttTopicsLinks - List of links
  */
 
 /**
  * @typedef {Object<string, string[]>} SourceMap
- * Map of source topic to array of destination topics.
+ * Map of mqttTopicInput topic to array of mqttTopicOutput topics.
  * Example: { 'wb-gpio/A1_OUT': ['wb-gpio/A2_OUT', 'wb-gpio/A3_OUT'] }
  */
 
 /**
  * Virtual Link scenario implementation
- * @class VirtualLinkScenario
+ * @class ChannelMapScenario
  * @extends ScenarioBase
  */
-function VirtualLinkScenario() {
+function ChannelMapScenario() {
   ScenarioBase.call(this);
 
   /**
@@ -48,15 +48,15 @@ function VirtualLinkScenario() {
 }
 
 // Set up inheritance
-VirtualLinkScenario.prototype = Object.create(ScenarioBase.prototype);
-VirtualLinkScenario.prototype.constructor = VirtualLinkScenario;
+ChannelMapScenario.prototype = Object.create(ScenarioBase.prototype);
+ChannelMapScenario.prototype.constructor = ChannelMapScenario;
 
 /**
  * Generates name identifiers for virtual device and rules
  * @param {string} idPrefix - ID prefix for this scenario instance
  * @returns {Object} Generated names
  */
-VirtualLinkScenario.prototype.generateNames =
+ChannelMapScenario.prototype.generateNames =
   function (idPrefix) {
     var scenarioPrefix = 'wbsc_';
     return {
@@ -68,19 +68,19 @@ VirtualLinkScenario.prototype.generateNames =
 
 /**
  * Get configuration for waiting for controls
- * @param {VirtualLinkConfig} cfg - Configuration object
+ * @param {ChannelMapConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
-VirtualLinkScenario.prototype.defineControlsWaitConfig =
+ChannelMapScenario.prototype.defineControlsWaitConfig =
   function (cfg) {
     var allTopics = [];
-    for (var i = 0; i < cfg.links.length; i++) {
-      var l = cfg.links[i];
-      if (allTopics.indexOf(l.source) === -1) {
-        allTopics.push(l.source);
+    for (var i = 0; i < cfg.mqttTopicsLinks.length; i++) {
+      var l = cfg.mqttTopicsLinks[i];
+      if (allTopics.indexOf(l.mqttTopicInput) === -1) {
+        allTopics.push(l.mqttTopicInput);
       }
-      if (allTopics.indexOf(l.destination) === -1) {
-        allTopics.push(l.destination);
+      if (allTopics.indexOf(l.mqttTopicOutput) === -1) {
+        allTopics.push(l.mqttTopicOutput);
       }
     }
     return { controls: allTopics };
@@ -88,70 +88,70 @@ VirtualLinkScenario.prototype.defineControlsWaitConfig =
 
 /**
  * Configuration validation
- * @param {VirtualLinkConfig} cfg - Configuration object
+ * @param {ChannelMapConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid
  */
-VirtualLinkScenario.prototype.validateCfg = function (cfg) {
-  if (!Array.isArray(cfg.links) || cfg.links.length === 0) {
+ChannelMapScenario.prototype.validateCfg = function (cfg) {
+  if (!Array.isArray(cfg.mqttTopicsLinks) || cfg.mqttTopicsLinks.length === 0) {
     log.error('At least one link is required');
     return false;
   }
 
-  var sources = {};
-  var destinations = {};
+  var mqttTopicInputs = {};
+  var mqttTopicOutputs = {};
 
-  for (var i = 0; i < cfg.links.length; i++) {
-    var l = cfg.links[i];
+  for (var i = 0; i < cfg.mqttTopicsLinks.length; i++) {
+    var l = cfg.mqttTopicsLinks[i];
 
-    if (!l.source || !l.destination) {
+    if (!l.mqttTopicInput || !l.mqttTopicOutput) {
       log.error(
-        'Link [{}]: source and destination are required',
+        'Link [{}]: input and output are required',
         i
       );
       return false;
     }
 
     // Direct loop check
-    if (l.source === l.destination) {
+    if (l.mqttTopicInput === l.mqttTopicOutput) {
       log.error(
-        'Link [{}]: source and destination must differ: "{}"',
+        'Link [{}]: input and output must differ: "{}"',
         i,
-        l.source
+        l.mqttTopicInput
       );
       return false;
     }
 
-    sources[l.source] = true;
-    destinations[l.destination] = true;
+    mqttTopicInputs[l.mqttTopicInput] = true;
+    mqttTopicOutputs[l.mqttTopicOutput] = true;
   }
 
   // Indirect loop check within this scenario
-  for (var dest in destinations) {
-    if (sources[dest]) {
+  for (var dest in mqttTopicOutputs) {
+    if (mqttTopicInputs[dest]) {
       log.error(
-        'Indirect loop detected: "{}" is both source and'
-        + ' destination in this scenario',
+        'Indirect loop detected: "{}" is both input and'
+        + ' output in this scenario',
         dest
       );
       return false;
     }
   }
 
-  checkTypeMismatch(cfg.links);
+  checkTypeMismatch(cfg.mqttTopicsLinks);
 
   return true;
 };
 
 /**
- * Builds a lookup map: source topic -> array of destinations
- * @param {Array<LinkEntry>} links - List of links
- * @returns {SourceMap} Map of source -> destinations
+ * Builds a lookup map: mqttTopicInput topic -> array of mqttTopicOutputs
+ * @param {Array<LinkEntry>} mqttTopicsLinks - List of links
+ * @returns {SourceMap} Map of mqttTopicInput -> mqttTopicOutputs
  */
-function buildSourceMap(links) {
+function buildSourceMap(mqttTopicsLinks) {
   var map = {};
-  for (var i = 0; i < links.length; i++) {
-    var src = links[i].source;
-    var dst = links[i].destination;
+  for (var i = 0; i < mqttTopicsLinks.length; i++) {
+    var src = mqttTopicsLinks[i].mqttTopicInput;
+    var dst = mqttTopicsLinks[i].mqttTopicOutput;
     if (!map[src]) {
       map[src] = [];
     }
@@ -161,22 +161,22 @@ function buildSourceMap(links) {
 }
 
 /**
- * Logs warnings for links where source and destination
+ * Logs warnings for mqttTopicsLinks where mqttTopicInput and mqttTopicOutput
  * control types differ
- * @param {Array<LinkEntry>} links - List of links
+ * @param {Array<LinkEntry>} mqttTopicsLinks - List of links
  */
-function checkTypeMismatch(links) {
-  for (var i = 0; i < links.length; i++) {
-    var l = links[i];
-    var srcType = dev[l.source + '#type'];
-    var dstType = dev[l.destination + '#type'];
+function checkTypeMismatch(mqttTopicsLinks) {
+  for (var i = 0; i < mqttTopicsLinks.length; i++) {
+    var l = mqttTopicsLinks[i];
+    var srcType = dev[l.mqttTopicInput + '#type'];
+    var dstType = dev[l.mqttTopicOutput + '#type'];
     if (srcType && dstType && srcType !== dstType) {
       log.warning(
         'Type mismatch in link [{}]: "{}" ({}) -> "{}" ({})',
         i,
-        l.source,
+        l.mqttTopicInput,
         srcType,
-        l.destination,
+        l.mqttTopicOutput,
         dstType
       );
     }
@@ -184,8 +184,8 @@ function checkTypeMismatch(links) {
 }
 
 /**
- * Copies current source values to all destinations
- * @param {SourceMap} sourceMap - Source to destinations map
+ * Copies current mqttTopicInput values to all mqttTopicOutputs
+ * @param {SourceMap} sourceMap - mqttTopicInput to mqttTopicOutputs map
  */
 function initialSync(sourceMap) {
   for (var source in sourceMap) {
@@ -198,9 +198,9 @@ function initialSync(sourceMap) {
 }
 
 /**
- * Creates the link rule that copies values from sources to destinations.
- * @param {VirtualLinkScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - Source to destinations map
+ * Creates the link rule that copies values from mqttTopicInputs to mqttTopicOutputs.
+ * @param {ChannelMapScenario} self - Scenario instance
+ * @param {SourceMap} sourceMap - mqttTopicInput to mqttTopicOutputs map
  * @returns {boolean} True if rule created successfully
  */
 function createLinkRule(self, sourceMap) {
@@ -231,8 +231,8 @@ function createLinkRule(self, sourceMap) {
  * Creates a rule that re-syncs values when the scenario is re-enabled.
  * Intentionally NOT registered via addRule() so it stays active
  * even when the scenario is disabled.
- * @param {VirtualLinkScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - Source to destinations map
+ * @param {ChannelMapScenario} self - Scenario instance
+ * @param {SourceMap} sourceMap - mqttTopicInput to mqttTopicOutputs map
  * @returns {boolean} True if rule created successfully
  */
 function createEnableRule(self, sourceMap) {
@@ -258,8 +258,8 @@ function createEnableRule(self, sourceMap) {
 
 /**
  * Create all rules for the scenario.
- * @param {VirtualLinkScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - Source to destinations map
+ * @param {ChannelMapScenario} self - Scenario instance
+ * @param {SourceMap} sourceMap - mqttTopicInput to mqttTopicOutputs map
  * @returns {boolean} True if all rules created successfully
  */
 function createRules(self, sourceMap) {
@@ -278,15 +278,15 @@ function createRules(self, sourceMap) {
 /**
  * Scenario initialization
  * @param {string} deviceTitle - Virtual device title
- * @param {VirtualLinkConfig} cfg - Configuration object
+ * @param {ChannelMapConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
-VirtualLinkScenario.prototype.initSpecific =
+ChannelMapScenario.prototype.initSpecific =
   function (deviceTitle, cfg) {
     log.debug('Start init virtual link scenario');
     log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-    var sourceMap = buildSourceMap(cfg.links);
+    var sourceMap = buildSourceMap(cfg.mqttTopicsLinks);
 
     var rulesCreated = createRules(this, sourceMap);
 
@@ -303,4 +303,4 @@ VirtualLinkScenario.prototype.initSpecific =
     return rulesCreated;
   };
 
-exports.VirtualLinkScenario = VirtualLinkScenario;
+exports.ChannelMapScenario = ChannelMapScenario;

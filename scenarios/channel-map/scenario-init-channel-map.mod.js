@@ -1,5 +1,5 @@
 /**
- * @file scenario-init-virtual-link.mod.js - ES5 module for wb-rules v2.38
+ * @file scenario-init-channel-map.mod.js - ES5 module for wb-rules v2.38
  * @description Script for init scenarios of the SCENARIO_TYPE_STR type
  *     This script:
  *     - Loads all scenario configurations of the specific type from a file
@@ -9,7 +9,7 @@
 
 var scHelpers = require('scenarios-general-helpers.mod');
 var CustomTypeSc =
-  require('virtual-link.mod').VirtualLinkScenario;
+  require('channel-map.mod').ChannelMapScenario;
 var Logger = require('logger.mod').Logger;
 
 /**
@@ -20,7 +20,7 @@ var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
   reqVerScenario: 1, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf',
-  scenarioTypeStr: 'virtualLink'
+  scenarioTypeStr: 'channelMap'
 };
 
 var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
@@ -39,18 +39,15 @@ function initializeScenario(scenarioCfg) {
   var scenario = new CustomTypeSc();
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
-    links: scenarioCfg.links,
+    mqttTopicsLinks: scenarioCfg.mqttTopicsLinks,
   };
 
   try {
-    var isBasicVdCreated = scenario.init(
-      scenarioCfg.name,
-      cfg
-    );
+    // Returns true if VD created successfully; full initialization continues asynchronously
+    var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
     if (isBasicVdCreated !== true) {
       log.error(
-        'Virtual device creation failed for scenario name:'
-        + ' "{}" with idPrefix: "{}"',
+        'Virtual device creation failed for scenario name: "{}" with idPrefix: "{}"',
         scenarioCfg.name,
         scenario.idPrefix
       );
@@ -58,8 +55,7 @@ function initializeScenario(scenarioCfg) {
     }
 
     log.debug(
-      'VD created successfully, init continue asynchronously'
-      + ' for scenario name: "{}" with idPrefix: "{}"',
+      'VD created successfully, init continue asynchronously for scenario name: "{}" with idPrefix: "{}"',
       scenarioCfg.name,
       scenario.idPrefix
     );
@@ -68,13 +64,10 @@ function initializeScenario(scenarioCfg) {
       CFG.scenarioTypeStr
     );
     scenarioStorage[scenario.idPrefix] = scenario;
-    log.debug(
-      'Stored in global registry with ID: ' + scenario.idPrefix
-    );
+    log.debug('Stored in global registry with ID: ' + scenario.idPrefix);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization:'
-      + ' "{}" for scenario: "{}"',
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
       error.message || error,
       scenarioCfg.name
     );
@@ -82,10 +75,7 @@ function initializeScenario(scenarioCfg) {
 }
 
 function setup() {
-  log.debug(
-    'Start initialisation "{}" type scenarios',
-    CFG.scenarioTypeStr
-  );
+  log.debug('Start initialisation "{}" type scenarios', CFG.scenarioTypeStr);
   var listAllScenarios = scHelpers.readAndValidateScenariosConfig(
     CFG.configPath,
     CFG.reqVerGeneralCfg
@@ -105,10 +95,7 @@ function setup() {
     return;
   }
 
-  log.debug(
-    'Number of matched scenarios: {}',
-    matchedScenarios.length
-  );
+  log.debug('Number of matched scenarios: {}', matchedScenarios.length);
   for (var i = 0; i < matchedScenarios.length; i++) {
     initializeScenario(matchedScenarios[i]);
   }

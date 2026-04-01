@@ -44,6 +44,7 @@ function initializeScenario(scenarioCfg) {
   };
 
   try {
+    // Returns true if VD created successfully; full initialization continues asynchronously
     var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
     if (isBasicVdCreated !== true) {
       log.error(
@@ -64,7 +65,7 @@ function initializeScenario(scenarioCfg) {
       CFG.scenarioTypeStr
     );
     scenarioStorage[scenario.idPrefix] = scenario;
-    log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
+    log.debug('Stored in global registry with ID: ' + scenario.idPrefix);
   } catch (error) {
     log.error(
       'Exception during scenario initialization: "{}" for scenario: "{}"', 

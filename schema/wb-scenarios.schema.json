@@ -36,7 +36,7 @@
           "$ref": "#/definitions/periodicTimer"
         },
         {
-          "$ref": "#/definitions/virtualLink"
+          "$ref": "#/definitions/channelMap"
         }
       ],
       "_format": "wb-multiple",
@@ -1618,10 +1618,10 @@
         "outControls"
       ]
     },
-    "virtualLink": {
+    "channelMap": {
       "type": "object",
-      "title": "virtualLinkScenarioName",
-      "description": "virtualLinkScenarioDescription",
+      "title": "ChannelMapScenarioName",
+      "description": "ChannelMapScenarioDescription",
       "_format": "grid",
       "options": {
         "display_required_only": true
@@ -1629,8 +1629,8 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": ["virtualLink"],
-          "default": "virtualLink",
+          "enum": ["channelMap"],
+          "default": "channelMap",
           "options": {
             "hidden": true
           }
@@ -1648,7 +1648,7 @@
         "name": {
           "title": "generalScenarioName",
           "type": "string",
-          "default": "virtualLinkDefaultInputName",
+          "default": "channelMapDefaultInputName",
           "minLength": 1,
           "maxLength": 30,
           "propertyOrder": 1,
@@ -1670,11 +1670,11 @@
             "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
           }
         },
-        "links": {
+        "mqttTopicsLinks": {
           "type": "array",
           "minItems": 1,
           "propertyOrder": 3,
-          "title": "virtualLinkLinksTitle",
+          "title": "channelMapLinksTitle",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -1687,13 +1687,13 @@
             }
           },
           "items": {
-            "title": "virtualLinkLinkObjTitle",
+            "title": "channelMapLinkObjTitle",
             "type": "object",
             "properties": {
-              "source": {
+              "mqttTopicInput": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "virtualLinkSourceTitle",
+                "title": "channelMapInputTitle",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -1707,10 +1707,10 @@
                 },
                 "minLength": 3
               },
-              "destination": {
+              "mqttTopicOutput": {
                 "type": "string",
                 "propertyOrder": 2,
-                "title": "virtualLinkDestinationTitle",
+                "title": "channelMapOutputTitle",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -1725,7 +1725,7 @@
                 "minLength": 3
               }
             },
-            "required": ["source", "destination"]
+            "required": ["mqttTopicInput", "mqttTopicOutput"]
           }
         }
       },
@@ -1733,7 +1733,7 @@
         "scenarioType",
         "componentVersion",
         "name",
-        "links"
+        "mqttTopicsLinks"
       ]
     }
   },
@@ -1893,13 +1893,13 @@
       "periodicTimerOutControlsTitle": "Actions",
       "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop.",
 
-      "virtualLinkScenarioName": "Channel Mapping",
-      "virtualLinkScenarioDescription": "Any value change on the input will be automatically copied to the specified output.",
-      "virtualLinkDefaultInputName": "Channel Mapping",
-      "virtualLinkLinksTitle": "Mapping Table",
-      "virtualLinkLinkObjTitle": "Add",
-      "virtualLinkSourceTitle": "Input Channel",
-      "virtualLinkDestinationTitle": "Output Channel"
+      "channelMapScenarioName": "Channel Mapping",
+      "channelMapScenarioDescription": "Any value change on the input will be automatically copied to the specified output.",
+      "channelMapDefaultInputName": "Channel Mapping",
+      "channelMapLinksTitle": "Mapping Table",
+      "channelMapLinkObjTitle": "Add",
+      "channelMapInputTitle": "Input Channel",
+      "channelMapOutputTitle": "Output Channel"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -2042,13 +2042,13 @@
       "periodicTimerOutControlsTitle": "Действия",
       "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении.",
 
-      "virtualLinkScenarioName": "Маппинг каналов",
-      "virtualLinkScenarioDescription": "Любое изменение значения на входе будет автоматически скопировано в указанный выход.",
-      "virtualLinkDefaultInputName": "Маппинг каналов",
-      "virtualLinkLinksTitle": "Таблица маппинга",
-      "virtualLinkLinkObjTitle": "Добавить",
-      "virtualLinkSourceTitle": "Канал Входа",
-      "virtualLinkDestinationTitle": "Канал Выхода"
+      "channelMapScenarioName": "Маппинг каналов",
+      "channelMapScenarioDescription": "Любое изменение значения на входе будет автоматически скопировано в указанный выход.",
+      "channelMapDefaultInputName": "Маппинг каналов",
+      "channelMapLinksTitle": "Таблица маппинга",
+      "channelMapLinkObjTitle": "Добавить",
+      "channelMapInputTitle": "Канал Входа",
+      "channelMapOutputTitle": "Канал Выхода"
     }
   }
 }

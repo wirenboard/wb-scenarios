@@ -1,8 +1,8 @@
 wb-scenarios (1.8.1) stable; urgency=medium
 
-  * Add new scenario "virtual-link"
+  * Add new scenario "channel-map"
 
- -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 30 Mar 2026 18:08:00 +0300
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 1 Apr 2026 18:58:00 +0300
 
 wb-scenarios (1.8.0) stable; urgency=medium
 
