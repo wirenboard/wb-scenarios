@@ -11,7 +11,7 @@
 - [Расписание](scenarios/schedule/README.md)
 - [Астрономический таймер](scenarios/astronomical-timer/README.md)
 - [Периодический таймер](scenarios/periodic-timer/README.md)
-- [Виртуальная связка](scenarios/channel-map/README.md)
+- [Маппинг каналов](scenarios/channel-map/README.md)
 
 ## Установка
 

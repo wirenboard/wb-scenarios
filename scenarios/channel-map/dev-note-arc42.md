@@ -1,10 +1,10 @@
-# Virtual Link — Архитектурная документация (ARC42)
+# Channel Map — Архитектурная документация (ARC42)
 
 ## 1. Введение и цели
 
 ### 1.1. Описание задачи
 
-Новый тип сценария **Virtual Link** (Виртуальная связка)
+Новый тип сценария **Channel Map** (Виртуальная связка)
 для контроллеров Wiren Board. Создаёт программные связи между
 MQTT-контролами: при изменении значения mqttTopicInput-контрола оно
 автоматически копируется в mqttTopicOutput-контрол.
@@ -72,7 +72,7 @@ MQTT-контролами: при изменении значения mqttTopicI
 ```
 [Пользователь] --(WebUI)--> [wb-mqtt-confed] --(JSON conf)--> [wb-rules]
                                                                     |
-                                                          [Virtual Link]
+                                                          [Channel Map]
                                                            /              \
                                                   [mqttTopicInput MQTT]    [mqttTopicOutput MQTT]
 ```

@@ -1,6 +1,6 @@
 /**
  * @file channel-map.mod.js - ES5 module for wb-rules v2.38
- * @description Virtual Link scenario class that extends ScenarioBase.
+ * @description Channel Map scenario class that extends ScenarioBase.
  *   Copies values from mqttTopicInput MQTT controls to mqttTopicOutput controls.
  *   Uses a single whenChanged rule with a mqttTopicInput→mqttTopicOutputs lookup map.
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
@@ -33,7 +33,7 @@ var log = new Logger(loggerFileLabel);
  */
 
 /**
- * Virtual Link scenario implementation
+ * Channel Map scenario implementation
  * @class ChannelMapScenario
  * @extends ScenarioBase
  */
@@ -283,7 +283,7 @@ function createRules(self, sourceMap) {
  */
 ChannelMapScenario.prototype.initSpecific =
   function (deviceTitle, cfg) {
-    log.debug('Start init virtual link scenario');
+    log.debug('Start init channel map scenario');
     log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
     var sourceMap = buildSourceMap(cfg.mqttTopicsLinks);
@@ -295,7 +295,7 @@ ChannelMapScenario.prototype.initSpecific =
 
       this.setState(ScenarioState.NORMAL);
       log.debug(
-        'Virtual link scenario initialized for device "{}"',
+        'Channel Map scenario initialized for device "{}"',
         deviceTitle
       );
     }

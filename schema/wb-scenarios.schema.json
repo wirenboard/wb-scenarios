@@ -1620,8 +1620,8 @@
     },
     "channelMap": {
       "type": "object",
-      "title": "ChannelMapScenarioName",
-      "description": "ChannelMapScenarioDescription",
+      "title": "channelMapScenarioName",
+      "description": "channelMapScenarioDescription",
       "_format": "grid",
       "options": {
         "display_required_only": true
