@@ -1,14 +1,13 @@
 /**
  * @file channel-map.mod.js - ES5 module for wb-rules v2.38
  * @description Channel Map scenario class that extends ScenarioBase.
- *   Copies values from mqttTopicInput MQTT controls to mqttTopicOutput controls.
- *   Uses a single whenChanged rule with a mqttTopicInput→mqttTopicOutputs lookup map.
+ *   Copies values from mqttTopicInput controls to mqttTopicOutput controls.
+ *   Uses a single whenChanged rule with a mqttTopicInput → mqttTopicOutputs lookup map.
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
-var ScenarioState =
-  require('virtual-device-helpers.mod').ScenarioState;
+var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
 var loggerFileLabel = 'WBSC-channel-map-mod';
@@ -126,12 +125,12 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
   }
 
   // Indirect loop check within this scenario
-  for (var dest in mqttTopicOutputs) {
-    if (mqttTopicInputs[dest]) {
+  for (var output in mqttTopicOutputs) {
+    if (mqttTopicInputs[output]) {
       log.error(
         'Indirect loop detected: "{}" is both input and'
         + ' output in this scenario',
-        dest
+        output
       );
       return false;
     }

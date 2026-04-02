@@ -4,10 +4,10 @@
 
 ### 1.1. Описание задачи
 
-Новый тип сценария **Channel Map** (Виртуальная связка)
+Новый тип сценария **Channel Map** (Маппинг контролов)
 для контроллеров Wiren Board. Создаёт программные связи между
-MQTT-контролами: при изменении значения mqttTopicInput-контрола оно
-автоматически копируется в mqttTopicOutput-контрол.
+MQTT-контролами: при изменении значения mqttTopicInput контрола оно
+автоматически копируется в mqttTopicOutput контрол.
 
 Типичные применения: привязка выключателя к реле, зеркалирование
 датчика на панель, прокидывание значений между устройствами разных
@@ -129,14 +129,18 @@ defineRule({
 инициализации:
 
 ```
-buildSourceMap(mqttTopicsLinks):
-  map = {}
-  for each link:
-    source = link.mqttTopicInput
-    if !map[source]:
-      map[source] = []
-    map[source].push(link.mqttTopicOutput)
-  return map
+function buildSourceMap(mqttTopicsLinks) {
+  var map = {};
+  for (var i = 0; i < mqttTopicsLinks.length; i++) {
+    var input = mqttTopicsLinks[i].mqttTopicInput;
+    var output = mqttTopicsLinks[i].mqttTopicOutput;
+    if (!map[input]) {
+      map[input] = [];
+    }
+    map[input].push(output);
+  }
+  return map;
+}
 ```
 
 Это позволяет за O(1) найти все mqttTopicOutputs для сработавшего
@@ -151,7 +155,7 @@ mqttTopicInput, вместо перебора всего массива mqttTopi
 **Решение:** Проверка в `validateCfg` — link с
 mqttTopicInput === mqttTopicOutput отклоняется, сценарий не инициализируется.
 
-Также возможна непрямая петля (A→B + B→A в разных сценариях).
+Также возможна непрямая петля (A → B и B → A в разных сценариях).
 Защита на уровне одного сценария: проверяем что ни один mqttTopicOutput
 не является mqttTopicInput в другом link этого же сценария.
 Кросс-сценарные петли не проверяются — ответственность пользователя.
@@ -165,13 +169,23 @@ warning. Сценарий при этом **не блокируется** — к
 как обычно.
 
 ```
-checkTypeMismatch(mqttTopicsLinks):
-  for each link:
-    sourceType = dev[srcDev][srcCtrl + '#type']
-    destType = dev[dstDev][dstCtrl + '#type']
-    if sourceType !== destType:
-      log.warning('Type mismatch: {} ({}) → {} ({})',
-        source, sourceType, dest, destType)
+function checkTypeMismatch(mqttTopicsLinks) {
+  for (var i = 0; i < mqttTopicsLinks.length; i++) {
+    var l = mqttTopicsLinks[i];
+    var inputType = dev[l.mqttTopicInput + '#type'];
+    var outputType = dev[l.mqttTopicOutput + '#type'];
+    if (inputType && outputType && inputType !== outputType) {
+      log.warning(
+        'Type mismatch in link [{}]: "{}" ({}) -> "{}" ({})',
+        i,
+        l.mqttTopicInput,
+        inputType,
+        l.mqttTopicOutput,
+        outputType
+      );
+    }
+  }
+}
 ```
 
 ### 4.5. Начальная синхронизация
@@ -185,13 +199,15 @@ checkTypeMismatch(mqttTopicsLinks):
 связанные mqttTopicOutputs.
 
 ```
-initialSync(sourceMap):
-  for each source in sourceMap:
-    var parts = source.split('/');
-    var value = dev[parts[0]][parts[1]];
-    for each dest in sourceMap[source]:
-      var dParts = dest.split('/');
-      dev[dParts[0]][dParts[1]] = value;
+function initialSync(sourceMap) {
+  for (var source in sourceMap) {
+    var input = dev[source];
+    var outputs = sourceMap[source];
+    for (var i = 0; i < outputs.length; i++) {
+      dev[outputs[i]] = input;
+    }
+  }
+}
 ```
 
 Синхронизация выполняется после `defineControlsWaitConfig` —
@@ -206,8 +222,7 @@ initialSync(sourceMap):
 **Решение:** Отдельное правило `createEnableRule` наблюдает за
 `rule_enabled`. При переключении в `true` вызывает `initialSync`.
 Правило **не регистрируется** через `addRule()` — оно остаётся
-активным даже когда сценарий выключен (аналогично
-`createDisableRule` в periodic-timer).
+активным даже когда сценарий выключен.
 
 ### 4.7. Поведение при перезапуске wb-rules
 
@@ -259,24 +274,28 @@ ChannelMapScenario extends ScenarioBase
     │   → warning в лог при несовпадении типов mqttTopicInput/mqttTopicOutput
     │
     ├── buildSourceMap(mqttTopicsLinks)
-    │   → { 'device/control': ['dest1/ctrl', 'dest2/ctrl'] }
+    │   → { 'device/control': ['output1/ctrl', 'output2/ctrl'] }
     │
     ├── createLinkRule()
     │   defineRule({
-    │     whenChanged: uniqueSources,
-    │     then: function(newValue, devName, cellName) {
-    │       var key = devName + '/' + cellName;
-    │       var mqttTopicOutputs = sourceMap[key];
-    │       for each dest in mqttTopicOutputs:
-    │         dev[dest] = newValue;
+    │     whenChanged: sources,
+    │     then: function onSourceChanged(newValue, devName, cellName) {
+    │       var outputs = sourceMap[devName + '/' + cellName];
+    |       if (!outputs) return;
+    │       for (var i = 0; i < outputs.length; i++) {
+    │         dev[outputs[i]] = newValue;
+    │       }
     │     }
     │   });
     │
     ├── createEnableRule()
     │   defineRule({
-    │     whenChanged: [vDevice + '/rule_enabled'],
-    │     then: function(newValue) {
-    │       if (newValue) initialSync(sourceMap);
+    │     whenChanged: [self.genNames.vDevice + '/rule_enabled'],
+    │     then: function onRuleEnabledChanged(newValue) {
+    │       if (newValue) {
+    |         log.debug('Scenario re-enabled, syncing values');
+    |         initialSync(sourceMap);
+    |       }
     │     }
     │   });
     │   ⚠ Не регистрируется через addRule() — работает

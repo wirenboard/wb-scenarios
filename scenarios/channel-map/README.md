@@ -61,7 +61,6 @@
 | Значение | Описание |
 |---|---|
 | **Активен** | Включён, все контролы доступны |
-| **Ожидает** | Включён, ожидание доступности контролов |
 | **Отключен** | Сценарий выключен (`rule_enabled = false`) |
 
 ---
@@ -184,12 +183,11 @@
 
 ```js
 /**
- * @file: init-link.js
+ * @file: init-channel-mapping.js
  */
 
 // Step 1: import module
-var CustomTypeSc =
-  require('channel-map.mod').ChannelMapScenario;
+var CustomTypeSc = require('channel-map.mod').ChannelMapScenario;
 
 function main() {
   var scenarioName = 'Switch to relay';

@@ -8,8 +8,7 @@
  */
 
 var scHelpers = require('scenarios-general-helpers.mod');
-var CustomTypeSc =
-  require('channel-map.mod').ChannelMapScenario;
+var CustomTypeSc = require('channel-map.mod').ChannelMapScenario;
 var Logger = require('logger.mod').Logger;
 
 /**
