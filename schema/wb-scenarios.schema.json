@@ -1668,9 +1668,9 @@
       "generalSaturday": "Saturday",
       "generalSunday": "Sunday",
 
-      "devicesControlScenarioName": "\"If-Then\" Automation",
+      "devicesControlScenarioName": "«If-Then» Automation",
       "devicesControlScenarioDescription": "Triggers actions when specific events occur.<br>Example: switch pressed → light turns on, motion detected → curtains open.",
-      "devicesControlDefaultInputName": "\"If-Then\" Automation",
+      "devicesControlDefaultInputName": "«If-Then» Automation",
       "inControls_arr_title": "Triggers (If)",
       "inControls_obj_title": "Trigger",
       "outControls_arr_title": "Actions (Then)",
