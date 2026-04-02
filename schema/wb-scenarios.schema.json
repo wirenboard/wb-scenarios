@@ -48,9 +48,9 @@
       }
     },
     "devicesControl": {
-      "title": "Devices control",
+      "title": "devicesControlScenarioName",
       "type": "object",
-      "description": "devicesControl_description",
+      "description": "devicesControlScenarioDescription",
       "_format": "grid",
       "options": {
         "display_required_only": true
@@ -106,7 +106,6 @@
           "minItems": 1,
           "propertyOrder": 4,
           "_title_note": "When options-> compact: true - this title not shown",
-          "description": "inControls_arr_description",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -163,8 +162,7 @@
           "minItems": 1,
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "generalActionsTitle",
-          "description": "outControls_arr_description",
+          "title": "outControls_arr_title",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -1670,12 +1668,12 @@
       "generalSaturday": "Saturday",
       "generalSunday": "Sunday",
 
-      "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
-      "devicesControlDefaultInputName": "Device control",
-      "inControls_arr_title": "Triggers",
+      "devicesControlScenarioName": "«If-Then» Automation",
+      "devicesControlScenarioDescription": "Triggers actions when specific events occur.<br>Example: switch pressed → light turns on, motion detected → curtains open.",
+      "devicesControlDefaultInputName": "«If-Then» Automation",
+      "inControls_arr_title": "Triggers (If)",
       "inControls_obj_title": "Trigger",
-      "inControls_arr_description": "Any of the events listed here will trigger the automation.",
-      "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
+      "outControls_arr_title": "Actions (Then)",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
 
@@ -1801,15 +1799,15 @@
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
-      "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
-      "devicesControlDefaultInputName": "Управление устройствами",
-      "inControls_arr_title": "События",
+
+      "devicesControlScenarioName": "Автоматизация «Если-То»",
+      "devicesControlScenarioDescription": "Запускает действия при наступлении событий.<br>Например: нажали выключатель → включился свет, сработал датчик движения → открылись шторы.",
+      "devicesControlDefaultInputName": "Автоматизация «Если-То»",
+      "inControls_arr_title": "События (Если)",
       "inControls_obj_title": "Событие",
-      "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию:",
-      "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации:",
+      "outControls_arr_title": "Действия (То)",
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_description": "Если необходимо",
-      "Devices control": "Управление устройствами",
       "When Change": "Когда изменится",
       "When Disabled (switch)": "Когда отключилось (для переключателей)",
       "When Enabled (switch)": "Когда включилось (для переключателей)",

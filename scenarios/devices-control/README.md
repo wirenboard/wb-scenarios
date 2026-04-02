@@ -1,4 +1,4 @@
-# Сценарий управления устройствами `devices-control`
+# Автоматизация «Если-То» `«If-Then» Automation`
 
 Позволяет управлять светом соединив один или несколько выключателей с одним или несколькими световыми приборами
 Удобен для реализации разных случаев:
@@ -9,11 +9,11 @@
 
 Конфигурация выглядит следующим образом
 
-![Scenario config](doc/scenario-config.png)
+![Scenario config](doc/scenario-cfg-view.png)
 
 Каждому сценарию создается виртуальное устройство
 
-![Virtual device](doc/virtual-device.png)
+![Virtual device](doc/scenario-vd-view.png)
 
 ## Использование модуля
 
@@ -183,7 +183,7 @@ main();
 
 <p align="center">
     <img width="400"
-         src="doc/virtual-device.png"
+         src="doc/scenario-vd-view.png"
          alt="Virtual device view" />
 </p>
 
