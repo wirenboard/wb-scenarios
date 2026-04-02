@@ -17,7 +17,7 @@ var log = new Logger(loggerFileLabel);
 /**
  * @typedef {Object} LinkEntry
  * @property {string} mqttTopicInput - Source MQTT topic 'device/control'
- * @property {string} mqttTopicOutput - Destination MQTT topic
+ * @property {string} mqttTopicOutput - Destination MQTT topic 'device/control'
  */
 
 /**
@@ -61,7 +61,7 @@ ChannelMapScenario.prototype.generateNames =
     var scenarioPrefix = 'wbsc_';
     return {
       vDevice: scenarioPrefix + idPrefix,
-      ruleLink: scenarioPrefix + idPrefix + '_link',
+      ruleMap: scenarioPrefix + idPrefix + '_map',
       ruleEnable: scenarioPrefix + idPrefix + '_enable',
     };
   };
@@ -150,12 +150,12 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
 function buildSourceMap(mqttTopicsLinks) {
   var map = {};
   for (var i = 0; i < mqttTopicsLinks.length; i++) {
-    var src = mqttTopicsLinks[i].mqttTopicInput;
-    var dst = mqttTopicsLinks[i].mqttTopicOutput;
-    if (!map[src]) {
-      map[src] = [];
+    var input = mqttTopicsLinks[i].mqttTopicInput;
+    var output = mqttTopicsLinks[i].mqttTopicOutput;
+    if (!map[input]) {
+      map[input] = [];
     }
-    map[src].push(dst);
+    map[input].push(output);
   }
   return map;
 }
@@ -168,16 +168,16 @@ function buildSourceMap(mqttTopicsLinks) {
 function checkTypeMismatch(mqttTopicsLinks) {
   for (var i = 0; i < mqttTopicsLinks.length; i++) {
     var l = mqttTopicsLinks[i];
-    var srcType = dev[l.mqttTopicInput + '#type'];
-    var dstType = dev[l.mqttTopicOutput + '#type'];
-    if (srcType && dstType && srcType !== dstType) {
+    var inputType = dev[l.mqttTopicInput + '#type'];
+    var outputType = dev[l.mqttTopicOutput + '#type'];
+    if (inputType && outputType && inputType !== outputType) {
       log.warning(
         'Type mismatch in link [{}]: "{}" ({}) -> "{}" ({})',
         i,
         l.mqttTopicInput,
-        srcType,
+        inputType,
         l.mqttTopicOutput,
-        dstType
+        outputType
       );
     }
   }
@@ -189,10 +189,10 @@ function checkTypeMismatch(mqttTopicsLinks) {
  */
 function initialSync(sourceMap) {
   for (var source in sourceMap) {
-    var value = dev[source];
-    var dests = sourceMap[source];
-    for (var i = 0; i < dests.length; i++) {
-      dev[dests[i]] = value;
+    var input = dev[source];
+    var outputs = sourceMap[source];
+    for (var i = 0; i < outputs.length; i++) {
+      dev[outputs[i]] = input;
     }
   }
 }
@@ -207,13 +207,13 @@ function createLinkRule(self, sourceMap) {
   log.debug('Creating link rule');
   var sources = Object.keys(sourceMap);
 
-  var ruleId = defineRule(self.genNames.ruleLink, {
+  var ruleId = defineRule(self.genNames.ruleMap, {
     whenChanged: sources,
     then: function onSourceChanged(newValue, devName, cellName) {
-      var dests = sourceMap[devName + '/' + cellName];
-      if (!dests) return;
-      for (var i = 0; i < dests.length; i++) {
-        dev[dests[i]] = newValue;
+      var outputs = sourceMap[devName + '/' + cellName];
+      if (!outputs) return;
+      for (var i = 0; i < outputs.length; i++) {
+        dev[outputs[i]] = newValue;
       }
     },
   });
