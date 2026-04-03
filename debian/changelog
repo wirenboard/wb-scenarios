@@ -1,8 +1,14 @@
-wb-scenarios (1.8.1) stable; urgency=medium
+wb-scenarios (1.8.2) stable; urgency=medium
 
   * Add new scenario "channel-map"
 
- -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Thu, 2 Apr 2026 17:19:00 +0300
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Fri, 3 Apr 2026 10:56:00 +0300
+
+wb-scenarios (1.8.1) stable; urgency=medium
+
+  * Updated translations for the Device Control scenario
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Thu, 2 Apr 2026 18:24:00 +0300
 
 wb-scenarios (1.8.0) stable; urgency=medium
 
