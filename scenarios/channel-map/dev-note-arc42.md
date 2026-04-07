@@ -248,7 +248,7 @@ ChannelMapScenario extends ScenarioBase
 │   → проверка min/max (warning, hasIncorrectLinks)
 │
 ├── addCustomControlsToVirtualDevice(self)
-│   → при hasIncorrectLinks добавляет alarm-контрол 'warning'
+│   → при hasIncorrectLinks добавляет text-контрол 'warning'
 │
 └── initSpecific(name, cfg)
     │
@@ -314,7 +314,7 @@ ChannelMapScenario extends ScenarioBase
 |---|---|---|
 | `rule_enabled` | switch | Вкл/выкл сценария (из базового класса) |
 | `state` | value, readonly | Статус: `NORMAL` / `WAITING` / `DISABLED` |
-| `warning` | alarm | Отображается при наличии некорректных связей (type/min/max mismatch) |
+| `warning` | text | Отображается при наличии некорректных связей (type/min/max mismatch) |
 
 ---
 

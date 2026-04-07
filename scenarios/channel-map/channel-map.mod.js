@@ -104,13 +104,13 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
     var l = cfg.mqttTopicsLinks[i];
 
     if (!l.mqttTopicA || !l.mqttTopicB) {
-      log.error('Link [{}]: channel A and channel B are required', i);
+      log.error('Link [{}]: both channels are required', i);
       return false;
     }
 
     // Direct loop check
     if (l.mqttTopicA === l.mqttTopicB) {
-      log.error('Link [{}]: channel A and channel B must differ: "{}"', i, l.mqttTopicA);
+      log.error('Link [{}]: channels must differ: "{}"', i, l.mqttTopicA);
       return false;
     }
 
@@ -125,7 +125,7 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
     // Type mismatch check
     if (typeA && typeB && typeA !== typeB) {
       log.warning(
-        'Type mismatch in link [{}]: "{}" ({}) <-> "{}" ({})',
+        'Link [{}]: type mismatch: "{}" ({}) and "{}" ({})',
         i,
         l.mqttTopicA,
         typeA,
@@ -144,7 +144,7 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
     if ((minA !== undefined || maxA !== undefined) && (minB !== undefined || maxB !== undefined)) {
       if (minA !== minB || maxA !== maxB) {
         log.warning(
-          'Link [{}]: min/max constraints differ: "{}" (min:{}, max:{}) <-> "{}" (min:{}, max:{})',
+          'Link [{}]: min/max constraints differ: "{}" (min:{}, max:{}) and "{}" (min:{}, max:{})',
           i,
           l.mqttTopicA,
           minA,
@@ -210,7 +210,7 @@ function initialSync(sourceMap) {
     for (var i = 0; i < targets.length; i++) {
       var target = targets[i];
       var currentValue = dev[target];
-      
+
       if (currentValue !== sourceValue) {
         dev[target] = sourceValue;
       }
@@ -226,14 +226,14 @@ function addCustomControlsToVirtualDevice(self) {
   if (self.ctx.hasIncorrectLinks) {
     self.vd.devObj.addControl('warning', {
       title: {
-        en: 'Some links work incorrectly, see logs',
+        en: 'Some links are incorrect, see logs',
         ru: 'Некоторые связи работают некорректно, см. логи',
       },
-      type: 'alarm',
-      value: 1,
+      type: 'text',
+      value: '',
       readonly: true,
       forceDefault: true,
-      order: 10,
+      order: 2,
     });
   }
 }
