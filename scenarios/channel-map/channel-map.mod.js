@@ -329,34 +329,34 @@ function createRules(self, sourceMap) {
  * @returns {boolean} True if initialization succeeded
  */
 ChannelMapScenario.prototype.initSpecific = function (deviceTitle, cfg) {
-    /**
-     * NOTE: This method is executed ONLY when:
-     * - Base initialization is complete
-     * - Configuration is valid
-     * - All referenced controls exist in the system
-     * 
-     * The async initialization chain guarantees that all prerequisites are met.
-     * No need to re-validate or check control existence here.
-     */
-    log.debug('Start init channel map scenario');
-    log.setLabel(loggerFileLabel + '/' + this.idPrefix);
+  /**
+   * NOTE: This method is executed ONLY when:
+   * - Base initialization is complete
+   * - Configuration is valid
+   * - All referenced controls exist in the system
+   *
+   * The async initialization chain guarantees that all prerequisites are met.
+   * No need to re-validate or check control existence here.
+   */
+  log.debug('Start init channel map scenario');
+  log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-    addCustomControlsToVirtualDevice(this);
+  addCustomControlsToVirtualDevice(this);
 
-    var sourceMap = buildSourceMap(cfg.mqttTopicsLinks);
-    var rulesCreated = createRules(this, sourceMap);
+  var sourceMap = buildSourceMap(cfg.mqttTopicsLinks);
+  var rulesCreated = createRules(this, sourceMap);
 
-    if (rulesCreated) {
-      initialSync(sourceMap);
+  if (rulesCreated) {
+    initialSync(sourceMap);
 
-      this.setState(ScenarioState.NORMAL);
-      log.debug(
-        'Channel Map scenario initialized for device "{}"',
-        deviceTitle
-      );
-    }
+    this.setState(ScenarioState.NORMAL);
+    log.debug(
+      'Channel Map scenario initialized for device "{}"',
+      deviceTitle
+    );
+  }
 
-    return rulesCreated;
-  };
+  return rulesCreated;
+};
 
 exports.ChannelMapScenario = ChannelMapScenario;

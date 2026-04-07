@@ -247,12 +247,9 @@ ChannelMapScenario extends ScenarioBase
 │   → проверка типов (warning, hasIncorrectLinks)
 │   → проверка min/max (warning, hasIncorrectLinks)
 │
-├── addCustomControlsToVirtualDevice(self)
-│   → при hasIncorrectLinks добавляет text-контрол 'warning'
-│
 └── initSpecific(name, cfg)
     │
-    ├── addCustomControlsToVirtualDevice(this)
+    ├── addCustomControlsToVirtualDevice(self)
     │
     ├── buildSourceMap(cfg.mqttTopicsLinks)
     │   → с учётом direction
@@ -375,6 +372,13 @@ timeout — сценарий перейдёт в состояние `LINKED_CONT
 ### 9.8. Несовместимость типов или ограничений
 Логируется `warning`, в виртуальном устройстве появляется красный индикатор (warning). Сценарий продолжает 
 работать — копирование выполняется как обычно.
+
+### 9.9. Начальная синхронизация при `both` с разными значениями
+
+При направлении `both` в `sourceMap` присутствуют оба направления: A→B и B→A. Если при старте 
+значения каналов различаются (например, A=1, B=2), результат `initialSync` зависит от порядка 
+обхода `for..in`, который в ES5 не гарантирован. Одно из значений «победит» и будет скопировано 
+в оба канала. Оба результата корректны — после синхронизации каналы консистентны.
 
 ---
 
