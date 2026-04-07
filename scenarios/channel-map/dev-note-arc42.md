@@ -4,23 +4,21 @@
 
 ### 1.1. Описание задачи
 
-Новый тип сценария **Channel Map** (Маппинг контролов)
-для контроллеров Wiren Board. Создаёт программные связи между
-MQTT-контролами: при изменении значения mqttTopicInput контрола оно
-автоматически копируется в mqttTopicOutput контрол.
+Новый тип сценария Channel Map (Маппинг каналов) для контроллеров Wiren Board. Создаёт программные связи 
+между MQTT-каналами (controls). При изменении значения одного канала оно автоматически копируется в 
+другой канал согласно выбранному направлению.
 
-Типичные применения: привязка выключателя к реле, зеркалирование
-датчика на панель, прокидывание значений между устройствами разных
-протоколов (Zigbee → Modbus).
+Типичные применения: привязка выключателя к реле, зеркалирование датчика на панель, прокидывание значений 
+между устройствами разных протоколов (Zigbee → Modbus), двусторонняя синхронизация.
 
 ### 1.2. Функциональные требования
 
-- Массив связок (mqttTopicsLinks): каждая связывает mqttTopicInput → mqttTopicOutput
-- При изменении mqttTopicInput значение копируется в mqttTopicOutput как есть
-- Несколько mqttTopicsLinks в одном сценарии
-- Несколько mqttTopicsLinks с одним mqttTopicInput — все mqttTopicOutputs обновляются
-- Включение/выключение через rule_enabled
-- Версия 1: только прямое копирование, без трансформаций
+- Массив связок (`mqttTopicsLinks`): каждая связывает канал A и канал B с заданным направлением
+- Три направления: `forward` (A → B), `backward` (B → A), `both` (A ↔ B)
+- Несколько связок в одном сценарии
+- Несколько связок с одним и тем же каналом в роли источника — все целевые каналы обновляются
+- Включение/выключение через `rule_enabled`
+- Версия 1: только копирование, без трансформаций
 
 ### 1.3. Качественные цели
 
@@ -28,7 +26,7 @@ MQTT-контролами: при изменении значения mqttTopicI
 |---|---|---|
 | 1 | Надёжность | Копирование без потерь при любой частоте изменений |
 | 2 | Простота | Минимальный UI, понятный без документации |
-| 3 | Безопасность | Защита от петель (mqttTopicInput === mqttTopicOutput) |
+| 3 | Безопасность | Защита от прямых петель (канал A === канал B) |
 | 4 | Совместимость | Паттерны ScenarioBase, стиль как у других сценариев |
 
 ### 1.4. Стейкхолдеры
@@ -73,8 +71,8 @@ MQTT-контролами: при изменении значения mqttTopicI
 [Пользователь] --(WebUI)--> [wb-mqtt-confed] --(JSON conf)--> [wb-rules]
                                                                     |
                                                           [Channel Map]
-                                                           /              \
-                                                  [mqttTopicInput MQTT]    [mqttTopicOutput MQTT]
+                                                           /          \
+                                                  [Канал A MQTT]    [Канал B MQTT]
 ```
 
 ### 3.2. Технический контекст
@@ -90,30 +88,32 @@ wb-scenarios.conf         -->  scenario-init-main.js
          |                          |
          v                     [wb-rules engine]
     /devices/wbsc_*/               |
-    (virtual device)     [mqttTopicInput controls] --> [mqttTopicOutput controls]
+    (virtual device)          [Канал A] <--> [Канал B]
 ```
 
 ---
 
 ## 4. Стратегия решения
 
-### 4.1. Ключевое решение: один whenChanged на все mqttTopicInput
+### 4.1. Ключевое решение: один whenChanged на все источники
 
-**Проблема:** В массиве mqttTopicsLinks может быть много mqttTopicInput-топиков.
-Нужно подписаться на изменения всех.
+**Проблема:** В массиве связок может быть много уникальных источников. Нужно подписаться на изменения всех.
 
-**Решение:** Один `defineRule` с `whenChanged` на массив всех
-уникальных mqttTopicInput-топиков. В обработчике определяем какие
-mqttTopicsLinks сработали по `devName + '/' + cellName` и копируем
-значение в соответствующие mqttTopicOutput.
+**Решение:** Один `defineRule` с `whenChanged` на массив всех уникальных источников (с учётом направления). 
+В обработчике определяем, какой источник сработал, по `devName + '/' + cellName` и копируем значение 
+во все соответствующие цели.
 
 ```
 defineRule({
-  whenChanged: [mqttTopicInput1, mqttTopicInput2, ...],
+  whenChanged: [source1, source2, ...],
   then: function(newValue, devName, cellName) {
-    var mqttTopicInputKey = devName + '/' + cellName;
-    // Найти все mqttTopicsLinks с этим mqttTopicInput
-    // Скопировать newValue в каждый mqttTopicOutput
+    var sourceKey = devName + '/' + cellName;
+    var targets = sourceMap[sourceKey];
+    for (var i = 0; i < targets.length; i++) {
+      if (dev[targets[i]] !== newValue) {
+        dev[targets[i]] = newValue;
+      }
+    }
   }
 });
 ```
@@ -123,88 +123,67 @@ defineRule({
 - Простая логика — нет дублирования обработчиков
 - wb-rules эффективно обрабатывает массив whenChanged
 
-### 4.2. Lookup-таблица mqttTopicInput → mqttTopicOutputs
+### 4.2. Lookup-таблица источник → цели
 
-Для быстрого поиска mqttTopicOutput по mqttTopicInput строится map при
-инициализации:
+Для быстрого поиска целевых каналов по источнику строится `sourceMap` при инициализации с учётом направления:
 
 ```
 function buildSourceMap(mqttTopicsLinks) {
   var map = {};
   for (var i = 0; i < mqttTopicsLinks.length; i++) {
-    var input = mqttTopicsLinks[i].mqttTopicInput;
-    var output = mqttTopicsLinks[i].mqttTopicOutput;
-    if (!map[input]) {
-      map[input] = [];
+    var l = mqttTopicsLinks[i];
+    if (l.direction === 'forward') {
+      addToMap(map, l.mqttTopicA, l.mqttTopicB);
+    } else if (l.direction === 'backward') {
+      addToMap(map, l.mqttTopicB, l.mqttTopicA);
+    } else if (l.direction === 'both') {
+      addToMap(map, l.mqttTopicA, l.mqttTopicB);
+      addToMap(map, l.mqttTopicB, l.mqttTopicA);
     }
-    map[input].push(output);
   }
   return map;
 }
 ```
 
-Это позволяет за O(1) найти все mqttTopicOutputs для сработавшего
-mqttTopicInput, вместо перебора всего массива mqttTopicsLinks.
+Это позволяет за O(1) найти все цели для сработавшего источника.
 
 ### 4.3. Защита от петель
 
-**Проблема:** Если mqttTopicInput === mqttTopicOutput, запись в mqttTopicOutput
-вызовет повторное срабатывание whenChanged, создавая бесконечный
-цикл.
+**Проблема:** Если канал A совпадает с каналом B, запись вызовет повторное срабатывание `whenChanged`, 
+создавая бесконечный цикл.
 
-**Решение:** Проверка в `validateCfg` — link с
-mqttTopicInput === mqttTopicOutput отклоняется, сценарий не инициализируется.
+**Решение:** Проверка в `validateCfg` — связка с `mqttTopicA === mqttTopicB` отклоняется, 
+сценарий не инициализируется.
 
-Также возможна непрямая петля (A → B и B → A в разных сценариях).
-Защита на уровне одного сценария: проверяем что ни один mqttTopicOutput
-не является mqttTopicInput в другом link этого же сценария.
-Кросс-сценарные петли не проверяются — ответственность пользователя.
+Непрямые петли (A → B и B → A в разных связках) разрешены — они могут быть полезны при использовании 
+направления `both` или комбинации `forward` и `backward`. Кросс-сценарные петли не проверяются — ответственность пользователя.
 
-### 4.4. Проверка совместимости типов
+### 4.4. Проверка совместимости типов и ограничений
 
-При инициализации (`initSpecific`), после того как контролы готовы,
-для каждого link сравниваются типы mqttTopicInput и mqttTopicOutput через
-`dev[device][control + '#type']`. Если типы отличаются — логируется
-warning. Сценарий при этом **не блокируется** — копирование работает
-как обычно.
+При инициализации для каждой связки проверяется совместимость типов каналов через `dev[channel + '#type']`. 
+Если типы отличаются — логируется `warning`, устанавливается флаг `hasIncorrectLinks`.
 
-```
-function checkTypeMismatch(mqttTopicsLinks) {
-  for (var i = 0; i < mqttTopicsLinks.length; i++) {
-    var l = mqttTopicsLinks[i];
-    var inputType = dev[l.mqttTopicInput + '#type'];
-    var outputType = dev[l.mqttTopicOutput + '#type'];
-    if (inputType && outputType && inputType !== outputType) {
-      log.warning(
-        'Type mismatch in link [{}]: "{}" ({}) -> "{}" ({})',
-        i,
-        l.mqttTopicInput,
-        inputType,
-        l.mqttTopicOutput,
-        outputType
-      );
-    }
-  }
-}
-```
+Аналогично проверяются ограничения `min/max` для числовых каналов. Если оба канала имеют ограничения 
+и они не совпадают — логируется `warning`. Сценарий при этом **не блокируется** — копирование работает 
+как обычно, но в виртуальном устройстве появляется контрол-предупреждение.
 
 ### 4.5. Начальная синхронизация
 
-**Проблема:** После старта или перезапуска wb-rules mqttTopicOutput-контролы
-могут содержать устаревшие значения, не совпадающие с текущими mqttTopicInput.
+**Проблема:** После старта или перезапуска wb-rules целевые каналы могут содержать устаревшие значения, 
+не совпадающие с текущими значениями источников.
 
-**Решение:** В `initSpecific`, после создания правила, выполняется
-однократная синхронизация — обход `sourceMap`, чтение текущего
-значения каждого mqttTopicInput через `dev[mqttTopicInput]` и запись во все
-связанные mqttTopicOutputs.
+**Решение:** В `initSpecific`, после создания правил, выполняется однократная синхронизация — обход `sourceMap`, 
+чтение текущего значения каждого источника и запись во все цели (только если значение отличается).
 
 ```
 function initialSync(sourceMap) {
   for (var source in sourceMap) {
-    var input = dev[source];
-    var outputs = sourceMap[source];
-    for (var i = 0; i < outputs.length; i++) {
-      dev[outputs[i]] = input;
+    var sourceValue = dev[source];
+    var targets = sourceMap[source];
+    for (var i = 0; i < targets.length; i++) {
+      if (dev[targets[i]] !== sourceValue) {
+        dev[targets[i]] = sourceValue;
+      }
     }
   }
 }
@@ -215,21 +194,19 @@ function initialSync(sourceMap) {
 
 ### 4.6. Ресинхронизация при re-enable
 
-**Проблема:** Пока сценарий выключен (`rule_enabled = false`),
-пользователь может изменить mqttTopicInput-контролы. При повторном
-включении mqttTopicOutputs содержат устаревшие значения.
+**Проблема:** Пока сценарий выключен (`rule_enabled = false`), значения источников могут измениться. 
+При повторном включении цели содержат устаревшие значения.
 
-**Решение:** Отдельное правило `createEnableRule` наблюдает за
-`rule_enabled`. При переключении в `true` вызывает `initialSync`.
-Правило **не регистрируется** через `addRule()` — оно остаётся
-активным даже когда сценарий выключен.
+**Решение:** Отдельное правило `createEnableRule` наблюдает за `rule_enabled`. При переключении в `true` 
+вызывает `initialSync`. Правило не регистрируется через `addRule()` — оно остаётся активным даже когда 
+сценарий выключен.
 
 ### 4.7. Поведение при перезапуске wb-rules
 
 При перезапуске wb-rules сценарий переинициализируется:
-- Подписки на mqttTopicInput-топики восстанавливаются автоматически
-- Начальная синхронизация копирует текущие mqttTopicInput в mqttTopicOutputs
-- Далее whenChanged-правило обрабатывает все последующие изменения
+- Подписки на источники восстанавливаются автоматически
+- Начальная синхронизация копирует текущие значения источников в цели
+- Далее `whenChanged` правило обрабатывает все последующие изменения
 
 ---
 
@@ -257,53 +234,54 @@ scenarios/
 ChannelMapScenario extends ScenarioBase
 │
 ├── generateNames(idPrefix)
-│   → vDevice, ruleLink, ruleEnable
+│   → vDevice, ruleMap, ruleEnable
 │
 ├── defineControlsWaitConfig(cfg)
-│   → controls: все mqttTopicInput + mqttTopicOutput топики
+│   → controls: все mqttTopicA и mqttTopicB топики
 │
 ├── validateCfg(cfg)
 │   → mqttTopicsLinks: непустой массив
-│   → каждый link: mqttTopicInput и mqttTopicOutput заполнены
-│   → mqttTopicInput !== mqttTopicOutput (нет прямых петель)
-│   → нет непрямых петель внутри сценария
+│   → каждый link: mqttTopicA и mqttTopicB заполнены
+│   → mqttTopicA !== mqttTopicB (нет прямых петель)
+│   → direction: 'forward', 'backward', или 'both'
+│   → проверка типов (warning, hasIncorrectLinks)
+│   → проверка min/max (warning, hasIncorrectLinks)
+│
+├── addCustomControlsToVirtualDevice(self)
+│   → при hasIncorrectLinks добавляет alarm-контрол 'warning'
 │
 └── initSpecific(name, cfg)
     │
-    ├── checkTypeMismatch(mqttTopicsLinks)
-    │   → warning в лог при несовпадении типов mqttTopicInput/mqttTopicOutput
+    ├── addCustomControlsToVirtualDevice(this)
     │
-    ├── buildSourceMap(mqttTopicsLinks)
-    │   → { 'device/control': ['output1/ctrl', 'output2/ctrl'] }
+    ├── buildSourceMap(cfg.mqttTopicsLinks)
+    │   → с учётом direction
     │
     ├── createLinkRule()
     │   defineRule({
     │     whenChanged: sources,
-    │     then: function onSourceChanged(newValue, devName, cellName) {
-    │       var outputs = sourceMap[devName + '/' + cellName];
-    |       if (!outputs) return;
-    │       for (var i = 0; i < outputs.length; i++) {
-    │         dev[outputs[i]] = newValue;
+    │     then: function(newValue, devName, cellName) {
+    │       var targets = sourceMap[devName + '/' + cellName];
+    │       for (var i = 0; i < targets.length; i++) {
+    │         if (dev[targets[i]] !== newValue) {
+    │           dev[targets[i]] = newValue;
+    │         }
     │       }
     │     }
     │   });
     │
     ├── createEnableRule()
     │   defineRule({
-    │     whenChanged: [self.genNames.vDevice + '/rule_enabled'],
-    │     then: function onRuleEnabledChanged(newValue) {
-    │       if (newValue) {
-    |         log.debug('Scenario re-enabled, syncing values');
-    |         initialSync(sourceMap);
-    |       }
+    │     whenChanged: [vDevice + '/rule_enabled'],
+    │     then: function(newValue) {
+    │       if (newValue) initialSync(sourceMap);
     │     }
     │   });
-    │   ⚠ Не регистрируется через addRule() — работает
-    │     даже при выключенном сценарии
+    │   ⚠ Не регистрируется через addRule()
     │
     └── initialSync(sourceMap)
-        → для каждого source: читает текущее значение,
-          копирует во все mqttTopicOutputs
+        → для каждого источника: читает текущее значение,
+          копирует во все цели (только если отличается)
 ```
 
 ---
@@ -315,10 +293,11 @@ ChannelMapScenario extends ScenarioBase
 Поля сценария (в порядке отображения):
 
 - `name` — название сценария (обязательное, maxLength: 30)
-- `idPrefix` — опциональный (скрыт через display_required_only)
+- `idPrefix` — опциональный (скрыт через `display_required_only`)
 - `mqttTopicsLinks` — массив связок (minItems: 1)
-  - `mqttTopicInput` — MQTT-топик источника (wb-autocomplete)
-  - `mqttTopicOutput` — MQTT-топик приёмника (wb-autocomplete)
+  - `mqttTopicA` — MQTT-топик канала A (wb-autocomplete)
+  - `direction` — направление: `forward`, `backward`, `both`
+  - `mqttTopicB` — MQTT-топик канала B (wb-autocomplete)
 
 Скрытые поля:
 - `scenarioType` — `"channelMap"` (hidden)
@@ -334,10 +313,8 @@ ChannelMapScenario extends ScenarioBase
 | Контрол | Тип | Описание |
 |---|---|---|
 | `rule_enabled` | switch | Вкл/выкл сценария (из базового класса) |
-| `state` | value, readonly | Статус: NORMAL / WAITING / DISABLED |
-
-Дополнительные контролы не создаются — сценарий работает
-«прозрачно», без видимого состояния.
+| `state` | value, readonly | Статус: `NORMAL` / `WAITING` / `DISABLED` |
+| `warning` | alarm | Отображается при наличии некорректных связей (type/min/max mismatch) |
 
 ---
 
@@ -353,59 +330,51 @@ ChannelMapScenario extends ScenarioBase
 
 | Поле | Тип | Описание |
 |---|---|---|
-| `mqttTopicInput` | string | MQTT-топик источника: `"device/control"` |
-| `mqttTopicOutput` | string | MQTT-топик приёмника: `"device/control"` |
+| `mqttTopicA` | string | MQTT-топик канала A: `"device/control"` |
+| `direction` | string | Направление: `forward` (A→B), `backward` (B→A), `both` (A↔B) |
+| `mqttTopicB` | string | MQTT-топик канала B: `"device/control"` |
 
 ---
 
 ## 9. Граничные случаи
 
-### 9.1. mqttTopicInput === mqttTopicOutput (прямая петля)
+### 9.1. Прямая петля (mqttTopicA === mqttTopicB)
 
-`validateCfg` отклоняет link с совпадающими mqttTopicInput и mqttTopicOutput.
-Логируется ошибка, сценарий не инициализируется.
+`validateCfg` отклоняет связку с совпадающими каналами. Логируется ошибка, сценарий не инициализируется.
 
-### 9.2. Непрямая петля внутри сценария (A→B + B→A)
+### 9.2. Непрямая петля (A→B и B→A)
 
-`validateCfg` строит множество всех mqttTopicInput и mqttTopicOutput.
-Если пересечение непусто — это потенциальная петля. Сценарий
-отклоняется. Кросс-сценарные петли не проверяются.
+Разрешена. Может быть полезна при использовании направления `both` или комбинации `forward` и `backward` 
+в разных связках. Кросс-сценарные петли не проверяются.
 
-### 9.3. mqttTopicInput-топик не существует
+### 9.3. Канал-источник не существует
 
-`defineControlsWaitConfig` включает все mqttTopicInput-топики в список
-ожидания. Если топик не появится за timeout — сценарий перейдёт
-в состояние `LINKED_CONTROLS_TIMEOUT`.
+`defineControlsWaitConfig` включает все каналы в список ожидания. Если канал не появится за 
+timeout — сценарий перейдёт в состояние `LINKED_CONTROLS_TIMEOUT`.
 
-### 9.4. mqttTopicOutput-топик readonly
+### 9.4. Целевой канал readonly
 
-Запись через `dev[device][control] = value` в readonly-контрол
-wb-rules VD работает без ошибок — readonly блокирует только
-изменение через UI. Это штатное поведение wb-rules, используемое
-во всех сценариях (например, output_power в PID).
+Запись через `dev[target] = value` в readonly-контрол виртуальных устройств wb-rules работает без 
+ошибок — readonly блокирует только изменение через UI. Для контролов внешних драйверов запись может 
+вызвать ошибку — сценарий при этом не падает.
 
-Для контролов внешних драйверов (не VD) readonly запись может
-вызвать ошибку от драйвера. Это ожидаемое поведение — сценарий
-при этом не падает.
+### 9.5. Несколько связок с одним источником
 
-### 9.5. Несколько mqttTopicsLinks с одним mqttTopicInput
-
-`buildSourceMap` группирует все mqttTopicOutputs для каждого source.
-При изменении source значение копируется во все mqttTopicOutputs
-за одно срабатывание правила.
+`buildSourceMap` группирует все цели для каждого источника. При изменении источника значение копируется 
+во все цели за одно срабатывание правила.
 
 ### 9.6. Перезапуск wb-rules
 
-Подписки восстанавливаются автоматически при реинициализации.
-Начальная синхронизация копирует текущие значения mqttTopicInput
-в mqttTopicOutputs, после чего whenChanged-правило обрабатывает
-все последующие изменения.
+Подписки восстанавливаются автоматически при реинициализации. Начальная синхронизация копирует текущие 
+значения источников в цели.
 
-### 9.7. Частые изменения mqttTopicInput
+### 9.7. Частые изменения источника
 
-Каждое изменение приводит к копированию. Throttle не применяется —
-это ожидаемое поведение для привязки контролов. wb-rules обработает
-все изменения последовательно.
+Каждое изменение приводит к копированию. Throttle не применяется — это ожидаемое поведение для привязки каналов.
+
+### 9.8. Несовместимость типов или ограничений
+Логируется `warning`, в виртуальном устройстве появляется красный индикатор (warning). Сценарий продолжает 
+работать — копирование выполняется как обычно.
 
 ---
 
@@ -414,7 +383,7 @@ wb-rules VD работает без ошибок — readonly блокирует
 ### Этап 1: JSON Schema
 
 - Определение `channelMap` в `wb-scenarios.schema.json`
-- `mqttTopicsLinks` как массив объектов с `mqttTopicInput`/`mqttTopicOutput`
+- `mqttTopicsLinks` как массив объектов с `mqttTopicA`, `direction`, `mqttTopicB`
 - Переводы en + ru для всех полей
 
 ### Этап 2: Модуль сценария + инициализация
@@ -439,5 +408,5 @@ wb-rules VD работает без ошибок — readonly блокирует
 | Проблема | Приоритет | Предложение |
 |---|---|---|
 | Нет трансформаций | Средний | v2: опциональное поле `transform` в каждом link |
-| Кросс-сценарные петли не проверяются | Низкий | Глобальный реестр всех mqttTopicsLinks |
+| Кросс-сценарные петли не проверяются | Низкий | Глобальный реестр всех связок |
 | Нет индикации последней активности | Низкий | Контрол `last_activity` с временем последнего копирования |

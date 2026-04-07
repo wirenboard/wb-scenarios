@@ -1688,10 +1688,10 @@
             "title": "channelMapLinkObjTitle",
             "type": "object",
             "properties": {
-              "mqttTopicInput": {
+              "mqttTopicA": {
                 "type": "string",
                 "propertyOrder": 1,
-                "title": "channelMapInputTitle",
+                "title": "channelMapATitle",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -1705,10 +1705,24 @@
                 },
                 "minLength": 3
               },
-              "mqttTopicOutput": {
+              "direction": {
                 "type": "string",
+                "title": "channelMapDirectionTitle",
+                "enum": ["forward", "backward", "both"],
+                "default": "forward",
                 "propertyOrder": 2,
-                "title": "channelMapOutputTitle",
+                "options": {
+                  "enum_titles": [
+                    "channelMapDirectionForward",
+                    "channelMapDirectionBackward",
+                    "channelMapDirectionBoth"
+                  ]
+                }
+              },
+              "mqttTopicB": {
+                "type": "string",
+                "propertyOrder": 3,
+                "title": "channelMapBTitle",
                 "pattern": "^[^/+#]+/[^/+#]+$",
                 "_format": "wb-autocomplete",
                 "options": {
@@ -1723,7 +1737,7 @@
                 "minLength": 3
               }
             },
-            "required": ["mqttTopicInput", "mqttTopicOutput"]
+            "required": ["mqttTopicA", "direction", "mqttTopicB"]
           }
         }
       },
@@ -1892,12 +1906,16 @@
       "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop.",
 
       "channelMapScenarioName": "Channel Mapping",
-      "channelMapScenarioDescription": "Any value change on the input will be automatically copied to the specified output.",
+      "channelMapScenarioDescription": "Any value change on channel A will be copied to channel B according to the selected direction.",
       "channelMapDefaultInputName": "Channel Mapping",
       "channelMapLinksTitle": "Mapping Table",
       "channelMapLinkObjTitle": "Add",
-      "channelMapInputTitle": "Input Channel",
-      "channelMapOutputTitle": "Output Channel"
+      "channelMapATitle": "Channel A",
+      "channelMapBTitle": "Channel B",
+      "channelMapDirectionTitle": "Direction",
+      "channelMapDirectionForward": "A → B",
+      "channelMapDirectionBackward": "B → A",
+      "channelMapDirectionBoth": "A ↔ B"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -2041,12 +2059,16 @@
       "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении.",
 
       "channelMapScenarioName": "Маппинг каналов",
-      "channelMapScenarioDescription": "Любое изменение значения на входе будет автоматически скопировано в указанный выход.",
+      "channelMapScenarioDescription": "Любое изменение значения на канале A будет копироваться в канал B в соответствии с выбранным направлением.",
       "channelMapDefaultInputName": "Маппинг каналов",
       "channelMapLinksTitle": "Таблица маппинга",
       "channelMapLinkObjTitle": "Добавить",
-      "channelMapInputTitle": "Канал Входа",
-      "channelMapOutputTitle": "Канал Выхода"
+      "channelMapATitle": "Канал A",
+      "channelMapBTitle": "Канал B",
+      "channelMapDirectionTitle": "Направление",
+      "channelMapDirectionForward": "A → B",
+      "channelMapDirectionBackward": "B → A",
+      "channelMapDirectionBoth": "A ↔ B"
     }
   }
 }

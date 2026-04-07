@@ -1,8 +1,8 @@
 /**
  * @file channel-map.mod.js - ES5 module for wb-rules v2.38
  * @description Channel Map scenario class that extends ScenarioBase.
- *   Copies values from mqttTopicInput controls to mqttTopicOutput controls.
- *   Uses a single whenChanged rule with a mqttTopicInput → mqttTopicOutputs lookup map.
+ *   Copies values between MQTT controls according to direction (forward, backward, or both).
+ *   Uses a single whenChanged rule with a source → targets lookup map.
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
@@ -13,10 +13,13 @@ var Logger = require('logger.mod').Logger;
 var loggerFileLabel = 'WBSC-channel-map-mod';
 var log = new Logger(loggerFileLabel);
 
+var VALID_DIRECTIONS = ['forward', 'backward', 'both'];
+
 /**
  * @typedef {Object} LinkEntry
- * @property {string} mqttTopicInput - Source MQTT topic 'device/control'
- * @property {string} mqttTopicOutput - Destination MQTT topic 'device/control'
+ * @property {string} mqttTopicA - First MQTT topic 'device/control'
+ * @property {string} direction - Direction: 'forward', 'backward', or 'both'
+ * @property {string} mqttTopicB - Second MQTT topic 'device/control'
  */
 
 /**
@@ -27,7 +30,7 @@ var log = new Logger(loggerFileLabel);
 
 /**
  * @typedef {Object<string, string[]>} SourceMap
- * Map of mqttTopicInput topic to array of mqttTopicOutput topics.
+ * Map of source MQTT topic to array of target MQTT topics.
  * Example: { 'wb-gpio/A1_OUT': ['wb-gpio/A2_OUT', 'wb-gpio/A3_OUT'] }
  */
 
@@ -43,7 +46,9 @@ function ChannelMapScenario() {
    * Context object for storing scenario runtime state
    * @type {Object}
    */
-  this.ctx = {};
+  this.ctx = {
+    hasIncorrectLinks: false,   // Flag indicating if any link has type or min/max mismatches
+  };
 }
 
 // Set up inheritance
@@ -70,20 +75,19 @@ ChannelMapScenario.prototype.generateNames =
  * @param {ChannelMapConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
-ChannelMapScenario.prototype.defineControlsWaitConfig =
-  function (cfg) {
-    var allTopics = [];
-    for (var i = 0; i < cfg.mqttTopicsLinks.length; i++) {
-      var l = cfg.mqttTopicsLinks[i];
-      if (allTopics.indexOf(l.mqttTopicInput) === -1) {
-        allTopics.push(l.mqttTopicInput);
-      }
-      if (allTopics.indexOf(l.mqttTopicOutput) === -1) {
-        allTopics.push(l.mqttTopicOutput);
-      }
+ChannelMapScenario.prototype.defineControlsWaitConfig = function(cfg) {
+  var allTopics = [];
+  for (var i = 0; i < cfg.mqttTopicsLinks.length; i++) {
+    var l = cfg.mqttTopicsLinks[i];
+    if (allTopics.indexOf(l.mqttTopicA) === -1) {
+      allTopics.push(l.mqttTopicA);
     }
-    return { controls: allTopics };
-  };
+    if (allTopics.indexOf(l.mqttTopicB) === -1) {
+      allTopics.push(l.mqttTopicB);
+    }
+  }
+  return { controls: allTopics };
+};
 
 /**
  * Configuration validation
@@ -96,110 +100,148 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
     return false;
   }
 
-  var mqttTopicInputs = {};
-  var mqttTopicOutputs = {};
-
   for (var i = 0; i < cfg.mqttTopicsLinks.length; i++) {
     var l = cfg.mqttTopicsLinks[i];
 
-    if (!l.mqttTopicInput || !l.mqttTopicOutput) {
-      log.error(
-        'Link [{}]: input and output are required',
-        i
-      );
+    if (!l.mqttTopicA || !l.mqttTopicB) {
+      log.error('Link [{}]: channel A and channel B are required', i);
       return false;
     }
 
     // Direct loop check
-    if (l.mqttTopicInput === l.mqttTopicOutput) {
-      log.error(
-        'Link [{}]: input and output must differ: "{}"',
+    if (l.mqttTopicA === l.mqttTopicB) {
+      log.error('Link [{}]: channel A and channel B must differ: "{}"', i, l.mqttTopicA);
+      return false;
+    }
+
+    if (VALID_DIRECTIONS.indexOf(l.direction) === -1) {
+      log.error('Link [{}]: invalid direction "{}"', i, l.direction);
+      return false;
+    }
+
+    var typeA = dev[l.mqttTopicA + '#type'];
+    var typeB = dev[l.mqttTopicB + '#type'];
+
+    // Type mismatch check
+    if (typeA && typeB && typeA !== typeB) {
+      log.warning(
+        'Type mismatch in link [{}]: "{}" ({}) <-> "{}" ({})',
         i,
-        l.mqttTopicInput
+        l.mqttTopicA,
+        typeA,
+        l.mqttTopicB,
+        typeB
       );
-      return false;
+      this.ctx.hasIncorrectLinks = true;
     }
 
-    mqttTopicInputs[l.mqttTopicInput] = true;
-    mqttTopicOutputs[l.mqttTopicOutput] = true;
-  }
-
-  // Indirect loop check within this scenario
-  for (var output in mqttTopicOutputs) {
-    if (mqttTopicInputs[output]) {
-      log.error(
-        'Indirect loop detected: "{}" is both input and'
-        + ' output in this scenario',
-        output
-      );
-      return false;
+    var minA = dev[l.mqttTopicA + '#min'];
+    var maxA = dev[l.mqttTopicA + '#max'];
+    var minB = dev[l.mqttTopicB + '#min'];
+    var maxB = dev[l.mqttTopicB + '#max'];
+    
+    // Min/max constraints check (if both controls have numeric constraints)
+    if ((minA !== undefined || maxA !== undefined) && (minB !== undefined || maxB !== undefined)) {
+      if (minA !== minB || maxA !== maxB) {
+        log.warning(
+          'Link [{}]: min/max constraints differ: "{}" (min:{}, max:{}) <-> "{}" (min:{}, max:{})',
+          i,
+          l.mqttTopicA,
+          minA,
+          maxA,
+          l.mqttTopicB,
+          minB,
+          maxB
+        );
+        this.ctx.hasIncorrectLinks = true;
+      }
     }
   }
-
-  checkTypeMismatch(cfg.mqttTopicsLinks);
 
   return true;
 };
 
 /**
- * Builds a lookup map: mqttTopicInput topic -> array of mqttTopicOutputs
+ * Builds a lookup map: source topic -> array of target topics
  * @param {Array<LinkEntry>} mqttTopicsLinks - List of links
- * @returns {SourceMap} Map of mqttTopicInput -> mqttTopicOutputs
+ * @returns {SourceMap} Map of source -> targets
  */
 function buildSourceMap(mqttTopicsLinks) {
   var map = {};
   for (var i = 0; i < mqttTopicsLinks.length; i++) {
-    var input = mqttTopicsLinks[i].mqttTopicInput;
-    var output = mqttTopicsLinks[i].mqttTopicOutput;
-    if (!map[input]) {
-      map[input] = [];
+    var l = mqttTopicsLinks[i];
+    
+    if (l.direction === 'forward') {
+      addToMap(map, l.mqttTopicA, l.mqttTopicB);
+    } else if (l.direction === 'backward') {
+      addToMap(map, l.mqttTopicB, l.mqttTopicA);
+    } else if (l.direction === 'both') {
+      addToMap(map, l.mqttTopicA, l.mqttTopicB);
+      addToMap(map, l.mqttTopicB, l.mqttTopicA);
     }
-    map[input].push(output);
   }
   return map;
 }
 
 /**
- * Logs warnings for mqttTopicsLinks where mqttTopicInput and mqttTopicOutput
- * control types differ
- * @param {Array<LinkEntry>} mqttTopicsLinks - List of links
+ * Adds a mapping from source to target in the map, avoiding duplicates
+ * @param {SourceMap} map - The map to modify
+ * @param {string} source - Source MQTT topic
+ * @param {string} target - Target MQTT topic
  */
-function checkTypeMismatch(mqttTopicsLinks) {
-  for (var i = 0; i < mqttTopicsLinks.length; i++) {
-    var l = mqttTopicsLinks[i];
-    var inputType = dev[l.mqttTopicInput + '#type'];
-    var outputType = dev[l.mqttTopicOutput + '#type'];
-    if (inputType && outputType && inputType !== outputType) {
-      log.warning(
-        'Type mismatch in link [{}]: "{}" ({}) -> "{}" ({})',
-        i,
-        l.mqttTopicInput,
-        inputType,
-        l.mqttTopicOutput,
-        outputType
-      );
-    }
+function addToMap(map, source, target) {
+  if (!map[source]) {
+    map[source] = [];
+  }
+  if (map[source].indexOf(target) === -1) {
+    map[source].push(target);
   }
 }
 
 /**
- * Copies current mqttTopicInput values to all mqttTopicOutputs
- * @param {SourceMap} sourceMap - mqttTopicInput to mqttTopicOutputs map
+ * Copies current source values to all targets
+ * @param {SourceMap} sourceMap - Map of source -> targets
  */
 function initialSync(sourceMap) {
   for (var source in sourceMap) {
-    var input = dev[source];
-    var outputs = sourceMap[source];
-    for (var i = 0; i < outputs.length; i++) {
-      dev[outputs[i]] = input;
+    var sourceValue = dev[source];
+    var targets = sourceMap[source];
+
+    for (var i = 0; i < targets.length; i++) {
+      var target = targets[i];
+      var currentValue = dev[target];
+      
+      if (currentValue !== sourceValue) {
+        dev[target] = sourceValue;
+      }
     }
   }
 }
 
 /**
- * Creates the link rule that copies values from mqttTopicInputs to mqttTopicOutputs.
+ * Adds custom controls to virtual device
+ * @param {ChannelMapScenario} self - Reference to the ChannelMapScenario instance
+ */
+function addCustomControlsToVirtualDevice(self) {
+  if (self.ctx.hasIncorrectLinks) {
+    self.vd.devObj.addControl('warning', {
+      title: {
+        en: 'Some links work incorrectly, see logs',
+        ru: 'Некоторые связи работают некорректно, см. логи',
+      },
+      type: 'alarm',
+      value: 1,
+      readonly: true,
+      forceDefault: true,
+      order: 10,
+    });
+  }
+}
+
+/**
+ * Creates the link rule that copies values from sources to targets.
  * @param {ChannelMapScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - mqttTopicInput to mqttTopicOutputs map
+ * @param {SourceMap} sourceMap - Map of source -> targets
  * @returns {boolean} True if rule created successfully
  */
 function createLinkRule(self, sourceMap) {
@@ -209,10 +251,16 @@ function createLinkRule(self, sourceMap) {
   var ruleId = defineRule(self.genNames.ruleMap, {
     whenChanged: sources,
     then: function onSourceChanged(newValue, devName, cellName) {
-      var outputs = sourceMap[devName + '/' + cellName];
-      if (!outputs) return;
-      for (var i = 0; i < outputs.length; i++) {
-        dev[outputs[i]] = newValue;
+      var targets = sourceMap[devName + '/' + cellName];
+
+      if (!targets) return;
+
+      for (var i = 0; i < targets.length; i++) {
+        var target = targets[i];
+        var currentValue = dev[target];
+        if (currentValue !== newValue) {
+          dev[target] = newValue;
+        }
       }
     },
   });
@@ -231,7 +279,7 @@ function createLinkRule(self, sourceMap) {
  * Intentionally NOT registered via addRule() so it stays active
  * even when the scenario is disabled.
  * @param {ChannelMapScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - mqttTopicInput to mqttTopicOutputs map
+ * @param {SourceMap} sourceMap - Map of source -> targets
  * @returns {boolean} True if rule created successfully
  */
 function createEnableRule(self, sourceMap) {
@@ -258,7 +306,7 @@ function createEnableRule(self, sourceMap) {
 /**
  * Create all rules for the scenario.
  * @param {ChannelMapScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - mqttTopicInput to mqttTopicOutputs map
+ * @param {SourceMap} sourceMap - Map of source -> targets
  * @returns {boolean} True if all rules created successfully
  */
 function createRules(self, sourceMap) {
@@ -280,13 +328,22 @@ function createRules(self, sourceMap) {
  * @param {ChannelMapConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
-ChannelMapScenario.prototype.initSpecific =
-  function (deviceTitle, cfg) {
+ChannelMapScenario.prototype.initSpecific = function (deviceTitle, cfg) {
+    /**
+     * NOTE: This method is executed ONLY when:
+     * - Base initialization is complete
+     * - Configuration is valid
+     * - All referenced controls exist in the system
+     * 
+     * The async initialization chain guarantees that all prerequisites are met.
+     * No need to re-validate or check control existence here.
+     */
     log.debug('Start init channel map scenario');
     log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
-    var sourceMap = buildSourceMap(cfg.mqttTopicsLinks);
+    addCustomControlsToVirtualDevice(this);
 
+    var sourceMap = buildSourceMap(cfg.mqttTopicsLinks);
     var rulesCreated = createRules(this, sourceMap);
 
     if (rulesCreated) {
