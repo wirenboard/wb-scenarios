@@ -119,6 +119,49 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
       return false;
     }
 
+    // Duplicate/overlap check against all previous links
+    for (var j = 0; j < i; j++) {
+      var prev = cfg.mqttTopicsLinks[j];
+      var samePair =
+        (l.mqttTopicA === prev.mqttTopicA &&
+          l.mqttTopicB === prev.mqttTopicB) ||
+        (l.mqttTopicA === prev.mqttTopicB &&
+          l.mqttTopicB === prev.mqttTopicA);
+
+      if (!samePair) continue;
+
+      // When A/B are swapped, forward↔backward are inverted
+      var existingDir = prev.direction;
+      if (existingDir !== 'both' &&
+          l.mqttTopicA === prev.mqttTopicB &&
+          l.mqttTopicB === prev.mqttTopicA) {
+        existingDir = existingDir === 'forward'
+          ? 'backward' : 'forward';
+      }
+
+      if (existingDir === 'both') {
+        log.warning(
+          'Link [{}]: already covered by link [{}]' +
+            ' ("{}" both "{}"), this link has no effect',
+          i, j, prev.mqttTopicA, prev.mqttTopicB
+        );
+      } else if (l.direction === 'both') {
+        log.warning(
+          'Link [{}]: "both" covers link [{}]' +
+            ' ("{}" {} "{}"), link [{}] has no effect',
+          i, j, prev.mqttTopicA, prev.direction,
+          prev.mqttTopicB, j
+        );
+      } else if (l.direction === existingDir) {
+        log.warning(
+          'Link [{}]: duplicate of link [{}]' +
+            ' ("{}" {} "{}"), this link has no effect',
+          i, j, prev.mqttTopicA, prev.direction,
+          prev.mqttTopicB
+        );
+      }
+    }
+
     var typeA = dev[l.mqttTopicA + '#type'];
     var typeB = dev[l.mqttTopicB + '#type'];
 
@@ -240,6 +283,14 @@ function addCustomControlsToVirtualDevice(self) {
 
 /**
  * Creates the link rule that copies values from sources to targets.
+ * Uses a generation counter to prevent infinite loops with pushbutton controls.
+ *
+ * For non-pushbutton controls: standard value comparison (dev[target] !== newValue).
+ * For pushbutton controls: each user press increments a generation counter.
+ *   All writes within the same cascade share the same generation number.
+ *   If a target was already written in the current generation, it is skipped.
+ *   This handles all topologies: pairs, chains, meshes, and cycles.
+ *
  * @param {ChannelMapScenario} self - Scenario instance
  * @param {SourceMap} sourceMap - Map of source -> targets
  * @returns {boolean} True if rule created successfully
@@ -248,18 +299,52 @@ function createLinkRule(self, sourceMap) {
   log.debug('Creating link rule');
   var sources = Object.keys(sourceMap);
 
+  // Cascade counter: incremented on each user press, shared across the wave
+  var pbGeneration = 0;
+  // Topic → generation number when it was last written in a cascade
+  var pbWrittenGen = {};
+  // Topic → true if we wrote to it (consumed on echo to distinguish from user press)
+  var pbWrittenByUs = {};
+
   var ruleId = defineRule(self.genNames.ruleMap, {
     whenChanged: sources,
     then: function onSourceChanged(newValue, devName, cellName) {
-      var targets = sourceMap[devName + '/' + cellName];
+      var source = devName + '/' + cellName;
+      var targets = sourceMap[source];
 
       if (!targets) return;
 
+      var isPbSource = dev[source + '#type'] === 'pushbutton';
+      var isEcho = isPbSource && pbWrittenByUs[source];
+
+      if (isPbSource) {
+        if (isEcho) {
+          delete pbWrittenByUs[source];
+        } else {
+          pbGeneration++;
+          pbWrittenGen[source] = pbGeneration;
+        }
+      } else {
+        // Non-pushbutton source starts a new generation so stale
+        // pbWrittenGen entries from previous cascades don't block writes
+        pbGeneration++;
+      }
+
       for (var i = 0; i < targets.length; i++) {
         var target = targets[i];
-        var currentValue = dev[target];
-        if (currentValue !== newValue) {
+        var isPbTarget = dev[target + '#type'] === 'pushbutton';
+
+        if (isPbTarget) {
+          if (pbWrittenGen[target] === pbGeneration) {
+            continue;
+          }
+          pbWrittenByUs[target] = true;
+          pbWrittenGen[target] = pbGeneration;
           dev[target] = newValue;
+        } else {
+          if (dev[target] !== newValue) {
+            dev[target] = newValue;
+          }
         }
       }
     },

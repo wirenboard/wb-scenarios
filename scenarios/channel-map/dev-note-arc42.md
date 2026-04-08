@@ -158,6 +158,44 @@ function buildSourceMap(mqttTopicsLinks) {
 Непрямые петли (A → B и B → A в разных связках) разрешены — они могут быть полезны при использовании 
 направления `both` или комбинации `forward` и `backward`. Кросс-сценарные петли не проверяются — ответственность пользователя.
 
+Дополнительно `validateCfg` проверяет дублирование и перекрытие связок: если одна и та же пара каналов 
+указана несколько раз, в лог пишется warning. При перевёрнутом порядке каналов (A/B ↔ B/A) направление 
+нормализуется для корректного сравнения (`forward` ↔ `backward`).
+
+### 4.8. Поддержка pushbutton (generation counter)
+
+**Проблема:** Контролы типа `pushbutton` — stateless, значение всегда `1`. Стандартная проверка 
+`dev[target] !== newValue` не работает: после первого нажатия значение уже `1`, повторные нажатия 
+не проходят. Если убрать проверку — при `both` направлении возникает бесконечный цикл A→B→A→B...
+
+**Решение:** Механизм счётчика поколений (generation counter). Три переменные в замыкании `createLinkRule`:
+
+- `pbGeneration` — инкрементируется при каждом новом пользовательском нажатии или изменении 
+  non-pushbutton источника
+- `pbWrittenGen[topic]` — номер поколения, в котором topic был последний раз записан
+- `pbWrittenByUs[topic]` — флаг, что мы записали в topic (удаляется при получении эхо)
+
+**Алгоритм:**
+
+1. При получении события `whenChanged`:
+   - Если source — pushbutton и `pbWrittenByUs[source]` установлен → это эхо, удаляем флаг
+   - Если source — pushbutton и флага нет → новое нажатие, `pbGeneration++`
+   - Если source — не pushbutton → всегда `pbGeneration++`
+2. Для каждого target:
+   - Если target — pushbutton и `pbWrittenGen[target] === pbGeneration` → skip (уже записан в этой волне)
+   - Иначе → помечаем `pbWrittenByUs[target]`, записываем `pbWrittenGen[target]`, пишем значение
+   - Если target — не pushbutton → стандартная проверка `!== newValue`
+
+**Проверенные топологии:**
+
+| Топология | Поведение |
+|---|---|
+| Пара A↔B | A пишет B, эхо B пропускает A (помечен) |
+| Цепочка A→B→C | Каскад проходит до C, поколение общее |
+| 3 взаимные A↔B↔C | A помечает B и C, эхо B и C — все помечены, skip |
+| Цикл A→B→C→A | Каскад до A, A уже помечен — skip |
+| Switch→Pushbutton | Новое поколение от non-pb source, запись проходит |
+
 ### 4.4. Проверка совместимости типов и ограничений
 
 При инициализации для каждой связки проверяется совместимость типов каналов через `dev[channel + '#type']`. 
@@ -244,6 +282,7 @@ ChannelMapScenario extends ScenarioBase
 │   → каждый link: mqttTopicA и mqttTopicB заполнены
 │   → mqttTopicA !== mqttTopicB (нет прямых петель)
 │   → direction: 'forward', 'backward', или 'both'
+│   → проверка дубликатов/перекрытий (warning, нормализация направления)
 │   → проверка типов (warning, hasIncorrectLinks)
 │   → проверка min/max (warning, hasIncorrectLinks)
 │
@@ -255,15 +294,12 @@ ChannelMapScenario extends ScenarioBase
     │   → с учётом direction
     │
     ├── createLinkRule()
+    │   Замыкание: pbGeneration, pbWrittenGen, pbWrittenByUs
     │   defineRule({
     │     whenChanged: sources,
     │     then: function(newValue, devName, cellName) {
-    │       var targets = sourceMap[devName + '/' + cellName];
-    │       for (var i = 0; i < targets.length; i++) {
-    │         if (dev[targets[i]] !== newValue) {
-    │           dev[targets[i]] = newValue;
-    │         }
-    │       }
+    │       // Pushbutton: generation counter для предотвращения петель
+    │       // Non-pushbutton: стандартная проверка dev[target] !== newValue
     │     }
     │   });
     │
@@ -373,7 +409,36 @@ timeout — сценарий перейдёт в состояние `LINKED_CONT
 Логируется `warning`, в виртуальном устройстве появляется красный индикатор (warning). Сценарий продолжает 
 работать — копирование выполняется как обычно.
 
-### 9.9. Начальная синхронизация при `both` с разными значениями
+### 9.9. Pushbutton: петля при `both`
+
+При `both` направлении между двумя pushbutton нажатие A записывает в B, эхо B пытается записать 
+обратно в A. Стандартная проверка `!== newValue` не помогает (значение всегда `1`). Решение — 
+generation counter (см. 4.8): эхо определяется через `pbWrittenByUs`, повторная запись блокируется 
+через `pbWrittenGen`.
+
+### 9.10. Pushbutton: цепочка A→B→C
+
+При цепочке forward-ссылок запись должна каскадировать. Generation counter это обеспечивает: 
+эхо B не блокирует запись в C, потому что C ещё не помечен текущим поколением.
+
+### 9.11. Pushbutton: нет retained value
+
+Контролы `pushbutton` не публикуют retained-значение при создании. `isControlReady()` в ScenarioBase 
+проверяет `dev[controlPath] !== null`. Если pushbutton ни разу не был нажат, его значение — `null`, 
+и сценарий ждёт 60 секунд (таймаут). Известная проблема — см. раздел 11.
+
+### 9.12. Switch → Pushbutton
+
+Когда non-pushbutton источник (switch, range) записывает в pushbutton target, generation counter 
+инкрементируется (`pbGeneration++`), чтобы устаревшие метки от предыдущих каскадов не блокировали запись.
+
+### 9.13. Дубликаты связок с перевёрнутыми каналами
+
+Связка `B forward A` — это то же самое, что `A backward B`. При проверке дубликатов направление 
+нормализуется с учётом порядка каналов, чтобы корректно определить: это дубликат, перекрытие или 
+самостоятельная связка.
+
+### 9.14. Начальная синхронизация при `both` с разными значениями
 
 При направлении `both` в `sourceMap` присутствуют оба направления: A→B и B→A. Если при старте 
 значения каналов различаются (например, A=1, B=2), результат `initialSync` зависит от порядка 
@@ -405,6 +470,13 @@ timeout — сценарий перейдёт в состояние `LINKED_CONT
 - README.md написан
 - arc42 актуализирован
 
+### Этап 5: Поддержка pushbutton
+
+- Generation counter для предотвращения петель между pushbutton-контролами
+- Поддержка смешанных связок (switch → pushbutton, pushbutton → pushbutton)
+- Проверка дубликатов/перекрытий связок с нормализацией направления
+- Документация обновлена (README.md, arc42)
+
 ---
 
 ## 11. Технический долг / Возможные улучшения
@@ -414,3 +486,4 @@ timeout — сценарий перейдёт в состояние `LINKED_CONT
 | Нет трансформаций | Средний | v2: опциональное поле `transform` в каждом link |
 | Кросс-сценарные петли не проверяются | Низкий | Глобальный реестр всех связок |
 | Нет индикации последней активности | Низкий | Контрол `last_activity` с временем последнего копирования |
+| Pushbutton без retained value блокирует инициализацию | Средний | `isControlReady()` в ScenarioBase считать контрол готовым по наличию `#type`, а не значения |
