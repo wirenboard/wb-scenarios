@@ -1,8 +1,9 @@
 /**
  * @file channel-map.mod.js - ES5 module for wb-rules v2.38
  * @description Channel Map scenario class that extends ScenarioBase.
- *   Copies values between MQTT controls according to direction (forward, backward, or both).
- *   Uses a single whenChanged rule with a source → targets lookup map.
+ *   Copies values between MQTT controls according to
+ *   direction (forward, backward, or both).
+ *   Uses a single whenChanged rule with a source-to-targets lookup map.
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
@@ -47,7 +48,16 @@ function ChannelMapScenario() {
    * @type {Object}
    */
   this.ctx = {
-    hasIncorrectLinks: false,   // Flag indicating if any link has type or min/max mismatches
+    hasIncorrectLinks: false,
+    // Cascade counter: incremented on each user press.
+    // After 5 presses: cascadeId = 5
+    cascadeId: 0,
+    // Topic : cascade ID when last written.
+    // { 'wb-gpio/A1_OUT': 5, 'wb-gpio/A2_OUT': 5 }
+    writtenInCascade: {},
+    // Topic : true if we wrote (cleared on echo).
+    // { 'wb-gpio/A2_OUT': true }
+    echoExpected: {},
   };
 }
 
@@ -110,12 +120,18 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
 
     // Direct loop check
     if (l.mqttTopicA === l.mqttTopicB) {
-      log.error('Link [{}]: channels must differ: "{}"', i, l.mqttTopicA);
+      log.error(
+        'Link [{}]: channels must differ: "{}"',
+        i, l.mqttTopicA
+      );
       return false;
     }
 
     if (VALID_DIRECTIONS.indexOf(l.direction) === -1) {
-      log.error('Link [{}]: invalid direction "{}"', i, l.direction);
+      log.error(
+        'Link [{}]: invalid direction "{}"',
+        i, l.direction
+      );
       return false;
     }
 
@@ -130,7 +146,7 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
 
       if (!samePair) continue;
 
-      // When A/B are swapped, forward↔backward are inverted
+      // When A/B are swapped, forward/backward are inverted
       var existingDir = prev.direction;
       if (existingDir !== 'both' &&
           l.mqttTopicA === prev.mqttTopicB &&
@@ -183,18 +199,21 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
     var minB = dev[l.mqttTopicB + '#min'];
     var maxB = dev[l.mqttTopicB + '#max'];
     
-    // Min/max constraints check (if both controls have numeric constraints)
-    if ((minA !== undefined || maxA !== undefined) && (minB !== undefined || maxB !== undefined)) {
+    // Min/max constraints check
+    var hasConstraintsA =
+      minA !== undefined || maxA !== undefined;
+    var hasConstraintsB =
+      minB !== undefined || maxB !== undefined;
+
+    if (hasConstraintsA && hasConstraintsB) {
       if (minA !== minB || maxA !== maxB) {
         log.warning(
-          'Link [{}]: min/max constraints differ: "{}" (min:{}, max:{}) and "{}" (min:{}, max:{})',
+          'Link [{}]: min/max differ:' +
+            ' "{}" (min:{}, max:{})' +
+            ' and "{}" (min:{}, max:{})',
           i,
-          l.mqttTopicA,
-          minA,
-          maxA,
-          l.mqttTopicB,
-          minB,
-          maxB
+          l.mqttTopicA, minA, maxA,
+          l.mqttTopicB, minB, maxB
         );
         this.ctx.hasIncorrectLinks = true;
       }
@@ -205,9 +224,9 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
 };
 
 /**
- * Builds a lookup map: source topic -> array of target topics
+ * Builds a lookup map: source topic to array of target topics
  * @param {Array<LinkEntry>} mqttTopicsLinks - List of links
- * @returns {SourceMap} Map of source -> targets
+ * @returns {SourceMap} Map of source to targets
  */
 function buildSourceMap(mqttTopicsLinks) {
   var map = {};
@@ -242,26 +261,6 @@ function addToMap(map, source, target) {
 }
 
 /**
- * Copies current source values to all targets
- * @param {SourceMap} sourceMap - Map of source -> targets
- */
-function initialSync(sourceMap) {
-  for (var source in sourceMap) {
-    var sourceValue = dev[source];
-    var targets = sourceMap[source];
-
-    for (var i = 0; i < targets.length; i++) {
-      var target = targets[i];
-      var currentValue = dev[target];
-
-      if (currentValue !== sourceValue) {
-        dev[target] = sourceValue;
-      }
-    }
-  }
-}
-
-/**
  * Adds custom controls to virtual device
  * @param {ChannelMapScenario} self - Reference to the ChannelMapScenario instance
  */
@@ -282,29 +281,18 @@ function addCustomControlsToVirtualDevice(self) {
 }
 
 /**
- * Creates the link rule that copies values from sources to targets.
- * Uses a generation counter to prevent infinite loops with pushbutton controls.
+ * Creates the link rule that copies values from sources
+ * to targets. Uses cascade counter (ctx) to prevent
+ * infinite loops with pushbutton controls.
  *
- * For non-pushbutton controls: standard value comparison (dev[target] !== newValue).
- * For pushbutton controls: each user press increments a generation counter.
- *   All writes within the same cascade share the same generation number.
- *   If a target was already written in the current generation, it is skipped.
- *   This handles all topologies: pairs, chains, meshes, and cycles.
- *
- * @param {ChannelMapScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - Map of source -> targets
+ * @param {ChannelMapScenario} self - Reference to the ChannelMapScenario instance
+ * @param {SourceMap} sourceMap - Map of source to targets
  * @returns {boolean} True if rule created successfully
  */
 function createLinkRule(self, sourceMap) {
   log.debug('Creating link rule');
   var sources = Object.keys(sourceMap);
-
-  // Cascade counter: incremented on each user press, shared across the wave
-  var pbGeneration = 0;
-  // Topic → generation number when it was last written in a cascade
-  var pbWrittenGen = {};
-  // Topic → true if we wrote to it (consumed on echo to distinguish from user press)
-  var pbWrittenByUs = {};
+  var ctx = self.ctx;
 
   var ruleId = defineRule(self.genNames.ruleMap, {
     whenChanged: sources,
@@ -312,22 +300,31 @@ function createLinkRule(self, sourceMap) {
       var source = devName + '/' + cellName;
       var targets = sourceMap[source];
 
-      if (!targets) return;
+      // --- Pushbutton cascade protection ---
+      // Pushbutton is stateless (value always 1), so
+      // dev[target] !== newValue can't prevent loops.
+      // Instead, each user press gets a unique cascadeId.
+      // All writes within one cascade share the same ID.
+      // If a target was already written in this cascade,
+      // it is skipped. Works for all topologies: pairs,
+      // chains, meshes, and cycles.
+      //
+      // Non-pushbutton: standard check !== newValue.
 
       var isPbSource = dev[source + '#type'] === 'pushbutton';
-      var isEcho = isPbSource && pbWrittenByUs[source];
+      var isEcho = isPbSource && ctx.echoExpected[source];
 
       if (isPbSource) {
         if (isEcho) {
-          delete pbWrittenByUs[source];
+          delete ctx.echoExpected[source];
         } else {
-          pbGeneration++;
-          pbWrittenGen[source] = pbGeneration;
+          ctx.cascadeId++;
+          ctx.writtenInCascade[source] = ctx.cascadeId;
         }
       } else {
-        // Non-pushbutton source starts a new generation so stale
-        // pbWrittenGen entries from previous cascades don't block writes
-        pbGeneration++;
+        // New cascade so stale writtenInCascade entries
+        // from previous cascades don't block writes
+        ctx.cascadeId++;
       }
 
       for (var i = 0; i < targets.length; i++) {
@@ -335,11 +332,11 @@ function createLinkRule(self, sourceMap) {
         var isPbTarget = dev[target + '#type'] === 'pushbutton';
 
         if (isPbTarget) {
-          if (pbWrittenGen[target] === pbGeneration) {
+          if (ctx.writtenInCascade[target] === ctx.cascadeId) {
             continue;
           }
-          pbWrittenByUs[target] = true;
-          pbWrittenGen[target] = pbGeneration;
+          ctx.echoExpected[target] = true;
+          ctx.writtenInCascade[target] = ctx.cascadeId;
           dev[target] = newValue;
         } else {
           if (dev[target] !== newValue) {
@@ -360,47 +357,15 @@ function createLinkRule(self, sourceMap) {
 }
 
 /**
- * Creates a rule that re-syncs values when the scenario is re-enabled.
- * Intentionally NOT registered via addRule() so it stays active
- * even when the scenario is disabled.
- * @param {ChannelMapScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - Map of source -> targets
- * @returns {boolean} True if rule created successfully
- */
-function createEnableRule(self, sourceMap) {
-  log.debug('Creating enable rule');
-
-  var ruleId = defineRule(self.genNames.ruleEnable, {
-    whenChanged: [self.genNames.vDevice + '/rule_enabled'],
-    then: function onRuleEnabledChanged(newValue) {
-      if (newValue) {
-        log.debug('Scenario re-enabled, syncing values');
-        initialSync(sourceMap);
-      }
-    },
-  });
-
-  if (!ruleId) {
-    log.error('Failed to create enable rule');
-    return false;
-  }
-  log.debug('Enable rule created');
-  return true;
-}
-
-/**
  * Create all rules for the scenario.
- * @param {ChannelMapScenario} self - Scenario instance
- * @param {SourceMap} sourceMap - Map of source -> targets
+ * @param {ChannelMapScenario} self - Reference to the ChannelMapScenario instance
+ * @param {SourceMap} sourceMap - Map of source to targets
  * @returns {boolean} True if all rules created successfully
  */
 function createRules(self, sourceMap) {
   log.debug('Creating all rules');
 
   if (!createLinkRule(self, sourceMap)) {
-    return false;
-  }
-  if (!createEnableRule(self, sourceMap)) {
     return false;
   }
 
@@ -419,7 +384,7 @@ ChannelMapScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * - Base initialization is complete
    * - Configuration is valid
    * - All referenced controls exist in the system
-   *
+   * 
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */
@@ -432,8 +397,6 @@ ChannelMapScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var rulesCreated = createRules(this, sourceMap);
 
   if (rulesCreated) {
-    initialSync(sourceMap);
-
     this.setState(ScenarioState.NORMAL);
     log.debug(
       'Channel Map scenario initialized for device "{}"',
