@@ -1,15 +1,14 @@
 /**
- * @file scenario-init-periodic-timer.mod.js - ES5 module for wb-rules v2.38
+ * @file scenario-init-channel-map.mod.js - ES5 module for wb-rules v2.38
  * @description Script for init scenarios of the SCENARIO_TYPE_STR type
  *     This script:
  *     - Loads all scenario configurations of the specific type from a file
  *     - Initializes them according to the settings specified in each scenario
- *
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
 var scHelpers = require('scenarios-general-helpers.mod');
-var CustomTypeSc = require('periodic-timer.mod').PeriodicTimerScenario;
+var CustomTypeSc = require('channel-map.mod').ChannelMapScenario;
 var Logger = require('logger.mod').Logger;
 
 /**
@@ -20,7 +19,7 @@ var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
   reqVerScenario: 1, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf',
-  scenarioTypeStr: 'periodicTimer'
+  scenarioTypeStr: 'channelMap'
 };
 
 var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
@@ -31,30 +30,19 @@ var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
  * @returns {void}
  */
 function initializeScenario(scenarioCfg) {
-  log.debug('Processing scenario config: "{}"', JSON.stringify(scenarioCfg));
+  log.debug(
+    'Processing scenario config: "{}"',
+    JSON.stringify(scenarioCfg)
+  );
 
   var scenario = new CustomTypeSc();
-  var rawInterval = scenarioCfg.interval;
-  var rawWorkTime = scenarioCfg.workTime;
-
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
-    interval: {
-      unit: rawInterval.intervalUnit,
-      value: rawInterval.intervalValue,
-    },
-    workTime: {
-      unit: rawWorkTime.workTimeUnit,
-      value: rawWorkTime.workTimeValue,
-    },
-    activeFrom: scenarioCfg.activeFrom,
-    activeTo: scenarioCfg.activeTo,
-    scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
-    outControls: scenarioCfg.outControls || [],
+    mqttTopicsLinks: scenarioCfg.mqttTopicsLinks,
   };
 
   try {
-    // Returns true if VD created successfully; full initialization continue asynchronously
+    // Returns true if VD created successfully; full initialization continues asynchronously
     var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
     if (isBasicVdCreated !== true) {
       log.error(
