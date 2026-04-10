@@ -39,9 +39,16 @@ function initializeScenario(scenarioCfg) {
     targetTemp: scenarioCfg.targetTemperature,
     tempLimitsMin: scenarioCfg.temperatureLimits.min,
     tempLimitsMax: scenarioCfg.temperatureLimits.max,
-    hysteresis: scenarioCfg.hysteresis,
     tempSensor: scenarioCfg.temperatureSensor,
     actuators: scenarioCfg.actuators,
+    controlMode: scenarioCfg.controlMode,
+    hysteresis: scenarioCfg.hysteresis,
+    deadBand: scenarioCfg.deadBand,
+    pidCoefficients: scenarioCfg.pidCoefficients,
+    pwmPeriodSec: scenarioCfg.pwmPeriodSec,
+    pidRecalcCycles: scenarioCfg.pidRecalcCycles,
+    minOnTimeSec: scenarioCfg.minOnTimeSec,
+    minOffTimeSec: scenarioCfg.minOffTimeSec,
   };
 
   try {

@@ -358,7 +358,7 @@ ScenarioBase.prototype._setScenarioEnableStatusFromStorage = function () {
     var ctrl = this.vd.devObj.getControl(ctrlRuleEnabled);
     var initialValue = this.getPsUserSetting(ctrlRuleEnabled, true);
 
-    if (ctrl !== initialValue) {
+    if (ctrl.getValue() !== initialValue) {
       ctrl.setValue(initialValue);
     }
   }
