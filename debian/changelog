@@ -1,6 +1,7 @@
 wb-scenarios (1.8.3) stable; urgency=medium
 
-  * Add new scenario "channel-map"
+  * Update thermostat: add PID support
+  * Add postinst migration: add controlMode
 
  -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Fri, 10 Apr 2026 18:37:00 +0300
 
