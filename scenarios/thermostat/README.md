@@ -6,11 +6,19 @@
 - Гистерезис — двухпозиционное регулирование с заданным гистерезисом;
 - PID + ШИМ — пропорционально-интегрально-дифференциальное регулирование с широтно-импульсной модуляцией.
 
-Конфигуратор сценария выглядит следующим образом:
+Конфигуратор сценария в режиме Гистерезис:
 
 <p align="center">
     <img width="400"
          src="img/scenario-cfg-view.png"
+         alt="Scenario cfg view" />
+</p>
+
+Конфигуратор сценария в режиме PID + ШИМ:
+
+<p align="center">
+    <img width="400"
+         src="img/scenario-cfg-pid-view.png"
          alt="Scenario cfg view" />
 </p>
 
@@ -54,12 +62,20 @@
 
 ### Внешний вид
 
-Создаваемое сценарием виртуальное устройство выглядит следующим образом:
+Создаваемое сценарием виртуальное устройство в режиме Гистерезис:
 
 <p align="center">
     <img width="400"
          src="img/scenario-vd-view.png"
          alt="Virtual device view" />
+</p>
+
+Создаваемое сценарием виртуальное устройство в режиме PID + ШИМ:
+
+<p align="center">
+    <img width="400"
+         src="img/scenario-vd-pid-view.png"
+         alt="Scenario cfg view" />
 </p>
 
 ### Заголовок (Title)
@@ -275,8 +291,12 @@ function main() {
 main();
 ```
 
+После запуска скрипта у вас с устройствах появится новое устройство
+для управления - которое будет аналогично тому, что вы можете создать через
+визульный конфигуратор в WEBUI контроллера:
+
 <p align="center">
     <img width="400"
-         src="img/scenario-vd-view.png"
+         src="img/scenario-vd-pid-view.png"
          alt="Virtual device view" />
 </p>

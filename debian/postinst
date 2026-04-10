@@ -20,7 +20,7 @@ migrate_actuator_to_actuators() {
 }
 
 # Migration: thermostat add controlMode field if missing
-# Added in 1.8.2 (2026-04-10)
+# Added in 1.8.3 (2026-04-10)
 # Adds controlMode: "hysteresis" to thermostat scenarios that don't have it
 migrate_add_control_mode() {
     local cfg="$1"
