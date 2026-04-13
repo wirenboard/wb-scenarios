@@ -18,7 +18,7 @@
 - **virtual-device-helpers** - утилиты для работы с виртуальными устройствами
 - **wbsc-wait-controls** - ожидание готовности контролов
 - **ScenarioPersistentStorage** - [хранилище сценариев](scenario-persistent-storage.md)
-- **constants** - общие константы: дни недели (`src/constants.mod.js`)
+- **constants** - общие константы (`src/constants.mod.js`)
 - **table-handling-actions** - таблица действий для outControls (`src/table-handling-actions.mod.js`)
 - **suncalc** - библиотека расчёта астрособытий (`src/suncalc.mod.js`)
 
