@@ -5,12 +5,13 @@
 
 На данный момент реализованы сценарии:
 
-- [Управление устройствами](scenarios/devices-control/README.md)
+- [Автоматизация «Если-То»](scenarios/devices-control/README.md)
 - [Управление светом](scenarios/light-control/README.md)
 - [Термостат (нагрев)](scenarios/thermostat/README.md)
 - [Расписание](scenarios/schedule/README.md)
 - [Астрономический таймер](scenarios/astronomical-timer/README.md)
 - [Периодический таймер](scenarios/periodic-timer/README.md)
+- [Маппинг каналов](scenarios/channel-map/README.md)
 
 ## Установка
 

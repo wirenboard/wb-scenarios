@@ -34,6 +34,9 @@
         },
         {
           "$ref": "#/definitions/periodicTimer"
+        },
+        {
+          "$ref": "#/definitions/channelMap"
         }
       ],
       "_format": "wb-multiple",
@@ -48,9 +51,9 @@
       }
     },
     "devicesControl": {
-      "title": "Devices control",
+      "title": "devicesControlScenarioName",
       "type": "object",
-      "description": "devicesControl_description",
+      "description": "devicesControlScenarioDescription",
       "_format": "grid",
       "options": {
         "display_required_only": true
@@ -106,7 +109,6 @@
           "minItems": 1,
           "propertyOrder": 4,
           "_title_note": "When options-> compact: true - this title not shown",
-          "description": "inControls_arr_description",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -163,8 +165,7 @@
           "minItems": 1,
           "propertyOrder": 5,
           "_title_note": "When options-> compact: true - this title not shown",
-          "title": "generalActionsTitle",
-          "description": "outControls_arr_description",
+          "title": "outControls_arr_title",
           "_format": "table",
           "options": {
             "disable_collapse": true,
@@ -1614,6 +1615,138 @@
         "activeTo",
         "outControls"
       ]
+    },
+    "channelMap": {
+      "type": "object",
+      "title": "channelMapScenarioName",
+      "description": "channelMapScenarioDescription",
+      "_format": "grid",
+      "options": {
+        "display_required_only": true
+      },
+      "properties": {
+        "scenarioType": {
+          "type": "string",
+          "enum": ["channelMap"],
+          "default": "channelMap",
+          "options": {
+            "hidden": true
+          }
+        },
+        "componentVersion": {
+          "type": "integer",
+          "title": "Config version",
+          "minimum": 1,
+          "maximum": 256,
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
+        "name": {
+          "title": "generalScenarioName",
+          "type": "string",
+          "default": "channelMapDefaultInputName",
+          "minLength": 1,
+          "maxLength": 30,
+          "propertyOrder": 1,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "idPrefix": {
+          "title": "generalScenarioIdPrefixTitle",
+          "type": "string",
+          "description": "generalScenarioIdPrefixDescription",
+          "pattern": "^$|^[0-9a-zA-Z_]+$",
+          "default": "",
+          "minLength": 0,
+          "maxLength": 15,
+          "propertyOrder": 2,
+          "options": {
+            "grid_columns": 12,
+            "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
+          }
+        },
+        "mqttTopicsLinks": {
+          "type": "array",
+          "minItems": 1,
+          "propertyOrder": 3,
+          "title": "channelMapLinksTitle",
+          "_format": "table",
+          "options": {
+            "disable_collapse": true,
+            "grid_columns": 12,
+            "array_controls_top": true,
+            "disable_array_delete_last_row": true,
+            "disable_array_reorder": true,
+            "wb": {
+              "disable_panel": true
+            }
+          },
+          "items": {
+            "title": "channelMapLinkObjTitle",
+            "type": "object",
+            "properties": {
+              "mqttTopicA": {
+                "type": "string",
+                "propertyOrder": 1,
+                "title": "channelMapATitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "minLength": 3
+              },
+              "direction": {
+                "type": "string",
+                "title": "channelMapDirectionTitle",
+                "enum": ["forward", "backward", "both"],
+                "default": "forward",
+                "propertyOrder": 2,
+                "options": {
+                  "enum_titles": [
+                    "channelMapDirectionForward",
+                    "channelMapDirectionBackward",
+                    "channelMapDirectionBoth"
+                  ]
+                }
+              },
+              "mqttTopicB": {
+                "type": "string",
+                "propertyOrder": 3,
+                "title": "channelMapBTitle",
+                "pattern": "^[^/+#]+/[^/+#]+$",
+                "_format": "wb-autocomplete",
+                "options": {
+                  "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
+                  "inputAttributes": {
+                    "placeholder": "generalMqttTopicNamePlaceholder"
+                  },
+                  "wb": {
+                    "data": "devices"
+                  }
+                },
+                "minLength": 3
+              }
+            },
+            "required": ["mqttTopicA", "direction", "mqttTopicB"]
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "mqttTopicsLinks"
+      ]
     }
   },
   "properties": {
@@ -1670,12 +1803,12 @@
       "generalSaturday": "Saturday",
       "generalSunday": "Sunday",
 
-      "devicesControl_description": "The script allows you to control one or more devices.<br>It is suitable for managing lighting, curtains, and other devices.",
-      "devicesControlDefaultInputName": "Device control",
-      "inControls_arr_title": "Triggers",
+      "devicesControlScenarioName": "«If-Then» Automation",
+      "devicesControlScenarioDescription": "Triggers actions when specific events occur.<br>Example: switch pressed → light turns on, motion detected → curtains open.",
+      "devicesControlDefaultInputName": "«If-Then» Automation",
+      "inControls_arr_title": "Triggers (If)",
       "inControls_obj_title": "Trigger",
-      "inControls_arr_description": "Any of the events listed here will trigger the automation.",
-      "outControls_arr_description": "This list of actions will be executed sequentially when the automation is triggered.",
+      "outControls_arr_title": "Actions (Then)",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
 
@@ -1770,7 +1903,19 @@
       "periodicTimerInitValueTitle": "Set on start",
       "periodicTimerReverseValueTitle": "Set on stop",
       "periodicTimerOutControlsTitle": "Actions",
-      "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop."
+      "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop.",
+
+      "channelMapScenarioName": "Channel Mapping",
+      "channelMapScenarioDescription": "Any value change on channel A will be copied to channel B according to the selected direction.",
+      "channelMapDefaultInputName": "Channel Mapping",
+      "channelMapLinksTitle": "Mapping Table",
+      "channelMapLinkObjTitle": "Add",
+      "channelMapATitle": "Channel A",
+      "channelMapBTitle": "Channel B",
+      "channelMapDirectionTitle": "Direction",
+      "channelMapDirectionForward": "A → B",
+      "channelMapDirectionBackward": "B → A",
+      "channelMapDirectionBoth": "A ↔ B"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -1801,15 +1946,15 @@
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
       "Scenario": "Сценарий",
-      "devicesControl_description": "Сценарий позволяет управлять одним или несколькими устройствами.<br>Применим для управления освещением, шторами и другими устройствами.",
-      "devicesControlDefaultInputName": "Управление устройствами",
-      "inControls_arr_title": "События",
+
+      "devicesControlScenarioName": "Автоматизация «Если-То»",
+      "devicesControlScenarioDescription": "Запускает действия при наступлении событий.<br>Например: нажали выключатель → включился свет, сработал датчик движения → открылись шторы.",
+      "devicesControlDefaultInputName": "Автоматизация «Если-То»",
+      "inControls_arr_title": "События (Если)",
       "inControls_obj_title": "Событие",
-      "inControls_arr_description": "Любое из указанных здесь событий будет запускать автоматизацию:",
-      "outControls_arr_description": "Этот список действий будет выполняться последовательно при запуске автоматизации:",
+      "outControls_arr_title": "Действия (То)",
       "outControls_behaviorType_title": "Логика действия",
       "outControls_actionValue_description": "Если необходимо",
-      "Devices control": "Управление устройствами",
       "When Change": "Когда изменится",
       "When Disabled (switch)": "Когда отключилось (для переключателей)",
       "When Enabled (switch)": "Когда включилось (для переключателей)",
@@ -1911,7 +2056,19 @@
       "periodicTimerInitValueTitle": "Включить со значением",
       "periodicTimerReverseValueTitle": "Выключить со значением",
       "periodicTimerOutControlsTitle": "Действия",
-      "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении."
+      "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении.",
+
+      "channelMapScenarioName": "Маппинг каналов",
+      "channelMapScenarioDescription": "Любое изменение значения на канале A будет копироваться в канал B в соответствии с выбранным направлением.",
+      "channelMapDefaultInputName": "Маппинг каналов",
+      "channelMapLinksTitle": "Таблица маппинга",
+      "channelMapLinkObjTitle": "Добавить",
+      "channelMapATitle": "Канал A",
+      "channelMapBTitle": "Канал B",
+      "channelMapDirectionTitle": "Направление",
+      "channelMapDirectionForward": "A → B",
+      "channelMapDirectionBackward": "B → A",
+      "channelMapDirectionBoth": "A ↔ B"
     }
   }
 }
