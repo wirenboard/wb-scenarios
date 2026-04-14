@@ -1,9 +1,16 @@
-wb-scenarios (1.8.3) stable; urgency=medium
+wb-scenarios (1.8.4) stable; urgency=medium
 
   * Update thermostat: add PID support
   * Add postinst migration: add controlMode
 
- -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Fri, 10 Apr 2026 18:37:00 +0300
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Tue, 14 Apr 2026 10:04:00 +0300
+
+wb-scenarios (1.8.3) stable; urgency=medium
+
+  * Update developer documentation, fix outdated paths and typos
+  * Add pull-request-workflow guide
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 13 Apr 2026 17:20:00 +0300
 
 wb-scenarios (1.8.2) stable; urgency=medium
 

@@ -17,59 +17,23 @@
 
 ## Этапы разработки нового сценария
 
-### 1. Планирование и подготовка
+Разработка нового сценария состоит из семи этапов. Подробный пример с полным кодом — в [Пример добавления сценария](example-add-new-scenario.md).
 
-**1.1. Определение требований**
-- Проанализируйте функциональность сценария
-- Определите необходимые входные/выходные контролы
-- Спланируйте структуру конфигурации
+### 0. Планирование и подготовка
+- Погрузитесь в предметную область, например изучение работы пид-регулятора, как устроено управление котельными
+- Проанализируйте требования к сценарию и составьте необходимую функциональность сценария
+- Определите необходимые параметры и входные/выходные контролы
+- Если используете AI-ассистента, то можете попросить написать arc42 документ для дальнейшей разработки
+- При необходимости проведите переоценку времени на выполнение задачи
 
-**1.2. Создание структуры**
-```bash
-# Создать папку сценария (kebab-case)
-mkdir scenarios/your-scenario-name
-```
+### 1. Хардкод логики сценария
 
-**1.3. Первый коммит**
-- Создать папку сценария
-- Добавить README.md с описанием сценария
-- Создать заготовки основных файлов
-- Запушить как первую версию
+- Создаём папку сценария: `mkdir scenarios/your-scenario-name`
+- Пишем скрипт, который создает виртуальное устройство и выполняет требования сценария
 
-### 2. Выбор подхода к разработке
+### 2. Создание JSON-схемы для UI
 
-Есть несколько подходов к разработке - выберите наиболее удобный:
-
-#### Подход A: От JSON схемы (рекомендуется для новичков)
-**Преимущества**: быстро виден результат в веб-интерфейсе, понятна структура конфига
-
-1. Создать/модифицировать JSON схему
-2. Протестировать веб-интерфейс
-3. Проанализировать генерируемый конфиг
-4. Написать модуль инициализации
-5. Создать класс сценария
-6. Добавить бизнес-логику
-
-#### Подход B: От модуля инициализации
-**Преимущества**: подходит при точном понимании требований
-
-1. Написать статичный скрипт с требуемой логикой
-2. Вынести переменные в конфигурацию
-3. Создать модуль сценария
-4. Добавить JSON схему для веб-интерфейса
-
-#### Подход C: От готового модуля
-**Преимущества**: максимальная гибкость
-
-1. Сразу создать полноценный модуль сценария
-2. Интегрировать с системой инициализации
-3. Добавить JSON схему
-
-### 3. Разработка по подходу A (подробно)
-
-#### 3.1. Создание JSON схемы
-
-**Добавить описание в definitions**
+- Добавляем описание сценария в `definitions` файла `schema/wb-scenarios.schema.json`
 ```json
 "yourScenarioName": {
     "type": "object",
@@ -115,88 +79,20 @@ mkdir scenarios/your-scenario-name
     "required": ["scenarioType", "enable", "name"]
 }
 ```
-
-Обратите внимание - в новых правилах нужно называть все названия параметров\
-только слитно, например "idPrefix". Не нужно использовать "id_prefix" - это\
-исторически сложившаяся особенность, которая осталась чтобы не ломать уже\
-созданные пользователями конфигурации.
-
-Причина использования такого формата названия параметров заключается в том,\
-что эти названия в конечном итоге превращаются в переменные внутри js кода,\
-а наименования переменных в коде доступно только в виде camelCase.
-
-**Модифицировать oneOf**
-
+- Добавляем ссылку в `oneOf`
 ```json
 "oneOf": [
     { "$ref": "#/definitions/yourScenarioName" },
     // ... остальные сценарии
 ]
 ```
+- Добавляем переводы
+- Проверяем отображение в веб-интерфейсе и корректность сохранения конфигурации
 
-**Добавить переводы** (в конце файла схемы)
+Имена параметров — только camelCase (`idPrefix`, не `id_prefix`). Эти имена превращаются в переменные внутри JS-кода.
 
-#### 3.2. Тестирование веб-интерфейса
-
-1. Сохранить схему
-2. Проверить отображение в веб-интерфейсе
-3. Протестировать сохранение конфигурации
-4. Проанализировать структуру генерируемого JSON
-
-#### 3.3. Создание модуля инициализации
-
-**Структура файла `scenario-init-your-scenario.mod.js`:**
-```javascript
-// Подключение зависимостей
-var ScenarioBase = require('/usr/share/wb-rules-modules/wbsc-scenario-base');
-var ScenarioState = require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
-var YourScenarioClass = require('./your-scenario.mod.js');
-
-var CFG = {
-  scenarioTypeStr: 'yourScenarioName',
-  reqVerScenario: 1
-};
-
-function initializeScenario(scenarioCfg) {
-  var scenario = new YourScenarioClass();
-  
-  // Маппинг конфигурации
-  var cfg = {
-    idPrefix: scenarioCfg.idPrefix,
-    inputControl: scenarioCfg.inputControl,
-    outputControl: scenarioCfg.outputControl
-    // ... другие поля
-  };
-  
-  // Инициализация сценария
-  var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
-  if (isBasicVdCreated !== true) {
-    log.error('Virtual device creation failed: ' + scenarioCfg.name);
-    return;
-  }
-}
-
-function setup() {
-  var helpers = require('/usr/share/wb-rules-modules/scenarios-general-helpers');
-  
-  // Чтение и валидация конфигурации
-  var allCfg = helpers.readConfig();
-  if (allCfg === null) {
-    log.error('Failed to read configuration');
-    return;
-  }
-  
-  // Фильтрация и инициализация сценариев
-  var scenarios = helpers.filterScenarios(allCfg, CFG.scenarioTypeStr);
-  scenarios.forEach(initializeScenario);
-  
-  log.info('Initialized ' + scenarios.length + ' scenarios of type: ' + CFG.scenarioTypeStr);
-}
-```
-
-#### 3.4. Создание класса сценария
-
-**Структура файла `your-scenario.mod.js`:**
+### 3. Создание модуля сценария
+- Создаём модуль сценария (`your-scenario-name.mod.js`), используя логику из ранее написанного скрипта
 ```javascript
 var ScenarioBase = require('/usr/share/wb-rules-modules/wbsc-scenario-base');
 var ScenarioState = require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
@@ -269,23 +165,81 @@ YourScenario.prototype.defineControlsWaitConfig = function(cfg) {
 // Экспорт модуля
 module.exports = YourScenario;
 ```
+- Используем дефолтные значения вместо конфигурации
+- Проверяем что логика работает на контроллере
 
-### 4. Тестирование и отладка
+### 4. Объединение схемы и логики
 
-#### 4.1. Базовое тестирование
+- Создаём модуль инициализации (`scenario-init-your-scenario-name.mod.js`)
+```javascript
+// Подключение зависимостей
+var ScenarioBase = require('/usr/share/wb-rules-modules/wbsc-scenario-base');
+var ScenarioState = require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
+var YourScenarioClass = require('./your-scenario.mod.js');
+
+var CFG = {
+  scenarioTypeStr: 'yourScenarioName',
+  reqVerScenario: 1
+};
+
+function initializeScenario(scenarioCfg) {
+  var scenario = new YourScenarioClass();
+  
+  // Маппинг конфигурации
+  var cfg = {
+    idPrefix: scenarioCfg.idPrefix,
+    inputControl: scenarioCfg.inputControl,
+    outputControl: scenarioCfg.outputControl
+    // ... другие поля
+  };
+  
+  // Инициализация сценария
+  var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
+  if (isBasicVdCreated !== true) {
+    log.error('Virtual device creation failed: ' + scenarioCfg.name);
+    return;
+  }
+}
+
+function setup() {
+  var helpers = require('/usr/share/wb-rules-modules/scenarios-general-helpers');
+  
+  // Чтение и валидация конфигурации
+  var allCfg = helpers.readConfig();
+  if (allCfg === null) {
+    log.error('Failed to read configuration');
+    return;
+  }
+  
+  // Фильтрация и инициализация сценариев
+  var scenarios = helpers.filterScenarios(allCfg, CFG.scenarioTypeStr);
+  scenarios.forEach(initializeScenario);
+  
+  log.info('Initialized ' + scenarios.length + ' scenarios of type: ' + CFG.scenarioTypeStr);
+}
+```
+- Подключаем конфигурацию из схемы к модулю сценария
+- Подключаем в `scenarios/scenario-init-main.js`
+
+### 5. Тестирование и отладка
+
+- Проверяем полный цикл: конфигурация → инициализация → работа сценария
+- Тестируем edge-cases и обработку ошибок
+
+#### 5.1. Базовое тестирование
 1. Установить сценарий на контроллер
 2. Создать конфигурацию через веб-интерфейс
 3. Проверить создание виртуального устройства
 4. Протестировать базовую функциональность
 
-#### 4.2. Отладка
+#### 5.2. Отладка
 
 **Использование логера проекта**
 В проекте используется унифицированная система логирования через модуль `logger.mod.js`. Рекомендуется использовать её вместо стандартного `log`:
 
 ```javascript
 // Подключение логера
-var Logger = require('/usr/share/wb-rules-modules/logger');
+var Logger = require('logger.mod').Logger;
 var logger = new Logger('YourScenario'); // Имя компонента для логов
 
 // Использование различных уровней логирования
@@ -308,6 +262,11 @@ YourScenario.prototype.initSpecific = function(name, cfg) {
 };
 ```
 
+### 6. Документация
+- Создать README файл нового сценария
+- Добавить в общий README файл ссылку документацию нового сценария
+- Добавить arc42 файл, если используется AI-ассистент
+
 **Общие рекомендации по отладке:**
 - Использовать структурированное логирование для отслеживания выполнения
 - Проверить состояние сценария через виртуальное устройство
@@ -327,6 +286,18 @@ YourScenario.prototype.initSpecific = function(name, cfg) {
 2. **Разделяйте ответственность**: модуль сценария vs модуль инициализации
 3. **Используйте состояния**: активно управляйте состоянием сценария
 4. **Обрабатывайте ошибки**: предусматривайте все возможные сбои
+
+### Дизайн виртуального устройства
+
+Когда сценарий управляет несколькими связанными контролами (например, несколько каналов нагрева), предпочитайте один совокупный контрол вместо отображения каждого канала отдельно. Это упрощает восприятие и не перегружает интерфейс деталями, которые пользователю не нужны.
+
+- **Антипаттерн** — отдельный контрол на каждый канал:
+
+  ![Антипаттерн: отдельный контрол на каждый канал](vd-antipattern-per-channel.png)
+
+- **Рекомендация** — один общий статус:
+
+  ![Рекомендация: один общий статус](vd-recommended-aggregate-status.png)
 
 ### Код
 1. **Читаемость**: пишите понятный код с комментариями
