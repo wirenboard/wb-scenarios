@@ -1,3 +1,10 @@
+wb-scenarios (1.8.3) stable; urgency=medium
+
+  * Update developer documentation, fix outdated paths and typos
+  * Add pull-request-workflow guide
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 13 Apr 2026 17:20:00 +0300
+
 wb-scenarios (1.8.2) stable; urgency=medium
 
   * Add new scenario "channel-map"

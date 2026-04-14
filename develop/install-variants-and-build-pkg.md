@@ -66,13 +66,13 @@
 ```make
 # make
 Starting installation process...
-Copying scenarios.conf to //etc
+Copying wb-scenarios.conf to //etc
 Copying image schema/scenarios-link-in-to-out.png to //var/www/images
-Copying schema schema/scenarios.schema.json to //usr/share/wb-mqtt-confed/schemas
+Copying schema schema/wb-scenarios.schema.json to //usr/share/wb-mqtt-confed/schemas
 Installing from directory scenarios/link-in-to-out...
   + Processing directory scenarios/link-in-to-out...
     - Copying rule files: scenarios/link-in-to-out/scenarios.js to //usr/share/wb-rules-system/rules
-    - Copying module files: scenarios/link-in-to-out/link-in-to-out.mod.js to //etc/wb-rules-modules
+    - Copying module files: scenarios/link-in-to-out/link-in-to-out.mod.js to //usr/share/wb-rules-modules
 #
 ```
 
@@ -91,7 +91,7 @@ Installing from directory scenarios/link-in-to-out...
 Файл кладется в системные правила, чтобы его не было видно пользователям
 
 ```path
-/share/wb-rules-system/rules/*.js
+/usr/share/wb-rules-system/rules/*.js
 ```
 
 Во время отладки можно класть в пользовательские правила
@@ -106,23 +106,23 @@ Installing from directory scenarios/link-in-to-out...
 Файл кладется в системные модули, чтобы его не было видно пользователям
 
 ```path
-/etc/wb-rules-modules/link-in-to-out.mod.js
+/usr/share/wb-rules-modules/link-in-to-out.mod.js
 ```
 
 3. Описание схемы json-editor `*.schema.json`
 
 ```path
-/usr/share/wb-mqtt-confed/schemas/scenarios.schema.json
+/usr/share/wb-mqtt-confed/schemas/wb-scenarios.schema.json
 ```
 
 4. При необходимости изображения `*.png`
 
 ```path
-/var/www/images/scenarios-link-in-to-out.png
+/var/www/images/wb-scenarios/*.png
 ```
 
-5. Сохраненный конфиг из вебки rules/scenarios.conf
+5. Сохраненный конфиг из вебки rules/wb-scenarios.conf
 
 ```path
-/etc/scenarios.conf
+/etc/wb-scenarios.conf
 ```
