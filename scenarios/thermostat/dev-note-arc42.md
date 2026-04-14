@@ -102,10 +102,10 @@ wb-scenarios.conf         -->  scenario-init-main.js
 Используется пропорционально-интегрально-дифференциальный регулятор, выход которого (0–100%)
 преобразуется в длительность включения актуатора внутри фиксированного периода ШИМ.
 
-Параметры режима:
+Все параметры PID-режима сгруппированы в объекте `pidSettings`:
 - deadBand — зона нечувствительности (°C). Внутри неё П-, И- и Д-составляющие умножаются на 0.1 для предотвращения микропереключений.
-- pidCoefficients (Kp, Ki, Kd) — коэффициенты регулятора.
-- pwmPeriodSec — период ШИМ (целое число секунд).
+- pidCoefficients (Kp, Ki, Kd) — коэффициенты регулятора (вложенный объект).
+- pwmPeriodSec — период ШИМ (целое число секунд). Должен быть больше minOffTimeSec.
 - pidRecalcCycles — PID пересчитывается не каждый цикл, а раз в N периодов (экономия ресурсов, допускается инерционность тепловых процессов).
 - minOnTimeSec / minOffTimeSec — минимальное время включения и выключения за период. Защищает реле от слишком коротких импульсов (например, при 100% мощности гарантируется пауза minOffTimeSec).
 
@@ -205,8 +205,9 @@ ThermostatScenario extends ScenarioBase
 │   → [tempSensor, ...actuators[].mqttTopicName]
 │
 ├── validateCfg(cfg)
-│   → limits, targetTemp, hysteresis/deadBand, pidCoefficients,
-│     pwmPeriodSec, pidRecalcCycles, minOn/OffTime, sensorType, actuators
+│   → limits, targetTemp, hysteresis, pidSettings (deadBand,
+│     pidCoefficients, pwmPeriodSec, pidRecalcCycles, minOn/OffTime),
+│     sensorType, actuators
 │
 └── initSpecific(name, cfg)
     │

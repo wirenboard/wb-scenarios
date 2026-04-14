@@ -185,10 +185,10 @@
 Параметры для режима `hysteresis`:
 1. `hysteresis`	{number}	Значение гистерезиса (положительное число).
 
-Параметры для режима `pid`:
+Параметры для режима `pid` (объект `pidSettings`):
 1. `deadBand`	{number} Зона нечувствительности (≥0).
 2. `pidCoefficients` {object} Объект с полями kp, ki, kd (все ≥0).
-3. `pwmPeriodSec` {number} Период ШИМ в секундах (целое >0).
+3. `pwmPeriodSec` {number} Период ШИМ в секундах (целое >0, должен быть > minOffTimeSec).
 4. `pidRecalcCycles` {number}	Пересчёт PID каждые N циклов ШИМ (целое ≥1).
 5. `minOnTimeSec`	{number} Минимальное время включения за период (≥0).
 6. `minOffTimeSec` {number} Минимальное время выключения за период (≥0).
@@ -270,12 +270,14 @@ function main() {
     tempLimitsMin: 18,
     tempLimitsMax: 28,
     controlMode: 'pid',
-    deadBand: 0.5,
-    pidCoefficients: { kp: 30, ki: 0.5, kd: 10 },
-    pwmPeriodSec: 60,
-    pidRecalcCycles: 1,
-    minOnTimeSec: 5,
-    minOffTimeSec: 5,
+    pidSettings: {
+      deadBand: 0.5,
+      pidCoefficients: { kp: 30, ki: 0.5, kd: 10 },
+      pwmPeriodSec: 60,
+      pidRecalcCycles: 1,
+      minOnTimeSec: 5,
+      minOffTimeSec: 5,
+    },
     tempSensor: 'wb-msw-v4_34/Temperature',
     actuators: [
       { mqttTopicName: 'wb-mr6cv3_127/K6', behaviorType: 'setEnable' },

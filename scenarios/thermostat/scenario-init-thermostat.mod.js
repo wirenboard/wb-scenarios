@@ -43,12 +43,7 @@ function initializeScenario(scenarioCfg) {
     actuators: scenarioCfg.actuators,
     controlMode: scenarioCfg.controlMode,
     hysteresis: scenarioCfg.hysteresis,
-    deadBand: scenarioCfg.deadBand,
-    pidCoefficients: scenarioCfg.pidCoefficients,
-    pwmPeriodSec: scenarioCfg.pwmPeriodSec,
-    pidRecalcCycles: scenarioCfg.pidRecalcCycles,
-    minOnTimeSec: scenarioCfg.minOnTimeSec,
-    minOffTimeSec: scenarioCfg.minOffTimeSec,
+    pidSettings: scenarioCfg.pidSettings,
   };
 
   try {

@@ -57,16 +57,15 @@ var thermostatActionsTable = {
  * @property {number} hysteresis - Hysteresis value (switching range, °C)
  *
  * PID mode (controlMode === 'pid'):
- * @property {number} deadBand - Zone around setpoint where P/I/D are
- *   multiplied by 0.1 to avoid micro-switching (°C)
- * @property {PidCoefficients} pidCoefficients - PID gains (Kp, Ki, Kd)
- * @property {number} pwmPeriodSec - PWM cycle duration (seconds, integer > 0)
- * @property {number} pidRecalcCycles - Recompute PID every N PWM cycles
- *   (integer >= 1)
- * @property {number} minOnTimeSec - Minimum actuator ON time per cycle.
- *   If a calculated on time is shorter, the cycle is skipped (off entirely)
- * @property {number} minOffTimeSec - Minimum actuator OFF time per cycle.
- *   Enforced even at 100% duty to guarantee a pause (relay protection)
+ * @property {Object} pidSettings - PID + PWM settings object
+ * @property {number} pidSettings.deadBand - Dead band around setpoint (°C)
+ * @property {number} pidSettings.kp - Proportional gain
+ * @property {number} pidSettings.ki - Integral gain
+ * @property {number} pidSettings.kd - Derivative gain
+ * @property {number} pidSettings.pwmPeriodSec - PWM cycle duration (seconds)
+ * @property {number} pidSettings.pidRecalcCycles - Recompute PID every N cycles
+ * @property {number} pidSettings.minOnTimeSec - Minimum actuator ON time (s)
+ * @property {number} pidSettings.minOffTimeSec - Minimum actuator OFF time (s)
  */
 
 /**
@@ -201,10 +200,10 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
       isModeParamsCorrect = false;
     }
   } else if (cfg.controlMode === 'pid') {
-    if (typeof cfg.deadBand !== 'number' || cfg.deadBand < 0) {
+    if (typeof cfg.pidSettings.deadBand !== 'number' || cfg.pidSettings.deadBand < 0) {
       log.error(
         'Thermostat validation error: dead band must be a number >= 0, but got "{}"',
-        cfg.deadBand
+        cfg.pidSettings.deadBand
       );
       isModeParamsCorrect = false;
     }
@@ -252,64 +251,77 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
 
   var isPidValid = true;
   if (cfg.controlMode === 'pid') {
-    if (!cfg.pidCoefficients || typeof cfg.pidCoefficients !== 'object') {
+    if (!cfg.pidSettings || typeof cfg.pidSettings !== 'object') {
       log.error(
-        'Thermostat validation error: PID coefficients object is missing, but got "{}"',
-        cfg.pidCoefficients
+        'Thermostat validation error: pidSettings object is missing, but got "{}"',
+        cfg.pidSettings
+      );
+      isPidValid = false;
+    } else if (!cfg.pidSettings.pidCoefficients || typeof cfg.pidSettings.pidCoefficients !== 'object') {
+      log.error(
+        'Thermostat validation error: PID coefficients object is missing'
       );
       isPidValid = false;
     } else {
-      if (typeof cfg.pidCoefficients.kp !== 'number' || cfg.pidCoefficients.kp < 0) {
+      if (typeof cfg.pidSettings.pidCoefficients.kp !== 'number' || cfg.pidSettings.pidCoefficients.kp < 0) {
         log.error(
           'Thermostat validation error: Kp must be a number >= 0, but got "{}"',
-          cfg.pidCoefficients.kp
+          cfg.pidSettings.pidCoefficients.kp
         );
         isPidValid = false;
       }
-      if (typeof cfg.pidCoefficients.ki !== 'number' || cfg.pidCoefficients.ki < 0) {
+      if (typeof cfg.pidSettings.pidCoefficients.ki !== 'number' || cfg.pidSettings.pidCoefficients.ki < 0) {
         log.error(
           'Thermostat validation error: Ki must be a number >= 0, but got "{}"',
-          cfg.pidCoefficients.ki
+          cfg.pidSettings.pidCoefficients.ki
         );
         isPidValid = false;
       }
-      if (typeof cfg.pidCoefficients.kd !== 'number' || cfg.pidCoefficients.kd < 0) {
+      if (typeof cfg.pidSettings.pidCoefficients.kd !== 'number' || cfg.pidSettings.pidCoefficients.kd < 0) {
         log.error(
           'Thermostat validation error: Kd must be a number >= 0, but got "{}"',
-          cfg.pidCoefficients.kd
+          cfg.pidSettings.pidCoefficients.kd
         );
         isPidValid = false;
       }
     }
-    if (typeof cfg.pwmPeriodSec !== 'number' ||
-        cfg.pwmPeriodSec <= 0 ||
-        cfg.pwmPeriodSec % 1 !== 0) {
+    if (typeof cfg.pidSettings.pwmPeriodSec !== 'number' ||
+        cfg.pidSettings.pwmPeriodSec <= 0 ||
+        cfg.pidSettings.pwmPeriodSec % 1 !== 0) {
       log.error(
         'Thermostat validation error: PWM period must be an integer > 0, but got "{}"',
-        cfg.pwmPeriodSec
+        cfg.pidSettings.pwmPeriodSec
       );
       isPidValid = false;
     }
-    if (typeof cfg.pidRecalcCycles !== 'number' ||
-        cfg.pidRecalcCycles < 1 ||
-        cfg.pidRecalcCycles % 1 !== 0) {
+    if (typeof cfg.pidSettings.pidRecalcCycles !== 'number' ||
+        cfg.pidSettings.pidRecalcCycles < 1 ||
+        cfg.pidSettings.pidRecalcCycles % 1 !== 0) {
       log.error(
         'Thermostat validation error: PID recalc cycles must be an integer >= 1, but got "{}"',
-        cfg.pidRecalcCycles
+        cfg.pidSettings.pidRecalcCycles
       );
       isPidValid = false;
     }
-    if (typeof cfg.minOnTimeSec !== 'number' || cfg.minOnTimeSec < 0) {
+    if (typeof cfg.pidSettings.minOnTimeSec !== 'number' || cfg.pidSettings.minOnTimeSec < 0) {
       log.error(
         'Thermostat validation error: min ON time must be a number >= 0, but got "{}"',
-        cfg.minOnTimeSec
+        cfg.pidSettings.minOnTimeSec
       );
       isPidValid = false;
     }
-    if (typeof cfg.minOffTimeSec !== 'number' || cfg.minOffTimeSec < 0) {
+    if (typeof cfg.pidSettings.minOffTimeSec !== 'number' || cfg.pidSettings.minOffTimeSec < 0) {
       log.error(
         'Thermostat validation error: min OFF time must be a number >= 0, but got "{}"',
-        cfg.minOffTimeSec
+        cfg.pidSettings.minOffTimeSec
+      );
+      isPidValid = false;
+    }
+    if (isPidValid && cfg.pidSettings.pwmPeriodSec <= cfg.pidSettings.minOffTimeSec) {
+      log.error(
+        'Thermostat validation error: PWM period ({}) must be > min OFF time ({})',
+        cfg.pidSettings.pwmPeriodSec,
+        cfg.pidSettings.minOffTimeSec
       );
       isPidValid = false;
     }
@@ -526,9 +538,9 @@ function cancelPidTimers(ctx) {
 function recomputePidOutput(self, cfg) {
   var setpoint = self.vd.devObj.getControl(vdCtrl.targetTemp).getValue();
   var measurement = dev[cfg.tempSensor];
-  var dt = cfg.pwmPeriodSec * cfg.pidRecalcCycles;
+  var dtSec = cfg.pidSettings.pwmPeriodSec * cfg.pidSettings.pidRecalcCycles;
 
-  self.ctx.pidOutput = self.ctx.pid.compute(setpoint, measurement, dt);
+  self.ctx.pidOutput = self.ctx.pid.compute(setpoint, measurement, dtSec);
   self.vd.devObj.getControl(vdCtrl.outputPower).setValue(Math.round(self.ctx.pidOutput));
 
   var state = self.ctx.pid.getState();
@@ -564,24 +576,24 @@ function runPwmCycle(self, cfg) {
   if (self.ctx.pwmCycleCount === 0) {
     recomputePidOutput(self, cfg);
   }
-  self.ctx.pwmCycleCount = (self.ctx.pwmCycleCount + 1) % cfg.pidRecalcCycles;
+  self.ctx.pwmCycleCount = (self.ctx.pwmCycleCount + 1) % cfg.pidSettings.pidRecalcCycles;
 
   // Calculate on/off durations from duty cycle
-  var onTime = (self.ctx.pidOutput / 100) * cfg.pwmPeriodSec;
+  var onTime = (self.ctx.pidOutput / 100) * cfg.pidSettings.pwmPeriodSec;
 
   // Apply min on/off constraints
-  var offTime = cfg.pwmPeriodSec - onTime;
-  if (onTime > 0 && onTime < cfg.minOnTimeSec) {
+  var offTime = cfg.pidSettings.pwmPeriodSec - onTime;
+  if (onTime > 0 && onTime < cfg.pidSettings.minOnTimeSec) {
     onTime = 0;
   }
-  if (offTime < cfg.minOffTimeSec) {
-    offTime = cfg.minOffTimeSec;
-    onTime = cfg.pwmPeriodSec - offTime;
+  if (offTime < cfg.pidSettings.minOffTimeSec) {
+    offTime = cfg.pidSettings.minOffTimeSec;
+    onTime = cfg.pidSettings.pwmPeriodSec - offTime;
   }
-  offTime = cfg.pwmPeriodSec - onTime;
+  offTime = cfg.pidSettings.pwmPeriodSec - onTime;
   vdCtrlOutputTiming.setValue(Math.round(onTime) + ' / ' + Math.round(offTime));
 
-  if (onTime >= cfg.pwmPeriodSec) {
+  if (onTime >= cfg.pidSettings.pwmPeriodSec) {
     // 100% duty — stay on the whole cycle
     applyHeatingToActuators(cfg.actuators, true);
     setCtrlIfChanged(vdCtrlActuator, true);
@@ -604,7 +616,7 @@ function runPwmCycle(self, cfg) {
   self.ctx.cycleTimerId = setTimeout(function () {
     self.ctx.cycleTimerId = null;
     runPwmCycle(self, cfg);
-  }, cfg.pwmPeriodSec * 1000);
+  }, cfg.pidSettings.pwmPeriodSec * 1000);
 }
 
 /**
@@ -1033,6 +1045,7 @@ function createPidRules(self, cfg) {
 
       // Restart cycle immediately with fresh PID compute
       cancelPidTimers(self.ctx);
+      applyHeatingToActuators(cfg.actuators, false);
 
       if (vdCtrlEnable.getValue()) {
         startPidMode(self, cfg);
@@ -1117,10 +1130,10 @@ function createErrorRules(self, cfg) {
  * @returns {boolean} True if all rules created successfully, false otherwise
  */
 function createRules(self, cfg) {
-  var rulesState = false
+  var rulesState = false;
 
   if (cfg.controlMode === 'pid') {
-    rulesState = createPidRules(self, cfg)
+    rulesState = createPidRules(self, cfg);
   } else {
     rulesState = createHysteresisRules(self, cfg);
   }
@@ -1165,10 +1178,10 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
     if (cfg.controlMode === 'pid') {
       this.ctx.pid = new PidEngine(
-        cfg.pidCoefficients.kp,
-        cfg.pidCoefficients.ki,
-        cfg.pidCoefficients.kd,
-        cfg.deadBand
+        cfg.pidSettings.pidCoefficients.kp,
+        cfg.pidSettings.pidCoefficients.ki,
+        cfg.pidSettings.pidCoefficients.kd,
+        cfg.pidSettings.deadBand
       );
       if (enabledFromStorage) {
         startPidMode(this, cfg);
