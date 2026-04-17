@@ -317,19 +317,13 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
       );
       isPidValid = false;
     }
-    if (isPidValid && cfg.pidSettings.pwmPeriodSec <= cfg.pidSettings.minOnTimeSec) {
+    if (isPidValid && cfg.pidSettings.pwmPeriodSec <= (cfg.pidSettings.minOnTimeSec + cfg.pidSettings.minOffTimeSec)) {
       log.error(
-        'Thermostat validation error: PWM period ({}) must be > min ON time ({})',
+        'Thermostat validation error: PWM period ({}) must be greater than min ON time ({}) + min OFF time ({}) = {}',
         cfg.pidSettings.pwmPeriodSec,
-        cfg.pidSettings.minOnTimeSec
-      );
-      isPidValid = false;
-    }
-    if (isPidValid && cfg.pidSettings.pwmPeriodSec <= cfg.pidSettings.minOffTimeSec) {
-      log.error(
-        'Thermostat validation error: PWM period ({}) must be > min OFF time ({})',
-        cfg.pidSettings.pwmPeriodSec,
-        cfg.pidSettings.minOffTimeSec
+        cfg.pidSettings.minOnTimeSec,
+        cfg.pidSettings.minOffTimeSec,
+        cfg.pidSettings.minOnTimeSec + cfg.pidSettings.minOffTimeSec
       );
       isPidValid = false;
     }
@@ -588,17 +582,33 @@ function runPwmCycle(self, cfg) {
 
   // Calculate on/off durations from duty cycle
   var onTime = (self.ctx.pidOutput / 100) * cfg.pidSettings.pwmPeriodSec;
-
-  // Apply min on/off constraints
   var offTime = cfg.pidSettings.pwmPeriodSec - onTime;
+  var originalOnTime = onTime;
+  var originalOffTime = offTime;
+  var constraintsApplied = false;
+
+  // Apply min on constraints
   if (onTime > 0 && onTime < cfg.pidSettings.minOnTimeSec) {
     onTime = 0;
+    offTime = cfg.pidSettings.pwmPeriodSec - onTime;
+    constraintsApplied = true;
   }
+
+  // Apply min off constraints
   if (offTime < cfg.pidSettings.minOffTimeSec) {
     offTime = cfg.pidSettings.minOffTimeSec;
     onTime = cfg.pidSettings.pwmPeriodSec - offTime;
+    constraintsApplied = true;
   }
-  offTime = cfg.pidSettings.pwmPeriodSec - onTime;
+  
+  if (constraintsApplied) {
+    log.debug('Cycle adjusted: ON {}s -> {}s, OFF {}s -> {}s (PID output={}%)',
+      originalOnTime.toFixed(2), onTime.toFixed(2),
+      originalOffTime.toFixed(2), offTime.toFixed(2),
+      self.ctx.pidOutput.toFixed(1));
+  }
+  
+  // Updating the display of working timers
   vdCtrlOutputTiming.setValue(Math.round(onTime) + ' / ' + Math.round(offTime));
 
   if (onTime >= cfg.pidSettings.pwmPeriodSec) {

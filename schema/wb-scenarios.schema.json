@@ -862,7 +862,7 @@
             "minOnTimeSec": {
               "type": "integer",
               "title": "thermostatMinOnTimeTitle",
-              "default": 5,
+              "default": 0,
               "minimum": 0,
               "propertyOrder": 7,
               "options": {
@@ -872,7 +872,7 @@
             "minOffTimeSec": {
               "type": "integer",
               "title": "thermostatMinOffTimeTitle",
-              "default": 5,
+              "default": 0,
               "minimum": 0,
               "propertyOrder": 8,
               "options": {
