@@ -171,7 +171,7 @@ ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {
  * @returns {boolean} True if configuration is valid, false otherwise
  */
 ThermostatScenario.prototype.validateCfg = function (cfg) {
-  var isLimitsCorrect = cfg.tempLimitsMin <= cfg.tempLimitsMax;
+  var isLimitsCorrect = cfg.tempLimitsMin < cfg.tempLimitsMax;
   if (!isLimitsCorrect) {
     log.error(
       'Thermostat validation error: temperature limit "Min" = "{}" must be less than "Max" = "{}"',
@@ -202,7 +202,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
   } else if (cfg.controlMode === 'pid') {
     if (typeof cfg.pidSettings.deadBand !== 'number' || cfg.pidSettings.deadBand < 0) {
       log.error(
-        'Thermostat validation error: dead band must be a number >= 0, but got "{}"',
+        'Thermostat validation error: dead band value must be greater than 0, but got "{}"',
         cfg.pidSettings.deadBand
       );
       isModeParamsCorrect = false;
@@ -314,6 +314,14 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
       log.error(
         'Thermostat validation error: min OFF time must be a number >= 0, but got "{}"',
         cfg.pidSettings.minOffTimeSec
+      );
+      isPidValid = false;
+    }
+    if (isPidValid && cfg.pidSettings.pwmPeriodSec <= cfg.pidSettings.minOnTimeSec) {
+      log.error(
+        'Thermostat validation error: PWM period ({}) must be > min ON time ({})',
+        cfg.pidSettings.pwmPeriodSec,
+        cfg.pidSettings.minOnTimeSec
       );
       isPidValid = false;
     }
