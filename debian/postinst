@@ -7,7 +7,7 @@ DATA_CONFIG="/mnt/data/etc/wb-scenarios.conf"
 # Added in 1.7.6 (2026-03-20)
 # Converts old single-actuator config to new multi-actuator format
 # Runs on every install; jq query is a no-op if already migrated
-migrate_config() {
+migrate_actuator_to_actuators() {
     local cfg="$1"
     if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1; then
         if jq -e '.scenarios[]? | select(.scenarioType == "thermostat" and .actuator != null)' "$cfg" >/dev/null 2>&1; then
@@ -19,8 +19,24 @@ migrate_config() {
     fi
 }
 
+# Migration: thermostat add controlMode field if missing
+# Added in 1.8.3 (2026-04-10)
+# Adds controlMode: "hysteresis" to thermostat scenarios that don't have it
+migrate_add_control_mode() {
+    local cfg="$1"
+    if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1; then
+        if jq -e '.scenarios[]? | select(.scenarioType == "thermostat" and .controlMode == null)' "$cfg" >/dev/null 2>&1; then
+            TMP=$(mktemp)
+            jq '(.scenarios[] | select(.scenarioType == "thermostat" and .controlMode == null)) |=
+                (. + { controlMode: "hysteresis" })
+            ' "$cfg" > "$TMP" && mv "$TMP" "$cfg"
+        fi
+    fi
+}
+
 if [ "$1" = "configure" ]; then
-    migrate_config "$DATA_CONFIG"
+    migrate_actuator_to_actuators "$DATA_CONFIG"
+    migrate_add_control_mode "$DATA_CONFIG"
 fi
 
 deb-systemd-invoke restart wb-rules

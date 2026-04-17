@@ -740,14 +740,145 @@
             }
           }
         },
+        "controlMode": {
+          "type": "string",
+          "title": "thermostatControlModeTitle",
+          "enum": ["hysteresis", "pid"],
+          "default": "hysteresis",
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 12,
+            "enum_titles": [
+              "thermostatControlModeHysteresis",
+              "thermostatControlModePid"
+            ]
+          }
+        },
         "hysteresis": {
           "type": "number",
           "title": "thermostatHysteresisTitle",
           "description": "thermostatHysteresisDescription",
           "default": 1,
-          "propertyOrder": 5,
+          "propertyOrder": 6,
           "options": {
-            "grid_columns": 12
+            "grid_columns": 12,
+            "wb": {"show_editor": true},
+            "dependencies": {
+              "controlMode": ["hysteresis"]
+            }
+          }
+        },
+        "pidSettings": {
+          "type": "object",
+          "title": "thermostatPidSettingsTitle",
+          "_format": "grid",
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 12,
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true,
+            "wb": {"show_editor": true},
+            "dependencies": {
+              "controlMode": ["pid"]
+            }
+          },
+          "properties": {
+            "deadBand": {
+              "type": "number",
+              "title": "thermostatDeadBandTitle",
+              "description": "thermostatDeadBandDescription",
+              "default": 0.3,
+              "minimum": 0,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 12
+              }
+            },
+            "pidCoefficients": {
+              "type": "object",
+              "title": "generalPidCoefficientsTitle",
+              "_format": "grid",
+              "propertyOrder": 2,
+              "options": {
+                "disable_collapse": true,
+                "disable_edit_json": true,
+                "disable_properties": true,
+                "grid_columns": 12
+              },
+              "properties": {
+                "kp": {
+                  "type": "number",
+                  "title": "generalPidKpTitle",
+                  "default": 15,
+                  "minimum": 0,
+                  "propertyOrder": 1,
+                  "options": {
+                    "grid_columns": 4
+                  }
+                },
+                "ki": {
+                  "type": "number",
+                  "title": "generalPidKiTitle",
+                  "default": 0.03,
+                  "minimum": 0,
+                  "propertyOrder": 2,
+                  "options": {
+                    "grid_columns": 4
+                  }
+                },
+                "kd": {
+                  "type": "number",
+                  "title": "generalPidKdTitle",
+                  "default": 0,
+                  "minimum": 0,
+                  "propertyOrder": 3,
+                  "options": {
+                    "grid_columns": 4
+                  }
+                }
+              }
+            },
+            "pwmPeriodSec": {
+              "type": "integer",
+              "title": "thermostatPwmPeriodTitle",
+              "default": 60,
+              "minimum": 1,
+              "propertyOrder": 5,
+              "options": {
+                "grid_columns": 6
+              }
+            },
+            "pidRecalcCycles": {
+              "type": "integer",
+              "title": "thermostatPidRecalcCyclesTitle",
+              "default": 1,
+              "minimum": 1,
+              "propertyOrder": 6,
+              "options": {
+                "grid_columns": 6
+              }
+            },
+            "minOnTimeSec": {
+              "type": "integer",
+              "title": "thermostatMinOnTimeTitle",
+              "default": 0,
+              "minimum": 0,
+              "propertyOrder": 7,
+              "options": {
+                "grid_columns": 6
+              }
+            },
+            "minOffTimeSec": {
+              "type": "integer",
+              "title": "thermostatMinOffTimeTitle",
+              "default": 0,
+              "minimum": 0,
+              "propertyOrder": 8,
+              "options": {
+                "grid_columns": 6
+              }
+            }
           }
         },
         "temperatureSensor": {
@@ -755,11 +886,11 @@
           "_format": "wb-autocomplete",
           "title": "thermostatTemperatureSensorTitle",
           "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 6,
+          "propertyOrder": 13,
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder":  "generalMqttTopicNamePlaceholder"
+              "placeholder": "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -771,7 +902,7 @@
         "actuators": {
           "type": "array",
           "minItems": 1,
-          "propertyOrder": 7,
+          "propertyOrder": 14,
           "title": "thermostatActuatorsTitle",
           "description": "thermostatActuatorsDescription",
           "_format": "table",
@@ -833,7 +964,19 @@
         "name",
         "targetTemperature",
         "temperatureLimits",
+        "controlMode",
+        "temperatureSensor",
+        "actuators"
+      ],
+      "defaultProperties": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "targetTemperature",
+        "temperatureLimits",
+        "controlMode",
         "hysteresis",
+        "pidSettings",
         "temperatureSensor",
         "actuators"
       ]
@@ -1434,8 +1577,7 @@
               }
             }
           },
-          "required": ["workTimeUnit", "workTimeValue"],
-          "defaultProperties": ["workTimeUnit", "workTimeValue"]
+          "required": ["workTimeUnit", "workTimeValue"]
         },
         "interval": {
           "title": "periodicTimerIntervalTitle",
@@ -1476,8 +1618,7 @@
               }
             }
           },
-          "required": ["intervalUnit", "intervalValue"],
-          "defaultProperties": ["intervalUnit", "intervalValue"]
+          "required": ["intervalUnit", "intervalValue"]
         },
         "scheduleDaysOfWeek": {
           "title": "generalDaysOfWeekTitle",
@@ -1802,6 +1943,10 @@
       "generalFriday": "Friday",
       "generalSaturday": "Saturday",
       "generalSunday": "Sunday",
+      "generalPidCoefficientsTitle": "PID Coefficients",
+      "generalPidKpTitle": "Kp (proportional)",
+      "generalPidKiTitle": "Ki (integral)",
+      "generalPidKdTitle": "Kd (derivative)",
 
       "devicesControlScenarioName": "«If-Then» Automation",
       "devicesControlScenarioDescription": "Triggers actions when specific events occur.<br>Example: switch pressed → light turns on, motion detected → curtains open.",
@@ -1840,18 +1985,31 @@
       "thermostatScenarioDescription": "Maintaining a set temperature with hysteresis",
       "thermostatDefaultInputName": "Heater",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
-      "thermostatTempLimitsObjTitle": "Temperature adjustment limits in widget",
+      "thermostatTempLimitsObjTitle": "Temperature Adjustment Limits in Widget",
       "thermostatTempLimitsMinTitle": "Low (°C)",
       "thermostatTempLimitsMaxTitle": "Top (°C)",
       "thermostatHysteresisTitle": "Hysteresis (°C)",
       "thermostatHysteresisDescription": "Turn on = Set temperature - Hysteresis.<br>Turn off = Set temperature + Hysteresis.",
-      "thermostatTemperatureSensorTitle": "Temperature channel",
-      "thermostatActuatorsTitle": "Heater channels",
+      "thermostatTemperatureSensorTitle": "Temperature Channel",
+      "thermostatActuatorsTitle": "Heater Channels",
       "thermostatActuatorsDescription": "Channels controlled by the thermostat when heating is needed:",
-      "thermostatActuatorObjTitle": "Heater channel",
-      "thermostatActuatorBehaviorTitle": "When heating",
+      "thermostatActuatorObjTitle": "Heater Channel",
+      "thermostatActuatorBehaviorTitle": "When Heating",
       "thermostatActuatorEnumEnable": "Turn on (switch)",
       "thermostatActuatorEnumDisable": "Turn off (switch, inverted)",
+
+      "thermostatControlModeTitle": "Control Mode",
+      "thermostatControlModeHysteresis": "Hysteresis",
+      "thermostatControlModePid": "PID + PWM",
+      "thermostatDeadBandTitle": "Deadband (°C)",
+      "thermostatDeadBandDescription": "Within ±deadband around the setpoint, P/I/D components are multiplied by 0.1 to avoid chattering",
+      "thermostatPidSettingsTitle": "PID + PWM Settings",
+      "thermostatPwmPeriodTitle": "Cycle Time (s)",
+      "thermostatPwmPeriodDescription": "Duration of one control cycle. The actuator is ON for (output%) × cycle time. For mechanical relays use 30–120 s; for SSR use 1–5 s.",
+      "thermostatPidRecalcCyclesTitle": "PID Recalculation Interval (cycles)",
+      "thermostatPidRecalcCyclesDescription": "PID recalculates every N control cycles. Actual recalculation interval = cycle time × N",
+      "thermostatMinOnTimeTitle": "Minimum ON Time (s)",
+      "thermostatMinOffTimeTitle": "Minimum OFF Time (s)",
 
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
@@ -1942,6 +2100,10 @@
       "generalFriday": "Пятница",
       "generalSaturday": "Суббота",
       "generalSunday": "Воскресенье",
+      "generalPidCoefficientsTitle": "Коэффициенты ПИД",
+      "generalPidKpTitle": "Kp (пропорциональный)",
+      "generalPidKiTitle": "Ki (интегральный)",
+      "generalPidKdTitle": "Kd (дифференциальный)",
 
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
@@ -2006,6 +2168,19 @@
       "thermostatActuatorBehaviorTitle": "При нагреве",
       "thermostatActuatorEnumEnable": "Включить (переключатель)",
       "thermostatActuatorEnumDisable": "Выключить (переключатель, инверсия)",
+
+      "thermostatControlModeTitle": "Режим управления",
+      "thermostatControlModeHysteresis": "Гистерезис",
+      "thermostatControlModePid": "ПИД + ШИМ",
+      "thermostatDeadBandTitle": "Зона нечувствительности (°C)",
+      "thermostatDeadBandDescription": "В пределах ±зоны от уставки компоненты P/I/D умножаются на 0.1, чтобы избежать частых переключений",
+      "thermostatPidSettingsTitle": "Настройки ПИД + ШИМ",
+      "thermostatPwmPeriodTitle": "Время цикла (с)",
+      "thermostatPwmPeriodDescription": "Длительность одного цикла управления. Устройство включено на (выход%) × время цикла. Для механических реле — 30–120 с, для SSR — 1–5 с.",
+      "thermostatPidRecalcCyclesTitle": "Интервал пересчёта ПИД (циклов)",
+      "thermostatPidRecalcCyclesDescription": "ПИД пересчитывается каждые N циклов управления. Реальный интервал пересчёта = время цикла × N",
+      "thermostatMinOnTimeTitle": "Минимальное время работы (с)",
+      "thermostatMinOffTimeTitle": "Минимальное время паузы (с)",
 
       "scheduleScenarioName": "Расписание",
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
