@@ -57,7 +57,7 @@ var thermostatActionsTable = {
  * @property {number} hysteresis - Hysteresis value (switching range, °C)
  *
  * PID mode (controlMode === 'pid'):
- * @property {Object} pidSettings - PID + PWM settings object
+ * @property {Object} pidSettings - PID settings object
  * @property {number} pidSettings.deadBand - Dead band around setpoint (°C)
  * @property {number} pidSettings.kp - Proportional gain
  * @property {number} pidSettings.ki - Integral gain
@@ -289,7 +289,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
         cfg.pidSettings.pwmPeriodSec <= 0 ||
         cfg.pidSettings.pwmPeriodSec % 1 !== 0) {
       log.error(
-        'Thermostat validation error: PWM period must be an integer > 0, but got "{}"',
+        'Thermostat validation error: Cycle period must be an integer > 0, but got "{}"',
         cfg.pidSettings.pwmPeriodSec
       );
       isPidValid = false;
@@ -319,7 +319,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
     }
     if (isPidValid && cfg.pidSettings.pwmPeriodSec <= (cfg.pidSettings.minOnTimeSec + cfg.pidSettings.minOffTimeSec)) {
       log.error(
-        'Thermostat validation error: PWM period ({}) must be greater than min ON time ({}) + min OFF time ({}) = {}',
+        'Thermostat validation error: Cycle period ({}) must be greater than min ON time ({}) + min OFF time ({}) = {}',
         cfg.pidSettings.pwmPeriodSec,
         cfg.pidSettings.minOnTimeSec,
         cfg.pidSettings.minOffTimeSec,
@@ -978,7 +978,7 @@ function createHysteresisRules(self, cfg) {
 }
 
 /**
- * Creates rules for PID + PWM mode
+ * Creates rules for PID mode
  * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
  * @param {ThermostatConfig} cfg - Configuration object
  * @returns {boolean} True if all rules created successfully
