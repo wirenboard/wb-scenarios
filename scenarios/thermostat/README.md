@@ -10,7 +10,7 @@
 
 <p align="center">
     <img width="400"
-         src="img/scenario-cfg-view.png"
+         src="img/scenario-cfg-hysteresis-view.png"
          alt="Scenario cfg view" />
 </p>
 
@@ -66,7 +66,7 @@
 
 <p align="center">
     <img width="400"
-         src="img/scenario-vd-view.png"
+         src="img/scenario-vd-hysteresis-view.png"
          alt="Virtual device view" />
 </p>
 
@@ -251,7 +251,7 @@ main();
 
 <p align="center">
     <img width="400"
-         src="img/scenario-vd-view.png"
+         src="img/scenario-vd-hysteresis-view.png"
          alt="Virtual device view" />
 </p>
 
