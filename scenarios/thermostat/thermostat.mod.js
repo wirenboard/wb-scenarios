@@ -1045,11 +1045,7 @@ function createPidRules(self, cfg) {
 
       // Restart cycle immediately with fresh PID compute
       cancelPidTimers(self.ctx);
-      applyHeatingToActuators(cfg.actuators, false);
-
-      if (vdCtrlEnable.getValue()) {
-        startPidMode(self, cfg);
-      }
+      startPidMode(self, cfg);
     },
   });
   if (!ruleId) {
