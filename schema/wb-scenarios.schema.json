@@ -1982,7 +1982,7 @@
       "lightControlLightSwitchesObjTitle": "Switch",
 
       "thermostatScenarioName": "Thermostat",
-      "thermostatScenarioDescription": "Maintaining a set temperature with hysteresis",
+      "thermostatScenarioDescription": "Temperature control with hysteresis or a PID algorithm for discrete outputs.",
       "thermostatDefaultInputName": "Heater",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
       "thermostatTempLimitsObjTitle": "Temperature Adjustment Limits in Widget",
@@ -2000,10 +2000,10 @@
 
       "thermostatControlModeTitle": "Control Mode",
       "thermostatControlModeHysteresis": "Hysteresis",
-      "thermostatControlModePid": "PID + PWM",
+      "thermostatControlModePid": "PID",
       "thermostatDeadBandTitle": "Deadband (°C)",
       "thermostatDeadBandDescription": "Within ±deadband around the setpoint, P/I/D components are multiplied by 0.1 to avoid chattering",
-      "thermostatPidSettingsTitle": "PID + PWM Settings",
+      "thermostatPidSettingsTitle": "PID Settings",
       "thermostatPwmPeriodTitle": "Cycle Time (s)",
       "thermostatPwmPeriodDescription": "Duration of one control cycle. The actuator is ON for (output%) × cycle time. For mechanical relays use 30–120 s; for SSR use 1–5 s.",
       "thermostatPidRecalcCyclesTitle": "PID Recalculation Interval (cycles)",
@@ -2153,7 +2153,7 @@
       "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
 
       "thermostatScenarioName": "Термостат",
-      "thermostatScenarioDescription": "Поддержание заданной температуры с гистерезисом.",
+      "thermostatScenarioDescription": "Регулирование температуры с гистерезисом или ПИД-алгоритмом для дискретных выходов.",
       "thermostatDefaultInputName": "Теплый пол в комнате",
       "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
       "thermostatTempLimitsObjTitle": "Границы изменения температуры в виджете",
@@ -2171,10 +2171,10 @@
 
       "thermostatControlModeTitle": "Режим управления",
       "thermostatControlModeHysteresis": "Гистерезис",
-      "thermostatControlModePid": "ПИД + ШИМ",
+      "thermostatControlModePid": "ПИД",
       "thermostatDeadBandTitle": "Зона нечувствительности (°C)",
       "thermostatDeadBandDescription": "В пределах ±зоны от уставки компоненты P/I/D умножаются на 0.1, чтобы избежать частых переключений",
-      "thermostatPidSettingsTitle": "Настройки ПИД + ШИМ",
+      "thermostatPidSettingsTitle": "Настройки ПИД",
       "thermostatPwmPeriodTitle": "Время цикла (с)",
       "thermostatPwmPeriodDescription": "Длительность одного цикла управления. Устройство включено на (выход%) × время цикла. Для механических реле — 30–120 с, для SSR — 1–5 с.",
       "thermostatPidRecalcCyclesTitle": "Интервал пересчёта ПИД (циклов)",
