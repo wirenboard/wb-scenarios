@@ -21,6 +21,7 @@ var log = new Logger(loggerFileLabel);
  * @typedef {Object} PidActuatorConfig
  * @property {string} mqttTopicName - MQTT topic of the analog output
  * @property {'direct'|'inverted'} behaviorType - Output direction
+ * @property {number} precision - Rounding precision (0 = integer, 1 = tenths, 2 = hundredths)
  * @property {number} outputMin - Minimum output value (actuator units)
  * @property {number} outputMax - Maximum output value (actuator units)
  */
@@ -189,6 +190,20 @@ PidControllerScenario.prototype.validateCfg = function (cfg) {
   var isActuatorsValid = true;
   for (var i = 0; i < cfg.actuators.length; i++) {
     var act = cfg.actuators[i];
+
+    // Validate precision
+    if (typeof act.precision !== 'number' || 
+        act.precision < 0 || 
+        act.precision > 2 || 
+        act.precision % 1 !== 0) {
+      log.error(
+        'PID validation error: precision must be 0, 1 or 2 for actuator "{}", got "{}"',
+        act.mqttTopicName,
+        act.precision
+      );
+      isActuatorsValid = false;
+    }
+
     if (typeof act.outputMin !== 'number' ||
         typeof act.outputMax !== 'number') {
       log.error(
@@ -295,8 +310,11 @@ function applyOutputToActuators(actuators, pidOutput) {
   for (var i = 0; i < actuators.length; i++) {
     var act = actuators[i];
     var value = mapOutputToActuator(pidOutput, act);
-    // Round to 2 decimal places to avoid floating point noise
-    value = Math.round(value * 100) / 100;
+
+    // Round numbers to the required number of decimal places
+    var multiplier = Math.pow(10, act.precision);
+    value = Math.round(value * multiplier) / multiplier;
+
     try {
       if (dev[act.mqttTopicName] !== value) {
         dev[act.mqttTopicName] = value;

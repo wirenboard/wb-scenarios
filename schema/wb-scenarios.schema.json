@@ -1948,9 +1948,9 @@
           "type": "number",
           "title": "pidControllerSetpointTitle",
           "default": 22,
-          "propertyOrder": 4,
+          "propertyOrder": 3,
           "options": {
-            "grid_columns": 6
+            "grid_columns": 12
           }
         },
         "deadBand": {
@@ -1959,17 +1959,18 @@
           "description": "pidControllerDeadbandDescription",
           "default": 0.2,
           "minimum": 0,
-          "propertyOrder": 5,
+          "propertyOrder": 4,
           "options": {
-            "grid_columns": 6
+            "grid_columns": 12
           }
         },
         "setpointLimits": {
           "type": "object",
           "title": "pidControllerSetpointLimitsTitle",
-          "propertyOrder": 6,
+          "propertyOrder": 5,
           "_format": "grid",
           "options": {
+            "grid_columns": 12,
             "disable_collapse": true,
             "disable_edit_json": true,
             "disable_properties": true
@@ -1998,7 +1999,7 @@
         "pid": {
           "type": "object",
           "title": "generalPidCoefficientsTitle",
-          "propertyOrder": 7,
+          "propertyOrder": 6,
           "_format": "grid",
           "options": {
             "disable_collapse": true,
@@ -2043,7 +2044,7 @@
           "title": "pidControllerCalcPeriodTitle",
           "default": 30,
           "minimum": 1,
-          "propertyOrder": 8,
+          "propertyOrder": 7,
           "options": {
             "grid_columns": 12
           }
@@ -2053,7 +2054,7 @@
           "_format": "wb-autocomplete",
           "title": "pidControllerSensorTitle",
           "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 3,
+          "propertyOrder": 8,
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
@@ -2120,20 +2121,34 @@
                   ]
                 }
               },
+              "precision": {
+                "type": "integer",
+                "propertyOrder": 3,
+                "title": "pidControllerPrecisionTitle",
+                "enum": [0, 1, 2],
+                "default": 2,
+                "options": {
+                  "enum_titles": [
+                    "pidControllerPrecisionInteger",
+                    "pidControllerPrecisionTenths",
+                    "pidControllerPrecisionHundredths"
+                  ]
+                }
+              },
               "outputMin": {
                 "type": "number",
-                "propertyOrder": 3,
+                "propertyOrder": 4,
                 "title": "pidControllerOutputMinTitle",
                 "default": 0
               },
               "outputMax": {
                 "type": "number",
-                "propertyOrder": 4,
+                "propertyOrder": 5,
                 "title": "pidControllerOutputMaxTitle",
                 "default": 0
               }
             },
-            "required": ["mqttTopicName", "behaviorType", "outputMin", "outputMax"]
+            "required": ["mqttTopicName", "behaviorType", "precision", "outputMin", "outputMax"]
           }
         }
       },
@@ -2141,12 +2156,12 @@
         "scenarioType",
         "componentVersion",
         "name",
-        "sensor",
         "setpoint",
         "deadBand",
         "setpointLimits",
         "pid",
         "calculationPeriodSec",
+        "sensor",
         "actuators"
       ]
     }
@@ -2336,7 +2351,7 @@
       "channelMapDirectionBackward": "B → A",
       "channelMapDirectionBoth": "A ↔ B",
 
-      "pidControllerScenarioName": "PID Controller",
+      "pidControllerScenarioName": "PID controller (analog outputs)",
       "pidControllerScenarioDescription": "PID controller for analog outputs.",
       "pidControllerDefaultInputName": "PID Controller",
       "pidControllerSensorTitle": "Input sensor",
@@ -2353,6 +2368,10 @@
       "pidControllerBehaviorTitle": "Action",
       "pidControllerEnumDirect": "Direct (min then max)",
       "pidControllerEnumInverted": "Reverse (max then min)",
+      "pidControllerPrecisionTitle": "Rounding precision",
+      "pidControllerPrecisionInteger": "Integer (0)",
+      "pidControllerPrecisionTenths": "Tenths (0.0)",
+      "pidControllerPrecisionHundredths": "Hundredths (0.00)",
       "pidControllerOutputMinTitle": "Minimum value",
       "pidControllerOutputMaxTitle": "Maximum value"
     },
@@ -2526,7 +2545,7 @@
       "channelMapDirectionBackward": "B → A",
       "channelMapDirectionBoth": "A ↔ B",
 
-      "pidControllerScenarioName": "ПИД-регулятор",
+      "pidControllerScenarioName": "ПИД-регулятор (аналоговые выходы)",
       "pidControllerScenarioDescription": "ПИД-регулятор для аналоговых выходов.",
       "pidControllerDefaultInputName": "ПИД-регулятор",
       "pidControllerSensorTitle": "Входной датчик",
@@ -2543,6 +2562,10 @@
       "pidControllerBehaviorTitle": "Поведение",
       "pidControllerEnumDirect": "Прямой (мин → макс)",
       "pidControllerEnumInverted": "Обратный (макс → мин)",
+      "pidControllerPrecisionTitle": "Точность округления",
+      "pidControllerPrecisionInteger": "До целого (0)",
+      "pidControllerPrecisionTenths": "До десятых (0.0)",
+      "pidControllerPrecisionHundredths": "До сотых (0.00)",
       "pidControllerOutputMinTitle": "Минимальное значение",
       "pidControllerOutputMaxTitle": "Максимальное значение"
     }
