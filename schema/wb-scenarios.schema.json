@@ -1974,7 +1974,7 @@
       "lightControlOpeningSensorsObjTitle": "Opening sensor",
       "lightControlOpeningSensorsBehaviorTypeDescription": "Door opening event",
       "lightControlOpeningSensorsEnumWhenDisabled": "When disabled",
-      "lightControlOpeningSensorsEnumWhenEnabled": "When ebabled",
+      "lightControlOpeningSensorsEnumWhenEnabled": "When enabled",
       "lightControlLightSwitchesTitle": "Light switches",
       "lightControlLightSwitchesEnableDelayTitle": "Auto-off for lights & re-enable automation",
       "lightControlLightSwitchesDelayTitle": "Delay after switch press before lights off & sensor control resumes (s).",

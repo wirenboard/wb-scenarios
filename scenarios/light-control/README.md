@@ -10,7 +10,9 @@
 Конфигурация выглядит следующим образом
 
 <p align="center">
-    <img width="400" src="doc/scenario-config.png" alt="Scenario config">
+    <img width="400"
+         src="img/scenario-cfg-view.png"
+         alt="Scenario cfg view" />
 </p>
 
 ## Логика работы сценария
@@ -86,7 +88,7 @@
 var CustomTypeSc = require('light-control.mod').LightControlScenario;
 
 function main() {
-  scenarioName = 'Bathroom light';
+  scenarioName = 'Light control';
   log.debug('Start init logic for: "{}"', scenarioName);
 
   // Step 2: Create new instance with scenario class
@@ -159,3 +161,13 @@ function main() {
 
 main();
 ```
+
+После запуска скрипта у вас в устройствах появится новое устройство
+для управления - которое будет аналогично тому, что вы можете создать через
+визульный конфигуратор в WEBUI контроллера:
+
+<p align="center">
+    <img width="400"
+         src="img/scenario-vd-view.png"
+         alt="Virtual device view" />
+</p>
