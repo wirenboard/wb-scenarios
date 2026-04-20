@@ -20,6 +20,7 @@ var setupSchedule = require("scenario-init-schedule.mod").setup;
 var setupAstronomicalTimer = require("scenario-init-astronomical-timer.mod").setup;
 var setupPeriodicTimer = require("scenario-init-periodic-timer.mod").setup;
 var setupChannelMap = require("scenario-init-channel-map.mod").setup;
+var setupPidController = require("scenario-init-pid-controller.mod").setup;
 var Logger = require('logger.mod').Logger;
 
 var log = new Logger('WBSC-init-main');
@@ -55,6 +56,7 @@ function main() {
       setupAstronomicalTimer();
       setupPeriodicTimer();
       setupChannelMap();
+      setupPidController();
     }
   });
   psWBSC["VdList"] = null; // Removing all previously created virtual devices from persistent storage

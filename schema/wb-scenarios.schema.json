@@ -2126,7 +2126,7 @@
                 "propertyOrder": 3,
                 "title": "pidControllerPrecisionTitle",
                 "enum": [0, 1, 2],
-                "default": 2,
+                "default": 1,
                 "options": {
                   "enum_titles": [
                     "pidControllerPrecisionInteger",
