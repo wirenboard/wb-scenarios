@@ -1,3 +1,9 @@
+wb-scenarios (1.8.5) stable; urgency=medium
+
+  * Update thermostat: update PID translations
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Apr 2026 11:09:00 +0300
+
 wb-scenarios (1.8.4) stable; urgency=medium
 
   * Update thermostat: add PID support
