@@ -1,3 +1,9 @@
+wb-scenarios (1.8.6) stable; urgency=medium
+
+  * Update light-control scenario: remove html tags
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Mon, 20 Apr 2026 12:10:00 +0300
+
 wb-scenarios (1.8.5) stable; urgency=medium
 
   * Update thermostat: update PID translations
