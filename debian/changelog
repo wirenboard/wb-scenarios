@@ -1,3 +1,9 @@
+wb-scenarios (1.8.7) stable; urgency=medium
+
+  * Add new scenario "pid-analog"
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Apr 2026 13:34:00 +0300
+
 wb-scenarios (1.8.6) stable; urgency=medium
 
   * Update light-control scenario: remove html tags
