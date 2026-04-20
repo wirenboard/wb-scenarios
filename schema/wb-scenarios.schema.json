@@ -2343,24 +2343,24 @@
       "channelMapDirectionBoth": "A ↔ B",
 
       "pidControllerScenarioName": "PID Controller",
-      "pidControllerScenarioDescription": "PID controller for analog outputs.<br>Writes computed values directly to analog outputs.",
+      "pidControllerScenarioDescription": "PID controller for analog outputs.",
       "pidControllerDefaultInputName": "PID Controller",
       "pidControllerSensorTitle": "Input sensor",
       "pidControllerSetpointTitle": "Setpoint",
-      "pidControllerDeadbandTitle": "Dead band",
+      "pidControllerDeadbandTitle": "Deadband",
       "pidControllerDeadbandDescription": "Within ±deadband around the setpoint, P/I/D components are multiplied by 0.1 to avoid micro-switching",
       "pidControllerSetpointLimitsTitle": "Setpoint adjustment limits in widget",
       "pidControllerSetpointLimitsMinTitle": "Low",
       "pidControllerSetpointLimitsMaxTitle": "High",
       "pidControllerCalcPeriodTitle": "PID recalculation interval (s)",
-      "pidControllerActuatorsTitle": "Actuators",
+      "pidControllerActuatorsTitle": "Output",
       "pidControllerActuatorsDescription": "Analog outputs controlled by the PID controller:",
-      "pidControllerActuatorObjTitle": "Actuator",
-      "pidControllerBehaviorTitle": "Behavior",
+      "pidControllerActuatorObjTitle": "Output",
+      "pidControllerBehaviorTitle": "Action",
       "pidControllerEnumDirect": "Direct (min then max)",
-      "pidControllerEnumInverted": "Inverted (max then min)",
-      "pidControllerOutputMinTitle": "Output min (actuator value)",
-      "pidControllerOutputMaxTitle": "Output max (actuator value)"
+      "pidControllerEnumInverted": "Reverse (max then min)",
+      "pidControllerOutputMinTitle": "Minimum value",
+      "pidControllerOutputMaxTitle": "Maximum value"
     },
     "ru": {
       "generalScenarioGenerateRuleTitle": "Активировать сценарий (создает виртуальное устройство и правило сценария)",
@@ -2530,7 +2530,7 @@
       "channelMapDirectionBoth": "A ↔ B",
 
       "pidControllerScenarioName": "ПИД-регулятор",
-      "pidControllerScenarioDescription": "ПИД-регулятор для аналоговых выходов.<br>Записывает вычисленные значения напрямую в аналоговые выходы.",
+      "pidControllerScenarioDescription": "ПИД-регулятор для аналоговых выходов.",
       "pidControllerDefaultInputName": "ПИД-регулятор",
       "pidControllerSensorTitle": "Входной датчик",
       "pidControllerSetpointTitle": "Уставка",
@@ -2540,14 +2540,14 @@
       "pidControllerSetpointLimitsMinTitle": "Нижняя",
       "pidControllerSetpointLimitsMaxTitle": "Верхняя",
       "pidControllerCalcPeriodTitle": "Интервал пересчёта ПИД (с)",
-      "pidControllerActuatorsTitle": "Актуаторы",
+      "pidControllerActuatorsTitle": "Выход",
       "pidControllerActuatorsDescription": "Аналоговые выходы, управляемые ПИД-регулятором:",
-      "pidControllerActuatorObjTitle": "Актуатор",
+      "pidControllerActuatorObjTitle": "Выход",
       "pidControllerBehaviorTitle": "Поведение",
       "pidControllerEnumDirect": "Прямой (мин → макс)",
-      "pidControllerEnumInverted": "Инвертированный (макс → мин)",
-      "pidControllerOutputMinTitle": "Мин. выход (значение актуатора)",
-      "pidControllerOutputMaxTitle": "Макс. выход (значение актуатора)"
+      "pidControllerEnumInverted": "Обратный (макс → мин)",
+      "pidControllerOutputMinTitle": "Минимальное значение",
+      "pidControllerOutputMaxTitle": "Максимальное значение"
     }
   }
 }
