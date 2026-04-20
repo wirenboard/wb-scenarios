@@ -1982,7 +1982,7 @@
       "lightControlLightSwitchesObjTitle": "Switch",
 
       "thermostatScenarioName": "Thermostat",
-      "thermostatScenarioDescription": "Maintaining a set temperature with hysteresis",
+      "thermostatScenarioDescription": "Temperature control with hysteresis or a PID algorithm for discrete outputs.",
       "thermostatDefaultInputName": "Heater",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
       "thermostatTempLimitsObjTitle": "Temperature Adjustment Limits in Widget",
@@ -2153,7 +2153,7 @@
       "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
 
       "thermostatScenarioName": "Термостат",
-      "thermostatScenarioDescription": "Поддержание заданной температуры с гистерезисом.",
+      "thermostatScenarioDescription": "Регулирование температуры с гистерезисом или ПИД-алгоритмом для дискретных выходов.",
       "thermostatDefaultInputName": "Теплый пол в комнате",
       "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
       "thermostatTempLimitsObjTitle": "Границы изменения температуры в виджете",
