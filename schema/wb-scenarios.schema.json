@@ -5,7 +5,7 @@
   "configFile": {
     "path": "/etc/wb-scenarios.conf",
     "service": "wb-scenarios-reloader",
-    "hide": true
+    "hide":true
   },
   "options": {
     "wb": {
@@ -136,7 +136,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -160,7 +160,10 @@
                 }
               }
             },
-            "required": ["control", "behaviorType"]
+            "required": [
+              "control",
+              "behaviorType"
+            ]
           }
         },
         "outControls": {
@@ -193,7 +196,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -359,7 +362,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder": "generalMqttTopicNamePlaceholder"
+                        "placeholder":  "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -458,7 +461,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder": "generalMqttTopicNamePlaceholder"
+                        "placeholder":  "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -522,7 +525,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder": "generalMqttTopicNamePlaceholder"
+                        "placeholder":  "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -610,7 +613,7 @@
                     "options": {
                       "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                       "inputAttributes": {
-                        "placeholder": "generalMqttTopicNamePlaceholder"
+                        "placeholder":  "generalMqttTopicNamePlaceholder"
                       },
                       "wb": {
                         "data": "devices"
@@ -765,7 +768,7 @@
           "propertyOrder": 6,
           "options": {
             "grid_columns": 12,
-            "wb": { "show_editor": true },
+            "wb": {"show_editor": true},
             "dependencies": {
               "controlMode": ["hysteresis"]
             }
@@ -781,7 +784,7 @@
             "disable_collapse": true,
             "disable_edit_json": true,
             "disable_properties": true,
-            "wb": { "show_editor": true },
+            "wb": {"show_editor": true},
             "dependencies": {
               "controlMode": ["pid"]
             }
@@ -893,7 +896,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder": "generalMqttTopicNamePlaceholder"
+              "placeholder":  "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -932,7 +935,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -944,7 +947,10 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "thermostatActuatorBehaviorTitle",
-                "enum": ["setEnable", "setDisable"],
+                "enum": [
+                  "setEnable",
+                  "setDisable"
+                ],
                 "default": "setEnable",
                 "options": {
                   "enum_titles": [
@@ -992,7 +998,9 @@
       "properties": {
         "scenarioType": {
           "type": "string",
-          "enum": ["schedule"],
+          "enum": [
+            "schedule"
+          ],
           "default": "schedule",
           "options": {
             "hidden": true
@@ -1056,15 +1064,7 @@
           "_format": "checkbox",
           "uniqueItems": true,
           "minItems": 1,
-          "default": [
-            "monday",
-            "tuesday",
-            "wednesday",
-            "thursday",
-            "friday",
-            "saturday",
-            "sunday"
-          ],
+          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
           "propertyOrder": 5,
           "options": {
             "grid_columns": 12
@@ -1124,7 +1124,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1342,15 +1342,7 @@
           "_format": "checkbox",
           "uniqueItems": true,
           "minItems": 1,
-          "default": [
-            "monday",
-            "tuesday",
-            "wednesday",
-            "thursday",
-            "friday",
-            "saturday",
-            "sunday"
-          ],
+          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
           "propertyOrder": 5,
           "options": {
             "grid_columns": 12
@@ -1410,7 +1402,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1460,7 +1452,10 @@
                 }
               }
             },
-            "required": ["control", "behaviorType"]
+            "required": [
+              "control",
+              "behaviorType"
+            ]
           }
         }
       },
@@ -1633,15 +1628,7 @@
           "_format": "checkbox",
           "uniqueItems": true,
           "minItems": 1,
-          "default": [
-            "monday",
-            "tuesday",
-            "wednesday",
-            "thursday",
-            "friday",
-            "saturday",
-            "sunday"
-          ],
+          "default": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
           "propertyOrder": 8,
           "options": {
             "grid_columns": 12
@@ -1700,7 +1687,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1712,7 +1699,11 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "outControls_behaviorType_title",
-                "enum": ["setEnable", "setDisable", "setValue"],
+                "enum": [
+                  "setEnable",
+                  "setDisable",
+                  "setValue"
+                ],
                 "default": "setEnable",
                 "options": {
                   "enum_titles": [
@@ -1729,7 +1720,9 @@
                 "default": 0,
                 "options": {
                   "dependencies": {
-                    "behaviorType": ["setValue"]
+                    "behaviorType": [
+                      "setValue"
+                    ]
                   }
                 }
               },
@@ -1740,12 +1733,17 @@
                 "default": 0,
                 "options": {
                   "dependencies": {
-                    "behaviorType": ["setValue"]
+                    "behaviorType": [
+                      "setValue"
+                    ]
                   }
                 }
               }
             },
-            "required": ["mqttTopicName", "behaviorType"]
+            "required": [
+              "mqttTopicName",
+              "behaviorType"
+            ]
           }
         }
       },
@@ -1842,7 +1840,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1873,7 +1871,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -2059,7 +2057,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder": "generalMqttTopicNamePlaceholder"
+              "placeholder":  "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -2098,7 +2096,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder": "generalMqttTopicNamePlaceholder"
+                    "placeholder":  "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
