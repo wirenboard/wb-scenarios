@@ -12,7 +12,7 @@
 - [Астрономический таймер](scenarios/astronomical-timer/README.md)
 - [Периодический таймер](scenarios/periodic-timer/README.md)
 - [Маппинг каналов](scenarios/channel-map/README.md)
-- [ПИД-регулятор](scenarios/pid-controller/README.md)
+- [ПИД-регулятор (аналоговые выходы)](scenarios/pid-controller/README.md)
 
 ## Установка
 

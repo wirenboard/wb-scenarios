@@ -10,6 +10,7 @@ var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 var PidEngine = require('pid-engine.mod').PidEngine;
+var constants = require('constants.mod');
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
 var extractMqttTopics =
@@ -17,6 +18,9 @@ var extractMqttTopics =
 
 var loggerFileLabel = 'WBSC-pid-controller-mod';
 var log = new Logger(loggerFileLabel);
+
+var MAX_CYCLE_TIME_DEVIATION_RATIO = constants.MAX_CYCLE_TIME_DEVIATION_RATIO;
+var MS_PER_SECOND = constants.MS_PER_SECOND;
 
 /**
  * @typedef {Object} PidActuatorConfig
@@ -33,7 +37,7 @@ var log = new Logger(loggerFileLabel);
  * @property {string} sensor - MQTT topic of input sensor
  * @property {number} setpoint - Initial target value
  * @property {{min: number, max: number}} setpointLimits - Setpoint limits
- * @property {{kp: number, ki: number, kd: number}} pid - PID coefficients
+ * @property {{kp: number, ki: number, kd: number}} pidCoefficients - PID coefficients
  * @property {number} calculationPeriodSec - PID recalculation interval
  * @property {number} deadBand - Dead zone around setpoint
  * @property {Array<PidActuatorConfig>} actuators - Controlled outputs
@@ -63,6 +67,7 @@ function PidControllerScenario() {
     pid: null, // PidEngine instance
     cycleTimerId: null, // setTimeout ID for next cycle
     pidOutput: 0, // Last PID output (0-100)
+    lastComputeTime: null, // Timestamp of last PID computation (ms)
   };
 }
 PidControllerScenario.prototype = Object.create(ScenarioBase.prototype);
@@ -135,16 +140,16 @@ PidControllerScenario.prototype.validateCfg = function (cfg) {
   }
 
   var isCoeffsValid = true;
-  if (typeof cfg.pid.kp !== 'number' || cfg.pid.kp < 0) {
-    log.error('PID validation error: Kp must be >= 0, got "{}"', cfg.pid.kp);
+  if (typeof cfg.pidCoefficients.kp !== 'number' || cfg.pidCoefficients.kp < 0) {
+    log.error('PID validation error: Kp must be >= 0, got "{}"', cfg.pidCoefficients.kp);
     isCoeffsValid = false;
   }
-  if (typeof cfg.pid.ki !== 'number' || cfg.pid.ki < 0) {
-    log.error('PID validation error: Ki must be >= 0, got "{}"', cfg.pid.ki);
+  if (typeof cfg.pidCoefficients.ki !== 'number' || cfg.pidCoefficients.ki < 0) {
+    log.error('PID validation error: Ki must be >= 0, got "{}"', cfg.pidCoefficients.ki);
     isCoeffsValid = false;
   }
-  if (typeof cfg.pid.kd !== 'number' || cfg.pid.kd < 0) {
-    log.error('PID validation error: Kd must be >= 0, got "{}"', cfg.pid.kd);
+  if (typeof cfg.pidCoefficients.kd !== 'number' || cfg.pidCoefficients.kd < 0) {
+    log.error('PID validation error: Kd must be >= 0, got "{}"', cfg.pidCoefficients.kd);
     isCoeffsValid = false;
   }
 
@@ -349,14 +354,34 @@ function resetActuatorsToMin(actuators) {
  * @param {PidControllerConfig} cfg - Configuration
  */
 function runCalculationCycle(self, cfg) {
+  var now = Date.now();
   var measurement = dev[cfg.sensor];
   var setpoint = self.vd.devObj.getControl(vdCtrl.setpoint).getValue();
 
-  self.ctx.pidOutput = self.ctx.pid.compute(
-    setpoint,
-    measurement,
-    cfg.calculationPeriodSec
-  );
+  // Determine dt for PID computation
+  var dt;
+  if (self.ctx.lastComputeTime === null) {
+    dt = cfg.calculationPeriodSec;
+    log.debug('First PID cycle, using configured dt: {} sec', dt);
+  } else {
+    var actualDt = (now - self.ctx.lastComputeTime) / MS_PER_SECOND;
+    var deviation = Math.abs(actualDt - cfg.calculationPeriodSec) / cfg.calculationPeriodSec;
+
+    if (deviation > MAX_CYCLE_TIME_DEVIATION_RATIO) {
+      log.warning(
+        'PID cycle time deviation: actual={} sec, configured={} sec (deviation={}%)',
+        actualDt.toFixed(2),
+        cfg.calculationPeriodSec,
+        (deviation * 100).toFixed(1)
+      );
+    }
+
+    dt = actualDt;
+  }
+
+  self.ctx.lastComputeTime = now;
+
+  self.ctx.pidOutput = self.ctx.pid.compute(setpoint, measurement, dt);
 
   var state = self.ctx.pid.getState();
   log.debug(
@@ -381,7 +406,7 @@ function runCalculationCycle(self, cfg) {
   self.ctx.cycleTimerId = setTimeout(function () {
     self.ctx.cycleTimerId = null;
     runCalculationCycle(self, cfg);
-  }, cfg.calculationPeriodSec * 1000);
+  }, cfg.calculationPeriodSec * MS_PER_SECOND);
 }
 
 /**
@@ -402,6 +427,7 @@ function cancelCycleTimer(ctx) {
  */
 function startPidCycle(self, cfg) {
   self.ctx.pidOutput = 0;
+  self.ctx.lastComputeTime = null; // Reset timestamp on start
   runCalculationCycle(self, cfg);
   log.debug('PID calculation cycle started');
 }
@@ -418,6 +444,7 @@ function stopPidCycle(self, cfg) {
     self.ctx.pid.reset();
   }
   self.ctx.pidOutput = 0;
+  self.ctx.lastComputeTime = null; // Reset timestamp on stop
 
   self.vd.devObj.getControl(vdCtrl.outputPower).setValue(self.ctx.pidOutput);
   log.debug('PID calculation cycle stopped');
@@ -605,6 +632,7 @@ function createRules(self, cfg) {
       if (!self.ctx.pid) return;
       self.ctx.pid.reset();
       self.ctx.pidOutput = 0;
+      self.ctx.lastComputeTime = null; // Reset timestamp on PID reset
       log.debug('PID reset by user');
 
       cancelCycleTimer(self.ctx);
@@ -651,7 +679,7 @@ function createErrorRules(self, cfg) {
     log.error('Failed to create sensor error handling rule');
     return false;
   }
-  log.debug('Sensor error rule created with ID="{}"', ruleId);
+  log.debug('Sensor error rule created with ID "{}"', ruleId);
 
   // Actuator errors
   var baseRuleName = 'wbsc_' + self.idPrefix + '_';
@@ -674,7 +702,7 @@ function createErrorRules(self, cfg) {
       return false;
     }
     log.debug(
-      'Actuator error rule created for "{}" with ID="{}"',
+      'Actuator error rule created for "{}" with ID "{}"',
       cfg.actuators[i].mqttTopicName,
       ruleId
     );
@@ -754,9 +782,9 @@ PidControllerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     }
 
     this.ctx.pid = new PidEngine(
-      cfg.pid.kp,
-      cfg.pid.ki,
-      cfg.pid.kd,
+      cfg.pidCoefficients.kp,
+      cfg.pidCoefficients.ki,
+      cfg.pidCoefficients.kd,
       cfg.deadBand
     );
 

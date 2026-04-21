@@ -2,7 +2,7 @@
 
 ## Общее описание
 
-Данный сценарий реализует ПИД-регулятор для управления аналоговыми выходами.
+Данный сценарий реализует ПИД-регулятор. Сейчас поддерживает управления только аналоговыми выходами.
 Сценарий записывает вычисленные значения напрямую в аналоговые выходы.
 
 Конфигуратор сценария:
@@ -154,7 +154,7 @@ function main() {
     sensor: 'wb-msw-v4_34/Temperature',
     setpoint: 22,
     setpointLimits: { min: 5, max: 35 },
-    pid: { kp: 10, ki: 0.005, kd: 2 },
+    pidCoefficients: { kp: 10, ki: 0.005, kd: 2 },
     calculationPeriodSec: 30,
     deadBand: 0.2,
     actuators: [
@@ -188,7 +188,7 @@ var cfg = {
   sensor: 'wb-msw-v4_34/Temperature',
   setpoint: 22,
   setpointLimits: { min: 10, max: 30 },
-  pid: { kp: 10, ki: 0.005, kd: 2 },
+  pidCoefficients: { kp: 10, ki: 0.005, kd: 2 },
   calculationPeriodSec: 30,
   deadBand: 0.3,
   actuators: [
