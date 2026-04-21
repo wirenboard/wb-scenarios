@@ -1,3 +1,10 @@
+wb-scenarios (1.8.7) stable; urgency=medium
+
+  * Add new scenario "pid-controller" for analog outputs
+  * Update thermostat: update compute method for PID mode
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Tue, 21 Apr 2026 15:24:00 +0300
+
 wb-scenarios (1.8.6) stable; urgency=medium
 
   * Update light-control scenario: remove html tags
