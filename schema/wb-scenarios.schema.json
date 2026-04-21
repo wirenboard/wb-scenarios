@@ -160,10 +160,7 @@
                 }
               }
             },
-            "required": [
-              "control",
-              "behaviorType"
-            ]
+            "required": ["control", "behaviorType"]
           }
         },
         "outControls": {
@@ -896,7 +893,7 @@
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
-              "placeholder":  "generalMqttTopicNamePlaceholder"
+              "placeholder": "generalMqttTopicNamePlaceholder"
             },
             "wb": {
               "data": "devices"
@@ -935,7 +932,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1124,7 +1121,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1174,7 +1171,10 @@
                 }
               }
             },
-            "required": ["control", "behaviorType"]
+            "required": [
+              "control",
+              "behaviorType"
+            ]
           }
         }
       },
@@ -1402,7 +1402,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1687,7 +1687,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1840,7 +1840,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
@@ -1871,7 +1871,7 @@
                 "options": {
                   "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName",
                   "inputAttributes": {
-                    "placeholder":  "generalMqttTopicNamePlaceholder"
+                    "placeholder": "generalMqttTopicNamePlaceholder"
                   },
                   "wb": {
                     "data": "devices"
