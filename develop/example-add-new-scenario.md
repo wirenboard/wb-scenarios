@@ -1,6 +1,6 @@
 # Пример добавления сценария
 
-***ВНИМАНИЕ:***
+**_ВНИМАНИЕ:_**
 В процессе создания нового сценария вы можете испортить файл конфигурации
 уже имеющихся сценариев - поэтому ОБЯЗАТЕЛЬНО сделайте копию работающего
 конфиг файла!
@@ -31,6 +31,7 @@
 - **Схема** размещается в `/usr/share/wb-mqtt-confed/schemas/wb-scenarios.schema.json`
 
 При разработке в репозитории используйте структуру:
+
 - `scenarios/link-in-to-out/` - папка конкретного сценария
 - `src/` - общие файлы для нескольких сценариев
 
@@ -44,7 +45,7 @@
 3. **Создание модуля сценария** - создаем модуль сценария с бизнес логикой на основе харкод скрипта
 4. **Объединение схемы и логики** — создаём модуль инициализации, подключаем в main
 5. **Тестирование** — проверяем полный цикл работы сценария
-6. **Документация** —  создаём README с описанием логики, скриншотами и примером использования
+6. **Документация** — создаём README с описанием логики, скриншотами и примером использования
 
 ---
 
@@ -56,7 +57,7 @@
 значения вместо конфигурации. Это позволяет быстро проверить что логика работает
 на контроллере до интеграции со схемой.
 
-***Обратите внимание:***
+**_Обратите внимание:_**
 Мы будем создавать сценарий с именем `linkInToOut` и положим
 его в папку `scenarios/link-in-to-out`. Если вы хотите дать своему сценарию
 другое имя - то можете сразу менять имена папок и переменных, чтобы
@@ -94,8 +95,8 @@ mkdir scenarios/link-in-to-out
   Имя должно быть уникальным
 
 - Поле `componentVersion` - версия данного вида сценариев.
-Данное поле важно для проверки пользовательского конфига перед началом работы.
-Версию нужно инкрементировать каждый раз когда меняется структура конфигурации сценариев.
+  Данное поле важно для проверки пользовательского конфига перед началом работы.
+  Версию нужно инкрементировать каждый раз когда меняется структура конфигурации сценариев.
 
 - Поле `scenarioType` - строка типа сценария, должна быть уникальной.
   Скрытое поле которое добавляет в каждый созданный инстанс данного
@@ -318,17 +319,18 @@ mkdir scenarios/link-in-to-out
 
 Модуль должен:
 
-1) **Импортировать базовый класс** `ScenarioBase` и другие необходимые модули
-2) **Создать класс сценария**, наследующий от `ScenarioBase`
-3) **Реализовать метод инициализации** с созданием виртуального устройства
-4) **Реализовать логику сценария** в обработчиках событий
-5) **Экспортировать класс сценария** для использования в модуле инициализации
+1. **Импортировать базовый класс** `ScenarioBase` и другие необходимые модули
+2. **Создать класс сценария**, наследующий от `ScenarioBase`
+3. **Реализовать метод инициализации** с созданием виртуального устройства
+4. **Реализовать логику сценария** в обработчиках событий
+5. **Экспортировать класс сценария** для использования в модуле инициализации
 
 **Создаем файл:** `scenarios/link-in-to-out/link-in-to-out.mod.js`
 
 **Полный код модуля сценария:** [link-in-to-out.mod.js](link-in-to-out.mod.js)
 
 Основные элементы кода:
+
 - Класс `LinkInToOutScenario`, наследующий от `ScenarioBase`
 - Метод `generateNames()` для создания уникальных имен виртуальных устройств и правил
 - Метод `validateCfg()` для проверки корректности конфигурации
@@ -355,6 +357,7 @@ mkdir scenarios/link-in-to-out
 **Полный код модуля инициализации:** [scenario-init-link-in-to-out.mod.js](scenario-init-link-in-to-out.mod.js)
 
 Основные элементы кода:
+
 - Импорт необходимых модулей (`scHelpers`, `LinkInToOutScenario`, `Logger`)
 - Конфигурация CFG с параметрами инициализации
 - Функция `initializeScenario()` для создания экземпляра сценария
@@ -372,6 +375,7 @@ scenarioStorage[scenario.idPrefix] = scenario;
 ```
 
 Это хранилище предназначено для:
+
 - **Просмотра активных сценариев** из внешних скриптов без необходимости кастомного сбора информации
 - **Потенциального управления сценариями** из других частей системы
 - **Предотвращения дублирования** при попытке получить информацию о запущенных сценариях
@@ -386,29 +390,30 @@ scenarioStorage[scenario.idPrefix] = scenario;
 1. **Добавить импорт** в начало файла рядом с другими импортами:
 
 ```javascript
-var setupDevicesControl = require("scenario-init-devices-control.mod").setup;
-var setupLightControl = require("scenario-init-light-control.mod").setup;
-var setupThermostat = require("scenario-init-thermostat.mod").setup;
-var setupSchedule = require("scenario-init-schedule.mod").setup;
-var setupAstronomicalTimer = require("scenario-init-astronomical-timer.mod").setup;
-var setupLinkInToOut = require("scenario-init-link-in-to-out.mod").setup;  // Добавить эту строку
+var setupDevicesControl = require('scenario-init-devices-control.mod').setup;
+var setupLightControl = require('scenario-init-light-control.mod').setup;
+var setupThermostat = require('scenario-init-thermostat.mod').setup;
+var setupSchedule = require('scenario-init-schedule.mod').setup;
+var setupAstronomicalTimer =
+  require('scenario-init-astronomical-timer.mod').setup;
+var setupLinkInToOut = require('scenario-init-link-in-to-out.mod').setup; // Добавить эту строку
 ```
 
 2. **Добавить вызов** в функции `main()` после других вызовов setup:
 
 ```javascript
-  runShellCommand(cmdList, {
-    captureOutput: true,
-    captureErrorOutput: true,
-    exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
-      setupDevicesControl();
-      setupLightControl();
-      setupThermostat();
-      setupSchedule();
-      setupAstronomicalTimer();
-      setupLinkInToOut();  // Добавить эту строку
-    }
-  });
+runShellCommand(cmdList, {
+  captureOutput: true,
+  captureErrorOutput: true,
+  exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
+    setupDevicesControl();
+    setupLightControl();
+    setupThermostat();
+    setupSchedule();
+    setupAstronomicalTimer();
+    setupLinkInToOut(); // Добавить эту строку
+  },
+});
 ```
 
 ---
@@ -428,35 +433,35 @@ var setupLinkInToOut = require("scenario-init-link-in-to-out.mod").setup;  // Д
 var name_postfix;
 var gen_vd_name;
 
-name_postfix = "_1";
-gen_vd_name = "vd_wall_switch" + name_postfix;
+name_postfix = '_1';
+gen_vd_name = 'vd_wall_switch' + name_postfix;
 
 defineVirtualDevice(gen_vd_name, {
   title: {
-    en: "Virt. wall switch" + name_postfix,
-    ru: "Вирт. настенный выключатель" + name_postfix,
+    en: 'Virt. wall switch' + name_postfix,
+    ru: 'Вирт. настенный выключатель' + name_postfix,
   },
   cells: {
     enabled: {
-      title: "Статус выключателя" + name_postfix,
-      type: "switch",
+      title: 'Статус выключателя' + name_postfix,
+      type: 'switch',
       value: false,
     },
   },
 });
 
-name_postfix = "_1";
-gen_vd_name = "vd_pump" + name_postfix;
+name_postfix = '_1';
+gen_vd_name = 'vd_pump' + name_postfix;
 
 defineVirtualDevice(gen_vd_name, {
   title: {
-    en: "Virt. pump" + name_postfix,
-    ru: "Вирт. насос" + name_postfix,
+    en: 'Virt. pump' + name_postfix,
+    ru: 'Вирт. насос' + name_postfix,
   },
   cells: {
     enabled: {
-      title: "Статус насоса" + name_postfix,
-      type: "switch",
+      title: 'Статус насоса' + name_postfix,
+      type: 'switch',
       value: false,
     },
   },
@@ -466,10 +471,10 @@ defineVirtualDevice(gen_vd_name, {
 В итоге получим на странице девайсов два новых виртуальных девайса:
 
 - Выключатель
-![Внешний вид виртуального девайса выключателя](example-vd-wall-switch.png)
+  ![Внешний вид виртуального девайса выключателя](example-vd-wall-switch.png)
 
 - Насос
-![Внешний вид виртуального девайса насоса](example-vd-pump.png)
+  ![Внешний вид виртуального девайса насоса](example-vd-pump.png)
 
 ### 5.2. Конфигурация сценария
 
@@ -482,20 +487,20 @@ defineVirtualDevice(gen_vd_name, {
 
 ### 5.3. Чеклист проверки
 
-1) **Прямое копирование:**
+1. **Прямое копирование:**
    - Заходим на страницу виртуальных девайсов
    - Кликаем на выключатель
    - Проверяем что состояние насоса переключается в соответствии с настройками
 
-2) **Инверсное копирование:**
+2. **Инверсное копирование:**
    - Ставим галочку для инверсии в сценарии
    - Повторно проверяем что поведение изменилось
 
-3) **Приостановка работы правила:**
+3. **Приостановка работы правила:**
    - В виртуальном девайсе сценария (не в настройках) отключаем его работу галочкой
    - Проверяем что копирование состояний прекратилось
 
-4) **Деактивация сценария:**
+4. **Деактивация сценария:**
    - Заходим в настройки сценария и снимаем галочку активации
    - Сохраняем
    - Проверяем что виртуальное устройство удалилось — это означает что ни VD ни правило не создаются
@@ -504,18 +509,18 @@ defineVirtualDevice(gen_vd_name, {
 
 ## 6. Документация
 
-1) Создаем README файл для нового сценария по пути `scenarios/link-in-to-out/README.md`
+1. Создаем README файл для нового сценария по пути `scenarios/link-in-to-out/README.md`
    Описание должно содержать:
    - Внешний вид конфигуратора созданного сценария (скриншот на английском)
    - Тонкости работы сценария, его логики
    - Пример кода для использования модуля сценария из пользовательских скриптов
 
-2) Добавить в общий README файл ссылку на реализованный сценарий
+2. Добавить в общий README файл ссылку на реализованный сценарий
    - Открыть файл `README.md` находящийся в корне проекта
    - Добавить в список реализованных сценариев ссылку на файл README
      конкретного сценария
 
-3) Создать arc42 файл по пути `scenarios/link-in-to-out/dev-note-arc42.md`, если используется AI-ассистент
+3. Создать arc42 файл по пути `scenarios/link-in-to-out/dev-note-arc42.md`, если используется AI-ассистент
 
 ## Кастомизация
 
@@ -525,13 +530,13 @@ defineVirtualDevice(gen_vd_name, {
 Например если вы хотите добавить новую галочку в настройку сценария,
 то это можно сделать начав с добавления в WEBUI и прокинуть до модуля:
 
-1) Добавить галочку в файл схемы
-2) Добавить новое поле в скрипте инициализации, чтобы оно передавалось
-  в функцию init() внутрь модуля
-3) Прокинуть в модуль новые поля, для этого внутри файла модуля:
+1. Добавить галочку в файл схемы
+2. Добавить новое поле в скрипте инициализации, чтобы оно передавалось
+   в функцию init() внутрь модуля
+3. Прокинуть в модуль новые поля, для этого внутри файла модуля:
    - В export добавить новое поле
    - Добавить новое поле в параметры самой функции init()
-4) В модуле реализовать функционал использующий данные поля
+4. В модуле реализовать функционал использующий данные поля
 
 ## Переименование
 
@@ -541,30 +546,30 @@ defineVirtualDevice(gen_vd_name, {
 Переименование довольно обширное, поэтому будьте осторожны,
 не забудьте поменять:
 
-1) Внутри схемы:
+1. Внутри схемы:
    - Ссылка внутри `"oneOf"`
-   `"$ref": "#/definitions/linkInToOut"` -> `"$ref": "#/definitions/thermostat"`
+     `"$ref": "#/definitions/linkInToOut"` -> `"$ref": "#/definitions/thermostat"`
 
    - Название - корневой элемент схемы сценария
-   `"linkInToOut": {` -> `"thermostat": {`
+     `"linkInToOut": {` -> `"thermostat": {`
 
    - Элементы схемы сценария в имени которых содержится старое название
-   `linkInToOut` -> `<!customName!>`, например `thermostat`
+     `linkInToOut` -> `<!customName!>`, например `thermostat`
 
    - Переводы
 
-2) Проверить работу WEBUI и пофиксить конфиг
+2. Проверить работу WEBUI и пофиксить конфиг
 
-  Если вы ранее уже сконфигурировали какие-то сценарии, то после
-  переименования элементов схемы - у вас перестанет открываться конфигуратор.
-  Вы увидете ошибку:
+Если вы ранее уже сконфигурировали какие-то сценарии, то после
+переименования элементов схемы - у вас перестанет открываться конфигуратор.
+Вы увидете ошибку:
 
-  ```text
-  Ошибка загрузки файла: Invalid config file EditorError
-  ```
+```text
+Ошибка загрузки файла: Invalid config file EditorError
+```
 
-  Для решения этой проблемы вам нужно привести файл конфигурации
-  в соответствие с новой схемой. Это можно сделать тремя способами:
+Для решения этой проблемы вам нужно привести файл конфигурации
+в соответствие с новой схемой. Это можно сделать тремя способами:
 
 - Радикально и быстро не разбираясь удалить все настройки сценариев внутри
   массива "scenarios": []
@@ -572,16 +577,15 @@ defineVirtualDevice(gen_vd_name, {
 - Точечно переименовать все поля внутри конфига так, чтобы они
   соответствовали новым полям в схеме.
 
-3) Папку сценария
-  `scenarios/link-in-to-out` -> `scenarios/<!custom-name!>`
+3. Папку сценария
+   `scenarios/link-in-to-out` -> `scenarios/<!custom-name!>`
 
-4) Файл модуля инициализации
-
+4. Файл модуля инициализации
    - Имя файла:
-   `scenario-init-link-in-to-out.mod.js` -> `scenario-init-<!custom-name!>.mod.js`
+     `scenario-init-link-in-to-out.mod.js` -> `scenario-init-<!custom-name!>.mod.js`
 
    - Подключение в главном файле:
-   Обновить импорт в `scenarios/scenario-init-main.js`
+     Обновить импорт в `scenarios/scenario-init-main.js`
 
 В простом случае - для модификации файла под новый сценарий достаточно сделать
 три действия (Помечены в коде комментарием вида `//@todo:Change X`):
@@ -612,9 +616,8 @@ defineVirtualDevice(gen_vd_name, {
   var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
   ```
 
-5) Файл модуля
-
+5. Файл модуля
    - Имя файла:
-   `link-in-to-out.mod.js` -> `<!custom-name!>.mod.js`
+     `link-in-to-out.mod.js` -> `<!custom-name!>.mod.js`
 
-6) И другие элементы которые имеют старое имя ...
+6. И другие элементы которые имеют старое имя ...

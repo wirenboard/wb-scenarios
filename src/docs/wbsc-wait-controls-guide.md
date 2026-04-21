@@ -5,7 +5,7 @@
 
 У `waitControls()` есть дефолтные параметры таймаута (5000мс) и периода
 полинга (500мс), но можно так же установить кастомные значения если указать
-их в объекте вторым параметром,  например `{ timeout: 10000, period: 1000 }`
+их в объекте вторым параметром, например `{ timeout: 10000, period: 1000 }`
 
 ## Коллбек
 
@@ -28,21 +28,21 @@ user_cb_func(err, param1, param2, ...)
 Например, если указать после функции коллбека три строки:
 
 ```javascript
-var controlsToWait = ["wb-gpio/A1_OUT"];
+var controlsToWait = ['wb-gpio/A1_OUT'];
 waitControls(
   controlsToWait,
   user_cb_func,
   // - - Additional callback parameters - -
-  "wbsc_teplyy_pol_v_komnate",  // Optional
-  "rule_enabled",               // Optional
-  "My string"                   // Optional
+  'wbsc_teplyy_pol_v_komnate', // Optional
+  'rule_enabled', // Optional
+  'My string' // Optional
 );
 ```
 
 То в случае успеха коллбек будет вызван как:
 
 ```javascript
-user_cb_func(null, "wbsc_teplyy_pol_v_komnate", "rule_enabled", "My string")
+user_cb_func(null, 'wbsc_teplyy_pol_v_komnate', 'rule_enabled', 'My string');
 ```
 
 ## Пример использования
@@ -67,55 +67,54 @@ user_cb_func(null, "wbsc_teplyy_pol_v_komnate", "rule_enabled", "My string")
  * waitControls(
  *   ["wb-gpio/A1_OUT"],
  *   { timeout: 5000, period: 500 },
- *   onWaitControlsReady, 
- *   "device1", 
- *   "enable", 
+ *   onWaitControlsReady,
+ *   "device1",
+ *   "enable",
  *   "additional info"
  * );
  **/
 function onWaitControlsReady(err, deviceName, controlName, someString) {
   if (err !== null) {
     log.error(err.message);
-    log.error("Not ready controls count:", err.notReadyCtrlList.length);
+    log.error('Not ready controls count:', err.notReadyCtrlList.length);
     for (var i = 0; i < err.notReadyCtrlList.length; i++) {
-      log.error("Control not ready:", err.notReadyCtrlList[i]);
+      log.error('Control not ready:', err.notReadyCtrlList[i]);
     }
     return;
   }
 
   // If err === null, controls are ready
-  log.debug("Controls are ready for:", deviceName, controlName);
-  log.debug("Extra argument:", someString);
+  log.debug('Controls are ready for:', deviceName, controlName);
+  log.debug('Extra argument:', someString);
   dev[deviceName][controlName] = true; // Example user action
 }
 
 /**
  * Example usage in wb-rules
  **/
-defineRule("example_wait_controls", {
-  whenChanged: "1122/my_switch",
-  then: function() {
-    log.debug("Triggered by change in 1122/my_switch");
+defineRule('example_wait_controls', {
+  whenChanged: '1122/my_switch',
+  then: function () {
+    log.debug('Triggered by change in 1122/my_switch');
 
-    var controlsToWait = ["wb-gpio/A1_OUT", "wb-gpio/A3_IN"];
+    var controlsToWait = ['wb-gpio/A1_OUT', 'wb-gpio/A3_IN'];
     var TIMEOUT_MS = 2000;
     var POLL_PERIOD_MS = 500;
 
     waitControls(
       controlsToWait,
       {
-        timeout: TIMEOUT_MS,         // Optional
-        period: POLL_PERIOD_MS       // Optional
+        timeout: TIMEOUT_MS, // Optional
+        period: POLL_PERIOD_MS, // Optional
       },
       onWaitControlsReady,
       // - Additional callback params -
-      "wbsc_teplyy_pol_v_komnate2",  // Optional
-      "rule_enabled",                // Optional
-      "My string"                    // Optional
+      'wbsc_teplyy_pol_v_komnate2', // Optional
+      'rule_enabled', // Optional
+      'My string' // Optional
     );
-  }
+  },
 });
-
 ```
 
 Вывод в случае успеха:

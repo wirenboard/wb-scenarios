@@ -20,7 +20,7 @@ var log = new Logger(loggerFileLabel);
  */
 function LinkInToOutScenario() {
   ScenarioBase.call(this);
-  
+
   // Store scenario parameters
   this.inControl = null;
   this.outControl = null;
@@ -36,7 +36,7 @@ LinkInToOutScenario.prototype.constructor = LinkInToOutScenario;
  * @param {string} idPrefix - ID prefix for this scenario instance
  * @returns {Object} Generated names
  */
-LinkInToOutScenario.prototype.generateNames = function(idPrefix) {
+LinkInToOutScenario.prototype.generateNames = function (idPrefix) {
   var scenarioPrefix = 'wbsc_';
   var baseRuleName = scenarioPrefix + idPrefix + '_';
 
@@ -51,17 +51,17 @@ LinkInToOutScenario.prototype.generateNames = function(idPrefix) {
  * @param {Object} cfg - Scenario configuration
  * @returns {boolean} True if configuration is valid
  */
-LinkInToOutScenario.prototype.validateCfg = function(cfg) {
+LinkInToOutScenario.prototype.validateCfg = function (cfg) {
   if (!cfg.inControl || typeof cfg.inControl !== 'string') {
     log.error('Invalid inControl configuration');
     return false;
   }
-  
+
   if (!cfg.outControl || typeof cfg.outControl !== 'string') {
     log.error('Invalid outControl configuration');
     return false;
   }
-  
+
   return true;
 };
 
@@ -70,9 +70,9 @@ LinkInToOutScenario.prototype.validateCfg = function(cfg) {
  * @param {Object} cfg - Scenario configuration
  * @returns {Object} Wait configuration
  */
-LinkInToOutScenario.prototype.defineControlsWaitConfig = function(cfg) {
+LinkInToOutScenario.prototype.defineControlsWaitConfig = function (cfg) {
   return {
-    controls: [cfg.inControl, cfg.outControl]
+    controls: [cfg.inControl, cfg.outControl],
   };
 };
 
@@ -80,7 +80,9 @@ LinkInToOutScenario.prototype.defineControlsWaitConfig = function(cfg) {
  * Add custom controls to virtual device
  * @param {Object} cfg - Scenario configuration
  */
-LinkInToOutScenario.prototype.addCustomControlsToVirtualDevice = function(cfg) {
+LinkInToOutScenario.prototype.addCustomControlsToVirtualDevice = function (
+  cfg
+) {
   // Base controls are already added in ScenarioBase
   // Here you can add scenario-specific controls
 };
@@ -94,20 +96,20 @@ function createRules(self, cfg) {
   log.debug('Start all required rules creation');
 
   var gName = self.genNames;
-  
+
   // Rule to track input control changes
   var ruleId = defineRule(gName.ruleInputChange, {
     whenChanged: [cfg.inControl],
-    then: function(newValue, devName, cellName) {
+    then: function (newValue, devName, cellName) {
       handleInputChange(self, newValue, devName, cellName);
-    }
+    },
   });
-  
+
   if (!ruleId) {
     log.error('Failed to create input change rule');
     return false;
   }
-  
+
   log.debug('Input change rule created successfully');
   self.addRule(ruleId);
   return true;
@@ -124,24 +126,27 @@ function handleInputChange(self, newValue, devName, cellName) {
   // Check scenario state
   var currentState = self.getState();
   if (currentState !== ScenarioState.NORMAL) {
-    log.debug('Scenario is not in NORMAL state ({}), ignoring input change', currentState);
+    log.debug(
+      'Scenario is not in NORMAL state ({}), ignoring input change',
+      currentState
+    );
     return;
   }
-  
+
   log.debug('Input changed: ' + newValue);
-  
+
   // Apply inversion logic
   var outputValue = self.inverseLink ? !newValue : newValue;
-  
+
   // Check that output control is defined
   if (!self.outControl) {
     log.error('Output control is not defined');
     return;
   }
-  
+
   // Set value to output control
   dev[self.outControl] = outputValue;
-  
+
   log.debug('Output set to: ' + outputValue);
 }
 
@@ -151,32 +156,35 @@ function handleInputChange(self, newValue, devName, cellName) {
  * @param {Object} cfg Scenario configuration
  * @returns {boolean} True on successful initialization
  */
-LinkInToOutScenario.prototype.initSpecific = function(deviceTitle, cfg) {
+LinkInToOutScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   /**
    * NOTE: This method is executed ONLY when:
    * - Base initialization is complete
    * - Configuration is valid
    * - All referenced controls exist in the system
-   * 
+   *
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */
   log.debug('Start init link-in-to-out scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
-  
+
   // Store parameters
   this.inControl = cfg.inControl;
   this.outControl = cfg.outControl;
   this.inverseLink = cfg.inverseLink || false;
-  
+
   this.addCustomControlsToVirtualDevice(cfg);
-  
+
   // Create rules
   var rulesCreated = createRules(this, cfg);
-  
+
   if (rulesCreated) {
     this.setState(ScenarioState.NORMAL);
-    log.debug('Link-in-to-out scenario initialized successfully for device "{}"', deviceTitle);
+    log.debug(
+      'Link-in-to-out scenario initialized successfully for device "{}"',
+      deviceTitle
+    );
   }
 
   return rulesCreated;

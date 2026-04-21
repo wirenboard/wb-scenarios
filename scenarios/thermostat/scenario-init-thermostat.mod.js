@@ -20,7 +20,7 @@ var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
   reqVerScenario: 1, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
-  scenarioTypeStr: 'thermostat'
+  scenarioTypeStr: 'thermostat',
 };
 
 var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
@@ -68,11 +68,11 @@ function initializeScenario(scenarioCfg) {
       CFG.scenarioTypeStr
     );
     scenarioStorage[scenario.idPrefix] = scenario;
-    log.debug('Stored in global registry with ID: ' + scenario.idPrefix);
+    log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization: "{}" for scenario: "{}"', 
-      error.message || error, 
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
+      error.message || error,
       scenarioCfg.name
     );
   }
@@ -98,7 +98,7 @@ function setup() {
     );
     return;
   }
-  
+
   log.debug('Number of matched scenarios: {}', matchedScenarios.length);
   for (var i = 0; i < matchedScenarios.length; i++) {
     initializeScenario(matchedScenarios[i]);

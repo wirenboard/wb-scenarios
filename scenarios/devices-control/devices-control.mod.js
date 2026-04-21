@@ -16,9 +16,10 @@ var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
-var eTable = require("table-handling-events.mod");
-var aTable = require("table-handling-actions.mod");
-var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
+var eTable = require('table-handling-events.mod');
+var aTable = require('table-handling-actions.mod');
+var isControlTypeValid =
+  require('scenarios-general-helpers.mod').isControlTypeValid;
 
 var loggerFileLabel = 'WBSC-input-output-link-mod';
 var log = new Logger(loggerFileLabel);
@@ -45,7 +46,7 @@ var log = new Logger(loggerFileLabel);
  */
 function DevicesControlScenario() {
   ScenarioBase.call(this);
-  
+
   /**
    * Context object for storing scenario runtime state
    * @type {Object}
@@ -60,10 +61,10 @@ DevicesControlScenario.prototype.constructor = DevicesControlScenario;
  * @param {string} idPrefix - ID prefix for this scenario instance
  * @returns {Object} Generated names
  */
-DevicesControlScenario.prototype.generateNames = function(idPrefix) {
+DevicesControlScenario.prototype.generateNames = function (idPrefix) {
   var scenarioPrefix = 'wbsc_';
   var baseRuleName = scenarioPrefix + idPrefix + '_';
-  
+
   return {
     vDevice: scenarioPrefix + idPrefix,
     ruleMain: baseRuleName + 'mainRule',
@@ -77,21 +78,21 @@ DevicesControlScenario.prototype.generateNames = function(idPrefix) {
  */
 DevicesControlScenario.prototype.defineControlsWaitConfig = function (cfg) {
   var allTopics = [];
-  
+
   // Extract input control names
   for (var i = 0; i < (cfg.inControls || []).length; i++) {
     if (cfg.inControls[i].control) {
       allTopics.push(cfg.inControls[i].control);
     }
   }
-  
+
   // Extract output control names
   for (var j = 0; j < (cfg.outControls || []).length; j++) {
     if (cfg.outControls[j].control) {
       allTopics.push(cfg.outControls[j].control);
     }
   }
-  
+
   return { controls: allTopics };
 };
 
@@ -113,13 +114,23 @@ function validateControls(controls, table) {
 
     // behaviorType present in table
     if (!table[curBehaviorType]) {
-      log.error("Behavior type '" + curBehaviorType + "' not found in table");
+      log.error(
+        "Behavior type '" + curBehaviorType + "' not found in table"
+      );
       return false;
     }
 
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
-      log.debug("Error: Control '" + curCtrlName + "' is not of a valid type");
-      log.debug("  - For '" + curBehaviorType + "' can used only: [" + reqCtrlTypes + "] types");
+      log.error(
+        "Error: Control '" + curCtrlName + "' is not of a valid type"
+      );
+      log.error(
+        "  - For '" +
+          curBehaviorType +
+          "' can used only: [" +
+          reqCtrlTypes +
+          '] types'
+      );
       return false;
     }
   }
@@ -131,33 +142,45 @@ function validateControls(controls, table) {
  * @param {DevicesControlConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid, false otherwise
  */
-DevicesControlScenario.prototype.validateCfg = function(cfg) {
+DevicesControlScenario.prototype.validateCfg = function (cfg) {
   // Check for array presence
   if (!Array.isArray(cfg.inControls) || !Array.isArray(cfg.outControls)) {
-    log.error('Input-output link initialization error: cfg.inControls and cfg.outControls must be arrays');
+    log.error(
+      'Input-output link initialization error: cfg.inControls and cfg.outControls must be arrays'
+    );
     return false;
   }
-  
+
   // Check that there is at least one input and output
   if (cfg.inControls.length === 0) {
-    log.error('Input-output link initialization error: no input controls specified');
+    log.error(
+      'Input-output link initialization error: no input controls specified'
+    );
     return false;
   }
   if (cfg.outControls.length === 0) {
-    log.error('Input-output link initialization error: no output controls specified');
+    log.error(
+      'Input-output link initialization error: no output controls specified'
+    );
     return false;
   }
-  
+
   // Check control types
-  var isInputControlsValid = validateControls(cfg.inControls, eTable.eventsTable);
-  var isOutputControlsValid = validateControls(cfg.outControls, aTable.actionsTable);
-  
+  var isInputControlsValid = validateControls(
+    cfg.inControls,
+    eTable.eventsTable
+  );
+  var isOutputControlsValid = validateControls(
+    cfg.outControls,
+    aTable.actionsTable
+  );
+
   if (!isInputControlsValid || !isOutputControlsValid) {
-    log.error("One or more controls are not of a valid type");
+    log.error('One or more controls are not of a valid type');
     return false;
   }
-  
-  log.debug("All controls have valid types");
+
+  log.debug('All controls have valid types');
   return true;
 };
 
@@ -172,22 +195,22 @@ function createRules(self, cfg) {
 
   // Extract control names for the rule
   var inControlNames = [];
-  for (var i = 0; i < self.cfg.inControls.length; i++) {
-    inControlNames.push(self.cfg.inControls[i].control);
+  for (var i = 0; i < cfg.inControls.length; i++) {
+    inControlNames.push(cfg.inControls[i].control);
   }
-  
+
   var ruleId = defineRule(self.genNames.ruleMain, {
     whenChanged: inControlNames,
-    then: function(newValue, devName, cellName) {
+    then: function (newValue, devName, cellName) {
       inputChangeHandler(self, newValue, devName, cellName);
-    }
+    },
   });
-  
+
   if (!ruleId) {
     log.error('Failed to create main rule');
     return false;
   }
-  
+
   log.debug('Main rule created successfully with ID: ' + ruleId);
   self.addRule(ruleId);
   return true;
@@ -201,17 +224,19 @@ function createRules(self, cfg) {
  * @param {string} cellName - Cell name
  */
 function inputChangeHandler(self, newValue, devName, cellName) {
-  log.debug('Input control changed: ' + devName + '/' + cellName + ' = ' + newValue);
-  var isActive = dev[self.genNames.vDevice + "/rule_enabled"];
+  log.debug(
+    'Input control changed: ' + devName + '/' + cellName + ' = ' + newValue
+  );
+  var isActive = dev[self.genNames.vDevice + '/rule_enabled'];
   if (!isActive) {
     // OK: Scenario with correct config, but disabled
     log.debug('Scenario is disabled, skipping action');
     return true;
   }
-  
+
   var controlFullName = devName + '/' + cellName;
   var matchedInControl = null;
-  
+
   // Find the control that triggered the change, get the monitored event type
   for (var i = 0; i < self.cfg.inControls.length; i++) {
     if (self.cfg.inControls[i].control === controlFullName) {
@@ -224,14 +249,14 @@ function inputChangeHandler(self, newValue, devName, cellName) {
     return;
   }
   var eventType = matchedInControl.behaviorType;
-  
+
   // Check the configured trigger condition
   // @note: For "whenChange" we always continue
   if (!eTable.eventsTable[eventType].handler(newValue)) {
     log.debug('Event condition not met for behaviorType: ' + eventType);
     return;
   }
-  
+
   // Execute actions on output controls
   // No complex checks as we validated everything during initialization
   for (var j = 0; j < self.cfg.outControls.length; j++) {
@@ -239,14 +264,19 @@ function inputChangeHandler(self, newValue, devName, cellName) {
     var curUserAction = self.cfg.outControls[j].behaviorType;
     var curActionValue = self.cfg.outControls[j].actionValue;
     var actualValue = dev[curCtrlName];
-    var newCtrlValue = aTable.actionsTable[curUserAction].handler(actualValue, curActionValue);
-    
-    log.debug("Control " + curCtrlName + " will updated to state: " + newCtrlValue);
+    var newCtrlValue = aTable.actionsTable[curUserAction].handler(
+      actualValue,
+      curActionValue
+    );
+
+    log.debug(
+      'Control ' + curCtrlName + ' will updated to state: ' + newCtrlValue
+    );
     dev[curCtrlName] = newCtrlValue;
-    log.debug("Control " + curCtrlName + " successfull updated");
+    log.debug('Control ' + curCtrlName + ' successfull updated');
   }
-  
-  log.debug("Output controls updated for scenario: " + self.idPrefix);
+
+  log.debug('Output controls updated for scenario: ' + self.idPrefix);
 }
 
 /**
@@ -261,21 +291,24 @@ DevicesControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * - Base initialization is complete
    * - Configuration is valid
    * - All referenced controls exist in the system
-   * 
+   *
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */
   log.debug('Start init input-output link scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
-  
+
   // Virtual device already created by base class
   // Additional controls can be added here if needed
-  
+
   var rulesCreated = createRules(this, cfg);
 
   if (rulesCreated) {
     this.setState(ScenarioState.NORMAL);
-    log.debug('Input-output link scenario initialized successfully for device "{}"', deviceTitle);
+    log.debug(
+      'Input-output link scenario initialized successfully for device "{}"',
+      deviceTitle
+    );
   }
 
   return rulesCreated;

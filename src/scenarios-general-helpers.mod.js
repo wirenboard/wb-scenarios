@@ -156,7 +156,7 @@ function getIdPrefix(deviceTitle, cfg) {
 
 /**
  * Gets or creates a global storage for a specific scenario type
- * Ensures the global 'wbScenarios' object exists and has a structure 
+ * Ensures the global 'wbScenarios' object exists and has a structure
  * for the requested scenario type
  * @param {string} scenarioType - The type of scenario (e.g., 'lightControl')
  * @returns {Object} The global storage object for this scenario type
@@ -175,7 +175,6 @@ function getGlobalScenarioStore(scenarioType) {
   return global.wbScenarios[scenarioType];
 }
 
-
 /**
  * @typedef {Object} Device
  * @property {string} mqttTopicName - MQTT topic identifier for the device
@@ -185,7 +184,7 @@ function getGlobalScenarioStore(scenarioType) {
 
 /**
  * Extracts MQTT topic names from a collection of devices.
- * 
+ *
  * Efficiently maps through the provided devices array to extract only the
  * mqttTopicName property from each device object.
  *
@@ -197,10 +196,10 @@ function getGlobalScenarioStore(scenarioType) {
  * // Returns ["wb-mr6cv3_127/K6", "wb-msw-v4_34/Current Motion"]
  * extractMqttTopics([
  *   { mqttTopicName: "wb-mr6cv3_127/K6", behaviorType: "setEnable" },
- *   { 
- *     mqttTopicName: "wb-msw-v4_34/Current Motion", 
- *     behaviorType: "whileValueHigherThanThreshold", 
- *     actionValue: 170 
+ *   {
+ *     mqttTopicName: "wb-msw-v4_34/Current Motion",
+ *     behaviorType: "whileValueHigherThanThreshold",
+ *     actionValue: 170
  *   }
  * ]);
  */
@@ -208,7 +207,7 @@ function extractMqttTopics(devices) {
   if (!Array.isArray(devices)) {
     throw new TypeError('The devices parameter must be an array');
   }
-  
+
   var result = [];
   for (var i = 0; i < devices.length; i++) {
     result.push(devices[i].mqttTopicName);
@@ -231,11 +230,15 @@ function isControlTypeValid(controlName, reqCtrlTypes) {
 
   // Handle case when control doesn't exist
   if (!controlType) {
-    log.debug("Control type for {} not found, return: {}", controlName, controlType);
+    log.debug(
+      'Control type for {} not found, return: {}',
+      controlName,
+      controlType
+    );
     return false;
   }
 
-  log.debug("Control: {} | Type: {}", controlName, controlType);
+  log.debug('Control: {} | Type: {}', controlName, controlType);
 
   return reqCtrlTypes.indexOf(controlType) !== -1;
 }

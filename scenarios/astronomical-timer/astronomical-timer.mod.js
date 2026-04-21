@@ -13,7 +13,8 @@ var Logger = require('logger.mod').Logger;
 var SunCalc = require('suncalc.mod');
 var aTable = require('table-handling-actions.mod');
 var constants = require('constants.mod');
-var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
+var isControlTypeValid =
+  require('scenarios-general-helpers.mod').isControlTypeValid;
 
 var loggerFileLabel = 'WBSC-astronomical-timer-mod';
 var log = new Logger(loggerFileLabel);
@@ -24,24 +25,24 @@ var VALID_DAYS = constants.VALID_DAYS;
 var FULL_DAYS = constants.FULL_DAYS;
 
 var ASTRO_EVENT_NAMES = {
-  sunrise:       { en: 'Sunrise',          ru: 'Восход' },
-  sunset:        { en: 'Sunset',           ru: 'Закат' },
-  dawn:          { en: 'Dawn',             ru: 'Рассвет' },
-  dusk:          { en: 'Dusk',             ru: 'Сумерки' },
-  nauticalDawn:  { en: 'Nautical dawn',    ru: 'Навигационный рассвет' },
-  nauticalDusk:  { en: 'Nautical dusk',    ru: 'Навигационные сумерки' },
-  nightEnd:      { en: 'Night end',        ru: 'Конец ночи' },
-  night:         { en: 'Night',            ru: 'Ночь' },
-  goldenHour:    { en: 'Golden hour',      ru: 'Золотой час' },
-  goldenHourEnd: { en: 'Golden hour end',  ru: 'Конец золотого часа' },
-  solarNoon:     { en: 'Solar noon',       ru: 'Солнечный полдень' },
-  nadir:         { en: 'Nadir',            ru: 'Надир' },
+  sunrise: { en: 'Sunrise', ru: 'Восход' },
+  sunset: { en: 'Sunset', ru: 'Закат' },
+  dawn: { en: 'Dawn', ru: 'Рассвет' },
+  dusk: { en: 'Dusk', ru: 'Сумерки' },
+  nauticalDawn: { en: 'Nautical dawn', ru: 'Навигационный рассвет' },
+  nauticalDusk: { en: 'Nautical dusk', ru: 'Навигационные сумерки' },
+  nightEnd: { en: 'Night end', ru: 'Конец ночи' },
+  night: { en: 'Night', ru: 'Ночь' },
+  goldenHour: { en: 'Golden hour', ru: 'Золотой час' },
+  goldenHourEnd: { en: 'Golden hour end', ru: 'Конец золотого часа' },
+  solarNoon: { en: 'Solar noon', ru: 'Солнечный полдень' },
+  nadir: { en: 'Nadir', ru: 'Надир' },
 };
 
 var MS_PER_MINUTE = constants.MS_PER_MINUTE;
 var MAX_DAYS_AHEAD = 365;
 var OFFSET_MIN_MIN = -720; // -12 hours
-var OFFSET_MAX_MIN = 720;  // +12 hours
+var OFFSET_MAX_MIN = 720; // +12 hours
 
 /**
  * @typedef {Object} Coordinates
@@ -52,7 +53,7 @@ var OFFSET_MAX_MIN = 720;  // +12 hours
 /**
  * @typedef {Object} EventSettings
  * @property {string} astroEvent - Type of astronomical event
- *   Valid values: "sunrise", "sunset", "dawn", "dusk", "nauticalDawn", 
+ *   Valid values: "sunrise", "sunset", "dawn", "dusk", "nauticalDawn",
  *                 "nauticalDusk", "nightEnd", "night", "goldenHour",
  *                 "goldenHourEnd", "solarNoon", "nadir"
  * @property {number} offset - Offset in minutes (OFFSET_MIN_MIN to OFFSET_MAX_MIN)
@@ -90,15 +91,15 @@ function AstronomicalTimerScenario() {
    * @type {Object}
    */
   this.ctx = {
-    cachedDate: null,           // Date string of last calculation
-    cachedTzOffset: null,       // Timezone offset at last calculation
-    cachedEventType: null,      // Type of astronomical event
-    cachedOffset: null,         // Offset value in minutes
-    cachedLatitude: null,       // Latitude for last calculation
-    cachedLongitude: null,      // Longitude for last calculation
-    cachedDaysOfWeekStr: '',    // Scheduled days as string
+    cachedDate: null, // Date string of last calculation
+    cachedTzOffset: null, // Timezone offset at last calculation
+    cachedEventType: null, // Type of astronomical event
+    cachedOffset: null, // Offset value in minutes
+    cachedLatitude: null, // Latitude for last calculation
+    cachedLongitude: null, // Longitude for last calculation
+    cachedDaysOfWeekStr: '', // Scheduled days as string
     cachedNextExecutionMs: null, // Cached next execution time (ms), any future day
-    firedToday: false,          // Whether event has fired today
+    firedToday: false, // Whether event has fired today
   };
 }
 
@@ -128,17 +129,19 @@ AstronomicalTimerScenario.prototype.generateNames = function (idPrefix) {
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
-AstronomicalTimerScenario.prototype.defineControlsWaitConfig = function (cfg) {
-    var allTopics = [];
+AstronomicalTimerScenario.prototype.defineControlsWaitConfig = function (
+  cfg
+) {
+  var allTopics = [];
 
-    for (var i = 0; i < (cfg.outControls || []).length; i++) {
-      if (cfg.outControls[i].control) {
-        allTopics.push(cfg.outControls[i].control);
-      }
+  for (var i = 0; i < (cfg.outControls || []).length; i++) {
+    if (cfg.outControls[i].control) {
+      allTopics.push(cfg.outControls[i].control);
     }
+  }
 
-    return { controls: allTopics };
-  };
+  return { controls: allTopics };
+};
 
 /**
  * Validate all controls against action table
@@ -161,8 +164,16 @@ function validateControls(controls, table) {
 
     var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
-      log.debug("Error: Control '" + curCtrlName + "' is not of a valid type");
-      log.debug("  - For '" + curBehaviorType + "' can used only: [" + reqCtrlTypes + "] types");
+      log.error(
+        "Error: Control '" + curCtrlName + "' is not of a valid type"
+      );
+      log.error(
+        "  - For '" +
+          curBehaviorType +
+          "' can used only: [" +
+          reqCtrlTypes +
+          '] types'
+      );
       return false;
     }
   }
@@ -177,7 +188,9 @@ function validateControls(controls, table) {
 AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
   // Validate coordinates object
   if (!cfg.coordinates || typeof cfg.coordinates !== 'object') {
-    log.error('Astronomical Timer validation error: coordinates object is required');
+    log.error(
+      'Astronomical Timer validation error: coordinates object is required'
+    );
     return false;
   }
 
@@ -187,7 +200,9 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
     cfg.coordinates.latitude < -89.9 ||
     cfg.coordinates.latitude > 89.9
   ) {
-    log.error('Astronomical Timer validation error: latitude must be between -89.9 and 89.9');
+    log.error(
+      'Astronomical Timer validation error: latitude must be between -89.9 and 89.9'
+    );
     return false;
   }
 
@@ -197,19 +212,26 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
     cfg.coordinates.longitude < -180 ||
     cfg.coordinates.longitude > 180
   ) {
-    log.error('Astronomical Timer validation error: longitude must be between -180 and 180');
+    log.error(
+      'Astronomical Timer validation error: longitude must be between -180 and 180'
+    );
     return false;
   }
 
   // Validate eventSettings object
   if (!cfg.eventSettings || typeof cfg.eventSettings !== 'object') {
-    log.error('Astronomical Timer validation error: eventSettings object is required');
+    log.error(
+      'Astronomical Timer validation error: eventSettings object is required'
+    );
     return false;
   }
 
   // Validate astroEvent
   if (!ASTRO_EVENT_NAMES.hasOwnProperty(cfg.eventSettings.astroEvent)) {
-    log.error('Astronomical Timer validation error: invalid astroEvent: {}', cfg.eventSettings.astroEvent);
+    log.error(
+      'Astronomical Timer validation error: invalid astroEvent: {}',
+      cfg.eventSettings.astroEvent
+    );
     return false;
   }
 
@@ -220,20 +242,24 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
     cfg.eventSettings.offset > OFFSET_MAX_MIN
   ) {
     log.error(
-    'Astronomical Timer validation error: offset must be between {} and {}',
-    OFFSET_MIN_MIN,
-    OFFSET_MAX_MIN
-  );
+      'Astronomical Timer validation error: offset must be between {} and {}',
+      OFFSET_MIN_MIN,
+      OFFSET_MAX_MIN
+    );
     return false;
   }
 
   // Validate scheduleDaysOfWeek
   if (!Array.isArray(cfg.scheduleDaysOfWeek)) {
-    log.error('Astronomical Timer validation error: scheduleDaysOfWeek must be an array');
+    log.error(
+      'Astronomical Timer validation error: scheduleDaysOfWeek must be an array'
+    );
     return false;
   }
   if (cfg.scheduleDaysOfWeek.length === 0) {
-    log.error('Astronomical Timer validation error: at least one day must be selected');
+    log.error(
+      'Astronomical Timer validation error: at least one day must be selected'
+    );
     return false;
   }
 
@@ -249,17 +275,23 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
 
   // Validate outControls
   if (!Array.isArray(cfg.outControls)) {
-    log.error('Astronomical Timer validation error: outControls must be an array');
+    log.error(
+      'Astronomical Timer validation error: outControls must be an array'
+    );
     return false;
   }
   if (cfg.outControls.length === 0) {
-    log.error('Astronomical Timer validation error: at least one output control required');
+    log.error(
+      'Astronomical Timer validation error: at least one output control required'
+    );
     return false;
   }
 
   // Check control types
   if (!validateControls(cfg.outControls, aTable.actionsTable)) {
-    log.error('Astronomical Timer validation error: One or more controls have invalid type');
+    log.error(
+      'Astronomical Timer validation error: One or more controls have invalid type'
+    );
     return false;
   }
 
@@ -268,7 +300,7 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
   if (!nextExecution) {
     log.error(
       'Astronomical Timer validation error: Event "{}" not found in next {} days ' +
-      'for coordinates (lat: {}, lng: {}). Check coordinates and event type.',
+        'for coordinates (lat: {}, lng: {}). Check coordinates and event type.',
       cfg.eventSettings.astroEvent,
       MAX_DAYS_AHEAD,
       cfg.coordinates.latitude,
@@ -403,7 +435,9 @@ function calculateEventTime(cfg, date) {
 
   // Apply offset (may shift event to next or previous day — that's OK)
   if (cfg.eventSettings.offset) {
-    eventTime = new Date(eventTime.getTime() + cfg.eventSettings.offset * MS_PER_MINUTE);
+    eventTime = new Date(
+      eventTime.getTime() + cfg.eventSettings.offset * MS_PER_MINUTE
+    );
   }
 
   return eventTime;
@@ -423,7 +457,7 @@ function calculateAndCacheEventTime(self, cfg) {
   var currentOffset = cfg.eventSettings.offset;
   var currentLatitude = cfg.coordinates.latitude;
   var currentLongitude = cfg.coordinates.longitude;
-  
+
   // Create a copy of the array and sort it for consistent comparison
   var daysCopy = (cfg.scheduleDaysOfWeek || []).slice();
   var currentDaysOfWeekStr = daysCopy.sort().join(',');
@@ -438,7 +472,8 @@ function calculateAndCacheEventTime(self, cfg) {
   var cachedDaysOfWeekStr = self.ctx.cachedDaysOfWeekStr;
 
   // Check if cached event time is in the past
-  var cachedExpired = self.ctx.cachedNextExecutionMs !== null &&
+  var cachedExpired =
+    self.ctx.cachedNextExecutionMs !== null &&
     self.ctx.cachedNextExecutionMs <= now.getTime();
 
   // Check if any relevant parameter changed
@@ -456,7 +491,8 @@ function calculateAndCacheEventTime(self, cfg) {
     return new Date(self.ctx.cachedNextExecutionMs);
   }
 
-  log.debug('Recalculating event time for: {} (reason: expired:{}, date:{}, tz:{}, event:{}, offset:{}, lat:{}, lon:{}, days:{})',
+  log.debug(
+    'Recalculating event time for: {} (reason: expired:{}, date:{}, tz:{}, event:{}, offset:{}, lat:{}, lon:{}, days:{})',
     todayStr,
     cachedExpired,
     cachedDate !== todayStr,
@@ -482,7 +518,9 @@ function calculateAndCacheEventTime(self, cfg) {
   self.ctx.cachedLatitude = currentLatitude;
   self.ctx.cachedLongitude = currentLongitude;
   self.ctx.cachedDaysOfWeekStr = currentDaysOfWeekStr;
-  self.ctx.cachedNextExecutionMs = nextExecution ? nextExecution.getTime() : null;
+  self.ctx.cachedNextExecutionMs = nextExecution
+    ? nextExecution.getTime()
+    : null;
 
   return nextExecution;
 }
@@ -500,12 +538,16 @@ function updateEventTimeAndDisplay(self, cfg) {
   // Update VD displays only when the next execution time actually changed
   // to avoid unnecessary writes to MQTT on every cron tick
   if (self.ctx.cachedNextExecutionMs !== prevNextExecutionMs) {
-    dev[self.genNames.vDevice + '/next_execution'] = formatNextExecution(nextExecution);
+    dev[self.genNames.vDevice + '/next_execution'] =
+      formatNextExecution(nextExecution);
 
     if (cfg.eventSettings.offset !== 0) {
       if (nextExecution) {
-        var rawTime = new Date(nextExecution.getTime() - cfg.eventSettings.offset * MS_PER_MINUTE);
-        dev[self.genNames.vDevice + '/astro_event_time'] = formatHHMM(rawTime);
+        var rawTime = new Date(
+          nextExecution.getTime() - cfg.eventSettings.offset * MS_PER_MINUTE
+        );
+        dev[self.genNames.vDevice + '/astro_event_time'] =
+          formatHHMM(rawTime);
       } else {
         dev[self.genNames.vDevice + '/astro_event_time'] = '--:--';
       }
@@ -616,8 +658,11 @@ function getNextExecutionTime(cfg) {
     // Let's check if this day is allowed
     if (scheduledDays.indexOf(actualDay) === -1) {
       // Actual day not allowed - skip
-      log.debug('Event on {} falls on day {} which is not scheduled',
-        eventTime.toDateString(), actualDay);
+      log.debug(
+        'Event on {} falls on day {} which is not scheduled',
+        eventTime.toDateString(),
+        actualDay
+      );
       continue;
     }
 
@@ -626,7 +671,8 @@ function getNextExecutionTime(cfg) {
     }
   }
 
-  log.error('No event found in next {} days for: {}',
+  log.error(
+    'No event found in next {} days for: {}',
     MAX_DAYS_AHEAD,
     cfg.eventSettings.astroEvent
   );
@@ -663,7 +709,11 @@ function astroHandler(self, cfg) {
         curActionValue
       );
 
-      log.debug('Control {} will be updated to: {}', curCtrlName, newCtrlValue);
+      log.debug(
+        'Control {} will be updated to: {}',
+        curCtrlName,
+        newCtrlValue
+      );
       dev[curCtrlName] = newCtrlValue;
       log.debug('Control {} updated successfully', curCtrlName);
     } catch (error) {
@@ -706,7 +756,11 @@ function createCronRule(self, cfg) {
       var eventMinutes = Math.floor(eventTime.getTime() / MS_PER_MINUTE);
 
       if (nowMinutes === eventMinutes) {
-        log.debug('Event time matched: {} for {}', formatHHMM(now), self.idPrefix);
+        log.debug(
+          'Event time matched: {} for {}',
+          formatHHMM(now),
+          self.idPrefix
+        );
         self.ctx.firedToday = true;
         astroHandler(self, cfg);
       }
@@ -766,7 +820,7 @@ function createTimeUpdateRule(self) {
       'system_time/current_date',
       'system_time/current_day',
     ],
-    then: function(newValue, devName, cellName) {
+    then: function (newValue, devName, cellName) {
       var currentTimeText = formatCurrentTime();
       dev[self.genNames.vDevice + '/current_time'] = currentTimeText;
     },
@@ -813,13 +867,16 @@ function createRules(self, cfg) {
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
-AstronomicalTimerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
+AstronomicalTimerScenario.prototype.initSpecific = function (
+  deviceTitle,
+  cfg
+) {
   /**
    * NOTE: This method is executed ONLY when:
    * - Base initialization is complete
    * - Configuration is valid
    * - All referenced controls exist in the system
-   * 
+   *
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */
@@ -833,7 +890,10 @@ AstronomicalTimerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   if (rulesCreated) {
     this.setState(ScenarioState.NORMAL);
-    log.debug('Astronomical timer scenario initialized successfully for device "{}"', deviceTitle);
+    log.debug(
+      'Astronomical timer scenario initialized successfully for device "{}"',
+      deviceTitle
+    );
   }
 
   return rulesCreated;

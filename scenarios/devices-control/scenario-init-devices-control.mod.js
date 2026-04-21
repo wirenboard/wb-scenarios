@@ -20,7 +20,7 @@ var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
   reqVerScenario: 1, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
-  scenarioTypeStr: 'devicesControl'
+  scenarioTypeStr: 'devicesControl',
 };
 
 var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
@@ -37,7 +37,7 @@ function initializeScenario(scenarioCfg) {
   var cfg = {
     idPrefix: scenarioCfg.id_prefix,
     inControls: scenarioCfg.inControls,
-    outControls: scenarioCfg.outControls
+    outControls: scenarioCfg.outControls,
   };
 
   try {
@@ -65,8 +65,8 @@ function initializeScenario(scenarioCfg) {
     log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization: "{}" for scenario: "{}"', 
-      error.message || error, 
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
+      error.message || error,
       scenarioCfg.name
     );
   }
@@ -82,8 +82,9 @@ function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
   var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
     var scenario = listScenario[i];
-    var isTarget = (scenario.scenarioType === searchScenarioType) &&
-      (scenario.enable === true);
+    var isTarget =
+      scenario.scenarioType === searchScenarioType &&
+      scenario.enable === true;
     if (isTarget) {
       matchedScenarios.push(scenario);
     }

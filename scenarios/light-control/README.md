@@ -19,16 +19,16 @@
 
 Сценарий может работать по одному из типов датчиков, либо сразу по нескольким
 
-1) Датчик движения:
+1. Датчик движения:
    - Включает свет при наличии движения
    - После окончания движения запускается таймер выключения
 
-2) Датчик открытия двери:
+2. Датчик открытия двери:
    - Включает свет при открытии двери
    - Сразу при включении таймера запускается таймер выключения света.
      Закрывание двери не влияет на логику - свет остается включенным
 
-3) Настенный выключатель:
+3. Настенный выключатель:
    - Дает возможность управлять светом привычным способом.
      При включении света выключателем - все автоматизации блокируются до
      момента выключения света выключателем.
@@ -57,11 +57,11 @@
 для беспроводных датчиков которые передают только true и false при
 изменении состояния. Это нужно по двум причинам:
 
-1) Необходима для корректной работы датчиков zeegbe
+1. Необходима для корректной работы датчиков zeegbe
    Они могут находиться в состоянии true долго, дольше чем вы установите таймер
    Возможности обновлять таймер кроме как по изменению состояни на выкл нет
 
-2) Уменьшают колличество активаций таймера датчиков со значением типа value
+2. Уменьшают колличество активаций таймера датчиков со значением типа value
    Мы не обновляем таймер каждый раз при получении нового значения больше трешхолда
    а устанавливаем таймер только если движение уже не видно.
 
@@ -70,10 +70,10 @@
 Вы можете использовать модуль управления светом прямо из своих
 правил `wb-rules`. Для этого нужно сделать 4 шага:
 
-1) Импортировать класс кастомного сценария
-2) Создать новый инстанс класса "управление светом"
-3) Создать объект настроек где прописать что вы хотите использовать
-4) Инициализировать алгоритм указав:
+1. Импортировать класс кастомного сценария
+2. Создать новый инстанс класса "управление светом"
+3. Создать объект настроек где прописать что вы хотите использовать
+4. Инициализировать алгоритм указав:
    - Имя виртуального устройства
    - Созданный объект конфигурации
 
@@ -103,43 +103,42 @@ function main() {
     isDelayEnabledAfterSwitch: true,
     delayBlockAfterSwitch: 16,
     lightDevices: [
-                    {
-                        "behaviorType": "setEnable",
-                        "mqttTopicName": "wb-mr6cv3_127/K4"
-                    },
-                    {
-                        "behaviorType": "setEnable",
-                        "mqttTopicName": "wb-mr6cv3_127/K5"
-                    }
-                ],
+      {
+        'behaviorType': 'setEnable',
+        'mqttTopicName': 'wb-mr6cv3_127/K4',
+      },
+      {
+        'behaviorType': 'setEnable',
+        'mqttTopicName': 'wb-mr6cv3_127/K5',
+      },
+    ],
     lightSwitches: [
-                    {
-                        "mqttTopicName": "wall_switch_0/enabled"
-                    },
-                    {
-                        "mqttTopicName": "wall_switch_1/enabled"
-                    }
-                ],
+      {
+        'mqttTopicName': 'wall_switch_0/enabled',
+      },
+      {
+        'mqttTopicName': 'wall_switch_1/enabled',
+      },
+    ],
     motionSensors: [
-                    {
-                        "actionValue": 170,
-                        "behaviorType": "whileValueHigherThanThreshold",
-                        "mqttTopicName": "wb-msw-v4_34/Current Motion"
-                    }
-                   ],
+      {
+        'actionValue': 170,
+        'behaviorType': 'whileValueHigherThanThreshold',
+        'mqttTopicName': 'wb-msw-v4_34/Current Motion',
+      },
+    ],
     openingSensors: [
-                    {
-                        "behaviorType": "whenEnabled",
-                        "mqttTopicName": "wall_switch_2/enabled"
-                    },
-                    {
-                        "behaviorType": "whenEnabled",
-                        "mqttTopicName": "wall_switch_3/enabled"
-                    }
-                    ],
+      {
+        'behaviorType': 'whenEnabled',
+        'mqttTopicName': 'wall_switch_2/enabled',
+      },
+      {
+        'behaviorType': 'whenEnabled',
+        'mqttTopicName': 'wall_switch_3/enabled',
+      },
+    ],
   };
 
-  
   // Step 4: init algorithm
   try {
     var isInitSuccess = scenario.init(scenarioName, cfg);
@@ -152,8 +151,8 @@ function main() {
     log.debug('Initialization successful for: "{}"', scenarioName);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization: "{}" for scenario: "{}"', 
-      error.message || error, 
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
+      error.message || error,
       scenarioName
     );
   }

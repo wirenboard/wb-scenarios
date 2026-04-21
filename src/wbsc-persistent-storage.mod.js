@@ -9,22 +9,22 @@ var _instance = null;
 
 /**
  * We store values ​​of all scenarios in a StorableObject using the key this.iterableRootObjKey.
- * 
+ *
  * PersistentStorage is a proxy and we can't retrieve all available keys. But, we can retrieve all stored keys within a StorableObject.
  */
 function ScenarioPersistentStorage() {
   this.ps = null;
-  this.storageName = "wb-scenarios-common-persistent-data"
-  this.iterableRootObjKey = "scenariosRegistry"
-  this.userSettingsKey = "userSettings"
-  this.metaKey = "meta"
+  this.storageName = 'wb-scenarios-common-persistent-data';
+  this.iterableRootObjKey = 'scenariosRegistry';
+  this.userSettingsKey = 'userSettings';
+  this.metaKey = 'meta';
   this._initStorage();
 }
 
 /**
  * Initialize connection to the global persistent storage
  * @private
- * 
+ *
  * Example of stored data structure:
  * {
  *  "scenariosRegistry": {
@@ -46,14 +46,14 @@ function ScenarioPersistentStorage() {
  *    }
  *   }
  * }
- * 
+ *
  * Where:
  * scenariosRegistry - key in the persistent storage that stores all the data about the scenarios
  * raspisanie, upravlenie_ustroystvami - idPrefix scenario
  * userSettings - Object with user settings for a specific scenario
  * meta - Object with meta settings for a specific scenario
  */
-ScenarioPersistentStorage.prototype._initStorage = function() {
+ScenarioPersistentStorage.prototype._initStorage = function () {
   this.ps = new PersistentStorage(this.storageName, { global: true });
 
   if (!this.ps[this.iterableRootObjKey]) {
@@ -66,10 +66,12 @@ ScenarioPersistentStorage.prototype._initStorage = function() {
  * @param {string} idPrefix Scenario ID prefix
  * @returns {void} Stored value or default
  */
-ScenarioPersistentStorage.prototype._initScenario = function(idPrefix) {
+ScenarioPersistentStorage.prototype._initScenario = function (idPrefix) {
   this.ps[this.iterableRootObjKey][idPrefix] = new StorableObject({});
-  this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey] = new StorableObject({});
-  this.ps[this.iterableRootObjKey][idPrefix][this.metaKey] = new StorableObject({});
+  this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey] =
+    new StorableObject({});
+  this.ps[this.iterableRootObjKey][idPrefix][this.metaKey] =
+    new StorableObject({});
 };
 
 /**
@@ -79,15 +81,23 @@ ScenarioPersistentStorage.prototype._initScenario = function(idPrefix) {
  * @param {any} defaultValue Value to return if key not found
  * @returns {any} Stored value or default
  */
-ScenarioPersistentStorage.prototype.getUserSetting = function(idPrefix, key, defaultValue) {
+ScenarioPersistentStorage.prototype.getUserSetting = function (
+  idPrefix,
+  key,
+  defaultValue
+) {
   // If no stored value in the storage, then return defaultValue
-  if (!this.ps[this.iterableRootObjKey][idPrefix] || !this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey]) {
+  if (
+    !this.ps[this.iterableRootObjKey][idPrefix] ||
+    !this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey]
+  ) {
     return defaultValue;
   }
-  
-  var val = this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey][key];
 
-  return (val !== undefined) ? val : defaultValue;
+  var val =
+    this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey][key];
+
+  return val !== undefined ? val : defaultValue;
 };
 
 /**
@@ -97,26 +107,31 @@ ScenarioPersistentStorage.prototype.getUserSetting = function(idPrefix, key, def
  * @param {any} value Value for setting
  * @returns {void}
  */
-ScenarioPersistentStorage.prototype.setUserSetting = function(idPrefix, key, value) {
+ScenarioPersistentStorage.prototype.setUserSetting = function (
+  idPrefix,
+  key,
+  value
+) {
   // If not StorableObject for the specific scenario, create a new one.
   if (!this.ps[this.iterableRootObjKey][idPrefix]) {
-    this._initScenario(idPrefix)
+    this._initScenario(idPrefix);
   }
 
-  this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey][key] = value;
+  this.ps[this.iterableRootObjKey][idPrefix][this.userSettingsKey][key] =
+    value;
 };
 
 /**
  * Get all created scenario keys from from persistent storage
  * @returns {any} Array of all created scenario keys
  */
-ScenarioPersistentStorage.prototype.getStoredScenarioKeys = function() {
+ScenarioPersistentStorage.prototype.getStoredScenarioKeys = function () {
   var rootObj = this.ps[this.iterableRootObjKey];
   if (!rootObj) {
     return [];
   }
 
-  return Object.keys(rootObj).filter(function(key) {
+  return Object.keys(rootObj).filter(function (key) {
     return key !== '_psself';
   });
 };
@@ -128,15 +143,22 @@ ScenarioPersistentStorage.prototype.getStoredScenarioKeys = function() {
  * @param {any} defaultValue Value to return if key not found
  * @returns {any} Stored value or default
  */
-ScenarioPersistentStorage.prototype.getMeta = function(idPrefix, key, defaultValue) {
+ScenarioPersistentStorage.prototype.getMeta = function (
+  idPrefix,
+  key,
+  defaultValue
+) {
   // If no stored value in the storage, then return defaultValue
-  if (!this.ps[this.iterableRootObjKey][idPrefix] || !this.ps[this.iterableRootObjKey][idPrefix][this.metaKey]) {
+  if (
+    !this.ps[this.iterableRootObjKey][idPrefix] ||
+    !this.ps[this.iterableRootObjKey][idPrefix][this.metaKey]
+  ) {
     return defaultValue;
   }
-  
+
   var val = this.ps[this.iterableRootObjKey][idPrefix][this.metaKey][key];
 
-  return (val !== undefined) ? val : defaultValue;
+  return val !== undefined ? val : defaultValue;
 };
 
 /**
@@ -146,10 +168,14 @@ ScenarioPersistentStorage.prototype.getMeta = function(idPrefix, key, defaultVal
  * @param {any} value Value for setting
  * @returns {void}
  */
-ScenarioPersistentStorage.prototype.setMeta = function(idPrefix, key, value) {
+ScenarioPersistentStorage.prototype.setMeta = function (
+  idPrefix,
+  key,
+  value
+) {
   // If not StorableObject for the specific scenario, create a new one.
   if (!this.ps[this.iterableRootObjKey][idPrefix]) {
-    this._initScenario(idPrefix)
+    this._initScenario(idPrefix);
   }
 
   this.ps[this.iterableRootObjKey][idPrefix][this.metaKey][key] = value;

@@ -31,17 +31,17 @@
 
 Сценарий работает на основе cron-расписания (не системного, используется внутренний для wb-rules модуль на Golang!) и позволяет:
 
-1) Автоматическое выполнение по расписанию:
+1. Автоматическое выполнение по расписанию:
    - Настройка времени срабатывания (ЧЧ:ММ)
    - Выбор дней недели для выполнения
    - Автоматический запуск действий в указанное время
 
-2) Ручное выполнение:
+2. Ручное выполнение:
    - Кнопка "Execute now" в виртуальном устройстве
    - Немедленное выполнение всех настроенных действий
    - Не влияет на автоматическое расписание
 
-3) Отображение информации:
+3. Отображение информации:
    - Текущее время системы
    - Время следующего выполнения по расписанию
 
@@ -68,58 +68,56 @@
 
 ```json
 {
-    "enable": true,
-    "name": "Расписание",
-    "outControls": [
-        {
-            "actionValue": 1,
-            "behaviorType": "toggle",
-            "control": "vd_wall_switch_1/enabled"
-        },
-        {
-            "actionValue": 1,
-            "behaviorType": "toggle",
-            "control": "vd_pump_1/enabled"
-        }
-    ],
-    "scenarioType": "schedule",
-    "scheduleTime": "08:56",
-    "scheduleDaysOfWeek": [
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday"
-    ]
+  "enable": true,
+  "name": "Расписание",
+  "outControls": [
+    {
+      "actionValue": 1,
+      "behaviorType": "toggle",
+      "control": "vd_wall_switch_1/enabled"
+    },
+    {
+      "actionValue": 1,
+      "behaviorType": "toggle",
+      "control": "vd_pump_1/enabled"
+    }
+  ],
+  "scenarioType": "schedule",
+  "scheduleTime": "08:56",
+  "scheduleDaysOfWeek": [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday"
+  ]
 }
 ```
 
-Конфигурация записанная в файле *.conf
+Конфигурация записанная в файле \*.conf
 
 ```json
 {
-    "configVersion": 1,
-    "scenarios": [
+  "configVersion": 1,
+  "scenarios": [
+    {
+      "componentVersion": 1,
+      "enable": true,
+      "name": "Расписание",
+      "outControls": [
         {
-            "componentVersion": 1,
-            "enable": true,
-            "name": "Расписание",
-            "outControls": [
-                {
-                    "actionValue": 0,
-                    "behaviorType": "setEnable",
-                    "control": "buzzer/enabled"
-                }
-            ],
-            "scenarioType": "schedule",
-            "scheduleDaysOfWeek": [
-                "tuesday"
-            ],
-            "scheduleTime": "14:02"
+          "actionValue": 0,
+          "behaviorType": "setEnable",
+          "control": "buzzer/enabled"
         }
-    ]
+      ],
+      "scenarioType": "schedule",
+      "scheduleDaysOfWeek": ["tuesday"],
+      "scheduleTime": "14:02"
+    }
+  ]
 }
 ```
 

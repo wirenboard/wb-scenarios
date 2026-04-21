@@ -16,7 +16,7 @@ var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
   reqVerScenario: 1, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
-  scenarioTypeStr: 'schedule'
+  scenarioTypeStr: 'schedule',
 };
 
 var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
@@ -32,9 +32,9 @@ function initializeScenario(scenarioCfg) {
   var scenario = new CustomTypeSc();
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
-    scheduleTime: scenarioCfg.scheduleTime || "12:00",
+    scheduleTime: scenarioCfg.scheduleTime || '12:00',
     scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
-    outControls: scenarioCfg.outControls || []
+    outControls: scenarioCfg.outControls || [],
   };
 
   try {
@@ -62,8 +62,8 @@ function initializeScenario(scenarioCfg) {
     log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization: "{}" for scenario: "{}"', 
-      error.message || error, 
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
+      error.message || error,
       scenarioCfg.name
     );
   }
@@ -79,8 +79,9 @@ function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
   var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
     var scenario = listScenario[i];
-    var isTarget = (scenario.scenarioType === searchScenarioType) &&
-      (scenario.enable === true);
+    var isTarget =
+      scenario.scenarioType === searchScenarioType &&
+      scenario.enable === true;
     if (isTarget) {
       matchedScenarios.push(scenario);
     }
@@ -97,25 +98,27 @@ function setup() {
   if (!listAllScenarios) return;
 
   var targetScenarios = findAllActiveScenariosWithType(
-    listAllScenarios, 
+    listAllScenarios,
     CFG.scenarioTypeStr
   );
-  
+
   if (targetScenarios.length === 0) {
-    log.debug('No active scenarios found of type: {}', CFG.scenarioTypeStr);
+    log.debug(
+      'No correct and active scenarios of type "{}" found',
+      CFG.scenarioTypeStr
+    );
     return;
   }
 
-  log.debug('Found {} active scenarios of type: {}', 
-    targetScenarios.length, 
+  log.debug(
+    'Found {} active scenarios of type: {}',
+    targetScenarios.length,
     CFG.scenarioTypeStr
   );
 
   for (var i = 0; i < targetScenarios.length; i++) {
     initializeScenario(targetScenarios[i]);
   }
-  
-  log.debug('Initialization of "{}" type scenarios completed', CFG.scenarioTypeStr);
 }
 
 exports.setup = setup;

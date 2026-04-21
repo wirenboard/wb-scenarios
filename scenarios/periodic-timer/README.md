@@ -45,10 +45,10 @@
 
 Каждое действие автоматически отменяется по окончании работы:
 
-| Действие при старте | Действие при стопе |
-|---|---|
-| Включить (`setEnable`) | Выключить (`setDisable`) |
-| Выключить (`setDisable`) | Включить (`setEnable`) |
+| Действие при старте                           | Действие при стопе                               |
+| --------------------------------------------- | ------------------------------------------------ |
+| Включить (`setEnable`)                        | Выключить (`setDisable`)                         |
+| Выключить (`setDisable`)                      | Включить (`setEnable`)                           |
 | Установить значение (`setValue`, `initValue`) | Установить значение (`setValue`, `reverseValue`) |
 
 ### Ручной запуск
@@ -61,11 +61,11 @@
 
 ### Состояние (`state`)
 
-| Значение | Описание |
-|---|---|
-| **Активен** | Включён, сегодня рабочий день, текущее время в окне |
-| **Ожидает** | Включён, но вне окна или не рабочий день |
-| **Отключен** | Сценарий выключен (`rule_enabled = false`) |
+| Значение     | Описание                                            |
+| ------------ | --------------------------------------------------- |
+| **Активен**  | Включён, сегодня рабочий день, текущее время в окне |
+| **Ожидает**  | Включён, но вне окна или не рабочий день            |
+| **Отключен** | Сценарий выключен (`rule_enabled = false`)          |
 
 ---
 
@@ -100,12 +100,12 @@
 
 Массив действий, выполняемых при старте каждого цикла. Минимум 1 элемент.
 
-| Поле | Тип | Описание |
-|---|---|---|
-| `mqttTopicName` | string | Имя контрола: `"device/control"` |
-| `behaviorType` | string | `setEnable`, `setDisable`, `setValue` |
-| `initValue` | number | Для `setValue`: значение при старте |
-| `reverseValue` | number | Для `setValue`: значение при стопе |
+| Поле            | Тип    | Описание                              |
+| --------------- | ------ | ------------------------------------- |
+| `mqttTopicName` | string | Имя контрола: `"device/control"`      |
+| `behaviorType`  | string | `setEnable`, `setDisable`, `setValue` |
+| `initValue`     | number | Для `setValue`: значение при старте   |
+| `reverseValue`  | number | Для `setValue`: значение при стопе    |
 
 ---
 
@@ -123,7 +123,11 @@
   "interval": { "intervalUnit": "hours", "intervalValue": 2 },
   "workTime": { "workTimeUnit": "minutes", "workTimeValue": 10 },
   "scheduleDaysOfWeek": [
-    "monday", "tuesday", "wednesday", "thursday", "friday"
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday"
   ],
   "outControls": [
     {
@@ -146,8 +150,13 @@
   "interval": { "intervalUnit": "minutes", "intervalValue": 30 },
   "workTime": { "workTimeUnit": "minutes", "workTimeValue": 5 },
   "scheduleDaysOfWeek": [
-    "monday", "tuesday", "wednesday", "thursday",
-    "friday", "saturday", "sunday"
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday"
   ],
   "outControls": [
     {
@@ -164,15 +173,15 @@
 
 Сценарий создаёт виртуальное устройство `wbsc_<idPrefix>` с контролами:
 
-| Контрол | Тип | Описание |
-|---|---|---|
-| `rule_enabled` | switch | Включение/выключение сценария |
-| `execute_now` | pushbutton | Ручной немедленный запуск |
-| `current_time` | text | Текущее системное время |
-| `active_window` | text | Временное окно: «18:00 - 19:00» |
-| `next_start` | text | Следующий старт цикла (или открытие окна); `--:--` при отключении |
-| `next_stop` | text | Конец текущей или следующей рабочей фазы; `--:--` при отключении |
-| `state` | value | Состояние: «Активен» / «Ожидает» / «Отключен» |
+| Контрол         | Тип        | Описание                                                          |
+| --------------- | ---------- | ----------------------------------------------------------------- |
+| `rule_enabled`  | switch     | Включение/выключение сценария                                     |
+| `execute_now`   | pushbutton | Ручной немедленный запуск                                         |
+| `current_time`  | text       | Текущее системное время                                           |
+| `active_window` | text       | Временное окно: «18:00 - 19:00»                                   |
+| `next_start`    | text       | Следующий старт цикла (или открытие окна); `--:--` при отключении |
+| `next_stop`     | text       | Конец текущей или следующей рабочей фазы; `--:--` при отключении  |
+| `state`         | value      | Состояние: «Активен» / «Ожидает» / «Отключен»                     |
 
 ### Внешний вид
 
@@ -228,10 +237,10 @@
 Вы можете использовать модуль периодического таймера напрямую из своих
 правил `wb-rules`. Для этого нужно сделать 4 шага:
 
-1) Импортировать класс `PeriodicTimerScenario`
-2) Создать новый экземпляр класса
-3) Создать объект настроек
-4) Инициализировать сценарий, передав имя и конфигурацию
+1. Импортировать класс `PeriodicTimerScenario`
+2. Создать новый экземпляр класса
+3. Создать объект настроек
+4. Инициализировать сценарий, передав имя и конфигурацию
 
 ### Параметры конфигурации
 
@@ -267,8 +276,7 @@
  */
 
 // Step 1: import module
-var CustomTypeSc =
-  require('periodic-timer.mod').PeriodicTimerScenario;
+var CustomTypeSc = require('periodic-timer.mod').PeriodicTimerScenario;
 
 function main() {
   var scenarioName = 'Lawn irrigation';
@@ -284,8 +292,11 @@ function main() {
     interval: { unit: 'hours', value: 2 },
     workTime: { unit: 'minutes', value: 10 },
     scheduleDaysOfWeek: [
-      'monday', 'tuesday', 'wednesday',
-      'thursday', 'friday',
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
     ],
     outControls: [
       {

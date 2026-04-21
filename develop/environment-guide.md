@@ -2,13 +2,13 @@
 
 ## Руководства по стилю
 
-1) Основной и приоритетный
-Style guide от Airbnb для js ES5
-https://github.com/airbnb/javascript/tree/es5-deprecated/es5
+1. Основной и приоритетный
+   Style guide от Airbnb для js ES5
+   https://github.com/airbnb/javascript/tree/es5-deprecated/es5
 
-2) Вспомогательный
-Style guide от Google для jsdoc
-https://google.github.io/styleguide/jsguide.html#jsdoc
+2. Вспомогательный
+   Style guide от Google для jsdoc
+   https://google.github.io/styleguide/jsguide.html#jsdoc
 
 ## Окончания в файлах
 
@@ -59,6 +59,7 @@ $
 в проекте.
 
 Вот так устанавливать НЕ нужно!
+
 ```shell
 $ npm install --g eslint
 $ npm install --g prettier
@@ -157,35 +158,36 @@ $ eslint src/tm-event-main.mod.js --debug
 инструментов в систему, когда вы проверили что данные утилиты корректно
 работают через консоль.
 
-1) ESLint - линтер проверяющий ошибки, но не наводит красоту.
+1. ESLint - линтер проверяющий ошибки, но не наводит красоту.
    Ссылка в VsCode маркет:
    - Microsoft: [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
 
-2) Prettier - форматтер наводит красоту в коде, но не проверяющий ошибки.
+2. Prettier - форматтер наводит красоту в коде, но не проверяющий ошибки.
    Ссылка в VsCode маркет:
    - Prettier: [Prettier - Code formatter](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
 
-3) markdownlint - линтер и форматтер помогающий редактировать markdown файлв
+3. markdownlint - линтер и форматтер помогающий редактировать markdown файлв
    Ссылка в VsCode маркет:
    - David Anson: [markdownlint](https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint)
 
 ### Файлы настроек
 
 В корне проекта лежат два файла настроек линтера и форматтера:
+
 - Для линтера: `eslint.config.cjs`
 - Для бьютефаера: .prettierrc.json
 
 #### eslint.config.cjs
 
-1) На счет имени файла
+1. На счет имени файла
    ESLint версии 9.x, которая по умолчанию поддерживает только плоскую
    конфигурацию (eslint.config.js). Это означает, что ваш файл .eslintrc.json
    игнорируется, так как поддержка старого формата конфигурации была удалена.
 
-2) Так как мы не используем ES 6 модули - то не создаем package.json
+2. Так как мы не используем ES 6 модули - то не создаем package.json
    с содержащимся в нем "type": "module". Это влияет на синтаксис
    конфига ESLint
-3) Глобальный файл настроек в Windows
+3. Глобальный файл настроек в Windows
    Обратите внимание, что для корректной работы новых версий ESLint
    кроме локального файла конфига нужен еще и глобальный системный файл
    без которого ESLint не будет работать в VsCode - его нельзя удалять.
@@ -199,8 +201,8 @@ $ eslint src/tm-event-main.mod.js --debug
 
 - Нельзя использовать `.eslintrc.json` тк не поддерживается с версии 9
 - Нельзя использовать `eslint.config.js` тк мы используем common js
-   а при использовании `*.js` будут дополнительные ошибки при проверке
-   конфига от ts и требования исопльзовать модули ES6 вместо reauire
+  а при использовании `*.js` будут дополнительные ошибки при проверке
+  конфига от ts и требования исопльзовать модули ES6 вместо reauire
 
 По внутренностям:
 
@@ -228,6 +230,6 @@ log - Hide error - 'log' is not defined.
 
 ```json
 {
-    "MD033": false
+  "MD033": false
 }
 ```

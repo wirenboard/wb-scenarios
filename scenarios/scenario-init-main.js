@@ -12,14 +12,16 @@
  * @author Mikhail Burchu <mikhail.burchu@wirenboard.com>
  */
 
-var scenarioPersistentStorage = require("wbsc-persistent-storage.mod").getInstance();
-var setupDevicesControl = require("scenario-init-devices-control.mod").setup;
-var setupLightControl = require("scenario-init-light-control.mod").setup;
-var setupThermostat = require("scenario-init-thermostat.mod").setup;
-var setupSchedule = require("scenario-init-schedule.mod").setup;
-var setupAstronomicalTimer = require("scenario-init-astronomical-timer.mod").setup;
-var setupPeriodicTimer = require("scenario-init-periodic-timer.mod").setup;
-var setupChannelMap = require("scenario-init-channel-map.mod").setup;
+var scenarioPersistentStorage =
+  require('wbsc-persistent-storage.mod').getInstance();
+var setupDevicesControl = require('scenario-init-devices-control.mod').setup;
+var setupLightControl = require('scenario-init-light-control.mod').setup;
+var setupThermostat = require('scenario-init-thermostat.mod').setup;
+var setupSchedule = require('scenario-init-schedule.mod').setup;
+var setupAstronomicalTimer =
+  require('scenario-init-astronomical-timer.mod').setup;
+var setupPeriodicTimer = require('scenario-init-periodic-timer.mod').setup;
+var setupChannelMap = require('scenario-init-channel-map.mod').setup;
 var Logger = require('logger.mod').Logger;
 
 var log = new Logger('WBSC-init-main');
@@ -28,23 +30,31 @@ function main() {
   log.debug('Start initialisation all types scenarios');
 
   // Retrieving all previously created virtual devices from persistent storage
-  var psWBSC = new PersistentStorage("wb-scenarios", {global: true});
+  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
   var cmdList = '';
-  if (psWBSC["VdList"] !== undefined) {
-    var VdList = Object.keys(psWBSC["VdList"]);
-    VdList.forEach(function(Vdevice) {
-      cmdList = cmdList + 'mqtt-delete-retained /devices/' + Vdevice + '/# > /dev/null 2>&1;'
+  if (psWBSC['VdList'] !== undefined) {
+    var VdList = Object.keys(psWBSC['VdList']);
+    VdList.forEach(function (Vdevice) {
+      cmdList =
+        cmdList +
+        'mqtt-delete-retained /devices/' +
+        Vdevice +
+        '/# > /dev/null 2>&1;';
     });
   }
 
-  var registeredScenarios = scenarioPersistentStorage.getStoredScenarioKeys();
+  var registeredScenarios =
+    scenarioPersistentStorage.getStoredScenarioKeys();
   if (registeredScenarios.length > 0) {
-    log.debug('Found saved scenarios in storage: ' + registeredScenarios.join(', '));
+    log.debug(
+      'Found saved scenarios in storage: ' + registeredScenarios.join(', ')
+    );
   } else {
     log.debug('Persistent storage registry is empty');
   }
 
-  runShellCommand(cmdList, { //Removing all previously created virtual devices from topics
+  runShellCommand(cmdList, {
+    //Removing all previously created virtual devices from topics
     captureOutput: true,
     captureErrorOutput: true,
     exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
@@ -55,9 +65,9 @@ function main() {
       setupAstronomicalTimer();
       setupPeriodicTimer();
       setupChannelMap();
-    }
+    },
   });
-  psWBSC["VdList"] = null; // Removing all previously created virtual devices from persistent storage
+  psWBSC['VdList'] = null; // Removing all previously created virtual devices from persistent storage
 }
 
 main();

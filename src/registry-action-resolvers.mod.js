@@ -2,7 +2,7 @@
  * @file Модуль реестра, содержащего описание выходных воздействий
  *       Описывает действия над контролами в зависимости
  *       от выбранного типа поведения
- * 
+ *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
  */
@@ -49,55 +49,62 @@ function setValueNumericZero(actualValue, actionValue) {
  * - Обработчик ресета (вычисляется динамически в конце после чтения всего файла)
  */
 var actionsTable = {
-  'setEnable': {
+  setEnable: {
     reqCtrlTypes: ['switch'],
     launchResolver: setEnable,
     resetResolverName: 'setDisable',
-    resetResolver: null // Вычисляется ниже динамически
+    resetResolver: null, // Вычисляется ниже динамически
   },
-  'setDisable': {
+  setDisable: {
     reqCtrlTypes: ['switch'],
     launchResolver: setDisable,
     resetResolverName: 'setEnable',
-    resetResolver: null // Вычисляется ниже динамически
+    resetResolver: null, // Вычисляется ниже динамически
   },
-  'setValueNumericInput': {
+  setValueNumericInput: {
     reqCtrlTypes: ['value'],
     launchResolver: setValueNumericInput,
     resetResolverName: 'setValueNumericZero',
-    resetResolver: null // Вычисляется ниже динамически
+    resetResolver: null, // Вычисляется ниже динамически
   },
-  'setValueNumericZero': {
+  setValueNumericZero: {
     reqCtrlTypes: ['value'],
     launchResolver: setValueNumericZero,
     resetResolverName: null, // Не может быть ресета
-    resetResolver: null // Не может быть ресета
+    resetResolver: null, // Не может быть ресета
   },
 };
 
 // Вычисляем для всех типов действий resetResolver на основе resetResolverName
 Object.keys(actionsTable).forEach(function (key) {
   log.debug('+ Обработка ключа "' + key + '"');
-  
+
   if (!actionsTable[key].resetResolverName) {
     log.debug('resetResolverName для действия "' + key + '" не установлен');
     return;
   }
   if (!actionsTable[actionsTable[key].resetResolverName]) {
-    log.debug('Ошибка: resetResolverName для действия "' +
-      key + '" указан, но отсутствует в реестре действий');
+    log.debug(
+      'Ошибка: resetResolverName для действия "' +
+        key +
+        '" указан, но отсутствует в реестре действий'
+    );
     return;
   }
-  log.debug('  - Текущее значение "' + actionsTable[key].resetResolver + '"');
-  log.debug('  - Установка "' + actionsTable[actionsTable[key].resetResolverName].launchResolver + '"');
-  actionsTable[key].resetResolver = actionsTable[actionsTable[key].resetResolverName].launchResolver;
+  log.debug(
+    '  - Текущее значение "' + actionsTable[key].resetResolver + '"'
+  );
+  log.debug(
+    '  - Установка "' +
+      actionsTable[actionsTable[key].resetResolverName].launchResolver +
+      '"'
+  );
+  actionsTable[key].resetResolver =
+    actionsTable[actionsTable[key].resetResolverName].launchResolver;
   log.debug('  - Новое значение "' + actionsTable[key].resetResolver + '"');
 });
 
 exports.actionsTable = actionsTable;
-
-
-
 
 // // Вывод текущего состояния реестра для отладки
 // log.debug("Состояние actionsTable после вычисления (custom):");

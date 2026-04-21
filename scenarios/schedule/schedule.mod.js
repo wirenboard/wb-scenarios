@@ -8,9 +8,10 @@ var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
-var aTable = require("table-handling-actions.mod");
+var aTable = require('table-handling-actions.mod');
 var constants = require('constants.mod');
-var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
+var isControlTypeValid =
+  require('scenarios-general-helpers.mod').isControlTypeValid;
 
 var loggerFileLabel = 'WBSC-schedule-mod';
 var log = new Logger(loggerFileLabel);
@@ -41,13 +42,13 @@ var FULL_DAYS = constants.FULL_DAYS;
  */
 function ScheduleScenario() {
   ScenarioBase.call(this);
-  
+
   /**
    * Context object for storing scenario runtime state
    * @type {Object}
    */
   this.context = {
-    cronRule: null
+    cronRule: null,
   };
 }
 
@@ -60,10 +61,10 @@ ScheduleScenario.prototype.constructor = ScheduleScenario;
  * @param {string} idPrefix - The prefix for generating names
  * @returns {Object} Generated names
  */
-ScheduleScenario.prototype.generateNames = function(idPrefix) {
+ScheduleScenario.prototype.generateNames = function (idPrefix) {
   var scenarioPrefix = 'wbsc_';
   var baseRuleName = scenarioPrefix + idPrefix + '_';
-  
+
   return {
     vDevice: scenarioPrefix + idPrefix,
     ruleMain: baseRuleName + 'mainRule',
@@ -79,14 +80,14 @@ ScheduleScenario.prototype.generateNames = function(idPrefix) {
  */
 ScheduleScenario.prototype.defineControlsWaitConfig = function (cfg) {
   var allTopics = [];
-  
+
   // Extract output control names
   for (var i = 0; i < (cfg.outControls || []).length; i++) {
     if (cfg.outControls[i].control) {
       allTopics.push(cfg.outControls[i].control);
     }
   }
-  
+
   return { controls: allTopics };
 };
 
@@ -108,13 +109,23 @@ function validateControls(controls, table) {
 
     // behaviorType present in table
     if (!table[curBehaviorType]) {
-      log.error("Behavior type '" + curBehaviorType + "' not found in table");
+      log.error(
+        "Behavior type '" + curBehaviorType + "' not found in table"
+      );
       return false;
     }
 
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
-      log.debug("Error: Control '" + curCtrlName + "' is not of a valid type");
-      log.debug("  - For '" + curBehaviorType + "' can used only: [" + reqCtrlTypes + "] types");
+      log.error(
+        "Error: Control '" + curCtrlName + "' is not of a valid type"
+      );
+      log.error(
+        "  - For '" +
+          curBehaviorType +
+          "' can used only: [" +
+          reqCtrlTypes +
+          '] types'
+      );
       return false;
     }
   }
@@ -131,25 +142,29 @@ function parseScheduleTime(cfg) {
     log.error('Schedule validation error: scheduleTime must be a string');
     return false;
   }
-  
+
   var timeParts = cfg.scheduleTime.split(':');
   if (timeParts.length !== 2) {
-    log.error('Schedule validation error: scheduleTime must be in HH:MM format');
+    log.error(
+      'Schedule validation error: scheduleTime must be in HH:MM format'
+    );
     return false;
   }
-  
+
   var hours = parseInt(timeParts[0], 10);
   var minutes = parseInt(timeParts[1], 10);
-  
+
   if (isNaN(hours) || isNaN(minutes)) {
-    log.error('Schedule validation error: invalid time format in scheduleTime');
+    log.error(
+      'Schedule validation error: invalid time format in scheduleTime'
+    );
     return false;
   }
-  
+
   cfg.hours = hours;
   cfg.minutes = minutes;
   cfg.seconds = 0; // Always set seconds to 0 for schedule scenarios
-  
+
   return true;
 }
 
@@ -158,68 +173,93 @@ function parseScheduleTime(cfg) {
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid, false otherwise
  */
-ScheduleScenario.prototype.validateCfg = function(cfg) {
+ScheduleScenario.prototype.validateCfg = function (cfg) {
   // Parse scheduleTime first
   if (!parseScheduleTime(cfg)) {
     return false;
   }
-  
+
   // Check time values
   if (typeof cfg.hours !== 'number' || cfg.hours < 0 || cfg.hours > 23) {
-    log.error('Schedule validation error: hours must be a number between 0 and 23');
+    log.error(
+      'Schedule validation error: hours must be a number between 0 and 23'
+    );
     return false;
   }
-  
-  if (typeof cfg.minutes !== 'number' || cfg.minutes < 0 || cfg.minutes > 59) {
-    log.error('Schedule validation error: minutes must be a number between 0 and 59');
+
+  if (
+    typeof cfg.minutes !== 'number' ||
+    cfg.minutes < 0 ||
+    cfg.minutes > 59
+  ) {
+    log.error(
+      'Schedule validation error: minutes must be a number between 0 and 59'
+    );
     return false;
   }
-  
-  if (typeof cfg.seconds !== 'number' || cfg.seconds < 0 || cfg.seconds > 59) {
-    log.error('Schedule validation error: seconds must be a number between 0 and 59');
+
+  if (
+    typeof cfg.seconds !== 'number' ||
+    cfg.seconds < 0 ||
+    cfg.seconds > 59
+  ) {
+    log.error(
+      'Schedule validation error: seconds must be a number between 0 and 59'
+    );
     return false;
   }
-  
+
   // Check scheduleDaysOfWeek array
   if (!Array.isArray(cfg.scheduleDaysOfWeek)) {
-    log.error('Schedule validation error: scheduleDaysOfWeek must be an array');
+    log.error(
+      'Schedule validation error: scheduleDaysOfWeek must be an array'
+    );
     return false;
   }
-  
+
   // Check that at least one day is selected
   if (cfg.scheduleDaysOfWeek.length === 0) {
-    log.error('Schedule validation error: at least one day of the week must be selected');
+    log.error(
+      'Schedule validation error: at least one day of the week must be selected'
+    );
     return false;
   }
-  
+
   // Validate scheduleDaysOfWeek values
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var day = cfg.scheduleDaysOfWeek[i];
     if (typeof day !== 'string' || VALID_DAYS.indexOf(day) === -1) {
-      log.error('Schedule validation error: invalid scheduleDaysOfWeek value: ' + day);
+      log.error(
+        'Schedule validation error: invalid scheduleDaysOfWeek value: ' + day
+      );
       return false;
     }
   }
-  
+
   // Check outControls array
   if (!Array.isArray(cfg.outControls)) {
     log.error('Schedule validation error: outControls must be an array');
     return false;
   }
-  
+
   if (cfg.outControls.length === 0) {
-    log.error('Schedule validation error: at least one output control must be specified');
+    log.error(
+      'Schedule validation error: at least one output control must be specified'
+    );
     return false;
   }
-  
+
   // Check control types
-  var isOutputControlsValid = validateControls(cfg.outControls, aTable.actionsTable);
-  
+  var isOutputControlsValid = validateControls(
+    cfg.outControls,
+    aTable.actionsTable
+  );
+
   if (!isOutputControlsValid) {
-    log.error("One or more controls are not of a valid type");
+    log.error('One or more controls are not of a valid type');
     return false;
   }
-  
+
   log.debug('Schedule configuration validation successful');
   return true;
 };
@@ -232,51 +272,57 @@ ScheduleScenario.prototype.validateCfg = function(cfg) {
  */
 function createCronRule(self, cfg) {
   log.debug('Creating cron rule for schedule scenario');
-  
+
   // Build cron expression: seconds minutes hours * * dayOfWeek
   var cronExpression = buildCronExpression(cfg);
   if (!cronExpression) {
     log.error('Failed to build cron expression');
     return false;
   }
-  log.debug('Cron expression built: ' + cronExpression);
+  log.debug('Cron expression built: {}', cronExpression);
 
   var ruleId = defineRule(self.genNames.ruleMain, {
     when: cron(cronExpression),
-    then: function() {
+    then: function () {
       // Trigger the button press programmatically
-      log.debug('Cron triggered, pressing execute button for scenario: ' + self.idPrefix);
-      dev[self.genNames.vDevice + "/execute_now"] = true;
-    }
+      log.debug(
+        'Cron triggered, pressing execute button for scenario: {}',
+        self.idPrefix
+      );
+      dev[self.genNames.vDevice + '/execute_now'] = true;
+    },
   });
-  
+
   if (!ruleId) {
     log.error('Failed to create cron rule');
     return false;
   }
-  
+
   log.debug('Cron rule created successfully with ID: ' + ruleId);
   self.addRule(ruleId);
-  
+
   // Create manual trigger rule for the button
   var manualRuleId = defineRule(self.genNames.ruleManual, {
-    whenChanged: [self.genNames.vDevice + "/execute_now"],
-    then: function(newValue, devName, cellName) {
+    whenChanged: [self.genNames.vDevice + '/execute_now'],
+    then: function (newValue, devName, cellName) {
       if (newValue) {
-        log.debug('Button execution triggered for scenario: ' + self.idPrefix);
+        log.debug(
+          'Button execution triggered for scenario: {}',
+          self.idPrefix
+        );
         scheduleHandler(self, cfg);
       }
-    }
+    },
   });
-  
+
   if (!manualRuleId) {
     log.error('Failed to create manual trigger rule');
     return false;
   }
-  
+
   log.debug('Manual trigger rule created successfully');
   self.addRule(manualRuleId);
-  
+
   return true;
 }
 
@@ -287,23 +333,27 @@ function createCronRule(self, cfg) {
  */
 function createTimeUpdateRule(self) {
   log.debug('Creating time update rule for current time display');
-  
+
   var timeUpdateRuleId = defineRule(self.genNames.ruleTimeUpdate, {
-    whenChanged: ["system_time/current_time", "system_time/current_date", "system_time/current_day"],
-    then: function(newValue, devName, cellName) {
+    whenChanged: [
+      'system_time/current_time',
+      'system_time/current_date',
+      'system_time/current_day',
+    ],
+    then: function (newValue, devName, cellName) {
       var currentTimeText = formatCurrentTime();
-      dev[self.genNames.vDevice + "/current_time"] = currentTimeText;
-    }
+      dev[self.genNames.vDevice + '/current_time'] = currentTimeText;
+    },
   });
-  
+
   if (!timeUpdateRuleId) {
     log.error('Failed to create time update rule');
     return false;
   }
-  
+
   log.debug('Time update rule created successfully');
   self.addRule(timeUpdateRuleId);
-  
+
   return true;
 }
 
@@ -315,10 +365,18 @@ function createTimeUpdateRule(self) {
 function getNextExecutionTime(cfg) {
   var now = new Date();
   var currentDay = now.getDay(); // 0=Sunday, 1=Monday, etc.
-  
-  log.debug('Calculating next execution. Current time: ' + now.toISOString() + ', current day: ' + currentDay);
-  log.debug('Schedule: ' + cfg.scheduleTime + ' on days: [' + cfg.scheduleDaysOfWeek.join(', ') + ']');
-  
+
+  log.debug(
+    'Calculating next execution. Current time: {}, current day: {}',
+    now.toISOString(),
+    currentDay
+  );
+  log.debug(
+    'Schedule: {} on days: [{}]',
+    cfg.scheduleTime,
+    cfg.scheduleDaysOfWeek.join(', ')
+  );
+
   // Convert scheduleDaysOfWeek array to day numbers and sort
   var scheduledDays = [];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
@@ -327,25 +385,30 @@ function getNextExecutionTime(cfg) {
       scheduledDays.push(DAY_NAME_TO_NUMBER[dayName]);
     }
   }
-  
+
   if (scheduledDays.length === 0) {
     log.error('No valid scheduled days found');
     return null;
   }
-  
-  scheduledDays.sort(function(a, b) { return a - b; });
-  log.debug('Scheduled day numbers (sorted): [' + scheduledDays.join(', ') + ']');
-  
+
+  scheduledDays.sort(function (a, b) {
+    return a - b;
+  });
+  log.debug(
+    'Scheduled day numbers (sorted): [{}]',
+    scheduledDays.join(', ')
+  );
+
   // Create potential execution time for today
   var todayExecution = new Date(now.getTime());
   todayExecution.setHours(cfg.hours, cfg.minutes, cfg.seconds, 0);
-  
+
   // Check if we can execute today
   if (scheduledDays.indexOf(currentDay) !== -1 && todayExecution > now) {
-    log.debug('Next execution is today: ' + todayExecution.toISOString());
+    log.debug('Next execution is today: {}', todayExecution.toISOString());
     return todayExecution;
   }
-  
+
   // Find next scheduled day
   var nextDay = null;
   for (var j = 0; j < scheduledDays.length; j++) {
@@ -354,14 +417,14 @@ function getNextExecutionTime(cfg) {
       break;
     }
   }
-  
+
   // If no day found this week, take first day of next week
   if (nextDay === null) {
     nextDay = scheduledDays[0];
   }
-  
-  log.debug('Next scheduled day number: ' + nextDay);
-  
+
+  log.debug('Next scheduled day number: {}', nextDay);
+
   // Calculate days until next execution
   var daysUntilNext;
   if (nextDay > currentDay) {
@@ -370,15 +433,15 @@ function getNextExecutionTime(cfg) {
     // Next week
     daysUntilNext = 7 - currentDay + nextDay;
   }
-  
-  log.debug('Days until next execution: ' + daysUntilNext);
-  
+
+  log.debug('Days until next execution: {}', daysUntilNext);
+
   // Create next execution date
   var nextExecution = new Date(now.getTime());
   nextExecution.setDate(nextExecution.getDate() + daysUntilNext);
   nextExecution.setHours(cfg.hours, cfg.minutes, cfg.seconds, 0);
-  
-  log.debug('Calculated next execution: ' + nextExecution.toISOString());
+
+  log.debug('Calculated next execution: {}', nextExecution.toISOString());
   return nextExecution;
 }
 
@@ -387,11 +450,11 @@ function getNextExecutionTime(cfg) {
  * @returns {string} Formatted current time string in format "YYYY-MM-DD HH:MM DayName"
  */
 function formatCurrentTime() {
-  var currentDate = dev["system_time/current_date"];
-  var currentTime = dev["system_time/current_time"];
-  var currentDayNum = dev["system_time/current_day"];
+  var currentDate = dev['system_time/current_date'];
+  var currentTime = dev['system_time/current_time'];
+  var currentDayNum = dev['system_time/current_day'];
   var currentDay = DAY_NAMES[currentDayNum] || 'Unknown';
-  
+
   return currentDay + ' ' + currentDate + ' ' + currentTime;
 }
 
@@ -404,7 +467,7 @@ function formatNextExecution(date) {
   if (!date) {
     return 'Invalid schedule';
   }
-  
+
   var dayName = FULL_DAYS[date.getDay()];
   var day = ('0' + date.getDate()).slice(-2);
   var month = ('0' + (date.getMonth() + 1)).slice(-2);
@@ -412,7 +475,19 @@ function formatNextExecution(date) {
   var hours = ('0' + date.getHours()).slice(-2);
   var minutes = ('0' + date.getMinutes()).slice(-2);
 
-  return dayName + ' ' + year + '-' + month + '-' + day + ' ' + hours + ':' + minutes;
+  return (
+    dayName +
+    ' ' +
+    year +
+    '-' +
+    month +
+    '-' +
+    day +
+    ' ' +
+    hours +
+    ':' +
+    minutes
+  );
 }
 
 /**
@@ -434,18 +509,18 @@ function buildCronExpression(cfg) {
     log.error('Invalid seconds value: ' + cfg.seconds);
     return null;
   }
-  
+
   // Build day of week string (0=Sunday, 1=Monday, etc.)
   var dayMap = {
-    'sunday': '0',
-    'monday': '1', 
-    'tuesday': '2',
-    'wednesday': '3',
-    'thursday': '4',
-    'friday': '5',
-    'saturday': '6'
+    sunday: '0',
+    monday: '1',
+    tuesday: '2',
+    wednesday: '3',
+    thursday: '4',
+    friday: '5',
+    saturday: '6',
   };
-  
+
   var daysOfWeek = [];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var dayName = cfg.scheduleDaysOfWeek[i];
@@ -453,17 +528,18 @@ function buildCronExpression(cfg) {
       daysOfWeek.push(dayMap[dayName]);
     }
   }
-  
+
   if (daysOfWeek.length === 0) {
     log.error('No valid days of week found');
     return null;
   }
-  
+
   var dayString = daysOfWeek.join(',');
-  
+
   // Format: "seconds minutes hours day_of_month month day_of_week"
   // Use numeric values directly - cron parser handles formatting
-  var cronExpr = cfg.seconds + ' ' + cfg.minutes + ' ' + cfg.hours + ' * * ' + dayString;
+  var cronExpr =
+    cfg.seconds + ' ' + cfg.minutes + ' ' + cfg.hours + ' * * ' + dayString;
   return cronExpr;
 }
 
@@ -474,38 +550,51 @@ function buildCronExpression(cfg) {
  */
 function scheduleHandler(self, cfg) {
   log.debug('Schedule triggered for scenario: ' + self.idPrefix);
-  
-  var isActive = dev[self.genNames.vDevice + "/rule_enabled"];
+
+  var isActive = dev[self.genNames.vDevice + '/rule_enabled'];
   if (!isActive) {
     log.debug('Scenario is disabled, skipping actions');
     return;
   }
-  
+
   // Execute all configured actions
   for (var i = 0; i < cfg.outControls.length; i++) {
     var outControl = cfg.outControls[i];
     var curCtrlName = outControl.control;
     var curUserAction = outControl.behaviorType;
     var curActionValue = outControl.actionValue;
-    
+
     try {
       var actualValue = dev[curCtrlName];
-      var newCtrlValue = aTable.actionsTable[curUserAction].handler(actualValue, curActionValue);
-      
-      log.debug("Control " + curCtrlName + " will be updated to state: " + newCtrlValue);
+      var newCtrlValue = aTable.actionsTable[curUserAction].handler(
+        actualValue,
+        curActionValue
+      );
+
+      log.debug(
+        'Control ' +
+          curCtrlName +
+          ' will be updated to state: ' +
+          newCtrlValue
+      );
       dev[curCtrlName] = newCtrlValue;
-      log.debug("Control " + curCtrlName + " successfully updated");
+      log.debug('Control ' + curCtrlName + ' successfully updated');
     } catch (error) {
-      log.error("Failed to update control " + curCtrlName + ": " + (error.message || error));
+      log.error(
+        'Failed to update control ' +
+          curCtrlName +
+          ': ' +
+          (error.message || error)
+      );
     }
   }
-  
+
   // Update next execution time display
   var nextExecution = getNextExecutionTime(cfg);
   var nextExecutionText = formatNextExecution(nextExecution);
-  dev[self.genNames.vDevice + "/next_execution"] = nextExecutionText;
-  
-  log.debug("Schedule actions completed for scenario: " + self.idPrefix);
+  dev[self.genNames.vDevice + '/next_execution'] = nextExecutionText;
+
+  log.debug('Schedule actions completed for scenario: ' + self.idPrefix);
 }
 
 /**
@@ -521,39 +610,39 @@ function addCustomControlsToVirtualDevice(self, cfg) {
   self.vd.devObj.addControl('execute_now', {
     title: {
       en: 'Execute now',
-      ru: 'Выполнить сейчас'
+      ru: 'Выполнить сейчас',
     },
     type: 'pushbutton',
-    order: 2
+    order: 2,
   });
-  
+
   // Add current time display control
   var currentTimeText = formatCurrentTime();
   self.vd.devObj.addControl('current_time', {
     title: {
       en: 'Current time',
-      ru: 'Текущее время'
+      ru: 'Текущее время',
     },
     type: 'text',
     value: currentTimeText,
     forceDefault: true, // Always must start from enabled state
     readonly: true,
-    order: 3
+    order: 3,
   });
-  
+
   // Add next execution time display control
   var nextExecution = getNextExecutionTime(cfg);
   var nextExecutionText = formatNextExecution(nextExecution);
   self.vd.devObj.addControl('next_execution', {
     title: {
       en: 'Next execution',
-      ru: 'Следующее выполнение'
+      ru: 'Следующее выполнение',
     },
     type: 'text',
     value: nextExecutionText,
     forceDefault: true, // Always must start from enabled state
     readonly: true,
-    order: 4
+    order: 4,
   });
 }
 
@@ -565,11 +654,11 @@ function addCustomControlsToVirtualDevice(self, cfg) {
  */
 function createRules(self, cfg) {
   log.debug('Start all required rules creation');
-  
+
   if (!createCronRule(self, cfg)) {
     return false;
   }
-  
+
   if (!createTimeUpdateRule(self)) {
     return false;
   }
@@ -589,7 +678,7 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * - Base initialization is complete
    * - Configuration is valid
    * - All referenced controls exist in the system
-   * 
+   *
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */
@@ -603,9 +692,12 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   if (rulesCreated) {
     this.setState(ScenarioState.NORMAL);
-    log.debug('Astronomical timer scenario initialized successfully for device "{}"', deviceTitle);
+    log.debug(
+      'Schedule scenario initialized successfully for device "{}"',
+      deviceTitle
+    );
   }
-  
+
   return rulesCreated;
 };
 

@@ -70,22 +70,21 @@ ChannelMapScenario.prototype.constructor = ChannelMapScenario;
  * @param {string} idPrefix - ID prefix for this scenario instance
  * @returns {Object} Generated names
  */
-ChannelMapScenario.prototype.generateNames =
-  function (idPrefix) {
-    var scenarioPrefix = 'wbsc_';
-    return {
-      vDevice: scenarioPrefix + idPrefix,
-      ruleMap: scenarioPrefix + idPrefix + '_map',
-      ruleEnable: scenarioPrefix + idPrefix + '_enable',
-    };
+ChannelMapScenario.prototype.generateNames = function (idPrefix) {
+  var scenarioPrefix = 'wbsc_';
+  return {
+    vDevice: scenarioPrefix + idPrefix,
+    ruleMap: scenarioPrefix + idPrefix + '_map',
+    ruleEnable: scenarioPrefix + idPrefix + '_enable',
   };
+};
 
 /**
  * Get configuration for waiting for controls
  * @param {ChannelMapConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
-ChannelMapScenario.prototype.defineControlsWaitConfig = function(cfg) {
+ChannelMapScenario.prototype.defineControlsWaitConfig = function (cfg) {
   var allTopics = [];
   for (var i = 0; i < cfg.mqttTopicsLinks.length; i++) {
     var l = cfg.mqttTopicsLinks[i];
@@ -105,7 +104,10 @@ ChannelMapScenario.prototype.defineControlsWaitConfig = function(cfg) {
  * @returns {boolean} True if configuration is valid
  */
 ChannelMapScenario.prototype.validateCfg = function (cfg) {
-  if (!Array.isArray(cfg.mqttTopicsLinks) || cfg.mqttTopicsLinks.length === 0) {
+  if (
+    !Array.isArray(cfg.mqttTopicsLinks) ||
+    cfg.mqttTopicsLinks.length === 0
+  ) {
     log.error('At least one link is required');
     return false;
   }
@@ -120,18 +122,12 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
 
     // Direct loop check
     if (l.mqttTopicA === l.mqttTopicB) {
-      log.error(
-        'Link [{}]: channels must differ: "{}"',
-        i, l.mqttTopicA
-      );
+      log.error('Link [{}]: channels must differ: "{}"', i, l.mqttTopicA);
       return false;
     }
 
     if (VALID_DIRECTIONS.indexOf(l.direction) === -1) {
-      log.error(
-        'Link [{}]: invalid direction "{}"',
-        i, l.direction
-      );
+      log.error('Link [{}]: invalid direction "{}"', i, l.direction);
       return false;
     }
 
@@ -148,31 +144,42 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
 
       // When A/B are swapped, forward/backward are inverted
       var existingDir = prev.direction;
-      if (existingDir !== 'both' &&
-          l.mqttTopicA === prev.mqttTopicB &&
-          l.mqttTopicB === prev.mqttTopicA) {
-        existingDir = existingDir === 'forward'
-          ? 'backward' : 'forward';
+      if (
+        existingDir !== 'both' &&
+        l.mqttTopicA === prev.mqttTopicB &&
+        l.mqttTopicB === prev.mqttTopicA
+      ) {
+        existingDir = existingDir === 'forward' ? 'backward' : 'forward';
       }
 
       if (existingDir === 'both') {
         log.warning(
           'Link [{}]: already covered by link [{}]' +
             ' ("{}" both "{}"), this link has no effect',
-          i, j, prev.mqttTopicA, prev.mqttTopicB
+          i,
+          j,
+          prev.mqttTopicA,
+          prev.mqttTopicB
         );
       } else if (l.direction === 'both') {
         log.warning(
           'Link [{}]: "both" covers link [{}]' +
             ' ("{}" {} "{}"), link [{}] has no effect',
-          i, j, prev.mqttTopicA, prev.direction,
-          prev.mqttTopicB, j
+          i,
+          j,
+          prev.mqttTopicA,
+          prev.direction,
+          prev.mqttTopicB,
+          j
         );
       } else if (l.direction === existingDir) {
         log.warning(
           'Link [{}]: duplicate of link [{}]' +
             ' ("{}" {} "{}"), this link has no effect',
-          i, j, prev.mqttTopicA, prev.direction,
+          i,
+          j,
+          prev.mqttTopicA,
+          prev.direction,
           prev.mqttTopicB
         );
       }
@@ -198,12 +205,10 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
     var maxA = dev[l.mqttTopicA + '#max'];
     var minB = dev[l.mqttTopicB + '#min'];
     var maxB = dev[l.mqttTopicB + '#max'];
-    
+
     // Min/max constraints check
-    var hasConstraintsA =
-      minA !== undefined || maxA !== undefined;
-    var hasConstraintsB =
-      minB !== undefined || maxB !== undefined;
+    var hasConstraintsA = minA !== undefined || maxA !== undefined;
+    var hasConstraintsB = minB !== undefined || maxB !== undefined;
 
     if (hasConstraintsA && hasConstraintsB) {
       if (minA !== minB || maxA !== maxB) {
@@ -212,8 +217,12 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
             ' "{}" (min:{}, max:{})' +
             ' and "{}" (min:{}, max:{})',
           i,
-          l.mqttTopicA, minA, maxA,
-          l.mqttTopicB, minB, maxB
+          l.mqttTopicA,
+          minA,
+          maxA,
+          l.mqttTopicB,
+          minB,
+          maxB
         );
         this.ctx.hasIncorrectLinks = true;
       }
@@ -232,7 +241,7 @@ function buildSourceMap(mqttTopicsLinks) {
   var map = {};
   for (var i = 0; i < mqttTopicsLinks.length; i++) {
     var l = mqttTopicsLinks[i];
-    
+
     if (l.direction === 'forward') {
       addToMap(map, l.mqttTopicA, l.mqttTopicB);
     } else if (l.direction === 'backward') {
@@ -384,7 +393,7 @@ ChannelMapScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * - Base initialization is complete
    * - Configuration is valid
    * - All referenced controls exist in the system
-   * 
+   *
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */

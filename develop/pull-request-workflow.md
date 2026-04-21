@@ -6,6 +6,7 @@
 - Исправление: `fix/INT-xxx-description`
 
 Примеры:
+
 - `feat/INT-871-periodic-timer`
 - `fix/INT-878-default-scenario-name`
 

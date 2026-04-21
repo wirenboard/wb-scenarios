@@ -8,7 +8,7 @@
 // Defaults values
 var WAIT_DEF = {
   CONTROLS_WAIT_TIMEOUT_MS: 60000, // Millisecons
-  CONTROLS_WAIT_PERIOD_MS: 5000 // Millisecons
+  CONTROLS_WAIT_PERIOD_MS: 5000, // Millisecons
 };
 
 /**
@@ -32,7 +32,7 @@ function hasCriticalErr(errorVal) {
   if (typeof errorVal !== 'string') {
     return false;
   }
-  return (errorVal.indexOf('r') !== -1 || errorVal.indexOf('w') !== -1);
+  return errorVal.indexOf('r') !== -1 || errorVal.indexOf('w') !== -1;
 }
 
 /**
@@ -44,7 +44,7 @@ function isControlHealthy(controlPath) {
   if (!isControlReady(controlPath)) {
     return false;
   }
-  if (hasCriticalErr(dev[controlPath  + '#error'])) {
+  if (hasCriticalErr(dev[controlPath + '#error'])) {
     return false;
   }
   return true;
@@ -87,12 +87,20 @@ function waitControls(controls, options, callback) {
   }
 
   options = options || {};
-  var timeout = typeof options.timeout !== 'undefined' ? options.timeout : WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS;
-  var period = typeof options.period !== 'undefined' ? options.period : WAIT_DEF.CONTROLS_WAIT_PERIOD_MS;
+  var timeout =
+    typeof options.timeout !== 'undefined'
+      ? options.timeout
+      : WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS;
+  var period =
+    typeof options.period !== 'undefined'
+      ? options.period
+      : WAIT_DEF.CONTROLS_WAIT_PERIOD_MS;
 
   if (typeof callback !== 'function') {
-    log.error("waitControls() callback parameter is not a function:", 
-              "got '" + typeof callback + "' instead");
+    log.error(
+      'waitControls() callback parameter is not a function:',
+      "got '" + typeof callback + "' instead"
+    );
     return;
   }
 
@@ -105,8 +113,8 @@ function waitControls(controls, options, callback) {
   }
 
   var startTime = new Date().getTime();
-  
-  var intervalId = setInterval(function() {
+
+  var intervalId = setInterval(function () {
     var allReady = true;
     for (var i = 0; i < controls.length; i++) {
       if (!isControlHealthy(controls[i])) {
@@ -124,7 +132,9 @@ function waitControls(controls, options, callback) {
     var elapsed = new Date().getTime() - startTime;
     if (elapsed >= timeout) {
       clearInterval(intervalId);
-      var err = new Error("WaitControls: Timeout expired waiting for controls");
+      var err = new Error(
+        'WaitControls: Timeout expired waiting for controls'
+      );
 
       err.notReadyCtrlList = [];
       for (var i = 0; i < controls.length; i++) {
@@ -132,7 +142,10 @@ function waitControls(controls, options, callback) {
           err.notReadyCtrlList.push(controls[i]);
         }
       }
-      err.message = "WaitControls: Timeout expired waiting for " + err.notReadyCtrlList.length + " controls";
+      err.message =
+        'WaitControls: Timeout expired waiting for ' +
+        err.notReadyCtrlList.length +
+        ' controls';
 
       callback.apply(null, [err].concat(cbParams));
       return;

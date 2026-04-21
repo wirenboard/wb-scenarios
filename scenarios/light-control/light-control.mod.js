@@ -313,12 +313,20 @@ function addAllLinkedDevicesToVd(self, cfg) {
   }
 
   if (cfg.motionSensors.length > 0) {
-    result = addLinkedControlsArray(self, cfg.motionSensors, 'motion_sensor');
+    result = addLinkedControlsArray(
+      self,
+      cfg.motionSensors,
+      'motion_sensor'
+    );
     if (!result) return false;
   }
 
   if (cfg.openingSensors.length > 0) {
-    result = addLinkedControlsArray(self, cfg.openingSensors, 'opening_sensor');
+    result = addLinkedControlsArray(
+      self,
+      cfg.openingSensors,
+      'opening_sensor'
+    );
     if (!result) return false;
   }
 
@@ -326,8 +334,8 @@ function addAllLinkedDevicesToVd(self, cfg) {
     result = addLinkedControlsArray(self, cfg.lightSwitches, 'light_switch');
     if (!result) return false;
   }
-  
-  return true
+
+  return true;
 }
 
 /**
@@ -355,13 +363,13 @@ function addLinkedControlsArray(self, arrayOfControls, cellPrefix) {
       log.error(
         'Failed to add ' + cellPrefix + ' ctrl for ' + curMqttControl
       );
-      allControlsCreated = false
+      allControlsCreated = false;
     } else {
       log.debug('Success add ' + cellPrefix + ' ctrl for ' + curMqttControl);
     }
   }
 
-  return allControlsCreated
+  return allControlsCreated;
 }
 
 /**
@@ -660,7 +668,7 @@ function createRules(self, cfg) {
   log.debug('Start all required rules creation');
 
   var gName = self.genNames;
-  var vd = self.genNames.vDevice
+  var vd = self.genNames.vDevice;
 
   var lightDevTopics = extractMqttTopics(cfg.lightDevices);
   var motionTopics = extractMqttTopics(cfg.motionSensors);
@@ -1053,7 +1061,7 @@ function logicDisabledHandler(self, newValue, devName, cellName) {
     clearTimeout(self.ctx.logicEnableTimerId);
     resetLogicEnableTimer(self);
   }
-  
+
   if (newValue === true && self.cfg.isDelayEnabledAfterSwitch === true) {
     startLogicEnableTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
   }
@@ -1121,7 +1129,7 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
   // External change
   var topicName = devName + '/' + cellName;
   log.debug('External change detected for device: "{}"' + topicName);
-  log.debug('newValue: ' + newValue);
+  log.debug('newValue: {}', newValue);
 
   if (newValue === false) {
     log.debug(
@@ -1211,7 +1219,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * - Base initialization is complete
    * - Configuration is valid
    * - All referenced controls exist in the system
-   * 
+   *
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */
@@ -1231,7 +1239,10 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   if (rulesCreated) {
     this.setState(ScenarioState.NORMAL);
-    log.debug('Light control scenario initialized successfully for device "{}"', deviceTitle);
+    log.debug(
+      'Light control scenario initialized successfully for device "{}"',
+      deviceTitle
+    );
   }
 
   return rulesCreated;
