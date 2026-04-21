@@ -12,6 +12,7 @@
  * @author Mikhail Burchu <mikhail.burchu@wirenboard.com>
  */
 
+<<<<<<< feature/INT-931-update-codestyle-scenarios
 var scenarioPersistentStorage =
   require('wbsc-persistent-storage.mod').getInstance();
 var setupDevicesControl = require('scenario-init-devices-control.mod').setup;
@@ -22,6 +23,17 @@ var setupAstronomicalTimer =
   require('scenario-init-astronomical-timer.mod').setup;
 var setupPeriodicTimer = require('scenario-init-periodic-timer.mod').setup;
 var setupChannelMap = require('scenario-init-channel-map.mod').setup;
+=======
+var scenarioPersistentStorage = require("wbsc-persistent-storage.mod").getInstance();
+var setupDevicesControl = require("scenario-init-devices-control.mod").setup;
+var setupLightControl = require("scenario-init-light-control.mod").setup;
+var setupThermostat = require("scenario-init-thermostat.mod").setup;
+var setupSchedule = require("scenario-init-schedule.mod").setup;
+var setupAstronomicalTimer = require("scenario-init-astronomical-timer.mod").setup;
+var setupPeriodicTimer = require("scenario-init-periodic-timer.mod").setup;
+var setupChannelMap = require("scenario-init-channel-map.mod").setup;
+var setupPidController = require("scenario-init-pid-controller.mod").setup;
+>>>>>>> main
 var Logger = require('logger.mod').Logger;
 
 var log = new Logger('WBSC-init-main');
@@ -65,7 +77,12 @@ function main() {
       setupAstronomicalTimer();
       setupPeriodicTimer();
       setupChannelMap();
+<<<<<<< feature/INT-931-update-codestyle-scenarios
     },
+=======
+      setupPidController();
+    }
+>>>>>>> main
   });
   psWBSC['VdList'] = null; // Removing all previously created virtual devices from persistent storage
 }

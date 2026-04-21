@@ -10,6 +10,7 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 var aTable = require('table-handling-actions.mod');
 var PidEngine = require('pid-engine.mod').PidEngine;
+var constants = require('constants.mod');
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
 var isControlTypeValid =
@@ -19,6 +20,9 @@ var extractMqttTopics =
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
+
+var MAX_CYCLE_TIME_DEVIATION_RATIO = constants.MAX_CYCLE_TIME_DEVIATION_RATIO;
+var MS_PER_SECOND = constants.MS_PER_SECOND;
 
 /**
  * Actions table for thermostat actuators.
@@ -110,11 +114,20 @@ function ThermostatScenario() {
     // would otherwise reset user-controlled actuators on every wb-rules restart.
     suppressNextDisable: false,
     // PID mode state
+<<<<<<< feature/INT-931-update-codestyle-scenarios
     pid: null, // PidEngine instance
     cycleTimerId: null, // setTimeout ID for next PWM cycle
     offTimerId: null, // setTimeout ID for turning off actuators mid-cycle
     pwmCycleCount: 0, // Counter for PID recalculation
     pidOutput: 0, // Last PID output (0-100)
+=======
+    pid: null,           // PidEngine instance
+    cycleTimerId: null,  // setTimeout ID for next PWM cycle
+    offTimerId: null,    // setTimeout ID for turning off actuators mid-cycle
+    pwmCycleCount: 0,    // Counter for PID recalculation
+    pidOutput: 0,        // Last PID output (0-100)
+    lastComputeTime: null, // Timestamp of last PID computation (ms)
+>>>>>>> main
   };
 }
 ThermostatScenario.prototype = Object.create(ScenarioBase.prototype);
@@ -568,14 +581,44 @@ function cancelPidTimers(ctx) {
  * @param {ThermostatConfig} cfg - Configuration object
  */
 function recomputePidOutput(self, cfg) {
+  var now = Date.now();
   var setpoint = self.vd.devObj.getControl(vdCtrl.targetTemp).getValue();
   var measurement = dev[cfg.tempSensor];
-  var dtSec = cfg.pidSettings.pwmPeriodSec * cfg.pidSettings.pidRecalcCycles;
+  
+  // Determine dt for PID computation
+  var dt;
+  var configuredDt = cfg.pidSettings.pwmPeriodSec * cfg.pidSettings.pidRecalcCycles;
+  
+  if (self.ctx.lastComputeTime === null) {
+    dt = configuredDt;
+    log.debug('First PID cycle, using configured dt: {} sec', dt);
+  } else {
+    var actualDt = (now - self.ctx.lastComputeTime) / MS_PER_SECOND;
+    var deviation = Math.abs(actualDt - configuredDt) / configuredDt;
+    
+    if (deviation > MAX_CYCLE_TIME_DEVIATION_RATIO) {
+      log.warning(
+        'PID cycle time deviation: actual={} sec, configured={} sec (deviation={}%)',
+        actualDt.toFixed(2),
+        configuredDt,
+        (deviation * 100).toFixed(1)
+      );
+    }
+    
+    dt = actualDt;
+  }
+  
+  self.ctx.lastComputeTime = now;
 
+<<<<<<< feature/INT-931-update-codestyle-scenarios
   self.ctx.pidOutput = self.ctx.pid.compute(setpoint, measurement, dtSec);
   self.vd.devObj
     .getControl(vdCtrl.outputPower)
     .setValue(Math.round(self.ctx.pidOutput));
+=======
+  self.ctx.pidOutput = self.ctx.pid.compute(setpoint, measurement, dt);
+  self.vd.devObj.getControl(vdCtrl.outputPower).setValue(Math.round(self.ctx.pidOutput));
+>>>>>>> main
 
   var state = self.ctx.pid.getState();
   log.debug(
@@ -669,14 +712,14 @@ function runPwmCycle(self, cfg) {
       self.ctx.offTimerId = null;
       applyHeatingToActuators(cfg.actuators, false);
       setCtrlIfChanged(vdCtrlActuator, false);
-    }, onTime * 1000);
+    }, onTime * MS_PER_SECOND);
   }
 
   // Schedule next cycle
   self.ctx.cycleTimerId = setTimeout(function () {
     self.ctx.cycleTimerId = null;
     runPwmCycle(self, cfg);
-  }, cfg.pidSettings.pwmPeriodSec * 1000);
+  }, cfg.pidSettings.pwmPeriodSec * MS_PER_SECOND);
 }
 
 /**
@@ -692,6 +735,7 @@ function stopPidMode(self, cfg) {
   }
   self.ctx.pwmCycleCount = 0;
   self.ctx.pidOutput = 0;
+  self.ctx.lastComputeTime = null; // Reset timestamp on stop
 
   // Reset VD controls
   var vdCtrlActuator = self.vd.devObj.getControl(vdCtrl.actuatorStatus);
@@ -713,6 +757,7 @@ function stopPidMode(self, cfg) {
 function startPidMode(self, cfg) {
   self.ctx.pwmCycleCount = 0;
   self.ctx.pidOutput = 0;
+  self.ctx.lastComputeTime = null; // Reset timestamp on start
   runPwmCycle(self, cfg);
   log.debug('PID mode started');
 }
@@ -1114,6 +1159,7 @@ function createPidRules(self, cfg) {
       if (!self.ctx.pid) return;
       self.ctx.pid.reset();
       self.ctx.pidOutput = 0;
+      self.ctx.lastComputeTime = null; // Reset timestamp on PID reset
       log.debug('PID reset by user');
 
       // Restart cycle immediately with fresh PID compute
