@@ -12,7 +12,8 @@ var Logger = require('logger.mod').Logger;
 var PidEngine = require('pid-engine.mod').PidEngine;
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
-var extractMqttTopics = require('scenarios-general-helpers.mod').extractMqttTopics;
+var extractMqttTopics =
+  require('scenarios-general-helpers.mod').extractMqttTopics;
 
 var loggerFileLabel = 'WBSC-pid-controller-mod';
 var log = new Logger(loggerFileLabel);
@@ -59,9 +60,9 @@ function PidControllerScenario() {
     // would otherwise reset user-controlled actuators on every wb-rules restart.
     suppressNextDisable: false,
     // PID mode state
-    pid: null,          // PidEngine instance
+    pid: null, // PidEngine instance
     cycleTimerId: null, // setTimeout ID for next cycle
-    pidOutput: 0,       // Last PID output (0-100)
+    pidOutput: 0, // Last PID output (0-100)
   };
 }
 PidControllerScenario.prototype = Object.create(ScenarioBase.prototype);
@@ -192,10 +193,12 @@ PidControllerScenario.prototype.validateCfg = function (cfg) {
     var act = cfg.actuators[i];
 
     // Validate precision
-    if (typeof act.precision !== 'number' || 
-        act.precision < 0 || 
-        act.precision > 2 || 
-        act.precision % 1 !== 0) {
+    if (
+      typeof act.precision !== 'number' ||
+      act.precision < 0 ||
+      act.precision > 2 ||
+      act.precision % 1 !== 0
+    ) {
       log.error(
         'PID validation error: precision must be 0, 1 or 2 for actuator "{}", got "{}"',
         act.mqttTopicName,
@@ -204,8 +207,10 @@ PidControllerScenario.prototype.validateCfg = function (cfg) {
       isActuatorsValid = false;
     }
 
-    if (typeof act.outputMin !== 'number' ||
-        typeof act.outputMax !== 'number') {
+    if (
+      typeof act.outputMin !== 'number' ||
+      typeof act.outputMax !== 'number'
+    ) {
       log.error(
         'PID validation error: outputMin and outputMax must be numbers for actuator "{}"',
         act.mqttTopicName
@@ -355,8 +360,9 @@ function runCalculationCycle(self, cfg) {
 
   var state = self.ctx.pid.getState();
   log.debug(
-    'PID: sp={} meas={} out={}% P={} I={} D={}',
-    setpoint, measurement,
+    'PID computed: setpoint={} measurement={} output={} P={} I={} D={}',
+    setpoint,
+    measurement,
     self.ctx.pidOutput.toFixed(1),
     state.p.toFixed(2),
     state.i.toFixed(2),
@@ -367,9 +373,9 @@ function runCalculationCycle(self, cfg) {
 
   // Update VD display
   self.vd.devObj.getControl(vdCtrl.currentValue).setValue(measurement);
-  self.vd.devObj.getControl(vdCtrl.outputPower).setValue(
-    Math.round(self.ctx.pidOutput * 10) / 10
-  );
+  self.vd.devObj
+    .getControl(vdCtrl.outputPower)
+    .setValue(Math.round(self.ctx.pidOutput * 10) / 10);
 
   // Schedule next cycle
   self.ctx.cycleTimerId = setTimeout(function () {
@@ -465,8 +471,7 @@ function createErrChangeRule(
   vdCtrlEnable,
   cfg
 ) {
-  var isActuatorErrRule =
-    ruleName.indexOf('actuator_err_') !== -1;
+  var isActuatorErrRule = ruleName.indexOf('actuator_err_') !== -1;
 
   var ruleCfg = {
     whenChanged: [sourceErrTopic],
@@ -476,9 +481,7 @@ function createErrChangeRule(
       } else if (hasCriticalErr(newValue)) {
         targetVdCtrl.setError(newValue);
       } else {
-        targetVdCtrl.setError(
-          getActuatorsCriticalErr(cfg.actuators)
-        );
+        targetVdCtrl.setError(getActuatorsCriticalErr(cfg.actuators));
       }
 
       if (!hasCriticalErr(newValue)) {
@@ -695,7 +698,11 @@ function restoreSetpoint(self, cfg) {
     stored <= cfg.setpointLimits.max;
 
   if (isValid) {
-    log.debug('Restored setpoint="{}" for scenario="{}"', stored, self.idPrefix);
+    log.debug(
+      'Restored setpoint="{}" for scenario="{}"',
+      stored,
+      self.idPrefix
+    );
     return stored;
   }
 
@@ -734,7 +741,7 @@ PidControllerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
 
   // Restore target setpoint from storage
   var usedSetpoint = restoreSetpoint(this, cfg);
-  
+
   addCustomControlsToVirtualDevice(this, cfg, usedSetpoint);
 
   // Create all rules

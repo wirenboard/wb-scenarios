@@ -20,7 +20,7 @@ var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
   reqVerScenario: 1, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
-  scenarioTypeStr: 'pidController'
+  scenarioTypeStr: 'pidController',
 };
 
 var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
@@ -70,7 +70,7 @@ function initializeScenario(scenarioCfg) {
     log.debug('Stored in global registry with ID: ' + scenario.idPrefix);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization: "{}" for scenario: "{}"', 
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
       error.message || error,
       scenarioCfg.name
     );

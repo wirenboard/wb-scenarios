@@ -1,8 +1,8 @@
 wb-scenarios (1.8.7) stable; urgency=medium
 
-  * Add new scenario "pid-analog"
+  * Add new scenario "pid-controller"
 
- -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Apr 2026 13:34:00 +0300
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Tue, 21 Apr 2026 10:20:00 +0300
 
 wb-scenarios (1.8.6) stable; urgency=medium
 
