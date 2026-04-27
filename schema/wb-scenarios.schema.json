@@ -249,7 +249,6 @@
       },
       "required": [
         "scenarioType",
-        "enable",
         "name",
         "inControls",
         "outControls"
@@ -1181,7 +1180,6 @@
       "required": [
         "scenarioType",
         "componentVersion",
-        "enable",
         "name",
         "scheduleTime",
         "scheduleDaysOfWeek",

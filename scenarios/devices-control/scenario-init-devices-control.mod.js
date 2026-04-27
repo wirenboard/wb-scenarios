@@ -84,7 +84,7 @@ function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
     var scenario = listScenario[i];
     var isTarget =
       scenario.scenarioType === searchScenarioType &&
-      scenario.enable === true;
+      scenario.enable !== false;
     if (isTarget) {
       matchedScenarios.push(scenario);
     }
