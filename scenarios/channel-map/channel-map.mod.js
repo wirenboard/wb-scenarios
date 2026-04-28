@@ -290,6 +290,22 @@ function addCustomControlsToVirtualDevice(self) {
 }
 
 /**
+ * Converts a value to match the target control's type
+ * @param {*} value - Value to convert
+ * @param {string} targetType - Target control type from meta
+ * @returns {*} Converted value
+ */
+function convertValueForType(value, targetType) {
+  if (targetType === 'switch' || targetType === 'alarm') {
+    return Boolean(value);
+  }
+  if (targetType === 'text' || targetType === 'rgb') {
+    return String(value);
+  }
+  return Number(value);
+}
+
+/**
  * Creates the link rule that copies values from sources
  * to targets. Uses cascade counter (ctx) to prevent
  * infinite loops with pushbutton controls.
@@ -338,7 +354,8 @@ function createLinkRule(self, sourceMap) {
 
       for (var i = 0; i < targets.length; i++) {
         var target = targets[i];
-        var isPbTarget = dev[target + '#type'] === 'pushbutton';
+        var targetType = dev[target + '#type'];
+        var isPbTarget = targetType === 'pushbutton';
 
         if (isPbTarget) {
           if (ctx.writtenInCascade[target] === ctx.cascadeId) {
@@ -346,10 +363,13 @@ function createLinkRule(self, sourceMap) {
           }
           ctx.echoExpected[target] = true;
           ctx.writtenInCascade[target] = ctx.cascadeId;
-          dev[target] = newValue;
+          // For pushbutton, the actual value doesn't matter — any write triggers a press.
+          // Using `true` is just a convention; `false`, `1`, or `"press"` would also work.
+          dev[target] = true;
         } else {
-          if (dev[target] !== newValue) {
-            dev[target] = newValue;
+          var convertedValue = convertValueForType(newValue, targetType);
+          if (dev[target] !== convertedValue) {
+            dev[target] = convertedValue;
           }
         }
       }
