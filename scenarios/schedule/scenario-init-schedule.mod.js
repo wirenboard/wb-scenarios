@@ -79,9 +79,16 @@ function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
   var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
     var scenario = listScenario[i];
-    var isTarget =
-      scenario.scenarioType === searchScenarioType &&
-      scenario.enable === true;
+    // The `enable` field was intended to be removed completely, but was hidden instead
+    // to maintain backward compatibility with older package versions. Some users may still
+    // have this field set to `false` in their configs.
+    // IMPORTANT: Removing this check would re-enable scenarious that were explicitly disabled,
+    // potentially causing unintended behavior.
+    var isEnabled =
+      scenario.hasOwnProperty('enable') && scenario.enable === false
+        ? false
+        : true;
+    var isTarget = scenario.scenarioType === searchScenarioType && isEnabled;
     if (isTarget) {
       matchedScenarios.push(scenario);
     }
