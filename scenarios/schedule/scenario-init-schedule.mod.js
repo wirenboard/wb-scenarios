@@ -79,9 +79,12 @@ function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
   var matchedScenarios = [];
   for (var i = 0; i < listScenario.length; i++) {
     var scenario = listScenario[i];
-    var isTarget =
-      scenario.scenarioType === searchScenarioType &&
-      scenario.enable === true;
+    // The 'enable' field has been hidden, but we need to keep it running for now
+    var isEnabled =
+      scenario.hasOwnProperty('enable') && scenario.enable === false
+        ? false
+        : true;
+    var isTarget = scenario.scenarioType === searchScenarioType && isEnabled;
     if (isTarget) {
       matchedScenarios.push(scenario);
     }
