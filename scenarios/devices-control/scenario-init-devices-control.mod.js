@@ -116,6 +116,11 @@ function setup() {
   for (var i = 0; i < matchedScenarios.length; i++) {
     initializeScenario(matchedScenarios[i]);
   }
+
+  log.debug(
+    'Initialization of "{}" type scenarios completed',
+    CFG.scenarioTypeStr
+  );
 }
 
 exports.setup = setup;
