@@ -34,27 +34,42 @@ ScenarioPersistentStorage — это синглтон-класс, предназ
 ## Использование хранилища
 
 Получение экземпляра хранилища:
+
 ```javascript
-var scenarioPersistentStorage = require("wbsc-persistent-storage.mod").getInstance();
+var scenarioPersistentStorage =
+  require('wbsc-persistent-storage.mod').getInstance();
 ```
 
 Методы API:
+
 - `getUserSetting(idPrefix, key, defaultValue)` - получает пользовательскую настройку из хранилища для указанного сценария.
+
 ```javascript
-var isEnabled = scenarioPersistentStorage.getUserSetting('raspisanie', 'rule_enabled', false);
+var isEnabled = scenarioPersistentStorage.getUserSetting(
+  'raspisanie',
+  'rule_enabled',
+  false
+);
 ```
 
 - `setUserSetting(idPrefix, key, value)` - сохраняет пользовательскую настройку для указанного сценария.
+
 ```javascript
 scenarioPersistentStorage.setUserSetting('raspisanie', 'rule_enabled', true);
 ```
 
 - `getMeta(idPrefix, key, defaultValue)` - получает мета-информацию о сценарии из хранилища.
+
 ```javascript
-var vdName = scenarioPersistentStorage.getMeta('raspisanie', 'vdName', 'wbsc_default');
+var vdName = scenarioPersistentStorage.getMeta(
+  'raspisanie',
+  'vdName',
+  'wbsc_default'
+);
 ```
 
 - `setMeta(idPrefix, key, value)` - сохраняет мета-информацию о сценарии.
+
 ```javascript
 scenarioPersistentStorage.setMeta('raspisanie', 'vdName', 'wbsc_raspisanie');
 ```
@@ -62,9 +77,11 @@ scenarioPersistentStorage.setMeta('raspisanie', 'vdName', 'wbsc_raspisanie');
 ## Особенности работы
 
 ### Автоматическая инициализация
+
 Хранилище автоматически создает необходимые структуры данных при первом обращении к сценарию. При вызове setUserSetting() или setMeta() для нового сценария, все необходимые объекты создаются автоматически.
 
 ### Типы сохраняемых значений
+
 Можно сохранять любые типы данных, поддерживаемые JavaScript. Для хранения объектов, вначале нужно создать пустой объект new StorableObject({}):
 
 - Примитивы (числа, строки, булевы значения)

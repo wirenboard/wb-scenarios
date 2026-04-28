@@ -5,13 +5,16 @@
 ## Базовые компоненты
 
 ### ScenarioBase - базовый класс для всех сценариев
+
 Находится в `src/wbsc-scenario-base.mod.js` и предоставляет:
+
 - Унифицированный жизненный цикл сценария
 - Управление состояниями
 - Создание и управление виртуальными устройствами
 - Система валидации конфигурации
 
 ### Вспомогательные модули
+
 - **ScenarioState** - перечисление состояний сценария (`src/virtual-device-helpers.mod.js`)
 - **Logger** - система логирования (`src/logger.mod.js`)
 - **scenarios-general-helpers** - общие вспомогательные функции
@@ -27,63 +30,69 @@
 Каждый сценарий должен наследоваться от ScenarioBase и реализовать следующие обязательные методы:
 
 ### 1. `generateNames(idPrefix)`
+
 Генерирует имена для виртуального устройства и правил сценария.
 
 **Пример:**
+
 ```javascript
-YourScenario.prototype.generateNames = function(idPrefix) {
+YourScenario.prototype.generateNames = function (idPrefix) {
   return {
     vDevice: 'wbsc_' + idPrefix,
     ruleInput: 'wbsc_' + idPrefix + '_input',
-    ruleOutput: 'wbsc_' + idPrefix + '_output'
+    ruleOutput: 'wbsc_' + idPrefix + '_output',
     // ... другие имена по необходимости
   };
 };
 ```
 
 ### 2. `validateCfg(cfg)`
+
 Валидирует конфигурацию перед инициализацией сценария.
 
 **Пример:**
+
 ```javascript
-YourScenario.prototype.validateCfg = function(cfg) {
+YourScenario.prototype.validateCfg = function (cfg) {
   if (!cfg.requiredField) {
     log.error('Missing required field: requiredField');
     return false;
   }
-  
+
   if (!dev[cfg.inputDevice]) {
     log.error('Input device not found: ' + cfg.inputDevice);
     return false;
   }
-  
+
   return true;
 };
 ```
 
 ### 3. `initSpecific(name, cfg)`
+
 Специфичная инициализация сценария - создание правил, сохранение параметров.
 
 **Пример:**
+
 ```javascript
-YourScenario.prototype.initSpecific = function(name, cfg) {
+YourScenario.prototype.initSpecific = function (name, cfg) {
   // Сохранение конфигурации
   this.cfg = cfg;
-  
+
   // Создание правил wb-rules
   var inputRule = defineRule(this.names.ruleInput, {
     whenChanged: cfg.inputControl,
-    then: function(newValue, devName, cellName) {
+    then: function (newValue, devName, cellName) {
       // Логика обработки события
-    }
+    },
   });
-  
+
   // Сохранение ID правил для управления ими
   this.addRule(inputRule.getId());
-  
+
   // Установка состояния сценария
   this.setState(ScenarioState.NORMAL);
-  
+
   return true;
 };
 ```
@@ -91,15 +100,17 @@ YourScenario.prototype.initSpecific = function(name, cfg) {
 ## Необязательные методы
 
 ### `defineControlsWaitConfig(cfg)`
+
 Настройка ожидания готовности контролов перед инициализацией.
 
 **Пример:**
+
 ```javascript
-YourScenario.prototype.defineControlsWaitConfig = function(cfg) {
+YourScenario.prototype.defineControlsWaitConfig = function (cfg) {
   return {
     controls: [cfg.inputControl, cfg.outputControl],
-    timeout: 10000,  // опционально, мс (по умолчанию 5000)
-    period: 500      // опционально, мс (по умолчанию 200)
+    timeout: 10000, // опционально, мс (по умолчанию 5000)
+    period: 500, // опционально, мс (по умолчанию 200)
   };
 };
 ```
@@ -149,23 +160,26 @@ YourScenario.prototype.defineControlsWaitConfig = function(cfg) {
 4. Инициализирует их через метод `init()`
 
 **Пример структуры:**
+
 ```javascript
 var CFG = {
   scenarioTypeStr: 'yourScenarioType',
-  reqVerScenario: 1
+  reqVerScenario: 1,
 };
 
 function initializeScenario(scenarioCfg) {
   var scenario = new YourScenarioClass();
-  
+
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
     // ... маппинг полей из scenarioCfg
   };
-  
+
   var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
   if (isBasicVdCreated !== true) {
-    log.error('Virtual device creation failed for scenario: ' + scenarioCfg.name);
+    log.error(
+      'Virtual device creation failed for scenario: ' + scenarioCfg.name
+    );
     return;
   }
 }

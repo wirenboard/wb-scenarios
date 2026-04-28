@@ -20,6 +20,7 @@
 Разработка нового сценария состоит из семи этапов. Подробный пример с полным кодом — в [Пример добавления сценария](example-add-new-scenario.md).
 
 ### 0. Планирование и подготовка
+
 - Погрузитесь в предметную область, например изучение работы пид-регулятора, как устроено управление котельными
 - Проанализируйте требования к сценарию и составьте необходимую функциональность сценария
 - Определите необходимые параметры и входные/выходные контролы
@@ -34,6 +35,7 @@
 ### 2. Создание JSON-схемы для UI
 
 - Добавляем описание сценария в `definitions` файла `schema/wb-scenarios.schema.json`
+
 ```json
 "yourScenarioName": {
     "type": "object",
@@ -56,7 +58,7 @@
             "options": {"grid_columns": 12}
         },
         "name": {
-            "type": "string", 
+            "type": "string",
             "title": "Scenario name",
             "default": "Your Scenario",
             "minLength": 1,
@@ -66,7 +68,7 @@
         },
         "idPrefix": {
             "type": "string",
-            "title": "ID Prefix", 
+            "title": "ID Prefix",
             "pattern": "^[0-9a-zA-Z_]+$",
             "default": "your_scenario",
             "minLength": 1,
@@ -79,23 +81,29 @@
     "required": ["scenarioType", "enable", "name"]
 }
 ```
+
 - Добавляем ссылку в `oneOf`
+
 ```json
 "oneOf": [
     { "$ref": "#/definitions/yourScenarioName" },
     // ... остальные сценарии
 ]
 ```
+
 - Добавляем переводы
 - Проверяем отображение в веб-интерфейсе и корректность сохранения конфигурации
 
 Имена параметров — только camelCase (`idPrefix`, не `id_prefix`). Эти имена превращаются в переменные внутри JS-кода.
 
 ### 3. Создание модуля сценария
+
 - Создаём модуль сценария (`your-scenario-name.mod.js`), используя логику из ранее написанного скрипта
+
 ```javascript
 var ScenarioBase = require('/usr/share/wb-rules-modules/wbsc-scenario-base');
-var ScenarioState = require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
+var ScenarioState =
+  require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
 
 // Конструктор
 function YourScenario() {
@@ -108,91 +116,94 @@ YourScenario.prototype = Object.create(ScenarioBase.prototype);
 YourScenario.prototype.constructor = YourScenario;
 
 // ОБЯЗАТЕЛЬНЫЙ: Генерация имен
-YourScenario.prototype.generateNames = function(idPrefix) {
+YourScenario.prototype.generateNames = function (idPrefix) {
   return {
     vDevice: 'wbsc_' + idPrefix,
-    ruleInput: 'wbsc_' + idPrefix + '_input'
+    ruleInput: 'wbsc_' + idPrefix + '_input',
   };
 };
 
 // ОБЯЗАТЕЛЬНЫЙ: Валидация конфигурации
-YourScenario.prototype.validateCfg = function(cfg) {
+YourScenario.prototype.validateCfg = function (cfg) {
   if (!cfg.inputControl) {
     log.error('Input control is required');
     return false;
   }
-  
+
   // Проверка существования контролов
   var parts = cfg.inputControl.split('/');
   if (parts.length !== 2 || !dev[parts[0]] || !dev[parts[0]][parts[1]]) {
     log.error('Input control not found: ' + cfg.inputControl);
     return false;
   }
-  
+
   return true;
 };
 
 // ОБЯЗАТЕЛЬНЫЙ: Специфичная инициализация
-YourScenario.prototype.initSpecific = function(name, cfg) {
+YourScenario.prototype.initSpecific = function (name, cfg) {
   this.cfg = cfg;
-  
+
   // Создание правил
   var inputRule = defineRule(this.names.ruleInput, {
     whenChanged: cfg.inputControl,
-    then: function(newValue, devName, cellName) {
+    then: function (newValue, devName, cellName) {
       // Бизнес-логика сценария
       log.info('Input changed: ' + newValue);
-    }
+    },
   });
-  
+
   // Сохранение ID правил
   this.addRule(inputRule.getId());
-  
+
   // Установка рабочего состояния
   this.setState(ScenarioState.NORMAL);
-  
+
   return true;
 };
 
 // НЕОБЯЗАТЕЛЬНЫЙ: Конфигурация ожидания контролов
-YourScenario.prototype.defineControlsWaitConfig = function(cfg) {
+YourScenario.prototype.defineControlsWaitConfig = function (cfg) {
   return {
     controls: [cfg.inputControl],
-    timeout: 10000
+    timeout: 10000,
   };
 };
 
 // Экспорт модуля
 module.exports = YourScenario;
 ```
+
 - Используем дефолтные значения вместо конфигурации
 - Проверяем что логика работает на контроллере
 
 ### 4. Объединение схемы и логики
 
 - Создаём модуль инициализации (`scenario-init-your-scenario-name.mod.js`)
+
 ```javascript
 // Подключение зависимостей
 var ScenarioBase = require('/usr/share/wb-rules-modules/wbsc-scenario-base');
-var ScenarioState = require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
+var ScenarioState =
+  require('/usr/share/wb-rules-modules/virtual-device-helpers').ScenarioState;
 var YourScenarioClass = require('./your-scenario.mod.js');
 
 var CFG = {
   scenarioTypeStr: 'yourScenarioName',
-  reqVerScenario: 1
+  reqVerScenario: 1,
 };
 
 function initializeScenario(scenarioCfg) {
   var scenario = new YourScenarioClass();
-  
+
   // Маппинг конфигурации
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
     inputControl: scenarioCfg.inputControl,
-    outputControl: scenarioCfg.outputControl
+    outputControl: scenarioCfg.outputControl,
     // ... другие поля
   };
-  
+
   // Инициализация сценария
   var isBasicVdCreated = scenario.init(scenarioCfg.name, cfg);
   if (isBasicVdCreated !== true) {
@@ -203,21 +214,27 @@ function initializeScenario(scenarioCfg) {
 
 function setup() {
   var helpers = require('/usr/share/wb-rules-modules/scenarios-general-helpers');
-  
+
   // Чтение и валидация конфигурации
   var allCfg = helpers.readConfig();
   if (allCfg === null) {
     log.error('Failed to read configuration');
     return;
   }
-  
+
   // Фильтрация и инициализация сценариев
   var scenarios = helpers.filterScenarios(allCfg, CFG.scenarioTypeStr);
   scenarios.forEach(initializeScenario);
-  
-  log.info('Initialized ' + scenarios.length + ' scenarios of type: ' + CFG.scenarioTypeStr);
+
+  log.info(
+    'Initialized ' +
+      scenarios.length +
+      ' scenarios of type: ' +
+      CFG.scenarioTypeStr
+  );
 }
 ```
+
 - Подключаем конфигурацию из схемы к модулю сценария
 - Подключаем в `scenarios/scenario-init-main.js`
 
@@ -227,6 +244,7 @@ function setup() {
 - Тестируем edge-cases и обработку ошибок
 
 #### 5.1. Базовое тестирование
+
 1. Установить сценарий на контроллер
 2. Создать конфигурацию через веб-интерфейс
 3. Проверить создание виртуального устройства
@@ -247,10 +265,10 @@ logger.debug('debug');
 logger.info('info');
 
 // Примеры логирования в сценарии
-YourScenario.prototype.initSpecific = function(name, cfg) {
+YourScenario.prototype.initSpecific = function (name, cfg) {
   logger.info('Initializing scenario: ' + name);
   logger.debug('Configuration: ' + JSON.stringify(cfg));
-  
+
   try {
     // Логика инициализации
     logger.info('Scenario initialized successfully');
@@ -263,11 +281,13 @@ YourScenario.prototype.initSpecific = function(name, cfg) {
 ```
 
 ### 6. Документация
+
 - Создать README файл нового сценария
 - Добавить в общий README файл ссылку документацию нового сценария
 - Добавить arc42 файл, если используется AI-ассистент
 
 **Общие рекомендации по отладке:**
+
 - Использовать структурированное логирование для отслеживания выполнения
 - Проверить состояние сценария через виртуальное устройство
 - Тестировать различные сценарии ошибок
@@ -276,12 +296,14 @@ YourScenario.prototype.initSpecific = function(name, cfg) {
 ## Лучшие практики
 
 ### Разработка
+
 1. **Итеративный подход**: начинайте с простой версии, постепенно усложняйте
 2. **Тестирование**: тестируйте каждый этап разработки
 3. **Логирование**: добавляйте подробные логи для отладки
 4. **Валидация**: тщательно проверяйте входные данные
 
 ### Архитектура
+
 1. **Следуйте ScenarioBase**: не изобретайте велосипед
 2. **Разделяйте ответственность**: модуль сценария vs модуль инициализации
 3. **Используйте состояния**: активно управляйте состоянием сценария
@@ -300,6 +322,7 @@ YourScenario.prototype.initSpecific = function(name, cfg) {
   ![Рекомендация: один общий статус](vd-recommended-aggregate-status.png)
 
 ### Код
+
 1. **Читаемость**: пишите понятный код с комментариями
 2. **Производительность**: избегайте тяжелых операций в обработчиках
 3. **Совместимость**: учитывайте различные версии устройств WB

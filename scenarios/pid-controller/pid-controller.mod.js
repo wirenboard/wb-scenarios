@@ -19,7 +19,8 @@ var extractMqttTopics =
 var loggerFileLabel = 'WBSC-pid-controller-mod';
 var log = new Logger(loggerFileLabel);
 
-var MAX_CYCLE_TIME_DEVIATION_RATIO = constants.MAX_CYCLE_TIME_DEVIATION_RATIO;
+var MAX_CYCLE_TIME_DEVIATION_RATIO =
+  constants.MAX_CYCLE_TIME_DEVIATION_RATIO;
 var MS_PER_SECOND = constants.MS_PER_SECOND;
 
 /**
@@ -140,16 +141,34 @@ PidControllerScenario.prototype.validateCfg = function (cfg) {
   }
 
   var isCoeffsValid = true;
-  if (typeof cfg.pidCoefficients.kp !== 'number' || cfg.pidCoefficients.kp < 0) {
-    log.error('PID validation error: Kp must be >= 0, got "{}"', cfg.pidCoefficients.kp);
+  if (
+    typeof cfg.pidCoefficients.kp !== 'number' ||
+    cfg.pidCoefficients.kp < 0
+  ) {
+    log.error(
+      'PID validation error: Kp must be >= 0, got "{}"',
+      cfg.pidCoefficients.kp
+    );
     isCoeffsValid = false;
   }
-  if (typeof cfg.pidCoefficients.ki !== 'number' || cfg.pidCoefficients.ki < 0) {
-    log.error('PID validation error: Ki must be >= 0, got "{}"', cfg.pidCoefficients.ki);
+  if (
+    typeof cfg.pidCoefficients.ki !== 'number' ||
+    cfg.pidCoefficients.ki < 0
+  ) {
+    log.error(
+      'PID validation error: Ki must be >= 0, got "{}"',
+      cfg.pidCoefficients.ki
+    );
     isCoeffsValid = false;
   }
-  if (typeof cfg.pidCoefficients.kd !== 'number' || cfg.pidCoefficients.kd < 0) {
-    log.error('PID validation error: Kd must be >= 0, got "{}"', cfg.pidCoefficients.kd);
+  if (
+    typeof cfg.pidCoefficients.kd !== 'number' ||
+    cfg.pidCoefficients.kd < 0
+  ) {
+    log.error(
+      'PID validation error: Kd must be >= 0, got "{}"',
+      cfg.pidCoefficients.kd
+    );
     isCoeffsValid = false;
   }
 
@@ -365,7 +384,9 @@ function runCalculationCycle(self, cfg) {
     log.debug('First PID cycle, using configured dt: {} sec', dt);
   } else {
     var actualDt = (now - self.ctx.lastComputeTime) / MS_PER_SECOND;
-    var deviation = Math.abs(actualDt - cfg.calculationPeriodSec) / cfg.calculationPeriodSec;
+    var deviation =
+      Math.abs(actualDt - cfg.calculationPeriodSec) /
+      cfg.calculationPeriodSec;
 
     if (deviation > MAX_CYCLE_TIME_DEVIATION_RATIO) {
       log.warning(

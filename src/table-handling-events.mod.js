@@ -1,6 +1,6 @@
 /**
  * @file Module for registered control events table handling
- * 
+ *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Comments in JSDoc format <https://jsdoc.app/>
  */
@@ -11,7 +11,7 @@
  * @returns {boolean} Returns true if control is enabled
  */
 function whenEnabled(newValue) {
-  var isEventTriggered = (newValue === true);
+  var isEventTriggered = newValue === true;
   return isEventTriggered;
 }
 
@@ -21,7 +21,7 @@ function whenEnabled(newValue) {
  * @returns {boolean} Returns true if control is disabled
  */
 function whenDisabled(newValue) {
-  var isEventTriggered = (newValue === false);
+  var isEventTriggered = newValue === false;
   return isEventTriggered;
 }
 
@@ -36,24 +36,24 @@ function whenChange(newValue) {
 }
 
 /**
-* Events table
-* Contains event name and its corresponding:
-* - Allowed control types
-* - Handler
-*/
+ * Events table
+ * Contains event name and its corresponding:
+ * - Allowed control types
+ * - Handler
+ */
 var eventsTable = {
-  'whenChange': {
+  whenChange: {
     reqCtrlTypes: [], // [] empty - can use any type
-    handler: whenChange
+    handler: whenChange,
   },
-  'whenDisabled': {
+  whenDisabled: {
     reqCtrlTypes: ['switch'],
-    handler: whenDisabled
+    handler: whenDisabled,
   },
-  'whenEnabled': {
+  whenEnabled: {
     reqCtrlTypes: ['switch'],
-    handler: whenEnabled
-  }
+    handler: whenEnabled,
+  },
 };
 
 exports.eventsTable = eventsTable;

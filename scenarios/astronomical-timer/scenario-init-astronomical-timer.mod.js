@@ -65,11 +65,11 @@ function initializeScenario(scenarioCfg) {
       CFG.scenarioTypeStr
     );
     scenarioStorage[scenario.idPrefix] = scenario;
-    log.debug('Stored in global registry with ID: ' + scenario.idPrefix);
+    log.debug('Stored in global registry with ID: {}', scenario.idPrefix);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization: "{}" for scenario: "{}"', 
-      error.message || error, 
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
+      error.message || error,
       scenarioCfg.name
     );
   }
@@ -100,6 +100,11 @@ function setup() {
   for (var i = 0; i < matchedScenarios.length; i++) {
     initializeScenario(matchedScenarios[i]);
   }
+
+  log.debug(
+    'Initialization of "{}" type scenarios completed',
+    CFG.scenarioTypeStr
+  );
 }
 
 exports.setup = setup;

@@ -1,6 +1,6 @@
 /**
  * @file Module for control actions table handling
- * 
+ *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Comments in JSDoc format <https://jsdoc.app/>
  */
@@ -69,36 +69,36 @@ function decreaseValueBy(actualValue, actionValue) {
 }
 
 /**
-* Actions table
-* Contains action name and its corresponding:
-* - Allowed control types
-* - Handler
-*/
+ * Actions table
+ * Contains action name and its corresponding:
+ * - Allowed control types
+ * - Handler
+ */
 var actionsTable = {
-  'toggle': {
+  toggle: {
     reqCtrlTypes: ['switch'],
-    handler: toggle
+    handler: toggle,
   },
-  'setEnable': {
+  setEnable: {
     reqCtrlTypes: ['switch'],
-    handler: setEnable
+    handler: setEnable,
   },
-  'setDisable': {
+  setDisable: {
     reqCtrlTypes: ['switch'],
-    handler: setDisable
+    handler: setDisable,
   },
-  'setValue': {
+  setValue: {
     reqCtrlTypes: ['value', 'range'],
-    handler: setValue
+    handler: setValue,
   },
-  'increaseValueBy': {
+  increaseValueBy: {
     reqCtrlTypes: ['value', 'range'],
-    handler: increaseValueBy
+    handler: increaseValueBy,
   },
-  'decreaseValueBy': {
+  decreaseValueBy: {
     reqCtrlTypes: ['value', 'range'],
-    handler: decreaseValueBy
-  }
+    handler: decreaseValueBy,
+  },
 };
 
 exports.actionsTable = actionsTable;

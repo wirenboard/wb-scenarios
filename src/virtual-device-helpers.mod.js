@@ -6,7 +6,8 @@
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  */
 
-var scenarioPersistentStorage = require("wbsc-persistent-storage.mod").getInstance();
+var scenarioPersistentStorage =
+  require('wbsc-persistent-storage.mod').getInstance();
 
 /**
  * Scenario state enum - defines all possible scenario states
@@ -202,12 +203,12 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   }
 
   // Saving all created virtual devices to persistent storage
-  var psWBSC = new PersistentStorage("wb-scenarios", {global: true});
-  if (psWBSC["VdList"] !== undefined) {
-    psWBSC["VdList"][vdName] = true;
+  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
+  if (psWBSC['VdList'] !== undefined) {
+    psWBSC['VdList'][vdName] = true;
   } else {
-    psWBSC["VdList"] = new StorableObject({});
-    psWBSC["VdList"][vdName] = true;
+    psWBSC['VdList'] = new StorableObject({});
+    psWBSC['VdList'][vdName] = true;
   }
 
   var controlCfg = {
@@ -246,7 +247,8 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
       },
       3: {
         en: 'Used channels ready',
-        ru: 'Используемые каналы готовы' },
+        ru: 'Используемые каналы готовы',
+      },
       4: {
         en: 'Config not valid',
         ru: 'Настройки не корректны',
@@ -279,7 +281,11 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   var ruleId = defineRule(vdName + '_change_' + ctrlRuleEnabled, {
     whenChanged: [vdName + '/' + ctrlRuleEnabled],
     then: function (newValue, devName, cellName) {
-      scenarioPersistentStorage.setUserSetting(idPrefix, ctrlRuleEnabled, newValue);
+      scenarioPersistentStorage.setUserSetting(
+        idPrefix,
+        ctrlRuleEnabled,
+        newValue
+      );
       toggleRules(managedRulesId, newValue);
     },
   });

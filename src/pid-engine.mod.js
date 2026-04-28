@@ -86,53 +86,33 @@ function PidEngine(kp, ki, kd, deadband) {
  * @param {number} dt - Time delta in seconds
  * @returns {number} Output clamped to 0..100
  */
-PidEngine.prototype.compute = function (
-  setpoint,
-  measurement,
-  dt
-) {
+PidEngine.prototype.compute = function (setpoint, measurement, dt) {
   var error = setpoint - measurement;
 
   // Deadband: reduce gain near setpoint
-  var inDeadband =
-    Math.abs(error) < this.deadband;
-  var gainFactor = inDeadband
-    ? DEADBAND_GAIN_FACTOR
-    : 1.0;
+  var inDeadband = Math.abs(error) < this.deadband;
+  var gainFactor = inDeadband ? DEADBAND_GAIN_FACTOR : 1.0;
 
   // P - proportional to current error
   var P = this.kp * error * gainFactor;
 
   // I - integral with anti-windup (clamping)
-  this.integral +=
-    this.ki * error * dt * gainFactor;
-  this.integral = clamp(
-    this.integral,
-    OUTPUT_MIN,
-    OUTPUT_MAX
-  );
+  this.integral += this.ki * error * dt * gainFactor;
+  this.integral = clamp(this.integral, OUTPUT_MIN, OUTPUT_MAX);
 
   // D - derivative on measurement, not error
   // Uses low-pass filter to reduce sensor noise
   var D = 0;
   if (this.lastMeasurement !== null && dt > 0) {
-    var rawDerivative =
-      (measurement - this.lastMeasurement) / dt;
+    var rawDerivative = (measurement - this.lastMeasurement) / dt;
     this.filteredDerivative =
-      (1 - D_FILTER_ALPHA)
-        * this.filteredDerivative
-      + D_FILTER_ALPHA * rawDerivative;
-    D = -this.kd
-      * this.filteredDerivative
-      * gainFactor;
+      (1 - D_FILTER_ALPHA) * this.filteredDerivative +
+      D_FILTER_ALPHA * rawDerivative;
+    D = -this.kd * this.filteredDerivative * gainFactor;
   }
   this.lastMeasurement = measurement;
 
-  var output = clamp(
-    P + this.integral + D,
-    OUTPUT_MIN,
-    OUTPUT_MAX
-  );
+  var output = clamp(P + this.integral + D, OUTPUT_MIN, OUTPUT_MAX);
 
   // Store for getState() debugging
   this._lastP = P;

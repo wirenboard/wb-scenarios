@@ -6,7 +6,7 @@
  *   Uses a setTimeout chain for precise timing (hours, minutes, or seconds).
  *   The cron rule fires every minute to detect window entry; the setTimeout
  *   chain manages subsequent cycles and window-exit cleanup independently.
- * 
+ *
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
@@ -15,7 +15,8 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 var aTable = require('table-handling-actions.mod');
 var constants = require('constants.mod');
-var isControlTypeValid = require('scenarios-general-helpers.mod').isControlTypeValid;
+var isControlTypeValid =
+  require('scenarios-general-helpers.mod').isControlTypeValid;
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
 
@@ -24,9 +25,9 @@ var extractMqttTopics =
  * reverse logic is handled explicitly by executeReverse().
  */
 var periodicTimerActionsTable = {
-  setEnable:  aTable.actionsTable.setEnable,
+  setEnable: aTable.actionsTable.setEnable,
   setDisable: aTable.actionsTable.setDisable,
-  setValue:   aTable.actionsTable.setValue,
+  setValue: aTable.actionsTable.setValue,
 };
 
 var loggerFileLabel = 'WBSC-periodic-timer-mod';
@@ -108,8 +109,7 @@ function PeriodicTimerScenario() {
 }
 
 // Set up inheritance
-PeriodicTimerScenario.prototype =
-  Object.create(ScenarioBase.prototype);
+PeriodicTimerScenario.prototype = Object.create(ScenarioBase.prototype);
 PeriodicTimerScenario.prototype.constructor = PeriodicTimerScenario;
 
 /**
@@ -117,7 +117,7 @@ PeriodicTimerScenario.prototype.constructor = PeriodicTimerScenario;
  * @param {string} idPrefix - The prefix for generating names
  * @returns {Object} Generated names
  */
-PeriodicTimerScenario.prototype.generateNames = function(idPrefix) {
+PeriodicTimerScenario.prototype.generateNames = function (idPrefix) {
   var scenarioPrefix = 'wbsc_';
   var baseRuleName = scenarioPrefix + idPrefix + '_';
   return {
@@ -134,11 +134,10 @@ PeriodicTimerScenario.prototype.generateNames = function(idPrefix) {
  * @param {PeriodicTimerConfig} cfg - Configuration object
  * @returns {Object} Waiting configuration object
  */
-PeriodicTimerScenario.prototype.defineControlsWaitConfig =
-  function(cfg) {
-    var allTopics = extractMqttTopics(cfg.outControls || []);
-    return { controls: allTopics };
-  };
+PeriodicTimerScenario.prototype.defineControlsWaitConfig = function (cfg) {
+  var allTopics = extractMqttTopics(cfg.outControls || []);
+  return { controls: allTopics };
+};
 
 /**
  * Validate all controls against periodicTimerActionsTable.
@@ -151,10 +150,7 @@ function validateControls(controls, table) {
   for (var i = 0; i < controls.length; i++) {
     var ctrl = controls[i];
     if (!table[ctrl.behaviorType]) {
-      log.error(
-        "Behavior type '{}' not found in table",
-        ctrl.behaviorType
-      );
+      log.error("Behavior type '{}' not found in table", ctrl.behaviorType);
       return false;
     }
     var reqCtrlTypes = table[ctrl.behaviorType].reqCtrlTypes;
@@ -227,7 +223,7 @@ function validateTimeObj(obj, fieldName) {
  * @param {PeriodicTimerConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid, false otherwise
  */
-PeriodicTimerScenario.prototype.validateCfg = function(cfg) {
+PeriodicTimerScenario.prototype.validateCfg = function (cfg) {
   if (!validateTimeObj(cfg.workTime, 'workTime')) {
     return false;
   }
@@ -239,7 +235,9 @@ PeriodicTimerScenario.prototype.validateCfg = function(cfg) {
     !Array.isArray(cfg.scheduleDaysOfWeek) ||
     cfg.scheduleDaysOfWeek.length === 0
   ) {
-    log.error('Periodic Timer validation error: at least one day must be selected');
+    log.error(
+      'Periodic Timer validation error: at least one day must be selected'
+    );
     return false;
   }
 
@@ -254,41 +252,34 @@ PeriodicTimerScenario.prototype.validateCfg = function(cfg) {
   }
 
   var timeRe = /^\d{2}:\d{2}$/;
-  if (
-    typeof cfg.activeFrom !== 'string' ||
-    !timeRe.test(cfg.activeFrom)
-  ) {
-    log.error(
-      'Periodic Timer validation error: activeFrom must be HH:MM'
-    );
+  if (typeof cfg.activeFrom !== 'string' || !timeRe.test(cfg.activeFrom)) {
+    log.error('Periodic Timer validation error: activeFrom must be HH:MM');
     return false;
   }
 
-  if (
-    typeof cfg.activeTo !== 'string' ||
-    !timeRe.test(cfg.activeTo)
-  ) {
-    log.error(
-      'Periodic Timer validation error: activeTo must be HH:MM'
-    );
+  if (typeof cfg.activeTo !== 'string' || !timeRe.test(cfg.activeTo)) {
+    log.error('Periodic Timer validation error: activeTo must be HH:MM');
     return false;
   }
 
   if (cfg.activeFrom === cfg.activeTo) {
-    log.error('Periodic Timer validation error: activeFrom and activeTo must not be equal');
+    log.error(
+      'Periodic Timer validation error: activeFrom and activeTo must not be equal'
+    );
     return false;
   }
 
-  if (
-    !Array.isArray(cfg.outControls) ||
-    cfg.outControls.length === 0
-  ) {
-    log.error('Periodic Timer validation error: outControls must have at least 1 item');
+  if (!Array.isArray(cfg.outControls) || cfg.outControls.length === 0) {
+    log.error(
+      'Periodic Timer validation error: outControls must have at least 1 item'
+    );
     return false;
   }
 
   if (!validateControls(cfg.outControls, periodicTimerActionsTable)) {
-    log.error('Periodic Timer validation error: one or more outControls have invalid configuration');
+    log.error(
+      'Periodic Timer validation error: one or more outControls have invalid configuration'
+    );
     return false;
   }
 
@@ -421,8 +412,19 @@ function formatNextExecution(date) {
   var minutes = ('0' + date.getMinutes()).slice(-2);
   var seconds = ('0' + date.getSeconds()).slice(-2);
   return (
-    dayName + ' ' + year + '-' + month + '-' + day +
-    ' ' + hours + ':' + minutes + ':' + seconds
+    dayName +
+    ' ' +
+    year +
+    '-' +
+    month +
+    '-' +
+    day +
+    ' ' +
+    hours +
+    ':' +
+    minutes +
+    ':' +
+    seconds
   );
 }
 
@@ -491,9 +493,7 @@ function getNextWindowStart(cfg) {
   for (var d = 0; d < MAX_DAYS_AHEAD; d++) {
     var candidate = new Date(now);
     candidate.setDate(candidate.getDate() + d);
-    candidate.setHours(
-      Math.floor(fromMin / 60), fromMin % 60, 0, 0
-    );
+    candidate.setHours(Math.floor(fromMin / 60), fromMin % 60, 0, 0);
     if (
       isScheduledDay(candidate.getDay(), cfg) &&
       candidate.getTime() > now.getTime()
@@ -592,10 +592,12 @@ function refreshDisplay(self, cfg) {
     dev[vDevName + '/next_start'] = '--:--';
     dev[vDevName + '/next_stop'] = '--:--';
   } else {
-    dev[vDevName + '/next_start'] =
-      formatNextExecution(getNextStartTime(self, cfg));
-    dev[vDevName + '/next_stop'] =
-      formatNextExecution(getNextStopTime(self, cfg));
+    dev[vDevName + '/next_start'] = formatNextExecution(
+      getNextStartTime(self, cfg)
+    );
+    dev[vDevName + '/next_stop'] = formatNextExecution(
+      getNextStopTime(self, cfg)
+    );
   }
 }
 
@@ -639,15 +641,18 @@ function executeReverse(controls) {
       var newValue;
       if (ctrl.behaviorType === 'setEnable') {
         newValue = periodicTimerActionsTable.setDisable.handler(
-          dev[ctrl.mqttTopicName], null
+          dev[ctrl.mqttTopicName],
+          null
         );
       } else if (ctrl.behaviorType === 'setDisable') {
         newValue = periodicTimerActionsTable.setEnable.handler(
-          dev[ctrl.mqttTopicName], null
+          dev[ctrl.mqttTopicName],
+          null
         );
       } else if (ctrl.behaviorType === 'setValue') {
         newValue = periodicTimerActionsTable.setValue.handler(
-          dev[ctrl.mqttTopicName], ctrl.reverseValue
+          dev[ctrl.mqttTopicName],
+          ctrl.reverseValue
         );
       } else {
         continue;
@@ -726,10 +731,7 @@ function onWorkTimeExpired(self, cfg, intervalMs, workTimeMs) {
   self.ctx.workTimeEndMs = null;
   self.ctx.workTimerId = null;
 
-  log.debug(
-    'Work time expired, reversing controls for: {}',
-    self.idPrefix
-  );
+  log.debug('Work time expired, reversing controls for: {}', self.idPrefix);
   executeReverse(cfg.outControls);
 
   // Gap between end of work phase and start of next cycle
@@ -759,10 +761,7 @@ function onWorkTimeExpired(self, cfg, intervalMs, workTimeMs) {
   } else {
     // Next cycle would fall outside the window — stop the chain.
     // cronTick will restart it when the window opens again.
-    log.debug(
-      'Next cycle outside window, stopping for: {}',
-      self.idPrefix
-    );
+    log.debug('Next cycle outside window, stopping for: {}', self.idPrefix);
     self.ctx.isRunning = false;
     self.ctx.nextCycleStartMs = null;
     refreshDisplay(self, cfg);
@@ -805,7 +804,9 @@ function startWorkCycle(self, cfg) {
 
   log.debug(
     'Cycle start, interval={}ms workTime={}ms for: {}',
-    intervalMs, workTimeMs, self.idPrefix
+    intervalMs,
+    workTimeMs,
+    self.idPrefix
   );
 
   executeStart(cfg.outControls);
@@ -1030,10 +1031,7 @@ function createRules(self, cfg) {
  * @param {PeriodicTimerConfig} cfg - Configuration object
  * @returns {boolean} True if initialization succeeded
  */
-PeriodicTimerScenario.prototype.initSpecific = function(
-  deviceTitle,
-  cfg
-) {
+PeriodicTimerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   log.debug('Start init periodic timer scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
@@ -1056,10 +1054,7 @@ PeriodicTimerScenario.prototype.initSpecific = function(
       startWorkCycle(this, cfg);
     }
 
-    log.debug(
-      'Periodic timer initialized for device "{}"',
-      deviceTitle
-    );
+    log.debug('Periodic timer initialized for device "{}"', deviceTitle);
   }
 
   return rulesCreated;

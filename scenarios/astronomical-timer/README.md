@@ -31,7 +31,7 @@ $ service wb-rules restart
 
 Сценарий использует библиотеку SunCalc для локального расчета астрономических событий на основе географических координат:
 
-1) **Автоматическое выполнение:**
+1. **Автоматическое выполнение:**
    - Расчет времени события для каждого проверяемого дня
    - Применение смещения (offset) в минутах
    - Проверка каждую минуту (cron: `0 * * * * *`)
@@ -39,17 +39,17 @@ $ service wb-rules restart
    - Выполнение действий при наступлении рассчитанного времени **только если фактический день недели разрешен**
    - Автоматический пересчет при смене дня, часового пояса или параметров конфигурации
 
-2) **Ручное выполнение:**
+2. **Ручное выполнение:**
    - Кнопка "Execute now" в виртуальном устройстве
    - Немедленное выполнение всех настроенных действий
    - Не влияет на автоматическое расписание
 
-3) **Кэширование результатов:**
+3. **Кэширование результатов:**
    - Время события сохраняется вместе с параметрами конфигурации в контекст
    - Пересчет происходит только при изменении даты, часового пояса, типа события, смещения, координат или дней недели
    - Экономит вычислительные ресурсы контроллера
 
-4) **Отображение информации:**
+4. **Отображение информации:**
    - Текущее время системы
    - Тип астрономического события (с локализацией)
    - Время следующего выполнения с учетом всех параметров
@@ -114,69 +114,69 @@ $ service wb-rules restart
 
 ```json
 {
-    "enable": true,
-    "name": "Управление светом по закату",
-    "coordinates": {
+  "enable": true,
+  "name": "Управление светом по закату",
+  "coordinates": {
+    "latitude": 55.7558,
+    "longitude": 37.6173
+  },
+  "eventSettings": {
+    "astroEvent": "sunset",
+    "offset": 30
+  },
+  "scheduleDaysOfWeek": [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday"
+  ],
+  "outControls": [
+    {
+      "actionValue": 1,
+      "behaviorType": "setEnable",
+      "control": "lights/garden/switch"
+    }
+  ]
+}
+```
+
+### Конфигурация записанная в файле \*.conf
+
+```json
+{
+  "configVersion": 1,
+  "scenarios": [
+    {
+      "componentVersion": 1,
+      "enable": true,
+      "name": "Уличное освещение",
+      "coordinates": {
         "latitude": 55.7558,
         "longitude": 37.6173
-    },
-    "eventSettings": {
-        "astroEvent": "sunset",
-        "offset": 30
-    },
-    "scheduleDaysOfWeek": [
+      },
+      "eventSettings": {
+        "astroEvent": "dusk",
+        "offset": 0
+      },
+      "scheduleDaysOfWeek": [
         "monday",
         "tuesday",
         "wednesday",
         "thursday",
-        "friday"
-    ],
-    "outControls": [
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "outControls": [
         {
-            "actionValue": 1,
-            "behaviorType": "setEnable",
-            "control": "lights/garden/switch"
+          "actionValue": 1,
+          "behaviorType": "setEnable",
+          "control": "outdoor_lighting/switch"
         }
-    ]
-}
-```
-
-### Конфигурация записанная в файле *.conf
-
-```json
-{
-    "configVersion": 1,
-    "scenarios": [
-        {
-            "componentVersion": 1,
-            "enable": true,
-            "name": "Уличное освещение",
-            "coordinates": {
-                "latitude": 55.7558,
-                "longitude": 37.6173
-            },
-            "eventSettings": {
-                "astroEvent": "dusk",
-                "offset": 0
-            },
-            "scheduleDaysOfWeek": [
-                "monday",
-                "tuesday",
-                "wednesday",
-                "thursday",
-                "friday",
-                "saturday",
-                "sunday"
-            ],
-            "outControls": [
-                {
-                    "actionValue": 1,
-                    "behaviorType": "setEnable",
-                    "control": "outdoor_lighting/switch"
-                }
-            ]
-        }
-    ]
+      ]
+    }
+  ]
 }
 ```
 
@@ -230,13 +230,13 @@ $ service wb-rules restart
 Вы можете использовать модуль астрономический таймер прямо из своих
 правил `wb-rules`. Для этого нужно сделать 4 шага:
 
-1) Импортировать класс кастомного сценария
-2) Создать новый инстанс класса "Астрономический таймер"
-3) Создать объект настроек где прописать требуемые значения:
-    - координаты
-    - настройки события
-    - дни запуска события
-4) Инициализировать алгоритм указав:
+1. Импортировать класс кастомного сценария
+2. Создать новый инстанс класса "Астрономический таймер"
+3. Создать объект настроек где прописать требуемые значения:
+   - координаты
+   - настройки события
+   - дни запуска события
+4. Инициализировать алгоритм указав:
    - Имя виртуального устройства
    - Созданный объект конфигурации
 
@@ -247,43 +247,43 @@ $ service wb-rules restart
 AstronomicalTimerConfig:
 
 1. `idPrefix` {string} Не обязательный параметр
-    Задает строку префикса добавляемого к идентификаторам
-    виртуального устройства и правил:
-    - Если параметр указан, то вирт. устройство и правила будут иметь
-    имена вида wbsc_<!idPrefix!>, wbsc_<!idPrefix!_mainRule, и т.д.
-    - Если не указан (undefined), то правая часть создается методом
-    транслитерации из имени переданного в init()
+   Задает строку префикса добавляемого к идентификаторам
+   виртуального устройства и правил:
+   - Если параметр указан, то вирт. устройство и правила будут иметь
+     имена вида wbsc*<!idPrefix!>, wbsc*<!idPrefix!\_mainRule, и т.д.
+   - Если не указан (undefined), то правая часть создается методом
+     транслитерации из имени переданного в init()
 2. `coordinates` {object} Объект с географическими координатами
-    Содержит два обязательных поля:
-    - `latitude` {number} Географическая широта в градусах (от -89.9 до 89.9)
-    Положительные значения - северная широта, отрицательные - южная
-    - `longitude` {number} Географическая долгота в градусах (от -180 до 180)
-    Положительные значения - восточная долгота, отрицательные - западная
+   Содержит два обязательных поля:
+   - `latitude` {number} Географическая широта в градусах (от -89.9 до 89.9)
+     Положительные значения - северная широта, отрицательные - южная
+   - `longitude` {number} Географическая долгота в градусах (от -180 до 180)
+     Положительные значения - восточная долгота, отрицательные - западная
 3. `eventSettings` {object} Объект настроек астрономического события
-    Содержит два обязательных поля:
-    - `astroEvent` {string} Тип астрономического события
-    Возможные значения: "sunrise", "sunset", "dawn", "dusk",
-    "nauticalDawn", "nauticalDusk", "nightEnd", "night",
-    "goldenHour", "goldenHourEnd", "solarNoon", "nadir"
-    - `offset` {number} Смещение в минутах (от -720 до 720)
-    Положительные значения сдвигают событие вперед (позже),
-    отрицательные - назад (раньше)
+   Содержит два обязательных поля:
+   - `astroEvent` {string} Тип астрономического события
+     Возможные значения: "sunrise", "sunset", "dawn", "dusk",
+     "nauticalDawn", "nauticalDusk", "nightEnd", "night",
+     "goldenHour", "goldenHourEnd", "solarNoon", "nadir"
+   - `offset` {number} Смещение в минутах (от -720 до 720)
+     Положительные значения сдвигают событие вперед (позже),
+     отрицательные - назад (раньше)
 4. `scheduleDaysOfWeek` {array} Массив дней недели для выполнения
-    Возможные значения: "monday", "tuesday", "wednesday", "thursday",
-    "friday", "saturday", "sunday".
-    - Важно: Проверка дней недели выполняется после применения смещения.
-    Если offset переносит событие на другой день, проверяется именно этот
-    фактический день.
+   Возможные значения: "monday", "tuesday", "wednesday", "thursday",
+   "friday", "saturday", "sunday".
+   - Важно: Проверка дней недели выполняется после применения смещения.
+     Если offset переносит событие на другой день, проверяется именно этот
+     фактический день.
 5. `outControls` {array} Массив управляющих воздействий
-    Каждый элемент массива содержит объект с полями:
-    - `control` {string} Имя контрола в формате "device/control"
-    Пример: 'lights/garden/switch'
-    - `behaviorType` {string} Тип поведения из table-handling-actions.mod.js
-    Возможные значения: "setEnable", "setDisable", "setValue", "toggle",
-    "increaseValueBy", "decreaseValueBy", "press", "hold", "release"
-    - `actionValue` {mixed} Значение для типов setValue, increaseValueBy, decreaseValueBy
-    Для setEnable/setDisable используется булево значение (true/false)
-    Для increaseValueBy/decreaseValueBy используется число
+   Каждый элемент массива содержит объект с полями:
+   - `control` {string} Имя контрола в формате "device/control"
+     Пример: 'lights/garden/switch'
+   - `behaviorType` {string} Тип поведения из table-handling-actions.mod.js
+     Возможные значения: "setEnable", "setDisable", "setValue", "toggle",
+     "increaseValueBy", "decreaseValueBy", "press", "hold", "release"
+   - `actionValue` {mixed} Значение для типов setValue, increaseValueBy, decreaseValueBy
+     Для setEnable/setDisable используется булево значение (true/false)
+     Для increaseValueBy/decreaseValueBy используется число
 
 ### Пример кода
 
@@ -293,7 +293,8 @@ AstronomicalTimerConfig:
  */
 
 // Step 1: import module
-var CustomTypeSc = require('astronomical-timer.mod').AstronomicalTimerScenario;
+var CustomTypeSc =
+  require('astronomical-timer.mod').AstronomicalTimerScenario;
 
 function main() {
   var scenarioName = 'Garden lights by sunset';
@@ -304,14 +305,14 @@ function main() {
 
   // Step 3: Configure algorithm
   var cfg = {
-    idPrefix: 'garden_sunset',  // Не обязательный параметр, можно не указывать
+    idPrefix: 'garden_sunset', // Не обязательный параметр, можно не указывать
     coordinates: {
       latitude: 55.7558,
-      longitude: 37.6173
+      longitude: 37.6173,
     },
     eventSettings: {
       astroEvent: 'sunset',
-      offset: 30  // Через 30 минут после заката
+      offset: 30, // Через 30 минут после заката
     },
     scheduleDaysOfWeek: [
       'monday',
@@ -320,14 +321,14 @@ function main() {
       'thursday',
       'friday',
       'saturday',
-      'sunday'
+      'sunday',
     ],
     outControls: [
       {
         control: 'lights/garden/switch',
-        behaviorType: 'setEnable'
-      }
-    ]
+        behaviorType: 'setEnable',
+      },
+    ],
   };
 
   // Step 4: init algorithm
@@ -342,8 +343,8 @@ function main() {
     log.debug('Initialization successful for: "{}"', scenarioName);
   } catch (error) {
     log.error(
-      'Exception during scenario initialization: "{}" for scenario: "{}"', 
-      error.message || error, 
+      'Exception during scenario initialization: "{}" for scenario: "{}"',
+      error.message || error,
       scenarioName
     );
   }

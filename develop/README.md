@@ -5,11 +5,13 @@
 ## Руководства по разработке
 
 ### Основные документы
+
 1. **[Архитектура сценариев](architecture-guide.md)** - подробное описание базовой архитектуры ScenarioBase, обязательных и необязательных методов, жизненного цикла сценариев
 2. **[Процесс разработки сценария](development-process.md)** - этапы разработки, стиль кода и лучшие практики
 3. **[Пример добавления сценария](example-add-new-scenario.md)** - практический пример создания конкретного сценария с детальными инструкциями
 
 ### Дополнительная информация
+
 4. **[Описание используемого стиля и окружения](environment-guide.md)** - настройка среды разработки, линтеры, форматтеры
 5. **[Варианты установки и сборки сценариев](install-variants-and-build-pkg.md)** - различные способы установки и развертывания
 6. **[Работа с Pull Request](pull-request-workflow.md)** — именование веток, процесс ревью, каскадные PR
@@ -29,26 +31,24 @@
 
 ```json
 {
-    "configVersion": 1,
-    "scenarios": [
+  "configVersion": 1,
+  "scenarios": [
+    {
+      "componentVersion": 1,
+      "enable": true,
+      "name": "Расписание",
+      "outControls": [
         {
-            "componentVersion": 1,
-            "enable": true,
-            "name": "Расписание",
-            "outControls": [
-                {
-                    "actionValue": 0,
-                    "behaviorType": "setEnable",
-                    "control": "buzzer/enabled"
-                }
-            ],
-            "scenarioType": "schedule",
-            "scheduleDaysOfWeek": [
-                "tuesday"
-            ],
-            "scheduleTime": "14:02"
+          "actionValue": 0,
+          "behaviorType": "setEnable",
+          "control": "buzzer/enabled"
         }
-    ]
+      ],
+      "scenarioType": "schedule",
+      "scheduleDaysOfWeek": ["tuesday"],
+      "scheduleTime": "14:02"
+    }
+  ]
 }
 ```
 
@@ -66,7 +66,7 @@
 
 ```
 scenarios/your-scenario-name/                # Папка сценария (kebab-case)
-├── your-scenario-name.mod.js                # Основной модуль сценария  
+├── your-scenario-name.mod.js                # Основной модуль сценария
 ├── scenario-init-your-scenario-name.mod.js  # Модуль инициализации
 └── README.md                                # Документация сценария
 ```
@@ -77,5 +77,3 @@ scenarios/your-scenario-name/                # Папка сценария (keba
 - **Единая архитектура** - следование установленным паттернам
 - **Валидация конфигурации** - проверка входных данных
 - **Управление состояниями** - контроль жизненного цикла сценария
-
-
