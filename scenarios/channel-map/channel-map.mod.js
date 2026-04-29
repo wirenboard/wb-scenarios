@@ -291,6 +291,8 @@ function addCustomControlsToVirtualDevice(self) {
 
 /**
  * Converts a value to match the target control's type
+ * according to ES5 coercion rules and Wiren Board MQTT Conventions.
+ *
  * @param {*} value - Value to convert
  * @param {string} targetType - Target control type from meta
  * @returns {*} Converted value
@@ -302,7 +304,50 @@ function convertValueForType(value, targetType) {
   if (targetType === 'text' || targetType === 'rgb') {
     return String(value);
   }
-  return Number(value);
+  if (
+    // Primary numeric types
+    targetType === 'range' ||
+    targetType === 'value' ||
+    targetType === 'unixtime' ||
+    targetType === 'w1-id' ||
+    // Deprecated numeric types (still used by some devices)
+    targetType === 'temperature' ||
+    targetType === 'rel_humidity' ||
+    targetType === 'atmospheric_pressure' ||
+    targetType === 'rainfall' ||
+    targetType === 'wind_speed' ||
+    targetType === 'power' ||
+    targetType === 'power_consumption' ||
+    targetType === 'voltage' ||
+    targetType === 'water_flow' ||
+    targetType === 'water_consumption' ||
+    targetType === 'resistance' ||
+    targetType === 'concentration' ||
+    targetType === 'heat_power' ||
+    targetType === 'heat_energy' ||
+    targetType === 'current' ||
+    targetType === 'pressure' ||
+    targetType === 'illuminance' ||
+    targetType === 'sound_level'
+  ) {
+    var num = Number(value);
+    if (isNaN(num)) {
+      log.warning(
+        'Value "{}" cannot be converted to number' +
+          ' (target type "{}"), returning 0',
+        value,
+        targetType
+      );
+      return 0;
+    }
+    return num;
+  }
+  // Unknown type: return original value and log warning
+  log.warning(
+    'Unknown control type "{}", returning original value',
+    targetType
+  );
+  return value;
 }
 
 /**
@@ -336,7 +381,8 @@ function createLinkRule(self, sourceMap) {
       //
       // Non-pushbutton: standard check !== newValue.
 
-      var isPbSource = dev[source + '#type'] === 'pushbutton';
+      var sourceType = dev[source + '#type'];
+      var isPbSource = sourceType === 'pushbutton';
       var isEcho = isPbSource && ctx.echoExpected[source];
 
       if (isPbSource) {
@@ -366,10 +412,26 @@ function createLinkRule(self, sourceMap) {
           // For pushbutton, the actual value doesn't matter — any write triggers a press.
           // Using `true` is just a convention; `false`, `1`, or `"press"` would also work.
           dev[target] = true;
+          log.debug(
+            'Source "{}" (type "{}") triggered pushbutton target "{}"',
+            source,
+            sourceType,
+            target
+          );
         } else {
           var convertedValue = convertValueForType(newValue, targetType);
           if (dev[target] !== convertedValue) {
             dev[target] = convertedValue;
+            log.debug(
+              'Source "{}" (type "{}") value "{}" converted to "{}"' +
+                ' written to target "{}" (type "{}")',
+              source,
+              sourceType,
+              newValue,
+              convertedValue,
+              target,
+              targetType
+            );
           }
         }
       }

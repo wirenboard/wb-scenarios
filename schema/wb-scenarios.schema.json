@@ -2337,7 +2337,7 @@
       "periodicTimerOutControlsDescription": "Channels activated during each cycle. After the on duration, channels are automatically turned off.<br>For the Set value action, two values are configured: one to apply on start and one to restore on stop.",
 
       "channelMapScenarioName": "Channel Mapping",
-      "channelMapScenarioDescription": "Any value change on channel A will be copied to channel B according to the selected direction.",
+      "channelMapScenarioDescription": "Any value change on channel A will be copied to channel B according to the selected direction.<br>Values are converted to the target channel type according to ES5 coercion rules and Wiren Board MQTT Conventions.",
       "channelMapDefaultInputName": "Channel Mapping",
       "channelMapLinksTitle": "Mapping Table",
       "channelMapLinkObjTitle": "Add",
@@ -2531,7 +2531,7 @@
       "periodicTimerOutControlsDescription": "Каналы, которые будут включаться в каждом цикле. По истечении времени работы каналы автоматически выключаются.<br>Для действия «Установить значение» задаются два значения: при включении и при выключении.",
 
       "channelMapScenarioName": "Маппинг каналов",
-      "channelMapScenarioDescription": "Любое изменение значения на канале A будет копироваться в канал B в соответствии с выбранным направлением.",
+      "channelMapScenarioDescription": "Любое изменение значения на канале A будет копироваться в канал B в соответствии с выбранным направлением.<br>Значения приводятся к типу целевого канала по правилам приведения ES5 и конвенциям Wiren Board MQTT.",
       "channelMapDefaultInputName": "Маппинг каналов",
       "channelMapLinksTitle": "Таблица маппинга",
       "channelMapLinkObjTitle": "Добавить",
