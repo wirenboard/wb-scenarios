@@ -48,7 +48,10 @@
 канала по правилам приведения ES5 и
 [конвенциям Wiren Board MQTT](https://wirenboard.com/wiki/MQTT_Conventions):
 
-- `switch`, `alarm` — `Boolean(value)`
+- `switch`, `alarm` — `Boolean(value)`. Спец-кейс: строки
+  `'false'` и `'0'` (case-insensitive) приводятся к булевому
+  `false` (т.к. `Boolean('false')` и `Boolean('0')` в JS дают
+  `true`, что противоречит ожиданиям).
 - `text`, `rgb` — `String(value)`
 - числовые типы (`range`, `value`, `unixtime`, `w1-id`,
   а также устаревшие `temperature`, `voltage`, `current` и т. д.) —

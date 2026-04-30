@@ -299,6 +299,15 @@ function addCustomControlsToVirtualDevice(self) {
  */
 function convertValueForType(value, targetType) {
   if (targetType === 'switch' || targetType === 'alarm') {
+    // String values from MQTT/text controls need explicit handling:
+    // Boolean('false') and Boolean('0') both return true (any
+    // non-empty string is truthy in JS), which is wrong here.
+    if (typeof value === 'string') {
+      var lower = value.toLowerCase();
+      if (lower === 'false' || lower === '0') {
+        return false;
+      }
+    }
     return Boolean(value);
   }
   if (targetType === 'text' || targetType === 'rgb') {
