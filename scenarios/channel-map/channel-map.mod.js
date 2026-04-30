@@ -290,6 +290,76 @@ function addCustomControlsToVirtualDevice(self) {
 }
 
 /**
+ * Converts a value to match the target control's type
+ * according to ES5 coercion rules and Wiren Board MQTT Conventions.
+ *
+ * @param {*} value - Value to convert
+ * @param {string} targetType - Target control type from meta
+ * @returns {*} Converted value
+ */
+function convertValueForType(value, targetType) {
+  if (targetType === 'switch' || targetType === 'alarm') {
+    // String values from MQTT/text controls need explicit handling:
+    // Boolean('false') and Boolean('0') both return true (any
+    // non-empty string is truthy in JS), which is wrong here.
+    if (typeof value === 'string') {
+      var lower = value.toLowerCase();
+      if (lower === 'false' || lower === '0') {
+        return false;
+      }
+    }
+    return Boolean(value);
+  }
+  if (targetType === 'text' || targetType === 'rgb') {
+    return String(value);
+  }
+  if (
+    // Primary numeric types
+    targetType === 'range' ||
+    targetType === 'value' ||
+    targetType === 'unixtime' ||
+    targetType === 'w1-id' ||
+    // Deprecated numeric types (still used by some devices)
+    targetType === 'temperature' ||
+    targetType === 'rel_humidity' ||
+    targetType === 'atmospheric_pressure' ||
+    targetType === 'rainfall' ||
+    targetType === 'wind_speed' ||
+    targetType === 'power' ||
+    targetType === 'power_consumption' ||
+    targetType === 'voltage' ||
+    targetType === 'water_flow' ||
+    targetType === 'water_consumption' ||
+    targetType === 'resistance' ||
+    targetType === 'concentration' ||
+    targetType === 'heat_power' ||
+    targetType === 'heat_energy' ||
+    targetType === 'current' ||
+    targetType === 'pressure' ||
+    targetType === 'illuminance' ||
+    targetType === 'sound_level'
+  ) {
+    var num = Number(value);
+    if (isNaN(num)) {
+      log.warning(
+        'Value "{}" cannot be converted to number' +
+          ' (target type "{}"), returning 0',
+        value,
+        targetType
+      );
+      return 0;
+    }
+    return num;
+  }
+  // Unknown type: return original value and log warning
+  log.warning(
+    'Unknown control type "{}", returning original value',
+    targetType
+  );
+  return value;
+}
+
+/**
  * Creates the link rule that copies values from sources
  * to targets. Uses cascade counter (ctx) to prevent
  * infinite loops with pushbutton controls.
@@ -320,7 +390,8 @@ function createLinkRule(self, sourceMap) {
       //
       // Non-pushbutton: standard check !== newValue.
 
-      var isPbSource = dev[source + '#type'] === 'pushbutton';
+      var sourceType = dev[source + '#type'];
+      var isPbSource = sourceType === 'pushbutton';
       var isEcho = isPbSource && ctx.echoExpected[source];
 
       if (isPbSource) {
@@ -338,7 +409,8 @@ function createLinkRule(self, sourceMap) {
 
       for (var i = 0; i < targets.length; i++) {
         var target = targets[i];
-        var isPbTarget = dev[target + '#type'] === 'pushbutton';
+        var targetType = dev[target + '#type'];
+        var isPbTarget = targetType === 'pushbutton';
 
         if (isPbTarget) {
           if (ctx.writtenInCascade[target] === ctx.cascadeId) {
@@ -346,10 +418,29 @@ function createLinkRule(self, sourceMap) {
           }
           ctx.echoExpected[target] = true;
           ctx.writtenInCascade[target] = ctx.cascadeId;
-          dev[target] = newValue;
+          // For pushbutton, the actual value doesn't matter — any write triggers a press.
+          // Using `true` is just a convention; `false`, `1`, or `"press"` would also work.
+          dev[target] = true;
+          log.debug(
+            'Source "{}" (type "{}") triggered pushbutton target "{}"',
+            source,
+            sourceType,
+            target
+          );
         } else {
-          if (dev[target] !== newValue) {
-            dev[target] = newValue;
+          var convertedValue = convertValueForType(newValue, targetType);
+          if (dev[target] !== convertedValue) {
+            dev[target] = convertedValue;
+            log.debug(
+              'Source "{}" (type "{}") value "{}" converted to "{}"' +
+                ' written to target "{}" (type "{}")',
+              source,
+              sourceType,
+              newValue,
+              convertedValue,
+              target,
+              targetType
+            );
           }
         }
       }
