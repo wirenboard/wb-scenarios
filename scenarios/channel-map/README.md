@@ -45,8 +45,9 @@
 ### Приведение типов значений
 
 При копировании значение источника приводится к типу целевого
-канала по правилам приведения ES5 и
-[конвенциям Wiren Board MQTT](https://wirenboard.com/wiki/MQTT_Conventions):
+канала. Правила преобразования близки к стандартному ES5,
+со спец-кейсом для строковых булевых значений (см. ниже)
+и с учётом [конвенций Wiren Board MQTT](https://wirenboard.com/wiki/MQTT_Conventions):
 
 - `switch`, `alarm` — `Boolean(value)`. Спец-кейс: строки
   `'false'` и `'0'` (case-insensitive) приводятся к булевому
