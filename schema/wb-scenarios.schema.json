@@ -1846,14 +1846,15 @@
               "direction": {
                 "type": "string",
                 "title": "channelMapDirectionTitle",
-                "enum": ["forward", "backward", "both"],
+                "enum": ["forward", "backward", "both", "inverted"],
                 "default": "forward",
                 "propertyOrder": 2,
                 "options": {
                   "enum_titles": [
                     "channelMapDirectionForward",
                     "channelMapDirectionBackward",
-                    "channelMapDirectionBoth"
+                    "channelMapDirectionBoth",
+                    "channelMapDirectionInverted"
                   ]
                 }
               },
@@ -2347,6 +2348,7 @@
       "channelMapDirectionForward": "A → B",
       "channelMapDirectionBackward": "B → A",
       "channelMapDirectionBoth": "A ↔ B",
+      "channelMapDirectionInverted": "A → !B",
 
       "pidControllerScenarioName": "PID controller (analog outputs)",
       "pidControllerScenarioDescription": "PID controller for analog outputs.",
@@ -2541,6 +2543,7 @@
       "channelMapDirectionForward": "A → B",
       "channelMapDirectionBackward": "B → A",
       "channelMapDirectionBoth": "A ↔ B",
+      "channelMapDirectionInverted": "A → !B",
 
       "pidControllerScenarioName": "ПИД-регулятор (аналоговые выходы)",
       "pidControllerScenarioDescription": "ПИД-регулятор для аналоговых выходов.",
