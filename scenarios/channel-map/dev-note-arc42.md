@@ -14,7 +14,8 @@
 ### 1.2. Функциональные требования
 
 - Массив связок (`mqttTopicsLinks`): каждая связывает канал A и канал B с заданным направлением
-- Три направления: `forward` (A → B), `backward` (B → A), `both` (A ↔ B)
+- Четыре направления: `forward` (A → B), `backward` (B → A), `both` (A ↔ B),
+  `inverted` (A → !B, инверсия для `switch`/`alarm`)
 - Несколько связок в одном сценарии
 - Несколько связок с одним и тем же каналом в роли источника — все целевые каналы обновляются
 - Включение/выключение через `rule_enabled`
@@ -110,13 +111,21 @@ defineRule({
     var sourceKey = devName + '/' + cellName;
     var targets = sourceMap[sourceKey];
     for (var i = 0; i < targets.length; i++) {
-      if (dev[targets[i]] !== newValue) {
-        dev[targets[i]] = newValue;
+      var target = targets[i].target;
+      var invert = targets[i].invert;
+      var targetType = dev[target + '#type'];
+      var converted = convertValueForType(newValue, targetType, invert);
+      if (dev[target] !== converted) {
+        dev[target] = converted;
       }
     }
   }
 });
 ```
+
+Реальный код дополнительно содержит ветку для pushbutton-target
+(cascade counter, см. 4.4); здесь она опущена для наглядности
+основной идеи.
 
 **Преимущества:**
 
@@ -134,19 +143,23 @@ function buildSourceMap(mqttTopicsLinks) {
   for (var i = 0; i < mqttTopicsLinks.length; i++) {
     var l = mqttTopicsLinks[i];
     if (l.direction === 'forward') {
-      addToMap(map, l.mqttTopicA, l.mqttTopicB);
+      addToMap(map, l.mqttTopicA, l.mqttTopicB, false);
     } else if (l.direction === 'backward') {
-      addToMap(map, l.mqttTopicB, l.mqttTopicA);
+      addToMap(map, l.mqttTopicB, l.mqttTopicA, false);
     } else if (l.direction === 'both') {
-      addToMap(map, l.mqttTopicA, l.mqttTopicB);
-      addToMap(map, l.mqttTopicB, l.mqttTopicA);
+      addToMap(map, l.mqttTopicA, l.mqttTopicB, false);
+      addToMap(map, l.mqttTopicB, l.mqttTopicA, false);
+    } else if (l.direction === 'inverted') {
+      addToMap(map, l.mqttTopicA, l.mqttTopicB, true);
     }
   }
   return map;
 }
 ```
 
-Это позволяет за O(1) найти все цели для сработавшего источника.
+Значения карты — `Array<{target, invert}>`, что позволяет хранить флаг
+инверсии для каждой пары source→target. Это позволяет за O(1) найти все
+цели для сработавшего источника и применить инверсию там, где она нужна.
 
 ### 4.3. Защита от петель
 
@@ -162,6 +175,23 @@ function buildSourceMap(mqttTopicsLinks) {
 Дополнительно `validateCfg` проверяет дублирование и перекрытие связок: если одна и та же пара каналов
 указана несколько раз, в лог пишется warning. При перевёрнутом порядке каналов (A/B и B/A) направление
 нормализуется для корректного сравнения (`forward` и `backward` взаимозаменяемы).
+
+**Конфликт `inverted` с другими направлениями.** На одной паре каналов
+направление `inverted` несовместимо с `forward`, `backward` или `both`:
+
+- `forward` + `inverted`: оба правила пишут в один target противоположные
+  значения, побеждает последняя запись (недетерминированно).
+- `both` + `inverted`: то же, плюс вторая часть `both` создаёт каскад с
+  `inverted`.
+- `backward` + `inverted`: бесконечный каскад A → !B → !A → B → !A → …,
+  значения каждый раз меняются и проверка `dev[target] !== newValue`
+  его не гасит.
+
+Поэтому при наличии `inverted` на паре любая другая не-инвертированная
+связка отвергается с `log.error` и `return false` — сценарий не
+инициализируется. Две `inverted` в одинаковом порядке считаются дубликатом
+(ошибка); в обратном — двусторонней инверсией (разрешено, цикла не будет
+из-за `dev[target] !== newValue` после первой записи).
 
 ### 4.4. Поддержка pushbutton (cascade counter)
 
@@ -206,20 +236,34 @@ function buildSourceMap(mqttTopicsLinks) {
 и они не совпадают — логируется `warning`. Сценарий при этом **не блокируется** — копирование работает
 как обычно, но в виртуальном устройстве появляется контрол-предупреждение.
 
+**Жёсткая проверка для `inverted`.** Направление `inverted` имеет смысл
+только для пары булевых контролов (`switch`/`alarm`). Если хотя бы один
+из каналов связки с `direction === 'inverted'` — не `switch` и не
+`alarm` (включая `pushbutton`, числовые и строковые типы), валидация
+завершается с `log.error` и `return false`. Это в отличие от обычной
+проверки совместимости типов выше, где сценарий продолжает работать
+с предупреждением.
+
 ### 4.6. Приведение типов значений при копировании
 
 Перед записью в целевой канал значение приводится к его типу
 (`dev[target + '#type']`). Правила близки к стандартному ES5
 coercion (с учётом конвенций Wiren Board MQTT), но содержат
 спец-кейс для строковых булевых значений в `switch`/`alarm`
-(см. ниже). Реализация — функция `convertValueForType(value, targetType)`:
+(см. ниже). Реализация — функция
+`convertValueForType(value, targetType, invert)`:
 
-| Тип цели                                                   | Преобразование                                       |
-| ---------------------------------------------------------- | ---------------------------------------------------- |
-| `switch`, `alarm`                                          | `Boolean(value)` со спец-кейсом для строк (см. ниже) |
-| `text`, `rgb`                                              | `String(value)`                                      |
-| `range`, `value`, `unixtime`, `w1-id` + deprecated numeric | `Number(value)`, при `NaN` → `0` + warning           |
-| Неизвестный                                                | возвращается как есть + warning                      |
+| Тип цели                                                   | Преобразование                                                   |
+| ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| `switch`, `alarm`                                          | `Boolean(value)` со спец-кейсом для строк, затем `!` если invert |
+| `text`, `rgb`                                              | `String(value)`                                                  |
+| `range`, `value`, `unixtime`, `w1-id` + deprecated numeric | `Number(value)`, при `NaN` → `0` + warning                       |
+| Неизвестный                                                | возвращается как есть + warning                                  |
+
+Параметр `invert` приходит из записи карты `sourceMap` для каждой пары
+source→target и имеет эффект только на булевых типах. Для остальных
+типов он игнорируется (валидация уже не пропустит `inverted` со
+строковыми/числовыми каналами).
 
 `pushbutton` обрабатывается отдельно в `createLinkRule`: для него
 записывается `true` (значение неважно — важен сам факт записи),
@@ -276,9 +320,12 @@ ChannelMapScenario extends ScenarioBase
 │   → mqttTopicsLinks: непустой массив
 │   → каждый link: mqttTopicA и mqttTopicB заполнены
 │   → mqttTopicA !== mqttTopicB (нет прямых петель)
-│   → direction: 'forward', 'backward', или 'both'
+│   → direction: 'forward', 'backward', 'both' или 'inverted'
 │   → проверка дубликатов/перекрытий (warning, нормализация направления)
+│   → проверка конфликта 'inverted' с другими направлениями на той же
+│     паре (error → return false)
 │   → проверка типов (warning, hasIncorrectLinks)
+│   → для 'inverted': оба контрола = switch/alarm (error → return false)
 │   → проверка min/max (warning, hasIncorrectLinks)
 │
 └── initSpecific(name, cfg)
@@ -311,7 +358,7 @@ ChannelMapScenario extends ScenarioBase
 - `idPrefix` — опциональный (скрыт через `display_required_only`)
 - `mqttTopicsLinks` — массив связок (minItems: 1)
   - `mqttTopicA` — MQTT-топик канала A (wb-autocomplete)
-  - `direction` — направление: `forward`, `backward`, `both`
+  - `direction` — направление: `forward`, `backward`, `both`, `inverted`
   - `mqttTopicB` — MQTT-топик канала B (wb-autocomplete)
 
 Скрытые поля:
@@ -344,11 +391,11 @@ ChannelMapScenario extends ScenarioBase
 
 **Структура элемента `mqttTopicsLinks`:**
 
-| Поле         | Тип    | Описание                                                     |
-| ------------ | ------ | ------------------------------------------------------------ |
-| `mqttTopicA` | string | MQTT-топик канала A: `"device/control"`                      |
-| `direction`  | string | Направление: `forward` (A→B), `backward` (B→A), `both` (A↔B) |
-| `mqttTopicB` | string | MQTT-топик канала B: `"device/control"`                      |
+| Поле         | Тип    | Описание                                                                        |
+| ------------ | ------ | ------------------------------------------------------------------------------- |
+| `mqttTopicA` | string | MQTT-топик канала A: `"device/control"`                                         |
+| `direction`  | string | Направление: `forward` (A→B), `backward` (B→A), `both` (A↔B), `inverted` (A→!B) |
+| `mqttTopicB` | string | MQTT-топик канала B: `"device/control"`                                         |
 
 ---
 

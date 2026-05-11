@@ -2,7 +2,8 @@
  * @file channel-map.mod.js - ES5 module for wb-rules v2.38
  * @description Channel Map scenario class that extends ScenarioBase.
  *   Copies values between MQTT controls according to
- *   direction (forward, backward, or both).
+ *   direction (forward, backward, both, or inverted).
+ *   "inverted" applies a logical NOT for boolean targets (switch/alarm).
  *   Uses a single whenChanged rule with a source-to-targets lookup map.
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
@@ -14,12 +15,13 @@ var Logger = require('logger.mod').Logger;
 var loggerFileLabel = 'WBSC-channel-map-mod';
 var log = new Logger(loggerFileLabel);
 
-var VALID_DIRECTIONS = ['forward', 'backward', 'both'];
+var VALID_DIRECTIONS = ['forward', 'backward', 'both', 'inverted'];
+var BOOLEAN_TYPES = ['switch', 'alarm'];
 
 /**
  * @typedef {Object} LinkEntry
  * @property {string} mqttTopicA - First MQTT topic 'device/control'
- * @property {string} direction - Direction: 'forward', 'backward', or 'both'
+ * @property {string} direction - Direction: 'forward', 'backward', 'both', or 'inverted'
  * @property {string} mqttTopicB - Second MQTT topic 'device/control'
  */
 
@@ -30,9 +32,20 @@ var VALID_DIRECTIONS = ['forward', 'backward', 'both'];
  */
 
 /**
- * @typedef {Object<string, string[]>} SourceMap
- * Map of source MQTT topic to array of target MQTT topics.
- * Example: { 'wb-gpio/A1_OUT': ['wb-gpio/A2_OUT', 'wb-gpio/A3_OUT'] }
+ * @typedef {Object} TargetEntry
+ * @property {string} target - Target MQTT topic 'device/control'
+ * @property {boolean} invert - If true, boolean value is inverted before write
+ */
+
+/**
+ * @typedef {Object<string, TargetEntry[]>} SourceMap
+ * Map of source MQTT topic to array of target entries.
+ * Example: {
+ *   'wb-gpio/A1_OUT': [
+ *     { target: 'wb-gpio/A2_OUT', invert: false },
+ *     { target: 'wb-gpio/A3_OUT', invert: true  }
+ *   ]
+ * }
  */
 
 /**
@@ -142,6 +155,43 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
 
       if (!samePair) continue;
 
+      // "inverted" cannot coexist with non-inverted directions on
+      // the same pair: forward/both write the source value to the
+      // same target where inverted writes !source (last write wins);
+      // backward together with inverted produces an infinite cascade.
+      // Two "inverted" in the same order are a duplicate; in opposite
+      // order — a deliberate bidirectional invert (allowed).
+      if (l.direction === 'inverted' || prev.direction === 'inverted') {
+        if (l.direction === 'inverted' && prev.direction === 'inverted') {
+          var sameOrder = l.mqttTopicA === prev.mqttTopicA;
+          if (sameOrder) {
+            log.error(
+              'Link [{}]: duplicate of inverted link [{}]' +
+                ' ("{}" inverted "{}")',
+              i,
+              j,
+              prev.mqttTopicA,
+              prev.mqttTopicB
+            );
+            return false;
+          }
+          continue; // opposite order — bidirectional invert, allowed
+        }
+
+        log.error(
+          'Link [{}]: "{}" conflicts with link [{}]' +
+            ' ("{}" {} "{}") — same pair already linked,' +
+            ' remove one of them',
+          i,
+          l.direction,
+          j,
+          prev.mqttTopicA,
+          prev.direction,
+          prev.mqttTopicB
+        );
+        return false;
+      }
+
       // When A/B are swapped, forward/backward are inverted
       var existingDir = prev.direction;
       if (
@@ -187,6 +237,25 @@ ChannelMapScenario.prototype.validateCfg = function (cfg) {
 
     var typeA = dev[l.mqttTopicA + '#type'];
     var typeB = dev[l.mqttTopicB + '#type'];
+
+    // Inverted requires both controls to be boolean (switch/alarm).
+    // Pushbutton is excluded — it's stateless and inversion is meaningless.
+    if (l.direction === 'inverted') {
+      var aIsBool = BOOLEAN_TYPES.indexOf(typeA) !== -1;
+      var bIsBool = BOOLEAN_TYPES.indexOf(typeB) !== -1;
+      if (!aIsBool || !bIsBool) {
+        log.error(
+          'Link [{}]: "inverted" requires both channels to be boolean' +
+            ' (switch or alarm), got "{}" ({}) and "{}" ({})',
+          i,
+          l.mqttTopicA,
+          typeA,
+          l.mqttTopicB,
+          typeB
+        );
+        return false;
+      }
+    }
 
     // Type mismatch check
     if (typeA && typeB && typeA !== typeB) {
@@ -243,12 +312,14 @@ function buildSourceMap(mqttTopicsLinks) {
     var l = mqttTopicsLinks[i];
 
     if (l.direction === 'forward') {
-      addToMap(map, l.mqttTopicA, l.mqttTopicB);
+      addToMap(map, l.mqttTopicA, l.mqttTopicB, false);
     } else if (l.direction === 'backward') {
-      addToMap(map, l.mqttTopicB, l.mqttTopicA);
+      addToMap(map, l.mqttTopicB, l.mqttTopicA, false);
     } else if (l.direction === 'both') {
-      addToMap(map, l.mqttTopicA, l.mqttTopicB);
-      addToMap(map, l.mqttTopicB, l.mqttTopicA);
+      addToMap(map, l.mqttTopicA, l.mqttTopicB, false);
+      addToMap(map, l.mqttTopicB, l.mqttTopicA, false);
+    } else if (l.direction === 'inverted') {
+      addToMap(map, l.mqttTopicA, l.mqttTopicB, true);
     }
   }
   return map;
@@ -259,14 +330,18 @@ function buildSourceMap(mqttTopicsLinks) {
  * @param {SourceMap} map - The map to modify
  * @param {string} source - Source MQTT topic
  * @param {string} target - Target MQTT topic
+ * @param {boolean} invert - If true, value is inverted before write
  */
-function addToMap(map, source, target) {
+function addToMap(map, source, target, invert) {
   if (!map[source]) {
     map[source] = [];
   }
-  if (map[source].indexOf(target) === -1) {
-    map[source].push(target);
+  for (var i = 0; i < map[source].length; i++) {
+    if (map[source][i].target === target) {
+      return;
+    }
   }
+  map[source].push({ target: target, invert: invert });
 }
 
 /**
@@ -295,20 +370,26 @@ function addCustomControlsToVirtualDevice(self) {
  *
  * @param {*} value - Value to convert
  * @param {string} targetType - Target control type from meta
+ * @param {boolean} [invert] - If true and target is boolean, invert the result
  * @returns {*} Converted value
  */
-function convertValueForType(value, targetType) {
+function convertValueForType(value, targetType, invert) {
   if (targetType === 'switch' || targetType === 'alarm') {
     // String values from MQTT/text controls need explicit handling:
     // Boolean('false') and Boolean('0') both return true (any
     // non-empty string is truthy in JS), which is wrong here.
+    var b;
     if (typeof value === 'string') {
       var lower = value.toLowerCase();
       if (lower === 'false' || lower === '0') {
-        return false;
+        b = false;
+      } else {
+        b = Boolean(value);
       }
+    } else {
+      b = Boolean(value);
     }
-    return Boolean(value);
+    return invert ? !b : b;
   }
   if (targetType === 'text' || targetType === 'rgb') {
     return String(value);
@@ -408,7 +489,8 @@ function createLinkRule(self, sourceMap) {
       }
 
       for (var i = 0; i < targets.length; i++) {
-        var target = targets[i];
+        var target = targets[i].target;
+        var invert = targets[i].invert;
         var targetType = dev[target + '#type'];
         var isPbTarget = targetType === 'pushbutton';
 
@@ -428,16 +510,21 @@ function createLinkRule(self, sourceMap) {
             target
           );
         } else {
-          var convertedValue = convertValueForType(newValue, targetType);
+          var convertedValue = convertValueForType(
+            newValue,
+            targetType,
+            invert
+          );
           if (dev[target] !== convertedValue) {
             dev[target] = convertedValue;
             log.debug(
               'Source "{}" (type "{}") value "{}" converted to "{}"' +
-                ' written to target "{}" (type "{}")',
+                ' (invert={}) written to target "{}" (type "{}")',
               source,
               sourceType,
               newValue,
               convertedValue,
+              invert,
               target,
               targetType
             );
