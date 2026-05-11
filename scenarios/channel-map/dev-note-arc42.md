@@ -111,13 +111,21 @@ defineRule({
     var sourceKey = devName + '/' + cellName;
     var targets = sourceMap[sourceKey];
     for (var i = 0; i < targets.length; i++) {
-      if (dev[targets[i]] !== newValue) {
-        dev[targets[i]] = newValue;
+      var target = targets[i].target;
+      var invert = targets[i].invert;
+      var targetType = dev[target + '#type'];
+      var converted = convertValueForType(newValue, targetType, invert);
+      if (dev[target] !== converted) {
+        dev[target] = converted;
       }
     }
   }
 });
 ```
+
+Реальный код дополнительно содержит ветку для pushbutton-target
+(cascade counter, см. 4.4); здесь она опущена для наглядности
+основной идеи.
 
 **Преимущества:**
 
