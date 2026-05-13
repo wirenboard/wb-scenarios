@@ -1,3 +1,9 @@
+wb-scenarios (1.9.1) stable; urgency=medium
+
+  * Update periodic-timer: initialization
+
+ -- Valerii Trovimov <valeriy.trofimov@wirenboard.com>  Wed, 13 May 2026 10:44:00 +0300
+
 wb-scenarios (1.9.0) stable; urgency=medium
 
   * Update channel-map: added type casting
