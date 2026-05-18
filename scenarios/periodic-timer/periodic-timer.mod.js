@@ -1042,11 +1042,9 @@ PeriodicTimerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   if (rulesCreated) {
     this.setState(computeState(this, cfg));
 
-    // Start the cycle immediately if we are already inside the active window.
-    // Without this check, the first cycle would be delayed until the next
-    // cron tick (up to 60 seconds after restart).
-    var isEnabled = dev[this.genNames.vDevice + '/rule_enabled'];
-    if (isEnabled && isCurrentlyInWindow(cfg)) {
+    // Do not start the cycle if storage says the scenario is disabled.
+    var enabledFromStorage = this.getPsUserSetting('rule_enabled', true);
+    if (enabledFromStorage && isCurrentlyInWindow(cfg)) {
       log.debug(
         'Init in active window, starting cycle for: "{}"',
         deviceTitle
