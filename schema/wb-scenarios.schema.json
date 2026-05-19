@@ -740,6 +740,7 @@
         "controlMode": {
           "type": "string",
           "title": "thermostatControlModeTitle",
+          "description": "thermostatControlModeDescription",
           "enum": ["hysteresis", "pid"],
           "default": "hysteresis",
           "propertyOrder": 5,
@@ -839,6 +840,7 @@
             "pwmPeriodSec": {
               "type": "integer",
               "title": "thermostatPwmPeriodTitle",
+              "description": "thermostatPwmPeriodDescription",
               "default": 60,
               "minimum": 1,
               "propertyOrder": 5,
@@ -849,6 +851,7 @@
             "pidRecalcCycles": {
               "type": "integer",
               "title": "thermostatPidRecalcCyclesTitle",
+              "description": "thermostatPidRecalcCyclesDescription",
               "default": 1,
               "minimum": 1,
               "propertyOrder": 6,
@@ -859,6 +862,7 @@
             "minOnTimeSec": {
               "type": "integer",
               "title": "thermostatMinOnTimeTitle",
+              "description": "thermostatMinOnTimeDescription",
               "default": 0,
               "minimum": 0,
               "propertyOrder": 7,
@@ -869,6 +873,7 @@
             "minOffTimeSec": {
               "type": "integer",
               "title": "thermostatMinOffTimeTitle",
+              "description": "thermostatMinOffTimeDescription",
               "default": 0,
               "minimum": 0,
               "propertyOrder": 8,
@@ -1944,7 +1949,7 @@
           "default": 22,
           "propertyOrder": 3,
           "options": {
-            "grid_columns": 12
+            "grid_columns": 6
           }
         },
         "deadBand": {
@@ -1955,7 +1960,7 @@
           "minimum": 0,
           "propertyOrder": 4,
           "options": {
-            "grid_columns": 12
+            "grid_columns": 6
           }
         },
         "setpointLimits": {
@@ -2036,6 +2041,7 @@
         "calculationPeriodSec": {
           "type": "integer",
           "title": "pidControllerCalcPeriodTitle",
+          "description": "pidControllerCalcPeriodDescription",
           "default": 30,
           "minimum": 1,
           "propertyOrder": 7,
@@ -2255,7 +2261,7 @@
       "lightControlLightSwitchesObjTitle": "Switch",
 
       "thermostatScenarioName": "Thermostat",
-      "thermostatScenarioDescription": "Temperature control with hysteresis or a PID algorithm for discrete outputs.",
+      "thermostatScenarioDescription": "Temperature control for discrete (ON/OFF) outputs — relays, valves, boilers.<br><br>Available modes:<br>• <b>Hysteresis</b> — turn the heater on when the temperature is below the setpoint, off when it is above the setpoint. Simple and reliable, suits systems with high thermal inertia (underfloor heating, radiators).<br>• <b>PID</b> — PID controller with PWM. The PID engine computes power 0–100%, which is split into an ON interval and an OFF interval within a fixed cycle. Holds the setpoint and protects the relay via min ON/OFF time. Suitable for precise control of fast-response heaters.",
       "thermostatDefaultInputName": "Heater",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
       "thermostatTempLimitsObjTitle": "Temperature Adjustment Limits in Widget",
@@ -2272,17 +2278,20 @@
       "thermostatActuatorEnumDisable": "Turn off (switch, inverted)",
 
       "thermostatControlModeTitle": "Control Mode",
+      "thermostatControlModeDescription": "Hysteresis — two-position control with a configurable threshold. PID — proportional-integral-derivative control with PWM.",
       "thermostatControlModeHysteresis": "Hysteresis",
       "thermostatControlModePid": "PID",
       "thermostatDeadBandTitle": "Deadband (°C)",
       "thermostatDeadBandDescription": "Within ±deadband around the setpoint, P/I/D components are multiplied by 0.1 to avoid chattering",
       "thermostatPidSettingsTitle": "PID Settings",
       "thermostatPwmPeriodTitle": "Cycle Time (s)",
-      "thermostatPwmPeriodDescription": "Duration of one control cycle. The actuator is ON for (output%) × cycle time. For mechanical relays use 30–120 s; for SSR use 1–5 s.",
+      "thermostatPwmPeriodDescription": "Duration of one control cycle. The actuator turns on for (computed power %) × cycle time.",
       "thermostatPidRecalcCyclesTitle": "PID Recalculation Interval (cycles)",
       "thermostatPidRecalcCyclesDescription": "PID recalculates every N control cycles. Actual recalculation interval = cycle time × N",
       "thermostatMinOnTimeTitle": "Minimum ON Time (s)",
+      "thermostatMinOnTimeDescription": "Minimum heater ON time within a cycle. Protects mechanical relays from chattering. 0 disables the limit.",
       "thermostatMinOffTimeTitle": "Minimum OFF Time (s)",
+      "thermostatMinOffTimeDescription": "Minimum heater OFF time within a cycle. Protects mechanical relays from chattering. 0 disables the limit.",
 
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
@@ -2349,9 +2358,9 @@
       "channelMapDirectionBoth": "A ↔ B",
 
       "pidControllerScenarioName": "PID controller (analog outputs)",
-      "pidControllerScenarioDescription": "PID controller for analog outputs.",
+      "pidControllerScenarioDescription": "PID controller for analog outputs — valves, dampers, frequency inverters (0–10 V, 4–20 mA, 0–100 %).<br><br>The scenario reads the sensor, computes the required power 0–100 % every recalculation interval and maps it to each actuator's range (minimum, maximum) according to the direct or reverse action.",
       "pidControllerDefaultInputName": "PID Controller",
-      "pidControllerSensorTitle": "Input sensor",
+      "pidControllerSensorTitle": "Temperature Channel",
       "pidControllerSetpointTitle": "Setpoint",
       "pidControllerDeadbandTitle": "Deadband",
       "pidControllerDeadbandDescription": "Within ±deadband around the setpoint, P/I/D components are multiplied by 0.1 to avoid chattering",
@@ -2359,6 +2368,7 @@
       "pidControllerSetpointLimitsMinTitle": "Low",
       "pidControllerSetpointLimitsMaxTitle": "High",
       "pidControllerCalcPeriodTitle": "PID recalculation interval (s)",
+      "pidControllerCalcPeriodDescription": "How often the PID engine recomputes the power. A smaller value gives a faster response.",
       "pidControllerActuatorsTitle": "Output",
       "pidControllerActuatorsDescription": "Analog outputs controlled by the PID controller:",
       "pidControllerActuatorObjTitle": "Output",
@@ -2450,7 +2460,7 @@
       "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
 
       "thermostatScenarioName": "Термостат",
-      "thermostatScenarioDescription": "Регулирование температуры с гистерезисом или ПИД-алгоритмом для дискретных выходов.",
+      "thermostatScenarioDescription": "Регулирование температуры для дискретных (ON/OFF) выходов — реле, клапанов, котлов.<br><br>Доступные режимы:<br>• <b>Гистерезис</b> — простое двухпозиционное управление: включает нагреватель, если температура ниже уставки, и выключает, если выше уставки. Просто, надёжно, подходит для систем с большой тепловой инерцией (тёплый пол, радиаторы).<br>• <b>ПИД</b> — ПИД-регулятор с ШИМ. Алгоритм считает требуемую мощность 0–100 %, которая разбивается на интервал включения и выключения внутри фиксированного периода. Держит уставку при минимальных колебаниях, а минимальное время вкл/выкл защищает реле. Подходит для точного управления быстрыми нагревателями.",
       "thermostatDefaultInputName": "Теплый пол в комнате",
       "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
       "thermostatTempLimitsObjTitle": "Границы изменения температуры в виджете",
@@ -2467,17 +2477,20 @@
       "thermostatActuatorEnumDisable": "Выключить (переключатель, инверсия)",
 
       "thermostatControlModeTitle": "Режим управления",
+      "thermostatControlModeDescription": "Гистерезис — двухпозиционное управление с заданным порогом. ПИД — пропорционально-интегрально-дифференциальное регулирование с ШИМ.",
       "thermostatControlModeHysteresis": "Гистерезис",
       "thermostatControlModePid": "ПИД",
       "thermostatDeadBandTitle": "Зона нечувствительности (°C)",
       "thermostatDeadBandDescription": "В пределах ±зоны от уставки компоненты P/I/D умножаются на 0.1, чтобы избежать частых переключений",
       "thermostatPidSettingsTitle": "Настройки ПИД",
       "thermostatPwmPeriodTitle": "Время цикла (с)",
-      "thermostatPwmPeriodDescription": "Длительность одного цикла управления. Устройство включено на (выход%) × время цикла. Для механических реле — 30–120 с, для SSR — 1–5 с.",
+      "thermostatPwmPeriodDescription": "Длительность одного цикла управления. Устройство включается на (вычисленная мощность %) × время цикла.",
       "thermostatPidRecalcCyclesTitle": "Интервал пересчёта ПИД (циклов)",
       "thermostatPidRecalcCyclesDescription": "ПИД пересчитывается каждые N циклов управления. Реальный интервал пересчёта = время цикла × N",
       "thermostatMinOnTimeTitle": "Минимальное время работы (с)",
+      "thermostatMinOnTimeDescription": "Минимальная длительность включения нагревателя внутри цикла. Защищает механическое реле от частых переключений. 0 — без ограничения.",
       "thermostatMinOffTimeTitle": "Минимальное время паузы (с)",
+      "thermostatMinOffTimeDescription": "Минимальная длительность выключения нагревателя внутри цикла. Защищает механическое реле от частых переключений. 0 — без ограничения.",
 
       "scheduleScenarioName": "Расписание",
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
@@ -2543,9 +2556,9 @@
       "channelMapDirectionBoth": "A ↔ B",
 
       "pidControllerScenarioName": "ПИД-регулятор (аналоговые выходы)",
-      "pidControllerScenarioDescription": "ПИД-регулятор для аналоговых выходов.",
+      "pidControllerScenarioDescription": "ПИД-регулятор для аналоговых выходов — клапанов, заслонок, частотных преобразователей (0–10 В, 4–20 мА, 0–100 %).<br><br>Сценарий считывает датчик, каждый интервал пересчёта рассчитывает требуемую мощность 0–100 % и пересчитывает её в диапазон каждого актуатора (минимум, максимум) согласно режиму прямой или обратный.",
       "pidControllerDefaultInputName": "ПИД-регулятор",
-      "pidControllerSensorTitle": "Входной датчик",
+      "pidControllerSensorTitle": "Канал температуры",
       "pidControllerSetpointTitle": "Уставка",
       "pidControllerDeadbandTitle": "Зона нечувствительности",
       "pidControllerDeadbandDescription": "В пределах ±зоны от уставки компоненты P/I/D умножаются на 0.1, чтобы избежать частых переключений",
@@ -2553,6 +2566,7 @@
       "pidControllerSetpointLimitsMinTitle": "Нижняя",
       "pidControllerSetpointLimitsMaxTitle": "Верхняя",
       "pidControllerCalcPeriodTitle": "Интервал пересчёта ПИД (с)",
+      "pidControllerCalcPeriodDescription": "Как часто ПИД пересчитывает мощность. Меньше — быстрее реакция.",
       "pidControllerActuatorsTitle": "Выход",
       "pidControllerActuatorsDescription": "Аналоговые выходы, управляемые ПИД-регулятором:",
       "pidControllerActuatorObjTitle": "Выход",
