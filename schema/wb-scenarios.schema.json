@@ -1879,7 +1879,7 @@
                 },
                 "minLength": 3
               },
-              "inverted": {
+              "invertSourceValue": {
                 "type": "boolean",
                 "title": "channelMapInvertedTitle",
                 "default": false,
