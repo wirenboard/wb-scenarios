@@ -15,10 +15,14 @@
 
 - Массив связок (`mqttTopicsLinks`): каждая связывает канал A и канал B с заданным направлением
 - Три направления: `forward` (A → B), `backward` (B → A), `both` (A ↔ B)
+- Опциональный флаг `invertSourceValue` (по умолчанию `false`) — применяет логическое НЕ
+  после булевой конверсии при копировании; источник любой, цель направления
+  должна быть `switch`/`alarm` (для `both` — оба канала). Старые конфиги
+  без этого поля работают как раньше, миграции не требуются
 - Несколько связок в одном сценарии
 - Несколько связок с одним и тем же каналом в роли источника — все целевые каналы обновляются
 - Включение/выключение через `rule_enabled`
-- Версия 1: только копирование, без трансформаций
+- Версия 1: копирование и логическая инверсия, без числовых трансформаций
 
 ### 1.3. Качественные цели
 
@@ -110,13 +114,25 @@ defineRule({
     var sourceKey = devName + '/' + cellName;
     var targets = sourceMap[sourceKey];
     for (var i = 0; i < targets.length; i++) {
-      if (dev[targets[i]] !== newValue) {
-        dev[targets[i]] = newValue;
+      var target = targets[i].target;
+      var invertSourceValue = targets[i].invertSourceValue;
+      var targetType = dev[target + '#type'];
+      var converted = convertValueForType(
+        newValue,
+        targetType,
+        invertSourceValue
+      );
+      if (dev[target] !== converted) {
+        dev[target] = converted;
       }
     }
   }
 });
 ```
+
+Реальный код дополнительно содержит ветку для pushbutton-target
+(cascade counter, см. 4.4); здесь она опущена для наглядности
+основной идеи.
 
 **Преимущества:**
 
@@ -126,27 +142,31 @@ defineRule({
 
 ### 4.2. Lookup-таблица «источник : цели»
 
-Для быстрого поиска целевых каналов по источнику строится `sourceMap` при инициализации с учётом направления:
+Для быстрого поиска целевых каналов по источнику строится `sourceMap` при инициализации с учётом направления и флага `invertSourceValue`:
 
 ```
 function buildSourceMap(mqttTopicsLinks) {
   var map = {};
   for (var i = 0; i < mqttTopicsLinks.length; i++) {
-    var l = mqttTopicsLinks[i];
-    if (l.direction === 'forward') {
-      addToMap(map, l.mqttTopicA, l.mqttTopicB);
-    } else if (l.direction === 'backward') {
-      addToMap(map, l.mqttTopicB, l.mqttTopicA);
-    } else if (l.direction === 'both') {
-      addToMap(map, l.mqttTopicA, l.mqttTopicB);
-      addToMap(map, l.mqttTopicB, l.mqttTopicA);
+    var link = mqttTopicsLinks[i];
+    var invertSourceValue = link.invertSourceValue === true;
+    if (link.direction === 'forward') {
+      addToMap(map, link.mqttTopicA, link.mqttTopicB, invertSourceValue);
+    } else if (link.direction === 'backward') {
+      addToMap(map, link.mqttTopicB, link.mqttTopicA, invertSourceValue);
+    } else if (link.direction === 'both') {
+      addToMap(map, link.mqttTopicA, link.mqttTopicB, invertSourceValue);
+      addToMap(map, link.mqttTopicB, link.mqttTopicA, invertSourceValue);
     }
   }
   return map;
 }
 ```
 
-Это позволяет за O(1) найти все цели для сработавшего источника.
+Значения карты — `Array<{target, invertSourceValue}>`, что позволяет хранить
+флаг инверсии для каждой пары source→target. Это позволяет за O(1) найти
+все цели для сработавшего источника и применить инверсию там, где она
+нужна.
 
 ### 4.3. Защита от петель
 
@@ -162,6 +182,26 @@ function buildSourceMap(mqttTopicsLinks) {
 Дополнительно `validateCfg` проверяет дублирование и перекрытие связок: если одна и та же пара каналов
 указана несколько раз, в лог пишется warning. При перевёрнутом порядке каналов (A/B и B/A) направление
 нормализуется для корректного сравнения (`forward` и `backward` взаимозаменяемы).
+
+**Конфликт смешанной инверсии.** На одной паре каналов нельзя одновременно
+иметь связки с `invertSourceValue: true` и `invertSourceValue: false`:
+
+- `forward` (inv=false) + `forward` (inv=true): оба правила пишут в B
+  противоположные значения, побеждает последняя запись (недетерминированно).
+- `both` (inv=false) + любая `invertSourceValue: true` на той же паре: одна из веток
+  `both` пересекается с инвертированной целью → тот же конфликт + каскад.
+- `forward` (inv=false) + `backward` (inv=true): бесконечный каскад
+  A→B→!A→B→… с противоположными значениями каждого шага, проверка
+  `dev[target] !== newValue` не гасит его.
+
+Поэтому при `samePair` любая разница в `!!link.invertSourceValue` отвергается с
+`log.error` и `return false` — сценарий не инициализируется.
+
+Внутри одной группы с одинаковым флагом инверсии логика дубликатов/перекрытий
+работает как обычно: `both` покрывает `forward`/`backward` (warning),
+повтор того же направления — дубликат (warning). Комбинация
+`forward` + `backward` с одинаковым `invertSourceValue` остаётся разрешённой
+(двусторонний паттерн).
 
 ### 4.4. Поддержка pushbutton (cascade counter)
 
@@ -206,20 +246,41 @@ function buildSourceMap(mqttTopicsLinks) {
 и они не совпадают — логируется `warning`. Сценарий при этом **не блокируется** — копирование работает
 как обычно, но в виртуальном устройстве появляется контрол-предупреждение.
 
+**Жёсткая проверка для `invertSourceValue: true`.** Инверсия — это `!`, применённое
+поверх стандартной булевой конверсии в `convertValueForType`. То есть
+проверять надо только тип _цели_ направления, а источник может быть любым
+(он всё равно проходит через toBoolean → !):
+
+- `forward` (A → B): требуется B = `switch`/`alarm`.
+- `backward` (B → A): требуется A = `switch`/`alarm`.
+- `both` (A ↔ B): требуются оба, потому что цель в обе стороны.
+
+Если соответствующий target — не `switch` и не `alarm` (включая
+`pushbutton`, числовые и строковые типы), валидация завершается
+с `log.error` и `return false`. Это в отличие от обычной проверки
+совместимости типов выше, где сценарий продолжает работать
+с предупреждением.
+
 ### 4.6. Приведение типов значений при копировании
 
 Перед записью в целевой канал значение приводится к его типу
 (`dev[target + '#type']`). Правила близки к стандартному ES5
 coercion (с учётом конвенций Wiren Board MQTT), но содержат
 спец-кейс для строковых булевых значений в `switch`/`alarm`
-(см. ниже). Реализация — функция `convertValueForType(value, targetType)`:
+(см. ниже). Реализация — функция
+`convertValueForType(value, targetType, invertSourceValue)`:
 
-| Тип цели                                                   | Преобразование                                       |
-| ---------------------------------------------------------- | ---------------------------------------------------- |
-| `switch`, `alarm`                                          | `Boolean(value)` со спец-кейсом для строк (см. ниже) |
-| `text`, `rgb`                                              | `String(value)`                                      |
-| `range`, `value`, `unixtime`, `w1-id` + deprecated numeric | `Number(value)`, при `NaN` → `0` + warning           |
-| Неизвестный                                                | возвращается как есть + warning                      |
+| Тип цели                                                   | Преобразование                                                                |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `switch`, `alarm`                                          | `toBoolean(value)` со спец-кейсом для строк, затем `!` если invertSourceValue |
+| `text`, `rgb`                                              | `String(value)`                                                               |
+| `range`, `value`, `unixtime`, `w1-id` + deprecated numeric | `Number(value)`, при `NaN` → `0` + warning                                    |
+| Неизвестный                                                | возвращается как есть + warning                                               |
+
+Параметр `invertSourceValue` приходит из записи карты `sourceMap` для каждой
+пары source→target и имеет эффект только на булевых типах. Для остальных
+типов он игнорируется (валидация уже не пропустит `invertSourceValue: true` со
+строковыми/числовыми/pushbutton **целями** — источник может быть любым).
 
 `pushbutton` обрабатывается отдельно в `createLinkRule`: для него
 записывается `true` (значение неважно — важен сам факт записи),
@@ -277,7 +338,12 @@ ChannelMapScenario extends ScenarioBase
 │   → каждый link: mqttTopicA и mqttTopicB заполнены
 │   → mqttTopicA !== mqttTopicB (нет прямых петель)
 │   → direction: 'forward', 'backward', или 'both'
-│   → проверка дубликатов/перекрытий (warning, нормализация направления)
+│   → для invertSourceValue=true: target направления = switch/alarm
+│     (forward→B, backward→A, both→оба; error → return false)
+│   → конфликт смешанной инверсии на той же паре
+│     (error → return false)
+│   → проверка дубликатов/перекрытий внутри одной группы с одинаковым флагом
+│     (warning, нормализация направления)
 │   → проверка типов (warning, hasIncorrectLinks)
 │   → проверка min/max (warning, hasIncorrectLinks)
 │
@@ -313,6 +379,9 @@ ChannelMapScenario extends ScenarioBase
   - `mqttTopicA` — MQTT-топик канала A (wb-autocomplete)
   - `direction` — направление: `forward`, `backward`, `both`
   - `mqttTopicB` — MQTT-топик канала B (wb-autocomplete)
+  - `invertSourceValue` — checkbox, опциональное, default `false` (после `mqttTopicB`,
+    перед кнопкой удаления строки). Не входит в `required` — старые
+    конфиги без поля валидны и работают как раньше.
 
 Скрытые поля:
 
@@ -344,11 +413,12 @@ ChannelMapScenario extends ScenarioBase
 
 **Структура элемента `mqttTopicsLinks`:**
 
-| Поле         | Тип    | Описание                                                     |
-| ------------ | ------ | ------------------------------------------------------------ |
-| `mqttTopicA` | string | MQTT-топик канала A: `"device/control"`                      |
-| `direction`  | string | Направление: `forward` (A→B), `backward` (B→A), `both` (A↔B) |
-| `mqttTopicB` | string | MQTT-топик канала B: `"device/control"`                      |
+| Поле                | Тип     | Описание                                                                                                                               |
+| ------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `mqttTopicA`        | string  | MQTT-топик канала A: `"device/control"`                                                                                                |
+| `direction`         | string  | Направление: `forward` (A→B), `backward` (B→A), `both` (A↔B)                                                                           |
+| `mqttTopicB`        | string  | MQTT-топик канала B: `"device/control"`                                                                                                |
+| `invertSourceValue` | boolean | Опциональное (default `false`). Логическое НЕ при копировании. Цель направления должна быть `switch`/`alarm`; для `both` — оба канала. |
 
 ---
 
@@ -437,6 +507,38 @@ cascade counter (см. 4.4): эхо определяется через `echoExp
 Это отступление от чистой ES5-семантики, но соответствует
 ожиданиям пользователя: «строка false должна стать булевым false».
 
+### 9.16. `invertSourceValue: true` с не-boolean target
+
+Если пользователь установил флаг `invertSourceValue`, но _target_ выбранного
+направления — не `switch`/`alarm` (например, числовой, строковый или
+pushbutton), `validateCfg` логирует `error` и возвращает `false` —
+сценарий не инициализируется.
+
+Проверяется только target: для `forward` это B, для `backward` это A,
+для `both` — оба канала. Источник в одностороннем направлении может
+быть любого типа: он проходит через стандартную булеву конверсию
+в `convertValueForType`, после чего применяется `!`. Это означает,
+что разрешены сценарии типа «число → инвертированный switch» или
+«text → инвертированный alarm».
+
+Жёсткое поведение (error, не warning) — сознательное: молчаливое
+игнорирование флага при некорректном target скрыло бы проблему
+конфигурации.
+
+### 9.17. Старые конфигурации без поля `invertSourceValue`
+
+Поле `invertSourceValue` опциональное и не входит в `required`. Старые конфиги
+без этого поля валидны: `link.invertSourceValue === true` даёт `false`, и связка
+работает как обычное копирование. Миграция не нужна.
+
+### 9.18. Смешанные `invertSourceValue` на одной паре каналов
+
+Если на одной паре каналов есть и `invertSourceValue: true`, и `invertSourceValue: false`
+связки (в любых направлениях), `validateCfg` возвращает `error → false`.
+См. 4.3 для деталей: либо запись противоположных значений в один
+target (недетерминированно), либо бесконечный каскад, который проверка
+`dev[target] !== newValue` не гасит.
+
 ---
 
 ## 10. Статус реализации
@@ -469,13 +571,26 @@ cascade counter (см. 4.4): эхо определяется через `echoExp
 - Проверка дубликатов/перекрытий связок с нормализацией направления
 - Документация обновлена (README.md, arc42)
 
+### Этап 6: Флаг `invertSourceValue`
+
+- Опциональное поле `invertSourceValue: boolean` (default `false`) в каждой связке;
+  схема не меняет `required` — миграции не нужны.
+- `buildSourceMap` хранит `{target, invertSourceValue}` для каждой пары
+  source→target; `convertValueForType` применяет `!` поверх булевой
+  конверсии для `switch`/`alarm`.
+- Валидация: при `invertSourceValue: true` цель направления обязана быть
+  `switch`/`alarm` (`forward → B`, `backward → A`, `both → оба`),
+  иначе `error → return false`.
+- Конфликт смешанных `!!invertSourceValue` на одной паре каналов — `error → return false`
+  (см. 4.3 / 9.18).
+
 ---
 
 ## 11. Технический долг / Возможные улучшения
 
-| Проблема                                              | Приоритет | Предложение                                                                                 |
-| ----------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------- |
-| Нет трансформаций                                     | Средний   | v2: опциональное поле `transform` в каждом link                                             |
-| Кросс-сценарные петли не проверяются                  | Низкий    | Глобальный реестр всех связок                                                               |
-| Нет индикации последней активности                    | Низкий    | Контрол `last_activity` с временем последнего копирования                                   |
-| Pushbutton без retained value блокирует инициализацию | Средний   | `isControlReady()` в ScenarioBase считать контрол готовым по наличию `#type`, а не значения |
+| Проблема                                              | Приоритет | Предложение                                                                                                               |
+| ----------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Нет числовых трансформаций                            | Средний   | v2: опциональные поля `transform`/`scale`/`offset` в каждом link (логическая инверсия уже есть через `invertSourceValue`) |
+| Кросс-сценарные петли не проверяются                  | Низкий    | Глобальный реестр всех связок                                                                                             |
+| Нет индикации последней активности                    | Низкий    | Контрол `last_activity` с временем последнего копирования                                                                 |
+| Pushbutton без retained value блокирует инициализацию | Средний   | `isControlReady()` в ScenarioBase считать контрол готовым по наличию `#type`, а не значения                               |
