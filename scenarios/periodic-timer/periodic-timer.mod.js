@@ -28,6 +28,15 @@ var periodicTimerActionsTable = {
   setEnable: aTable.actionsTable.setEnable,
   setDisable: aTable.actionsTable.setDisable,
   setValue: aTable.actionsTable.setValue,
+  setText: aTable.actionsTable.setText,
+  setColor: aTable.actionsTable.setColor,
+};
+
+// Actions that carry a payload in initValue/reverseValue (vs. on/off actions)
+var VALUE_BEARING_ACTIONS = {
+  setValue: true,
+  setText: true,
+  setColor: true,
 };
 
 var loggerFileLabel = 'WBSC-periodic-timer-mod';
@@ -59,9 +68,9 @@ var MAX_DAYS_AHEAD = 8; // today + 7
 /**
  * @typedef {Object} ControlConfig
  * @property {string} mqttTopicName - MQTT topic 'device/control'
- * @property {'setEnable'|'setDisable'|'setValue'} behaviorType
- * @property {number} [initValue] - setValue: value to apply on start
- * @property {number} [reverseValue] - setValue: value to restore on stop
+ * @property {'setEnable'|'setDisable'|'setValue'|'setText'|'setColor'} behaviorType
+ * @property {number|string} [initValue] - value-bearing actions: value to apply on start
+ * @property {number|string} [reverseValue] - value-bearing actions: value to restore on stop
  */
 
 /**
@@ -162,20 +171,28 @@ function validateControls(controls, table) {
       );
       return false;
     }
-    if (ctrl.behaviorType === 'setValue') {
-      if (typeof ctrl.initValue !== 'number') {
+    if (VALUE_BEARING_ACTIONS[ctrl.behaviorType]) {
+      if (ctrl.initValue === undefined || ctrl.reverseValue === undefined) {
         log.error(
-          "Periodic Timer validation error: control '{}': initValue must be a number",
-          ctrl.mqttTopicName
+          "Periodic Timer validation error: control '{}': initValue and reverseValue are required for '{}'",
+          ctrl.mqttTopicName,
+          ctrl.behaviorType
         );
         return false;
       }
-      if (typeof ctrl.reverseValue !== 'number') {
-        log.error(
-          "Periodic Timer validation error: control '{}': reverseValue must be a number",
-          ctrl.mqttTopicName
-        );
-        return false;
+      // setValue accepts numbers stored as number or numeric string;
+      // setText/setColor carry strings, so only setValue needs the numeric check
+      if (ctrl.behaviorType === 'setValue') {
+        if (
+          isNaN(Number(ctrl.initValue)) ||
+          isNaN(Number(ctrl.reverseValue))
+        ) {
+          log.error(
+            "Periodic Timer validation error: control '{}': initValue and reverseValue must be numeric",
+            ctrl.mqttTopicName
+          );
+          return false;
+        }
       }
     }
   }
@@ -649,8 +666,9 @@ function executeReverse(controls) {
           dev[ctrl.mqttTopicName],
           null
         );
-      } else if (ctrl.behaviorType === 'setValue') {
-        newValue = periodicTimerActionsTable.setValue.handler(
+      } else if (VALUE_BEARING_ACTIONS[ctrl.behaviorType]) {
+        // setValue/setText/setColor: reverse applies reverseValue with the same handler
+        newValue = periodicTimerActionsTable[ctrl.behaviorType].handler(
           dev[ctrl.mqttTopicName],
           ctrl.reverseValue
         );

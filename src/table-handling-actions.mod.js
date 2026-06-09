@@ -42,7 +42,7 @@ function toggle(actualValue, actionValue) {
  * @returns {number} Returns new control value
  */
 function setValue(actualValue, actionValue) {
-  var newCtrlValue = actionValue;
+  var newCtrlValue = Number(actionValue);
   return newCtrlValue;
 }
 
@@ -53,7 +53,7 @@ function setValue(actualValue, actionValue) {
  * @returns {number} Returns new control value
  */
 function increaseValueBy(actualValue, actionValue) {
-  var newCtrlValue = actualValue + actionValue;
+  var newCtrlValue = actualValue + Number(actionValue);
   return newCtrlValue;
 }
 
@@ -64,8 +64,35 @@ function increaseValueBy(actualValue, actionValue) {
  * @returns {number} Returns new control value
  */
 function decreaseValueBy(actualValue, actionValue) {
-  var newCtrlValue = actualValue - actionValue;
+  var newCtrlValue = actualValue - Number(actionValue);
   return newCtrlValue;
+}
+
+/**
+ * Action to set a text control value to actionValue
+ * @param {string} actualValue - Current state of the control
+ * @param {string} actionValue - Text set by user
+ * @returns {string} Returns new control value
+ */
+function setText(actualValue, actionValue) {
+  var newCtrlValue = actionValue;
+  return newCtrlValue;
+}
+
+/**
+ * Action to set an rgb control to actionValue color
+ * The color picker stores a hex string (#rrggbb), but an rgb
+ * control expects the "R;G;B" decimal format
+ * @param {string} actualValue - Current state of the control
+ * @param {string} actionValue - Hex color set by user (e.g. "#ff8040")
+ * @returns {string} Color in "R;G;B" format (e.g. "255;128;64")
+ */
+function setColor(actualValue, actionValue) {
+  var hex = String(actionValue).replace('#', '');
+  var r = parseInt(hex.substr(0, 2), 16);
+  var g = parseInt(hex.substr(2, 2), 16);
+  var b = parseInt(hex.substr(4, 2), 16);
+  return r + ';' + g + ';' + b;
 }
 
 /**
@@ -98,6 +125,14 @@ var actionsTable = {
   decreaseValueBy: {
     reqCtrlTypes: ['value', 'range'],
     handler: decreaseValueBy,
+  },
+  setText: {
+    reqCtrlTypes: ['text'],
+    handler: setText,
+  },
+  setColor: {
+    reqCtrlTypes: ['rgb'],
+    handler: setColor,
   },
 };
 
