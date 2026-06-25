@@ -891,6 +891,7 @@ function remainingTimeToLightOffHandler(self, newValue, devName, cellName) {
       clearTimeout(self.ctx.lightOffTimerId);
     }
     self.ctx.lightOffTimerId = setTimeout(function () {
+      self.ctx.lightOffTimerId = null;
       updateRemainingLightOffTime(self);
     }, 1000);
   } else {
@@ -1015,6 +1016,7 @@ function remainingTimeToLogicEnableHandler(
       clearTimeout(self.ctx.logicEnableTimerId);
     }
     self.ctx.logicEnableTimerId = setTimeout(function () {
+      self.ctx.logicEnableTimerId = null;
       updateRemainingLogicEnableTime(self);
     }, 1000);
   } else {
