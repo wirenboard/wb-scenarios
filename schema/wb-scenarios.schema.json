@@ -181,7 +181,7 @@
             }
           },
           "items": {
-            "id": "devicesControlActionItem",
+            "id": "urn:wb:devicesControlActionItem",
             "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
@@ -239,7 +239,7 @@
                 "default": "",
                 "watch": {
                   "wbActionType": [
-                    "devicesControlActionItem",
+                    "urn:wb:devicesControlActionItem",
                     "behaviorType"
                   ]
                 },
@@ -1124,7 +1124,7 @@
             }
           },
           "items": {
-            "id": "scheduleActionItem",
+            "id": "urn:wb:scheduleActionItem",
             "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
@@ -1181,7 +1181,10 @@
                 "description": "outControls_actionValue_description",
                 "default": "",
                 "watch": {
-                  "wbActionType": ["scheduleActionItem", "behaviorType"]
+                  "wbActionType": [
+                    "urn:wb:scheduleActionItem",
+                    "behaviorType"
+                  ]
                 },
                 "options": {
                   "dependencies": {
@@ -1419,6 +1422,7 @@
             }
           },
           "items": {
+            "id": "urn:wb:astronomicalTimerActionItem",
             "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
@@ -1450,7 +1454,9 @@
                   "setDisable",
                   "setValue",
                   "increaseValueBy",
-                  "decreaseValueBy"
+                  "decreaseValueBy",
+                  "setText",
+                  "setColor"
                 ],
                 "default": "setDisable",
                 "options": {
@@ -1460,22 +1466,32 @@
                     "Disable (switch)",
                     "generalEnumSetValue",
                     "Increase Value By",
-                    "Decrease Value By"
+                    "Decrease Value By",
+                    "generalEnumSetText",
+                    "generalEnumSetColor"
                   ]
                 }
               },
               "actionValue": {
-                "type": "number",
+                "_format": "wb-action-value",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": 0,
+                "default": "",
+                "watch": {
+                  "wbActionType": [
+                    "urn:wb:astronomicalTimerActionItem",
+                    "behaviorType"
+                  ]
+                },
                 "options": {
                   "dependencies": {
                     "behaviorType": [
                       "setValue",
                       "increaseValueBy",
-                      "decreaseValueBy"
+                      "decreaseValueBy",
+                      "setText",
+                      "setColor"
                     ]
                   }
                 }
@@ -1709,7 +1725,7 @@
             }
           },
           "items": {
-            "id": "periodicTimerActionItem",
+            "id": "urn:wb:periodicTimerActionItem",
             "title": "generalActionObjTitle",
             "type": "object",
             "properties": {
@@ -1758,7 +1774,10 @@
                 "title": "periodicTimerInitValueTitle",
                 "default": "",
                 "watch": {
-                  "wbActionType": ["periodicTimerActionItem", "behaviorType"]
+                  "wbActionType": [
+                    "urn:wb:periodicTimerActionItem",
+                    "behaviorType"
+                  ]
                 },
                 "options": {
                   "dependencies": {
@@ -1772,7 +1791,10 @@
                 "title": "periodicTimerReverseValueTitle",
                 "default": "",
                 "watch": {
-                  "wbActionType": ["periodicTimerActionItem", "behaviorType"]
+                  "wbActionType": [
+                    "urn:wb:periodicTimerActionItem",
+                    "behaviorType"
+                  ]
                 },
                 "options": {
                   "dependencies": {
