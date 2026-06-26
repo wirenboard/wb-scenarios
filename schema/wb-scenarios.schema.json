@@ -232,7 +232,7 @@
                 }
               },
               "actionValue": {
-                "_format": "wb-action-value",
+                "_format": "wb-typed-value",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
@@ -1175,7 +1175,7 @@
                 }
               },
               "actionValue": {
-                "_format": "wb-action-value",
+                "_format": "wb-typed-value",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
@@ -1473,7 +1473,7 @@
                 }
               },
               "actionValue": {
-                "_format": "wb-action-value",
+                "_format": "wb-typed-value",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
@@ -1769,7 +1769,7 @@
                 }
               },
               "initValue": {
-                "_format": "wb-action-value",
+                "_format": "wb-typed-value",
                 "propertyOrder": 3,
                 "title": "periodicTimerInitValueTitle",
                 "default": "",
@@ -1786,7 +1786,7 @@
                 }
               },
               "reverseValue": {
-                "_format": "wb-action-value",
+                "_format": "wb-typed-value",
                 "propertyOrder": 4,
                 "title": "periodicTimerReverseValueTitle",
                 "default": "",
