@@ -231,7 +231,7 @@
                 }
               },
               "actionValue": {
-                "_format": "wb-typed-value",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
@@ -255,70 +255,13 @@
                     ]
                   }
                 }
-              },
-              "demoTableValue": {
-                "_format": "wb-typed-value",
-                "propertyOrder": 4,
-                "title": "Demo: in-table value (driven by out-of-table field)",
-                "default": "",
-                "options": {
-                  "dynamicType": {
-                    "source": "tableValueType",
-                    "map": {
-                      "color": ["wantColor"],
-                      "text": ["wantText"],
-                      "number": ["wantNumber"],
-                      "none": ["wantNone"]
-                    }
-                  }
-                }
               }
             },
             "required": ["control", "behaviorType"]
           }
-        },
-        "tableValueType": {
-          "type": "string",
-          "propertyOrder": 6,
-          "title": "Demo: type for in-table value",
-          "enum": ["wantColor", "wantText", "wantNumber", "wantNone"],
-          "default": "wantNumber",
-          "options": {
-            "grid_columns": 12,
-            "enum_titles": ["Color", "Text", "Number", "Hidden (none)"]
-          }
-        },
-        "demoMode": {
-          "type": "string",
-          "propertyOrder": 7,
-          "title": "Demo: out-of-table mode",
-          "enum": ["asColor", "asText", "asNumber", "asHidden"],
-          "default": "asNumber",
-          "options": {
-            "grid_columns": 12,
-            "enum_titles": ["Color", "Text", "Number", "Hidden (none)"]
-          }
-        },
-        "demoValue": {
-          "_format": "wb-typed-value",
-          "propertyOrder": 8,
-          "title": "Demo: out-of-table value",
-          "default": "",
-          "options": {
-            "grid_columns": 12,
-            "dynamicType": {
-              "source": "demoMode",
-              "map": {
-                "color": ["asColor"],
-                "text": ["asText"],
-                "number": ["asNumber"],
-                "none": ["asHidden"]
-              }
-            }
-          }
         }
       },
-      "required": ["scenarioType", "name", "inControls", "outControls", "tableValueType", "demoMode", "demoValue"]
+      "required": ["scenarioType", "name", "inControls", "outControls"]
     },
     "lightControl": {
       "title": "lightControlScenarioName",
@@ -1232,7 +1175,7 @@
                 }
               },
               "actionValue": {
-                "_format": "wb-typed-value",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
@@ -1531,7 +1474,7 @@
                 }
               },
               "actionValue": {
-                "_format": "wb-typed-value",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
@@ -1828,7 +1771,7 @@
                 }
               },
               "initValue": {
-                "_format": "wb-typed-value",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "periodicTimerInitValueTitle",
                 "default": "",
@@ -1847,7 +1790,7 @@
                 }
               },
               "reverseValue": {
-                "_format": "wb-typed-value",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 4,
                 "title": "periodicTimerReverseValueTitle",
                 "default": "",
