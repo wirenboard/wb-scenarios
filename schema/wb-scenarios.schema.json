@@ -235,14 +235,17 @@
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": "",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
                     "map": {
                       "color": ["setColor"],
                       "text": ["setText"],
-                      "number": ["setValue", "increaseValueBy", "decreaseValueBy"]
+                      "number": [
+                        "setValue",
+                        "increaseValueBy",
+                        "decreaseValueBy"
+                      ]
                     }
                   },
                   "dependencies": {
@@ -1179,14 +1182,17 @@
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": "",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
                     "map": {
                       "color": ["setColor"],
                       "text": ["setText"],
-                      "number": ["setValue", "increaseValueBy", "decreaseValueBy"]
+                      "number": [
+                        "setValue",
+                        "increaseValueBy",
+                        "decreaseValueBy"
+                      ]
                     }
                   },
                   "dependencies": {
@@ -1478,14 +1484,17 @@
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": "",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
                     "map": {
                       "color": ["setColor"],
                       "text": ["setText"],
-                      "number": ["setValue", "increaseValueBy", "decreaseValueBy"]
+                      "number": [
+                        "setValue",
+                        "increaseValueBy",
+                        "decreaseValueBy"
+                      ]
                     }
                   },
                   "dependencies": {
@@ -1774,7 +1783,6 @@
                 "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "periodicTimerInitValueTitle",
-                "default": "",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
@@ -1793,7 +1801,6 @@
                 "_format": "wb-dynamic-type",
                 "propertyOrder": 4,
                 "title": "periodicTimerReverseValueTitle",
-                "default": "",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
