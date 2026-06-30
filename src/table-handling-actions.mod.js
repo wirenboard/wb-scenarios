@@ -81,8 +81,9 @@ function setText(actualValue, actionValue) {
 
 /**
  * Action to set an rgb control to actionValue color
- * The color picker stores a hex string (#rrggbb), but an rgb
- * control expects the "R;G;B" decimal format
+ * The browser's native color input (used by the wb-dynamic-type widget)
+ * always yields a hex string (#rrggbb); a WB rgb control expects the
+ * "R;G;B" decimal format, so we convert here at publish time
  * @param {string} actualValue - Current state of the control
  * @param {string} actionValue - Hex color set by user (e.g. "#ff8040")
  * @returns {string} Color in "R;G;B" format (e.g. "255;128;64")
