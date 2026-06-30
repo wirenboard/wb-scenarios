@@ -212,7 +212,9 @@
                   "setDisable",
                   "setValue",
                   "increaseValueBy",
-                  "decreaseValueBy"
+                  "decreaseValueBy",
+                  "setText",
+                  "setColor"
                 ],
                 "default": "setDisable",
                 "options": {
@@ -222,22 +224,37 @@
                     "Disable (switch)",
                     "generalEnumSetValue",
                     "Increase Value By",
-                    "Decrease Value By"
+                    "Decrease Value By",
+                    "generalEnumSetText",
+                    "generalEnumSetColor"
                   ]
                 }
               },
               "actionValue": {
-                "type": "number",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": 0,
                 "options": {
+                  "dynamicType": {
+                    "source": "behaviorType",
+                    "map": {
+                      "color": ["setColor"],
+                      "text": ["setText"],
+                      "number": [
+                        "setValue",
+                        "increaseValueBy",
+                        "decreaseValueBy"
+                      ]
+                    }
+                  },
                   "dependencies": {
                     "behaviorType": [
                       "setValue",
                       "increaseValueBy",
-                      "decreaseValueBy"
+                      "decreaseValueBy",
+                      "setText",
+                      "setColor"
                     ]
                   }
                 }
@@ -1142,7 +1159,9 @@
                   "setDisable",
                   "setValue",
                   "increaseValueBy",
-                  "decreaseValueBy"
+                  "decreaseValueBy",
+                  "setText",
+                  "setColor"
                 ],
                 "default": "setDisable",
                 "options": {
@@ -1152,22 +1171,37 @@
                     "Disable (switch)",
                     "generalEnumSetValue",
                     "Increase Value By",
-                    "Decrease Value By"
+                    "Decrease Value By",
+                    "generalEnumSetText",
+                    "generalEnumSetColor"
                   ]
                 }
               },
               "actionValue": {
-                "type": "number",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": 0,
                 "options": {
+                  "dynamicType": {
+                    "source": "behaviorType",
+                    "map": {
+                      "color": ["setColor"],
+                      "text": ["setText"],
+                      "number": [
+                        "setValue",
+                        "increaseValueBy",
+                        "decreaseValueBy"
+                      ]
+                    }
+                  },
                   "dependencies": {
                     "behaviorType": [
                       "setValue",
                       "increaseValueBy",
-                      "decreaseValueBy"
+                      "decreaseValueBy",
+                      "setText",
+                      "setColor"
                     ]
                   }
                 }
@@ -1427,7 +1461,9 @@
                   "setDisable",
                   "setValue",
                   "increaseValueBy",
-                  "decreaseValueBy"
+                  "decreaseValueBy",
+                  "setText",
+                  "setColor"
                 ],
                 "default": "setDisable",
                 "options": {
@@ -1437,22 +1473,37 @@
                     "Disable (switch)",
                     "generalEnumSetValue",
                     "Increase Value By",
-                    "Decrease Value By"
+                    "Decrease Value By",
+                    "generalEnumSetText",
+                    "generalEnumSetColor"
                   ]
                 }
               },
               "actionValue": {
-                "type": "number",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "generalActionValueTitle",
                 "description": "outControls_actionValue_description",
-                "default": 0,
                 "options": {
+                  "dynamicType": {
+                    "source": "behaviorType",
+                    "map": {
+                      "color": ["setColor"],
+                      "text": ["setText"],
+                      "number": [
+                        "setValue",
+                        "increaseValueBy",
+                        "decreaseValueBy"
+                      ]
+                    }
+                  },
                   "dependencies": {
                     "behaviorType": [
                       "setValue",
                       "increaseValueBy",
-                      "decreaseValueBy"
+                      "decreaseValueBy",
+                      "setText",
+                      "setColor"
                     ]
                   }
                 }
@@ -1710,35 +1761,57 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "outControls_behaviorType_title",
-                "enum": ["setEnable", "setDisable", "setValue"],
+                "enum": [
+                  "setEnable",
+                  "setDisable",
+                  "setValue",
+                  "setText",
+                  "setColor"
+                ],
                 "default": "setEnable",
                 "options": {
                   "enum_titles": [
                     "Enable (switch)",
                     "Disable (switch)",
-                    "generalEnumSetValue"
+                    "generalEnumSetValue",
+                    "generalEnumSetText",
+                    "generalEnumSetColor"
                   ]
                 }
               },
               "initValue": {
-                "type": "number",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
                 "title": "periodicTimerInitValueTitle",
-                "default": 0,
                 "options": {
+                  "dynamicType": {
+                    "source": "behaviorType",
+                    "map": {
+                      "color": ["setColor"],
+                      "text": ["setText"],
+                      "number": ["setValue"]
+                    }
+                  },
                   "dependencies": {
-                    "behaviorType": ["setValue"]
+                    "behaviorType": ["setValue", "setText", "setColor"]
                   }
                 }
               },
               "reverseValue": {
-                "type": "number",
+                "_format": "wb-dynamic-type",
                 "propertyOrder": 4,
                 "title": "periodicTimerReverseValueTitle",
-                "default": 0,
                 "options": {
+                  "dynamicType": {
+                    "source": "behaviorType",
+                    "map": {
+                      "color": ["setColor"],
+                      "text": ["setText"],
+                      "number": ["setValue"]
+                    }
+                  },
                   "dependencies": {
-                    "behaviorType": ["setValue"]
+                    "behaviorType": ["setValue", "setText", "setColor"]
                   }
                 }
               }
@@ -2214,9 +2287,13 @@
       "generalMqttTopicNamePlaceholder": "Device/Control",
       "generalBehaviorTypeTitle": "Trigger logic",
       "generalActionValueTitle": "Value",
+      "generalTextValueTitle": "Text value",
+      "generalColorValueTitle": "Color",
       "generalErrorRegexpPatternMessageGeneralType": "Value must be valid",
       "generalErrorRegexpPatternMessageMqttTopicName": "Does not match the format <device>/<control>",
       "generalEnumSetValue": "Set Value",
+      "generalEnumSetText": "Set Text",
+      "generalEnumSetColor": "Set Color",
       "generalSensorArrTitle": "Elements list",
       "generalActionsTitle": "Actions",
       "generalActionObjTitle": "Action",
@@ -2400,9 +2477,13 @@
       "generalMqttTopicNamePlaceholder": "Устройство/Контрол",
       "generalBehaviorTypeTitle": "Логика срабатывания",
       "generalActionValueTitle": "Значение",
+      "generalTextValueTitle": "Текстовое значение",
+      "generalColorValueTitle": "Цвет",
       "generalErrorRegexpPatternMessageGeneralType": "Значение должно быть корректным",
       "generalErrorRegexpPatternMessageMqttTopicName": "Не соответствует формату <устройство>/<контрол>",
       "generalEnumSetValue": "Установить значение",
+      "generalEnumSetText": "Установить текст",
+      "generalEnumSetColor": "Установить цвет",
       "generalSensorArrTitle": "Список элементов",
       "generalActionsTitle": "Действия",
       "generalActionObjTitle": "Действие",
