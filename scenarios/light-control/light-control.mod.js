@@ -13,6 +13,8 @@ var vdHelpers = require('virtual-device-helpers.mod');
 var aTable = require('registry-action-resolvers.mod');
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
+var isControlTypeValid =
+  require('scenarios-general-helpers.mod').isControlTypeValid;
 
 var loggerFileLabel = 'WBSC-light-control-mod';
 var log = new Logger(loggerFileLabel);
@@ -51,6 +53,7 @@ function LightControlScenario() {
   this.ctx = {
     scenarioActionInProgress: false, // scenario is currently changing lights
     scenarioTargetState: null, // true → should turn on, false → turn off
+    scenarioPendingCount: 0, // remaining own changes to confirm before finalize
     syncingLightOn: false, // flag to prevent recursion when syncing lightOn
     lightOffTimerId: null, // timer ID for turning off lights
     logicEnableTimerId: null, // timer ID for re-enabling automation logic
@@ -122,6 +125,34 @@ LightControlScenario.prototype.defineControlsWaitConfig = function (cfg) {
 };
 
 /**
+ * Validate outputs against the action registry
+ * @param {Array} lightDevices - Array of light device configs
+ * @returns {boolean} True if every output is valid
+ */
+function validateLightDevices(lightDevices) {
+  for (var i = 0; i < lightDevices.length; i++) {
+    var ctrl = lightDevices[i];
+    if (!aTable.actionsTable[ctrl.behaviorType]) {
+      log.error(
+        "Light-control validation error: behavior type '{}' not found",
+        ctrl.behaviorType
+      );
+      return false;
+    }
+    var reqCtrlTypes = aTable.actionsTable[ctrl.behaviorType].reqCtrlTypes;
+    if (!isControlTypeValid(ctrl.mqttTopicName, reqCtrlTypes)) {
+      log.error(
+        "Light-control validation error: control '{}' is not of valid type for '{}'",
+        ctrl.mqttTopicName,
+        ctrl.behaviorType
+      );
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Configuration validation
  * @param {LightControlConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid, false otherwise
@@ -173,6 +204,10 @@ LightControlScenario.prototype.validateCfg = function (cfg) {
       'Light-control initialization error: no motion, ' +
         'opening sensors and wall switches specified'
     );
+    return false;
+  }
+
+  if (!validateLightDevices(cfg.lightDevices)) {
     return false;
   }
 
@@ -458,30 +493,75 @@ function resetLogicEnableTimer(self) {
 }
 
 /**
- * Sets values for all devices based on behavior type
- * @param {Array} actionControlsArr - Array of controls with behavior type and values
- * @param {boolean} state - State to apply (true - allow, false - reset)
+ * Reset-value for a light device. Falls back to the type default when
+ * resetValue is absent or empty
+ * @param {Object} ctrl - Light device config (behaviorType, resetValue)
+ * @returns {number|string|undefined} Off-value to apply on reset
+ */
+function resolveResetValue(ctrl) {
+  if (ctrl.resetValue !== undefined && ctrl.resetValue !== '') {
+    return ctrl.resetValue;
+  }
+  if (ctrl.behaviorType === 'setValueNumericInput') {
+    return 0;
+  }
+  if (ctrl.behaviorType === 'setText') {
+    return '';
+  }
+  if (ctrl.behaviorType === 'setColor') {
+    return '#ffffff'; // white — default color of the wb-dynamic-type widget
+  }
+  return undefined;
+}
+
+/**
+ * Precompute each light device's published on/off value
+ * so the watchdog can compare control values
+ * @param {LightControlConfig} cfg - Configuration object
+ */
+function precomputeLightDeviceTargets(cfg) {
+  for (var i = 0; i < cfg.lightDevices.length; i++) {
+    var ctrl = cfg.lightDevices[i];
+    var entry = aTable.actionsTable[ctrl.behaviorType];
+    ctrl.resolvedOnValue = entry.launchResolver(null, ctrl.actionValue);
+    ctrl.resolvedOffValue = entry.resetResolver(
+      null,
+      resolveResetValue(ctrl)
+    );
+  }
+}
+
+/**
+ * Applies on (state=true) or off (state=false) value to every light device.
+ * @param {Array} actionControlsArr - Light device configs
+ * @param {boolean} state - true → apply on value, false → apply off value
+ * @returns {number} How many controls actually changed value (each fires one
+ *   watchdog callback). Lets the watchdog tell our own changes from external.
  */
 function setValueAllDevicesByBehavior(actionControlsArr, state) {
+  var changedCount = 0;
   for (var i = 0; i < actionControlsArr.length; i++) {
     var curMqttTopicName = actionControlsArr[i].mqttTopicName;
     var curUserAction = actionControlsArr[i].behaviorType;
-    var curActionValue = actionControlsArr[i].actionValue;
     var actualValue = dev[curMqttTopicName];
     var newCtrlValue;
     if (state === true) {
       newCtrlValue = aTable.actionsTable[curUserAction].launchResolver(
         actualValue,
-        curActionValue
+        actionControlsArr[i].actionValue
       );
     } else {
       newCtrlValue = aTable.actionsTable[curUserAction].resetResolver(
         actualValue,
-        curActionValue
+        resolveResetValue(actionControlsArr[i])
       );
+    }
+    if (newCtrlValue !== actualValue) {
+      changedCount++;
     }
     dev[curMqttTopicName] = newCtrlValue;
   }
+  return changedCount;
 }
 
 /**
@@ -904,6 +984,31 @@ function remainingTimeToLightOffHandler(self, newValue, devName, cellName) {
 }
 
 /**
+ * Drives all light devices to the on (true) or off (false) target and arms the
+ * watchdog to expect exactly the number of own changes that will fire.
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
+ * @param {boolean} targetState - true → apply on values, false → apply off values
+ */
+function applyScenarioState(self, targetState) {
+  self.ctx.scenarioTargetState = targetState;
+  var changed = setValueAllDevicesByBehavior(
+    self.cfg.lightDevices,
+    targetState
+  );
+  if (changed > 0) {
+    // Expect `changed` watchdog callbacks, finalize after the last one
+    self.ctx.scenarioActionInProgress = true;
+    self.ctx.scenarioPendingCount = changed;
+  } else {
+    // No values changed, then no callbacks will fire, mark the result directly
+    self.ctx.scenarioActionInProgress = false;
+    dev[self.genNames.vDevice + '/lastSwitchAction'] = targetState
+      ? lastActionType.SCENARIO_ON
+      : lastActionType.SCENARIO_OFF;
+  }
+}
+
+/**
  * Handler for light on control changes
  * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  * @param {boolean} newValue - New light state value
@@ -914,17 +1019,10 @@ function lightOnHandler(self, newValue, devName, cellName) {
   // Don't react if we updated the indicator ourselves
   if (self.ctx.syncingLightOn) return true;
 
-  var isLightSwitchedOn = newValue === true;
-  var isLightSwitchedOff = newValue === false;
-
-  if (isLightSwitchedOn) {
-    self.ctx.scenarioActionInProgress = true;
-    self.ctx.scenarioTargetState = true;
-    setValueAllDevicesByBehavior(self.cfg.lightDevices, true);
-  } else if (isLightSwitchedOff) {
-    self.ctx.scenarioActionInProgress = true;
-    self.ctx.scenarioTargetState = false;
-    setValueAllDevicesByBehavior(self.cfg.lightDevices, false);
+  if (newValue === true) {
+    applyScenarioState(self, true);
+  } else if (newValue === false) {
+    applyScenarioState(self, false);
   } else {
     log.error('Light on - has incorrect type: {}', newValue);
   }
@@ -1078,48 +1176,56 @@ function logicDisabledHandler(self, newValue, devName, cellName) {
  * @param {string} cellName - Cell name
  */
 function lightDevicesHandler(self, newValue, devName, cellName) {
-  var internalLightStatus = dev[self.genNames.vDevice + '/lightOn'];
+  var vd = self.genNames.vDevice;
+  var topicName = devName + '/' + cellName;
 
-  // Calculate the actual state of the entire group
+  // Group state by comparing each control to its on/off target
+  // a value matching neither counts as neither on nor off
   var onCnt = 0;
+  var offCnt = 0;
   for (var i = 0; i < self.cfg.lightDevices.length; i++) {
-    if (dev[self.cfg.lightDevices[i].mqttTopicName] === true) {
+    var devCfg = self.cfg.lightDevices[i];
+    var curValue = dev[devCfg.mqttTopicName];
+    if (curValue === devCfg.resolvedOnValue) {
       onCnt++;
+    } else if (curValue === devCfg.resolvedOffValue) {
+      offCnt++;
     }
   }
   var allLightOn = onCnt === self.cfg.lightDevices.length; // all on
-  var allLightOff = onCnt === 0; // all off
+  var allLightOff = offCnt === self.cfg.lightDevices.length; // all off
   var mixedState = !allLightOn && !allLightOff; // partially on/off
 
-  // Handle changes initiated by the scenario
+  // Our own change, the control matches the value we are applying to it
+  var changedCfg = findTopicConfig(topicName, self.cfg.lightDevices);
+  var expectedByScenario =
+    self.ctx.scenarioTargetState === true
+      ? changedCfg && changedCfg.resolvedOnValue
+      : changedCfg && changedCfg.resolvedOffValue;
   if (
     self.ctx.scenarioActionInProgress &&
-    newValue === internalLightStatus
+    changedCfg &&
+    newValue === expectedByScenario
   ) {
-    // While the final result hasn't been achieved → PARTIAL_BY_SCENARIO
-    if (mixedState) {
-      dev[self.genNames.vDevice + '/lastSwitchAction'] =
-        lastActionType.PARTIAL_BY_SCENARIO;
-      return; // wait for more changes to complete
+    // Consume one of our own pending changes, stay PARTIAL until the last one
+    self.ctx.scenarioPendingCount--;
+    if (self.ctx.scenarioPendingCount > 0) {
+      dev[vd + '/lastSwitchAction'] = lastActionType.PARTIAL_BY_SCENARIO;
+      return;
     }
 
-    // Final state achieved
+    // Last own change processed, then record the final state
     if (allLightOn && self.ctx.scenarioTargetState === true) {
-      dev[self.genNames.vDevice + '/lastSwitchAction'] =
-        lastActionType.SCENARIO_ON;
+      dev[vd + '/lastSwitchAction'] = lastActionType.SCENARIO_ON;
     } else if (allLightOff && self.ctx.scenarioTargetState === false) {
-      dev[self.genNames.vDevice + '/lastSwitchAction'] =
-        lastActionType.SCENARIO_OFF;
+      dev[vd + '/lastSwitchAction'] = lastActionType.SCENARIO_OFF;
     }
 
-    // Don't sync the lightOn indicator (it should already be correct)
-    if (
-      dev[self.genNames.vDevice + '/lightOn'] !==
-      self.ctx.scenarioTargetState
-    ) {
+    // Sync the lightOn indicator only if it diverged from the target
+    if (dev[vd + '/lightOn'] !== self.ctx.scenarioTargetState) {
       log.error('Not correct logic!');
       self.ctx.syncingLightOn = true;
-      dev[self.genNames.vDevice + '/lightOn'] = self.ctx.scenarioTargetState;
+      dev[vd + '/lightOn'] = self.ctx.scenarioTargetState;
       self.ctx.syncingLightOn = false;
     }
     // scenario finished switching
@@ -1129,40 +1235,28 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
   }
 
   // External change
-  var topicName = devName + '/' + cellName;
-  log.debug('External change detected for device: "{}"' + topicName);
+  log.debug('External change detected for device: "{}"', topicName);
   log.debug('newValue: {}', newValue);
 
-  if (newValue === false) {
-    log.debug(
-      'External control detected: Minimum one light turn-OFF externally'
-    );
-  } else if (newValue === true) {
-    log.debug(
-      'External control detected: Minimum one light turn-ON externally'
-    );
-  }
   // Determine action type
   if (mixedState) {
-    dev[self.genNames.vDevice + '/lastSwitchAction'] =
-      lastActionType.PARTIAL_EXT;
+    dev[vd + '/lastSwitchAction'] = lastActionType.PARTIAL_EXT;
     // Don't change lightOn in "partial" state
   } else if (allLightOn) {
-    dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_ON;
+    dev[vd + '/lastSwitchAction'] = lastActionType.EXT_ON;
 
     // Sync lightOn topic (all activated)
-    if (dev[self.genNames.vDevice + '/lightOn'] !== true) {
+    if (dev[vd + '/lightOn'] !== true) {
       self.ctx.syncingLightOn = true;
-      dev[self.genNames.vDevice + '/lightOn'] = true;
+      dev[vd + '/lightOn'] = true;
       self.ctx.syncingLightOn = false;
     }
   } else if (allLightOff) {
-    dev[self.genNames.vDevice + '/lastSwitchAction'] =
-      lastActionType.EXT_OFF;
+    dev[vd + '/lastSwitchAction'] = lastActionType.EXT_OFF;
     // Sync lightOn topic (all deactivated)
-    if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
+    if (dev[vd + '/lightOn'] !== false) {
       self.ctx.syncingLightOn = true;
-      dev[self.genNames.vDevice + '/lightOn'] = false;
+      dev[vd + '/lightOn'] = false;
       self.ctx.syncingLightOn = false;
     }
   }
@@ -1227,6 +1321,9 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    */
   log.debug('Start init light scenario');
   log.setLabel(loggerFileLabel + '/' + this.idPrefix);
+
+  // Resolve per-device on/off values once for the external-change watchdog
+  precomputeLightDeviceTargets(cfg);
 
   // Add all required controls to the virtual device
   addCustomControlsToVirtualDevice(this, cfg);
