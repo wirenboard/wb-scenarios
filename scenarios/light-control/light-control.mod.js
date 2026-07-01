@@ -558,25 +558,15 @@ function precomputeLightDeviceTargets(cfg) {
 function setValueAllDevicesByBehavior(actionControlsArr, state) {
   var changedCount = 0;
   for (var i = 0; i < actionControlsArr.length; i++) {
-    var curMqttTopicName = actionControlsArr[i].mqttTopicName;
-    var curUserAction = actionControlsArr[i].behaviorType;
-    var actualValue = dev[curMqttTopicName];
-    var newCtrlValue;
-    if (state === true) {
-      newCtrlValue = aTable.actionsTable[curUserAction].launchResolver(
-        actualValue,
-        actionControlsArr[i].actionValue
-      );
-    } else {
-      newCtrlValue = aTable.actionsTable[curUserAction].resetResolver(
-        actualValue,
-        resolveResetValue(actionControlsArr[i])
-      );
-    }
+    var ctrl = actionControlsArr[i];
+    var actualValue = dev[ctrl.mqttTopicName];
+    // Values are precomputed once in precomputeLightDeviceTargets, so the
+    // published value is exactly what the watchdog compares against
+    var newCtrlValue = state ? ctrl.resolvedOnValue : ctrl.resolvedOffValue;
     if (!controlValueEquals(newCtrlValue, actualValue)) {
       changedCount++;
     }
-    dev[curMqttTopicName] = newCtrlValue;
+    dev[ctrl.mqttTopicName] = newCtrlValue;
   }
   return changedCount;
 }
@@ -1019,6 +1009,7 @@ function applyScenarioState(self, targetState) {
   } else {
     // No values changed, then no callbacks will fire, mark the result directly
     self.ctx.scenarioActionInProgress = false;
+    self.ctx.scenarioTargetState = null;
     dev[self.genNames.vDevice + '/lastSwitchAction'] = targetState
       ? lastActionType.SCENARIO_ON
       : lastActionType.SCENARIO_OFF;
