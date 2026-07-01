@@ -515,6 +515,23 @@ function resolveResetValue(ctrl) {
 }
 
 /**
+ * Strict equality, but null/undefined count as ''. Empty text control
+ * publishes an empty payload and reads back as null
+ * @param {any} controlValue - Current control value
+ * @param {any} resolvedValue - Resolved on/off target
+ * @returns {boolean} Whether both represent the same value
+ */
+function controlValueEquals(controlValue, resolvedValue) {
+  var a =
+    controlValue === null || controlValue === undefined ? '' : controlValue;
+  var b =
+    resolvedValue === null || resolvedValue === undefined
+      ? ''
+      : resolvedValue;
+  return a === b;
+}
+
+/**
  * Precompute each light device's published on/off value
  * so the watchdog can compare control values
  * @param {LightControlConfig} cfg - Configuration object
@@ -556,7 +573,7 @@ function setValueAllDevicesByBehavior(actionControlsArr, state) {
         resolveResetValue(actionControlsArr[i])
       );
     }
-    if (newCtrlValue !== actualValue) {
+    if (!controlValueEquals(newCtrlValue, actualValue)) {
       changedCount++;
     }
     dev[curMqttTopicName] = newCtrlValue;
@@ -1186,9 +1203,9 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
   for (var i = 0; i < self.cfg.lightDevices.length; i++) {
     var devCfg = self.cfg.lightDevices[i];
     var curValue = dev[devCfg.mqttTopicName];
-    if (curValue === devCfg.resolvedOnValue) {
+    if (controlValueEquals(curValue, devCfg.resolvedOnValue)) {
       onCnt++;
-    } else if (curValue === devCfg.resolvedOffValue) {
+    } else if (controlValueEquals(curValue, devCfg.resolvedOffValue)) {
       offCnt++;
     }
   }
@@ -1205,7 +1222,7 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
   if (
     self.ctx.scenarioActionInProgress &&
     changedCfg &&
-    newValue === expectedByScenario
+    controlValueEquals(newValue, expectedByScenario)
   ) {
     // Consume one of our own pending changes, stay PARTIAL until the last one
     self.ctx.scenarioPendingCount--;
