@@ -21,6 +21,21 @@ var DAY_NAME_TO_NUMBER = constants.DAY_NAME_TO_NUMBER;
 var VALID_DAYS = constants.VALID_DAYS;
 var FULL_DAYS = constants.FULL_DAYS;
 
+var MS_PER_SECOND = constants.MS_PER_SECOND;
+var MS_PER_MINUTE = constants.MS_PER_MINUTE;
+var MS_PER_HOUR = constants.MS_PER_HOUR;
+
+var MAX_DURATION_MS = 12 * MS_PER_HOUR;
+
+// Actions reversed after the delay: toggle flips back, setValue/setText/
+// setColor apply reverseValue
+var REVERSIBLE_ACTIONS = {
+  toggle: true,
+  setValue: true,
+  setText: true,
+  setColor: true,
+};
+
 /**
  * @typedef {Object} ScheduleConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
@@ -28,11 +43,14 @@ var FULL_DAYS = constants.FULL_DAYS;
  * @property {string} scheduleTime - Time to trigger in HH:MM format
  * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays
  *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+ * @property {Object} [duration] - Optional turn-off delay {unit, value}.
+ *   value 0 or missing disables it
  * @property {Array<Object>} outControls - Array of output controls to change
  *   Each object contains:
  *   - control: Control name ('device/control')
  *   - behaviorType: Action type (setEnable, setDisable, setValue, etc.)
- *   - actionValue: Value to set (relevant for setValue)
+ *   - actionValue: Value to set (relevant for setValue/setText/setColor)
+ *   - reverseValue: Value restored after the delay (setValue/setText/setColor)
  */
 
 /**
@@ -49,6 +67,8 @@ function ScheduleScenario() {
    */
   this.context = {
     cronRule: null,
+    // Pending turn-off timer id, or null. In-memory only — a restart drops it.
+    offTimerId: null,
   };
 }
 
@@ -70,6 +90,7 @@ ScheduleScenario.prototype.generateNames = function (idPrefix) {
     ruleMain: baseRuleName + 'mainRule',
     ruleManual: baseRuleName + 'manualRule',
     ruleTimeUpdate: baseRuleName + 'timeUpdateRule',
+    ruleDisable: baseRuleName + 'disableRule',
   };
 };
 
@@ -105,15 +126,15 @@ function validateControls(controls, table) {
   for (var i = 0; i < controls.length; i++) {
     var curCtrlName = controls[i].control;
     var curBehaviorType = controls[i].behaviorType;
-    var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
 
-    // behaviorType present in table
     if (!table[curBehaviorType]) {
       log.error(
         "Behavior type '" + curBehaviorType + "' not found in table"
       );
       return false;
     }
+
+    var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
 
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
       log.error(
@@ -258,6 +279,33 @@ ScheduleScenario.prototype.validateCfg = function (cfg) {
   if (!isOutputControlsValid) {
     log.error('One or more controls are not of a valid type');
     return false;
+  }
+
+  // Validate the optional turn-off delay
+  if (cfg.duration && cfg.duration.value !== 0) {
+    var validUnits = ['hours', 'minutes', 'seconds'];
+    if (validUnits.indexOf(cfg.duration.unit) === -1) {
+      log.error(
+        'Schedule validation error: duration.unit must be hours, minutes or seconds'
+      );
+      return false;
+    }
+    if (
+      typeof cfg.duration.value !== 'number' ||
+      cfg.duration.value < 0 ||
+      cfg.duration.value % 1 !== 0
+    ) {
+      log.error(
+        'Schedule validation error: duration.value must be a non-negative integer'
+      );
+      return false;
+    }
+    if (durationToMs(cfg.duration) > MAX_DURATION_MS) {
+      log.error(
+        'Schedule validation error: turn-off delay must not exceed 12 hours'
+      );
+      return false;
+    }
   }
 
   log.debug('Schedule configuration validation successful');
@@ -543,6 +591,102 @@ function buildCronExpression(cfg) {
   return cronExpr;
 }
 
+// Convert a duration object {unit, value} to milliseconds
+function durationToMs(duration) {
+  if (duration.unit === 'hours') {
+    return duration.value * MS_PER_HOUR;
+  }
+  if (duration.unit === 'seconds') {
+    return duration.value * MS_PER_SECOND;
+  }
+  return duration.value * MS_PER_MINUTE;
+}
+
+function isDurationEnabled(cfg) {
+  return !!(cfg.duration && cfg.duration.value >= 1);
+}
+
+function hasReversibleControls(cfg) {
+  for (var i = 0; i < cfg.outControls.length; i++) {
+    if (REVERSIBLE_ACTIONS[cfg.outControls[i].behaviorType]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// A turn-off timer is used only when a delay is set and something is reversible
+function usesTurnOffTimer(cfg) {
+  return isDurationEnabled(cfg) && hasReversibleControls(cfg);
+}
+
+// Reverse reversible controls - toggle flips, setValue/setText/setColor apply
+// reverseValue. Empty reverseValue is skipped
+function executeReverse(cfg) {
+  for (var i = 0; i < cfg.outControls.length; i++) {
+    var outControl = cfg.outControls[i];
+    var behaviorType = outControl.behaviorType;
+    if (!REVERSIBLE_ACTIONS[behaviorType]) {
+      continue;
+    }
+
+    var curCtrlName = outControl.control;
+    try {
+      var actualValue = dev[curCtrlName];
+      var newCtrlValue;
+
+      if (behaviorType === 'toggle') {
+        newCtrlValue = aTable.actionsTable.toggle.handler(actualValue);
+      } else {
+        var reverseValue = outControl.reverseValue;
+        if (reverseValue === undefined || reverseValue === '') {
+          continue;
+        }
+        newCtrlValue = aTable.actionsTable[behaviorType].handler(
+          actualValue,
+          reverseValue
+        );
+      }
+
+      dev[curCtrlName] = newCtrlValue;
+    } catch (error) {
+      log.error(
+        'Failed to reverse control {}: {}',
+        curCtrlName,
+        error.message || error
+      );
+    }
+  }
+}
+
+function setReturnTimeDisplay(self, text) {
+  if (self.vd.devObj.getControl('return_time')) {
+    dev[self.genNames.vDevice + '/return_time'] = text;
+  }
+}
+
+function cancelOffTimer(self) {
+  if (self.context.offTimerId !== null) {
+    clearTimeout(self.context.offTimerId);
+    self.context.offTimerId = null;
+  }
+  setReturnTimeDisplay(self, '--:--');
+}
+
+// Arm the timer that reverses controls after the delay (cancel any pending one).
+function armOffTimer(self, cfg) {
+  var delayMs = durationToMs(cfg.duration);
+  var returnDate = new Date(Date.now() + delayMs);
+
+  self.context.offTimerId = setTimeout(function turnOffHandler() {
+    self.context.offTimerId = null;
+    executeReverse(cfg);
+    setReturnTimeDisplay(self, '--:--');
+  }, delayMs);
+
+  setReturnTimeDisplay(self, formatNextExecution(returnDate));
+}
+
 /**
  * Handler for schedule trigger
  * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
@@ -555,6 +699,11 @@ function scheduleHandler(self, cfg) {
   if (!isActive) {
     log.debug('Scenario is disabled, skipping actions');
     return;
+  }
+
+  // Cancel any pending timer so the previous window cannot reverse mid-way
+  if (usesTurnOffTimer(cfg)) {
+    cancelOffTimer(self);
   }
 
   // Execute all configured actions
@@ -587,6 +736,11 @@ function scheduleHandler(self, cfg) {
           (error.message || error)
       );
     }
+  }
+
+  // Arm the turn-off timer when a delay is set and there is something to reverse
+  if (usesTurnOffTimer(cfg)) {
+    armOffTimer(self, cfg);
   }
 
   // Update next execution time display
@@ -644,6 +798,41 @@ function addCustomControlsToVirtualDevice(self, cfg) {
     readonly: true,
     order: 4,
   });
+
+  // Add turn-off time display only when the turn-off timer is in use
+  if (usesTurnOffTimer(cfg)) {
+    self.vd.devObj.addControl('return_time', {
+      title: {
+        en: 'Turns off at',
+        ru: 'Выключится в',
+      },
+      type: 'text',
+      value: '--:--',
+      forceDefault: true,
+      readonly: true,
+      order: 5,
+    });
+  }
+}
+
+function createDisableRule(self, cfg) {
+  var disableRuleId = defineRule(self.genNames.ruleDisable, {
+    whenChanged: [self.genNames.vDevice + '/rule_enabled'],
+    then: function disableCleanupHandler(newValue) {
+      if (!newValue && self.context.offTimerId !== null) {
+        executeReverse(cfg);
+        cancelOffTimer(self);
+      }
+    },
+  });
+
+  // This rule not disable when user use switch in virtual device
+  if (!disableRuleId) {
+    log.error('Failed to create disable rule');
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -660,6 +849,11 @@ function createRules(self, cfg) {
   }
 
   if (!createTimeUpdateRule(self)) {
+    return false;
+  }
+
+  // Only needed when a turn-off timer can be active
+  if (usesTurnOffTimer(cfg) && !createDisableRule(self, cfg)) {
     return false;
   }
 
