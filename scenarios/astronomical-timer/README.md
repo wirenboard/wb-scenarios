@@ -100,6 +100,15 @@ $ service wb-rules restart
 
 **Важно:** Проверка дней недели выполняется **после** применения смещения. Это означает, что если смещение переносит событие на другой день, то проверяется именно этот фактический день.
 
+### Автовыключение (duration)
+
+Необязательный объект. По истечении заданного времени после срабатывания обратимые действия откатываются. Значение 0 (или отсутствие поля) отключает автовыключение — действия выполняются один раз без отката.
+
+- **durationValue** (integer): Длительность (0 = выключено)
+- **durationUnit** (string): Единицы — "hours", "minutes" или "seconds"
+- Ограничение: не больше 12 часов
+- Откатываются только `toggle` (обратное переключение) и `setValue`/`setText`/`setColor` (к значению `reverseValue`). `setEnable`/`setDisable`/`increaseValueBy`/`decreaseValueBy` не откатываются
+
 ### Действия (outControls)
 
 Действия полностью соответствуют структуре сценария `devices-control`:
@@ -107,6 +116,7 @@ $ service wb-rules restart
 - **behaviorType** (string): Тип поведения из `table-handling-actions.mod.js`
 - **control** (string): Имя контрола в формате "device/control"
 - **actionValue** (mixed): Значение для типов setValue, increaseValueBy, decreaseValueBy
+- **reverseValue** (mixed, необязательно): Значение возврата при автовыключении (только для setValue/setText/setColor). Пусто — контрол не трогается при откате
 
 ## Пример конфигурации
 
@@ -190,6 +200,7 @@ $ service wb-rules restart
 - **Astronomical event time** (text): Исходное время астрособытия (отображается только при offset ≠ 0)
 - **Event type** (text): Тип астрономического события с локализованным названием
 - **Offset** (text): Величина смещения в минутах (отображается только при offset ≠ 0)
+- **Turns off at** (text): Время автовыключения (отката) — показывается только при заданном `duration` с обратимыми действиями
 
 ### Внешний вид
 
@@ -242,7 +253,7 @@ $ service wb-rules restart
 
 ### Описание параметров конфигурации
 
-Конфигурация имеет 6 параметров, из которых 1 необязательный.
+Конфигурация имеет 6 параметров, из которых 2 необязательных (`idPrefix` и `duration`).
 
 AstronomicalTimerConfig:
 
@@ -284,6 +295,15 @@ AstronomicalTimerConfig:
    - `actionValue` {mixed} Значение для типов setValue, increaseValueBy, decreaseValueBy
      Для setEnable/setDisable используется булево значение (true/false)
      Для increaseValueBy/decreaseValueBy используется число
+   - `reverseValue` {mixed} Не обязательный. Значение возврата при
+     автовыключении (только setValue/setText/setColor). Пусто — контрол
+     не трогается при откате
+6. `duration` {object} Не обязательный. Автовыключение — откат обратимых
+   действий по истечении времени. Значение 0 или отсутствие поля отключает.
+   - `durationValue` {number} Длительность (0 = выключено)
+   - `durationUnit` {string} Единицы: "hours", "minutes" или "seconds"
+   - Ограничение: не больше 12 часов. Откатываются только toggle и
+     setValue/setText/setColor (к reverseValue)
 
 ### Пример кода
 

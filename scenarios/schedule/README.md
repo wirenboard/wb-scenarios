@@ -54,6 +54,16 @@
 - **scheduleDaysOfWeek** (array): Массив дней недели для выполнения
   - Формат: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
+- **duration** (object, необязательно): Автовыключение. По истечении заданного\
+  времени обратимые действия откатываются. Значение 0 (или отсутствие поля)\
+  отключает автовыключение — действия выполняются один раз без отката
+  - **durationValue** (integer): Длительность (0 = выключено)
+  - **durationUnit** (string): Единицы — "hours", "minutes" или "seconds"
+  - Ограничение: не больше 12 часов
+  - Откатываются только `toggle` (обратное переключение) и\
+    `setValue`/`setText`/`setColor` (к значению `reverseValue`).\
+    `setEnable`/`setDisable`/`increaseValueBy`/`decreaseValueBy` не откатываются
+
 ### Действия (outControls)
 
 Действия полностью соответствуют структуре сценария `devices-control`:
@@ -61,6 +71,9 @@
 - **behaviorType** (string): Тип поведения из `table-handling-actions.mod.js`
 - **control** (string): Имя контрола
 - **actionValue** (mixed): Значение для типа поведения setValue, increaseValueBy, decreaseValueBy
+- **reverseValue** (mixed, необязательно): Значение, к которому вернуть контрол\
+  при автовыключении (только для setValue/setText/setColor). Пусто — контрол\
+  не трогается при откате
 
 ## Пример конфигурации
 
@@ -128,6 +141,8 @@
 - **Execute now** (pushbutton): Кнопка для немедленного выполнения действий
 - **Current time** (text): Отображение текущего времени системы, подтягивается из wb-rules-system
 - **Next execution** (text): Время следующего выполнения по расписанию
+- **Turns off at** (text): Время автовыключения (отката) — показывается только\
+  при заданном `duration` с обратимыми действиями
 
 Внешний вид виртуального устройства:
 
