@@ -1277,6 +1277,7 @@
         "name",
         "scheduleTime",
         "scheduleDaysOfWeek",
+        "duration",
         "outControls"
       ],
       "defaultProperties": [
@@ -1649,6 +1650,7 @@
         "coordinates",
         "eventSettings",
         "scheduleDaysOfWeek",
+        "duration",
         "outControls"
       ],
       "defaultProperties": [
