@@ -4,8 +4,9 @@
  *       от выбранного типа поведения
  *
  *       Модель «два значения»: launchResolver применяет значение включения,
- *       resetResolver — выключения. Switch игнорирует значение (вкл → true,
- *       выкл → false); число/текст/цвет применяют переданное значение.
+ *       resetResolver — выключения. Switch игнорирует значение: setEnable
+ *       (вкл → true, выкл → false), setDisable — инверсия (вкл → false,
+ *       выкл → true); число/текст/цвет применяют переданное значение.
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
@@ -84,6 +85,11 @@ var actionsTable = {
     reqCtrlTypes: ['switch'],
     launchResolver: setEnable,
     resetResolver: setDisable,
+  },
+  setDisable: {
+    reqCtrlTypes: ['switch'],
+    launchResolver: setDisable,
+    resetResolver: setEnable,
   },
   setValueNumericInput: {
     reqCtrlTypes: ['value'],

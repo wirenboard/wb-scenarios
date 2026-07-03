@@ -385,6 +385,7 @@
                     "title": "outControls_behaviorType_title",
                     "enum": [
                       "setEnable",
+                      "setDisable",
                       "setValueNumericInput",
                       "setText",
                       "setColor"
@@ -393,6 +394,7 @@
                     "options": {
                       "enum_titles": [
                         "Enable (switch)",
+                        "Disable (switch)",
                         "generalEnumSetValue",
                         "generalEnumSetText",
                         "generalEnumSetColor"
