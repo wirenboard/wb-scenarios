@@ -1139,6 +1139,7 @@
             },
             "durationValue": {
               "title": "generalTimeTitle",
+              "description": "generalAutoOffTimeDescription",
               "type": "integer",
               "minimum": 0,
               "default": 0,
@@ -1500,6 +1501,7 @@
             },
             "durationValue": {
               "title": "generalTimeTitle",
+              "description": "generalAutoOffTimeDescription",
               "type": "integer",
               "minimum": 0,
               "default": 0,
@@ -2501,7 +2503,8 @@
       "scheduleTimeTitle": "Execution Time",
       "scheduleActionObjTitle": "Action",
       "generalAutoOffDelayTitle": "Turn Off After",
-      "generalAutoOffDelayValueDescription": "After the selected time (max 12 h), channel values are set according to the \"Turn-Off Value\" field. Empty fields leave the control unchanged. A value of 0 disables it.",
+      "generalAutoOffDelayValueDescription": "After the selected time (max 12 h), channel values are set according to the \"Turn-Off Value\" field. Empty fields leave the control unchanged.",
+      "generalAutoOffTimeDescription": "A value of 0 disables auto-off.",
       "generalReturnValueTitle": "Turn-Off Value",
       "generalStartValueTitle": "Start Value",
 
@@ -2708,7 +2711,8 @@
       "scheduleDefaultInputName": "Расписание",
       "scheduleTimeTitle": "Время выполнения",
       "generalAutoOffDelayTitle": "Выключить через",
-      "generalAutoOffDelayValueDescription": "Спустя выбранное время (макс 12 ч), изменяет значения каналов согласно значению в поле \"Значение при отключении\", пустые поля оставляют контрол без изменений. При значении 0 не запускается.",
+      "generalAutoOffDelayValueDescription": "Спустя выбранное время (макс 12 ч), изменяет значения каналов согласно значению в поле \"Значение при отключении\", пустые поля оставляют контрол без изменений.",
+      "generalAutoOffTimeDescription": "При значении 0, автовыключение не запускается.",
       "generalReturnValueTitle": "Значение при отключении",
       "generalStartValueTitle": "Значение при запуске",
 
