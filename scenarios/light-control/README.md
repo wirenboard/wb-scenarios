@@ -115,7 +115,7 @@
 | Поле | Тип | Описание |
 |---|---|---|
 | `mqttTopicName` | string | Имя контрола `"устройство/контрол"` |
-| `behaviorType` | string | `setEnable`, `setValueNumericInput`, `setText`, `setColor` |
+| `behaviorType` | string | `setEnable`, `setDisable`, `setValueNumericInput`, `setText`, `setColor` |
 | `actionValue` | any | Значение при включении |
 | `resetValue` | any | Значение при выключении, необязательный параметр |
 
@@ -158,26 +158,47 @@
 
 ## Пример конфигурации
 
-Запись в файле `/etc/wb-scenarios.conf`:
+Пример прихожей со всеми типами выходных действий сразу: потолочный свет
+(реле), ночник (инверсно — горит, пока основной свет выключен), диммируемое бра,
+RGB-подсветка и текстовая панель статуса. Включают свет датчик движения, датчик
+двери и настенный выключатель.
+
+Пример — один элемент массива `scenarios` в файле `/etc/wb-scenarios.conf`:
 
 ```json
 {
   "componentVersion": 1,
   "scenarioType": "lightControl",
-  "name": "Свет в коридоре",
-  "id_prefix": "hallway_light",
+  "name": "Hallway Light",
+  "id_prefix": "hallway",
   "isDebugEnabled": false,
   "lightDevices": {
     "sensorObjects": [
       {
-        "mqttTopicName": "wb-mr6cv3_127/K4",
+        "mqttTopicName": "demo_lights/ceiling",
         "behaviorType": "setEnable"
       },
       {
-        "mqttTopicName": "wb-mdm3_50/Channel 1",
+        "mqttTopicName": "demo_lights/nightlight",
+        "behaviorType": "setDisable"
+      },
+      {
+        "mqttTopicName": "demo_lights/dimmer",
         "behaviorType": "setValueNumericInput",
-        "actionValue": 100,
+        "actionValue": 70,
         "resetValue": 0
+      },
+      {
+        "mqttTopicName": "demo_lights/strip",
+        "behaviorType": "setColor",
+        "actionValue": "#ff8800",
+        "resetValue": "#000000"
+      },
+      {
+        "mqttTopicName": "demo_lights/panel",
+        "behaviorType": "setText",
+        "actionValue": "Light On",
+        "resetValue": "Night"
       }
     ]
   },
@@ -185,7 +206,7 @@
     "delayToLightOff": 120,
     "sensorObjects": [
       {
-        "mqttTopicName": "wb-msw-v4_34/Current Motion",
+        "mqttTopicName": "demo_sensors/motion",
         "behaviorType": "whileValueHigherThanThreshold",
         "actionValue": 170
       }
@@ -195,7 +216,7 @@
     "delayToLightOff": 180,
     "sensorObjects": [
       {
-        "mqttTopicName": "wb-gpio/EXT1_IN1",
+        "mqttTopicName": "demo_sensors/door",
         "behaviorType": "whenEnabled"
       }
     ]
@@ -205,7 +226,7 @@
     "delayToLightOffAndEnable": 3600,
     "sensorObjects": [
       {
-        "mqttTopicName": "wall_switch_0/enabled"
+        "mqttTopicName": "demo_sensors/wall_switch"
       }
     ]
   }
@@ -354,6 +375,10 @@ function main() {
       {
         'behaviorType': 'setEnable',
         'mqttTopicName': 'wb-mr6cv3_127/K4',
+      },
+      {
+        'behaviorType': 'setDisable',
+        'mqttTopicName': 'wb-mr6cv3_127/K5',
       },
       {
         'behaviorType': 'setValueNumericInput',
