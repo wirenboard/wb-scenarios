@@ -107,7 +107,7 @@ $ service wb-rules restart
 - **durationValue** (integer): Длительность (0 = выключено)
 - **durationUnit** (string): Единицы — "hours", "minutes" или "seconds"
 - Ограничение: не больше 12 часов
-- Откатываются только `toggle` (обратное переключение) и `setValue`/`setText`/`setColor` (к значению `reverseValue`). `setEnable`/`setDisable`/`increaseValueBy`/`decreaseValueBy` не откатываются
+- Откатываются `toggle`, `setEnable` и `setDisable` (переключаются в обратное состояние), а также `setValue`/`setText`/`setColor` (к значению поля «Значение при отключении»). `increaseValueBy`/`decreaseValueBy` не откатываются
 
 ### Действия (outControls)
 
@@ -291,7 +291,7 @@ AstronomicalTimerConfig:
      Пример: 'lights/garden/switch'
    - `behaviorType` {string} Тип поведения из table-handling-actions.mod.js
      Возможные значения: "setEnable", "setDisable", "setValue", "toggle",
-     "increaseValueBy", "decreaseValueBy", "press", "hold", "release"
+     "increaseValueBy", "decreaseValueBy", "setText", "setColor"
    - `actionValue` {mixed} Значение для типов setValue, increaseValueBy, decreaseValueBy
      Для setEnable/setDisable используется булево значение (true/false)
      Для increaseValueBy/decreaseValueBy используется число
@@ -302,8 +302,8 @@ AstronomicalTimerConfig:
    действий по истечении времени. Значение 0 или отсутствие поля отключает.
    - `durationValue` {number} Длительность (0 = выключено)
    - `durationUnit` {string} Единицы: "hours", "minutes" или "seconds"
-   - Ограничение: не больше 12 часов. Откатываются только toggle и
-     setValue/setText/setColor (к reverseValue)
+   - Ограничение: не больше 12 часов. Откатываются toggle, setEnable,
+     setDisable и setValue/setText/setColor (к reverseValue)
 
 ### Пример кода
 

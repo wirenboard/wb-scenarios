@@ -10,6 +10,7 @@ var Logger = require('logger.mod').Logger;
 
 var aTable = require('table-handling-actions.mod');
 var constants = require('constants.mod');
+var durationReverse = require('duration-reverse.mod');
 var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
 
@@ -19,22 +20,6 @@ var log = new Logger(loggerFileLabel);
 var DAY_NAMES = constants.DAY_NAMES;
 var DAY_NAME_TO_NUMBER = constants.DAY_NAME_TO_NUMBER;
 var VALID_DAYS = constants.VALID_DAYS;
-var FULL_DAYS = constants.FULL_DAYS;
-
-var MS_PER_SECOND = constants.MS_PER_SECOND;
-var MS_PER_MINUTE = constants.MS_PER_MINUTE;
-var MS_PER_HOUR = constants.MS_PER_HOUR;
-
-var MAX_DURATION_MS = 12 * MS_PER_HOUR;
-
-// Actions reversed after the delay: toggle flips back, setValue/setText/
-// setColor apply reverseValue
-var REVERSIBLE_ACTIONS = {
-  toggle: true,
-  setValue: true,
-  setText: true,
-  setColor: true,
-};
 
 /**
  * @typedef {Object} ScheduleConfig
@@ -251,7 +236,8 @@ ScheduleScenario.prototype.validateCfg = function (cfg) {
     var day = cfg.scheduleDaysOfWeek[i];
     if (typeof day !== 'string' || VALID_DAYS.indexOf(day) === -1) {
       log.error(
-        'Schedule validation error: invalid scheduleDaysOfWeek value: ' + day
+        'Schedule validation error: invalid scheduleDaysOfWeek value: {}',
+        day
       );
       return false;
     }
@@ -282,30 +268,10 @@ ScheduleScenario.prototype.validateCfg = function (cfg) {
   }
 
   // Validate the optional turn-off delay
-  if (cfg.duration && cfg.duration.value !== 0) {
-    var validUnits = ['hours', 'minutes', 'seconds'];
-    if (validUnits.indexOf(cfg.duration.unit) === -1) {
-      log.error(
-        'Schedule validation error: duration.unit must be hours, minutes or seconds'
-      );
-      return false;
-    }
-    if (
-      typeof cfg.duration.value !== 'number' ||
-      cfg.duration.value < 0 ||
-      cfg.duration.value % 1 !== 0
-    ) {
-      log.error(
-        'Schedule validation error: duration.value must be a non-negative integer'
-      );
-      return false;
-    }
-    if (durationToMs(cfg.duration) > MAX_DURATION_MS) {
-      log.error(
-        'Schedule validation error: turn-off delay must not exceed 12 hours'
-      );
-      return false;
-    }
+  var durationError = durationReverse.validateDuration(cfg);
+  if (durationError) {
+    log.error('Schedule validation error: {}', durationError);
+    return false;
   }
 
   log.debug('Schedule configuration validation successful');
@@ -349,7 +315,18 @@ function createCronRule(self, cfg) {
   log.debug('Cron rule created successfully with ID: ' + ruleId);
   self.addRule(ruleId);
 
-  // Create manual trigger rule for the button
+  return true;
+}
+
+/**
+ * Creates manual trigger rule for the execute-now button
+ * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
+ */
+function createManualRule(self, cfg) {
+  log.debug('Creating manual trigger rule');
+
   var manualRuleId = defineRule(self.genNames.ruleManual, {
     whenChanged: [self.genNames.vDevice + '/execute_now'],
     then: function (newValue, devName, cellName) {
@@ -401,6 +378,33 @@ function createTimeUpdateRule(self) {
 
   log.debug('Time update rule created successfully');
   self.addRule(timeUpdateRuleId);
+
+  return true;
+}
+
+/**
+ * Creates cleanup rule that reverses controls and cancels the turn-off timer
+ * when the scenario is disabled. Not registered via self.addRule so it keeps
+ * working after the scenario stops.
+ * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
+ */
+function createDisableRule(self, cfg) {
+  var disableRuleId = defineRule(self.genNames.ruleDisable, {
+    whenChanged: [self.genNames.vDevice + '/rule_enabled'],
+    then: function disableCleanupHandler(newValue) {
+      if (!newValue && self.context.offTimerId !== null) {
+        durationReverse.executeReverse(cfg);
+        durationReverse.cancelOffTimer(self, self.context);
+      }
+    },
+  });
+
+  if (!disableRuleId) {
+    log.error('Failed to create disable rule');
+    return false;
+  }
 
   return true;
 }
@@ -507,73 +511,19 @@ function formatCurrentTime() {
 }
 
 /**
- * Formats date for display
- * @param {Date} date - Date to format
- * @returns {string} Formatted date string in format "YYYY-MM-DD HH:MM DayName"
- */
-function formatNextExecution(date) {
-  if (!date) {
-    return 'Invalid schedule';
-  }
-
-  var dayName = FULL_DAYS[date.getDay()];
-  var day = ('0' + date.getDate()).slice(-2);
-  var month = ('0' + (date.getMonth() + 1)).slice(-2);
-  var year = date.getFullYear();
-  var hours = ('0' + date.getHours()).slice(-2);
-  var minutes = ('0' + date.getMinutes()).slice(-2);
-
-  return (
-    dayName +
-    ' ' +
-    year +
-    '-' +
-    month +
-    '-' +
-    day +
-    ' ' +
-    hours +
-    ':' +
-    minutes
-  );
-}
-
-/**
  * Builds cron expression from configuration
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {string|null} Cron expression or null if invalid
  */
 function buildCronExpression(cfg) {
-  // Validate time values
-  if (cfg.hours < 0 || cfg.hours > 23) {
-    log.error('Invalid hours value: ' + cfg.hours);
-    return null;
-  }
-  if (cfg.minutes < 0 || cfg.minutes > 59) {
-    log.error('Invalid minutes value: ' + cfg.minutes);
-    return null;
-  }
-  if (cfg.seconds < 0 || cfg.seconds > 59) {
-    log.error('Invalid seconds value: ' + cfg.seconds);
-    return null;
-  }
+  // Time values (hours/minutes/seconds) are already validated in validateCfg
 
   // Build day of week string (0=Sunday, 1=Monday, etc.)
-  var dayMap = {
-    sunday: '0',
-    monday: '1',
-    tuesday: '2',
-    wednesday: '3',
-    thursday: '4',
-    friday: '5',
-    saturday: '6',
-  };
-
   var daysOfWeek = [];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var dayName = cfg.scheduleDaysOfWeek[i];
-    if (dayMap[dayName]) {
-      daysOfWeek.push(dayMap[dayName]);
+    if (DAY_NAME_TO_NUMBER.hasOwnProperty(dayName)) {
+      daysOfWeek.push(DAY_NAME_TO_NUMBER[dayName]);
     }
   }
 
@@ -591,102 +541,6 @@ function buildCronExpression(cfg) {
   return cronExpr;
 }
 
-// Convert a duration object {unit, value} to milliseconds
-function durationToMs(duration) {
-  if (duration.unit === 'hours') {
-    return duration.value * MS_PER_HOUR;
-  }
-  if (duration.unit === 'seconds') {
-    return duration.value * MS_PER_SECOND;
-  }
-  return duration.value * MS_PER_MINUTE;
-}
-
-function isDurationEnabled(cfg) {
-  return !!(cfg.duration && cfg.duration.value >= 1);
-}
-
-function hasReversibleControls(cfg) {
-  for (var i = 0; i < cfg.outControls.length; i++) {
-    if (REVERSIBLE_ACTIONS[cfg.outControls[i].behaviorType]) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// A turn-off timer is used only when a delay is set and something is reversible
-function usesTurnOffTimer(cfg) {
-  return isDurationEnabled(cfg) && hasReversibleControls(cfg);
-}
-
-// Reverse reversible controls - toggle flips, setValue/setText/setColor apply
-// reverseValue. Empty reverseValue is skipped
-function executeReverse(cfg) {
-  for (var i = 0; i < cfg.outControls.length; i++) {
-    var outControl = cfg.outControls[i];
-    var behaviorType = outControl.behaviorType;
-    if (!REVERSIBLE_ACTIONS[behaviorType]) {
-      continue;
-    }
-
-    var curCtrlName = outControl.control;
-    try {
-      var actualValue = dev[curCtrlName];
-      var newCtrlValue;
-
-      if (behaviorType === 'toggle') {
-        newCtrlValue = aTable.actionsTable.toggle.handler(actualValue);
-      } else {
-        var reverseValue = outControl.reverseValue;
-        if (reverseValue === undefined || reverseValue === '') {
-          continue;
-        }
-        newCtrlValue = aTable.actionsTable[behaviorType].handler(
-          actualValue,
-          reverseValue
-        );
-      }
-
-      dev[curCtrlName] = newCtrlValue;
-    } catch (error) {
-      log.error(
-        'Failed to reverse control {}: {}',
-        curCtrlName,
-        error.message || error
-      );
-    }
-  }
-}
-
-function setReturnTimeDisplay(self, text) {
-  if (self.vd.devObj.getControl('return_time')) {
-    dev[self.genNames.vDevice + '/return_time'] = text;
-  }
-}
-
-function cancelOffTimer(self) {
-  if (self.context.offTimerId !== null) {
-    clearTimeout(self.context.offTimerId);
-    self.context.offTimerId = null;
-  }
-  setReturnTimeDisplay(self, '--:--');
-}
-
-// Arm the timer that reverses controls after the delay (cancel any pending one).
-function armOffTimer(self, cfg) {
-  var delayMs = durationToMs(cfg.duration);
-  var returnDate = new Date(Date.now() + delayMs);
-
-  self.context.offTimerId = setTimeout(function turnOffHandler() {
-    self.context.offTimerId = null;
-    executeReverse(cfg);
-    setReturnTimeDisplay(self, '--:--');
-  }, delayMs);
-
-  setReturnTimeDisplay(self, formatNextExecution(returnDate));
-}
-
 /**
  * Handler for schedule trigger
  * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
@@ -702,8 +556,8 @@ function scheduleHandler(self, cfg) {
   }
 
   // Cancel any pending timer so the previous window cannot reverse mid-way
-  if (usesTurnOffTimer(cfg)) {
-    cancelOffTimer(self);
+  if (durationReverse.usesTurnOffTimer(cfg)) {
+    durationReverse.cancelOffTimer(self, self.context);
   }
 
   // Execute all configured actions
@@ -739,13 +593,13 @@ function scheduleHandler(self, cfg) {
   }
 
   // Arm the turn-off timer when a delay is set and there is something to reverse
-  if (usesTurnOffTimer(cfg)) {
-    armOffTimer(self, cfg);
+  if (durationReverse.usesTurnOffTimer(cfg)) {
+    durationReverse.armOffTimer(self, cfg, self.context);
   }
 
   // Update next execution time display
   var nextExecution = getNextExecutionTime(cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
+  var nextExecutionText = durationReverse.formatNextExecution(nextExecution);
   dev[self.genNames.vDevice + '/next_execution'] = nextExecutionText;
 
   log.debug('Schedule actions completed for scenario: ' + self.idPrefix);
@@ -786,7 +640,7 @@ function addCustomControlsToVirtualDevice(self, cfg) {
 
   // Add next execution time display control
   var nextExecution = getNextExecutionTime(cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
+  var nextExecutionText = durationReverse.formatNextExecution(nextExecution);
   self.vd.devObj.addControl('next_execution', {
     title: {
       en: 'Next execution',
@@ -800,7 +654,7 @@ function addCustomControlsToVirtualDevice(self, cfg) {
   });
 
   // Add turn-off time display only when the turn-off timer is in use
-  if (usesTurnOffTimer(cfg)) {
+  if (durationReverse.usesTurnOffTimer(cfg)) {
     self.vd.devObj.addControl('return_time', {
       title: {
         en: 'Turns off at',
@@ -813,26 +667,6 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       order: 5,
     });
   }
-}
-
-function createDisableRule(self, cfg) {
-  var disableRuleId = defineRule(self.genNames.ruleDisable, {
-    whenChanged: [self.genNames.vDevice + '/rule_enabled'],
-    then: function disableCleanupHandler(newValue) {
-      if (!newValue && self.context.offTimerId !== null) {
-        executeReverse(cfg);
-        cancelOffTimer(self);
-      }
-    },
-  });
-
-  // This rule not disable when user use switch in virtual device
-  if (!disableRuleId) {
-    log.error('Failed to create disable rule');
-    return false;
-  }
-
-  return true;
 }
 
 /**
@@ -848,12 +682,19 @@ function createRules(self, cfg) {
     return false;
   }
 
+  if (!createManualRule(self, cfg)) {
+    return false;
+  }
+
   if (!createTimeUpdateRule(self)) {
     return false;
   }
 
   // Only needed when a turn-off timer can be active
-  if (usesTurnOffTimer(cfg) && !createDisableRule(self, cfg)) {
+  if (
+    durationReverse.usesTurnOffTimer(cfg) &&
+    !createDisableRule(self, cfg)
+  ) {
     return false;
   }
 

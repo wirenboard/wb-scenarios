@@ -60,9 +60,10 @@
   - **durationValue** (integer): Длительность (0 = выключено)
   - **durationUnit** (string): Единицы — "hours", "minutes" или "seconds"
   - Ограничение: не больше 12 часов
-  - Откатываются только `toggle` (обратное переключение) и\
-    `setValue`/`setText`/`setColor` (к значению `reverseValue`).\
-    `setEnable`/`setDisable`/`increaseValueBy`/`decreaseValueBy` не откатываются
+  - Откатываются `toggle`, `setEnable` и `setDisable` (переключаются в\
+    обратное состояние), а также `setValue`/`setText`/`setColor` (к значению\
+    поля «Значение при отключении»). `increaseValueBy`/`decreaseValueBy` не\
+    откатываются
 
 ### Действия (outControls)
 

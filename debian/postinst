@@ -34,9 +34,25 @@ migrate_add_control_mode() {
     fi
 }
 
+# Migration: schedule/astronomicalTimer add duration field if missing
+# Added in 1.9.6
+# Adds "duration" to schedule and astronomicalTimer scenarios
+migrate_add_duration() {
+    local cfg="$1"
+    if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1; then
+        if jq -e '.scenarios[]? | select((.scenarioType == "schedule" or .scenarioType == "astronomicalTimer") and .duration == null)' "$cfg" >/dev/null 2>&1; then
+            TMP=$(mktemp)
+            jq '(.scenarios[] | select((.scenarioType == "schedule" or .scenarioType == "astronomicalTimer") and .duration == null)) |=
+                (. + { duration: { durationUnit: "minutes", durationValue: 0 } })
+            ' "$cfg" > "$TMP" && mv "$TMP" "$cfg"
+        fi
+    fi
+}
+
 if [ "$1" = "configure" ]; then
     migrate_actuator_to_actuators "$DATA_CONFIG"
     migrate_add_control_mode "$DATA_CONFIG"
+    migrate_add_duration "$DATA_CONFIG"
 fi
 
 deb-systemd-invoke restart wb-rules

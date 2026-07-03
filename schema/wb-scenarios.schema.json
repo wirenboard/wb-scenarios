@@ -1111,6 +1111,7 @@
         },
         "duration": {
           "title": "generalAutoOffDelayTitle",
+          "description": "generalAutoOffDelayValueDescription",
           "type": "object",
           "_format": "grid",
           "propertyOrder": 6,
@@ -1122,23 +1123,22 @@
           },
           "properties": {
             "durationUnit": {
-              "title": "periodicTimerUnitTitle",
+              "title": "generalUnitTitle",
               "type": "string",
               "enum": ["hours", "minutes", "seconds"],
               "default": "minutes",
               "propertyOrder": 2,
               "options": {
                 "enum_titles": [
-                  "periodicTimerUnitHours",
-                  "periodicTimerUnitMinutes",
-                  "periodicTimerUnitSeconds"
+                  "generalUnitHours",
+                  "generalUnitMinutes",
+                  "generalUnitSeconds"
                 ],
                 "grid_columns": 6
               }
             },
             "durationValue": {
-              "title": "periodicTimerValueTitle",
-              "description": "generalAutoOffDelayValueDescription",
+              "title": "generalTimeTitle",
               "type": "integer",
               "minimum": 0,
               "default": 0,
@@ -1221,8 +1221,7 @@
               "actionValue": {
                 "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
-                "title": "generalActionValueTitle",
-                "description": "outControls_actionValue_description",
+                "title": "generalStartValueTitle",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
@@ -1251,7 +1250,6 @@
                 "_format": "wb-dynamic-type",
                 "propertyOrder": 4,
                 "title": "generalReturnValueTitle",
-                "description": "generalReturnValueDescription",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
@@ -1272,15 +1270,6 @@
         }
       },
       "required": [
-        "scenarioType",
-        "componentVersion",
-        "name",
-        "scheduleTime",
-        "scheduleDaysOfWeek",
-        "duration",
-        "outControls"
-      ],
-      "defaultProperties": [
         "scenarioType",
         "componentVersion",
         "name",
@@ -1483,6 +1472,7 @@
         },
         "duration": {
           "title": "generalAutoOffDelayTitle",
+          "description": "generalAutoOffDelayValueDescription",
           "type": "object",
           "_format": "grid",
           "propertyOrder": 6,
@@ -1494,23 +1484,22 @@
           },
           "properties": {
             "durationUnit": {
-              "title": "periodicTimerUnitTitle",
+              "title": "generalUnitTitle",
               "type": "string",
               "enum": ["hours", "minutes", "seconds"],
               "default": "minutes",
               "propertyOrder": 2,
               "options": {
                 "enum_titles": [
-                  "periodicTimerUnitHours",
-                  "periodicTimerUnitMinutes",
-                  "periodicTimerUnitSeconds"
+                  "generalUnitHours",
+                  "generalUnitMinutes",
+                  "generalUnitSeconds"
                 ],
                 "grid_columns": 6
               }
             },
             "durationValue": {
-              "title": "periodicTimerValueTitle",
-              "description": "generalAutoOffDelayValueDescription",
+              "title": "generalTimeTitle",
               "type": "integer",
               "minimum": 0,
               "default": 0,
@@ -1593,8 +1582,7 @@
               "actionValue": {
                 "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
-                "title": "generalActionValueTitle",
-                "description": "outControls_actionValue_description",
+                "title": "generalStartValueTitle",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
@@ -1623,7 +1611,6 @@
                 "_format": "wb-dynamic-type",
                 "propertyOrder": 4,
                 "title": "generalReturnValueTitle",
-                "description": "generalReturnValueDescription",
                 "options": {
                   "dynamicType": {
                     "source": "behaviorType",
@@ -1644,16 +1631,6 @@
         }
       },
       "required": [
-        "scenarioType",
-        "componentVersion",
-        "name",
-        "coordinates",
-        "eventSettings",
-        "scheduleDaysOfWeek",
-        "duration",
-        "outControls"
-      ],
-      "defaultProperties": [
         "scenarioType",
         "componentVersion",
         "name",
@@ -1748,22 +1725,22 @@
           },
           "properties": {
             "workTimeUnit": {
-              "title": "periodicTimerUnitTitle",
+              "title": "generalUnitTitle",
               "type": "string",
               "enum": ["hours", "minutes", "seconds"],
               "default": "minutes",
               "propertyOrder": 2,
               "options": {
                 "enum_titles": [
-                  "periodicTimerUnitHours",
-                  "periodicTimerUnitMinutes",
-                  "periodicTimerUnitSeconds"
+                  "generalUnitHours",
+                  "generalUnitMinutes",
+                  "generalUnitSeconds"
                 ],
                 "grid_columns": 6
               }
             },
             "workTimeValue": {
-              "title": "periodicTimerValueTitle",
+              "title": "generalTimeTitle",
               "description": "periodicTimerWorkTimeDescription",
               "type": "integer",
               "minimum": 1,
@@ -1789,22 +1766,22 @@
           },
           "properties": {
             "intervalUnit": {
-              "title": "periodicTimerUnitTitle",
+              "title": "generalUnitTitle",
               "type": "string",
               "enum": ["hours", "minutes", "seconds"],
               "default": "minutes",
               "propertyOrder": 2,
               "options": {
                 "enum_titles": [
-                  "periodicTimerUnitHours",
-                  "periodicTimerUnitMinutes",
-                  "periodicTimerUnitSeconds"
+                  "generalUnitHours",
+                  "generalUnitMinutes",
+                  "generalUnitSeconds"
                 ],
                 "grid_columns": 6
               }
             },
             "intervalValue": {
-              "title": "periodicTimerValueTitle",
+              "title": "generalTimeTitle",
               "description": "periodicTimerIntervalDescription",
               "type": "integer",
               "minimum": 1,
@@ -2523,10 +2500,10 @@
       "scheduleDefaultInputName": "Schedule",
       "scheduleTimeTitle": "Execution Time",
       "scheduleActionObjTitle": "Action",
-      "generalAutoOffDelayTitle": "Auto-Off Delay",
-      "generalAutoOffDelayValueDescription": "0 disables auto-off. Reversible actions are undone after this delay (max 12 h).",
-      "generalReturnValueTitle": "Return Value",
-      "generalReturnValueDescription": "Value to restore when the auto-off delay expires. Leave empty to keep the control unchanged.",
+      "generalAutoOffDelayTitle": "Turn Off After",
+      "generalAutoOffDelayValueDescription": "After the selected time (max 12 h), channel values are set according to the \"Turn-Off Value\" field. Empty fields leave the control unchanged. A value of 0 disables it.",
+      "generalReturnValueTitle": "Turn-Off Value",
+      "generalStartValueTitle": "Start Value",
 
       "astroTimerScenarioName": "Astronomical Timer",
       "astroTimerScenarioDescription": "Executes actions based on astronomical events (sunrise, sunset, twilight, etc.) with optional time offset.<br>Calculations are performed locally using geographic coordinates.",
@@ -2564,11 +2541,11 @@
       "periodicTimerWorkTimeDescription": "How long channels stay on during each cycle.",
       "periodicTimerIntervalTitle": "Repeat every",
       "periodicTimerIntervalDescription": "Interval between the start of each cycle.",
-      "periodicTimerUnitTitle": "Unit",
-      "periodicTimerValueTitle": "Time",
-      "periodicTimerUnitHours": "Hours",
-      "periodicTimerUnitMinutes": "Minutes",
-      "periodicTimerUnitSeconds": "Seconds",
+      "generalUnitTitle": "Unit",
+      "generalTimeTitle": "Time",
+      "generalUnitHours": "Hours",
+      "generalUnitMinutes": "Minutes",
+      "generalUnitSeconds": "Seconds",
       "periodicTimerInitValueTitle": "Set on start",
       "periodicTimerReverseValueTitle": "Set on stop",
       "periodicTimerOutControlsTitle": "Actions",
@@ -2730,10 +2707,10 @@
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
       "scheduleDefaultInputName": "Расписание",
       "scheduleTimeTitle": "Время выполнения",
-      "generalAutoOffDelayTitle": "Автовыключение",
-      "generalAutoOffDelayValueDescription": "0 отключает автовыключение. Обратимые действия откатываются через это время (макс 12 ч).",
-      "generalReturnValueTitle": "Значение возврата",
-      "generalReturnValueDescription": "Значение, к которому вернуться по истечении автовыключения. Пусто — оставить контрол без изменений.",
+      "generalAutoOffDelayTitle": "Выключить через",
+      "generalAutoOffDelayValueDescription": "Спустя выбранное время (макс 12 ч), изменяет значения каналов согласно значению в поле \"Значение при отключении\", пустые поля оставляют контрол без изменений. При значении 0 не запускается.",
+      "generalReturnValueTitle": "Значение при отключении",
+      "generalStartValueTitle": "Значение при запуске",
 
       "astroTimerScenarioName": "Астрономический таймер",
       "astroTimerScenarioDescription": "Выполняет действия по астрономическим событиям (восход, закат, сумерки и др.) со смещением по времени.<br>Расчёт выполняется локально по географическим координатам.",
@@ -2771,11 +2748,11 @@
       "periodicTimerWorkTimeDescription": "Как долго каналы остаются включёнными в каждом цикле.",
       "periodicTimerIntervalTitle": "Повторять каждые",
       "periodicTimerIntervalDescription": "Интервал между началами циклов включения.",
-      "periodicTimerUnitTitle": "Ед. измерения",
-      "periodicTimerValueTitle": "Время",
-      "periodicTimerUnitHours": "Часы",
-      "periodicTimerUnitMinutes": "Минуты",
-      "periodicTimerUnitSeconds": "Секунды",
+      "generalUnitTitle": "Ед. измерения",
+      "generalTimeTitle": "Время",
+      "generalUnitHours": "Часы",
+      "generalUnitMinutes": "Минуты",
+      "generalUnitSeconds": "Секунды",
       "periodicTimerInitValueTitle": "Включить со значением",
       "periodicTimerReverseValueTitle": "Выключить со значением",
       "periodicTimerOutControlsTitle": "Действия",
