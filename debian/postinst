@@ -53,9 +53,10 @@ if [ "$1" = "configure" ]; then
     migrate_actuator_to_actuators "$DATA_CONFIG"
     migrate_add_control_mode "$DATA_CONFIG"
     migrate_add_duration "$DATA_CONFIG"
-fi
 
-deb-systemd-invoke restart wb-rules
+    # restart wb-rules only if it is already running, do nothing if it is inactive
+    deb-systemd-invoke try-restart wb-rules || true
+fi
 
 #DEBHELPER#
 
