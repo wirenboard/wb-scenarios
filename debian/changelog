@@ -1,8 +1,14 @@
-wb-scenarios (1.9.7) stable; urgency=medium
+wb-scenarios (1.9.8) stable; urgency=medium
 
   * Add auto-off delay to schedule and astronomical timer
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Wed, 03 Jul 2026 18:06:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 06 Jul 2026 14:02:00 +0300
+
+wb-scenarios (1.9.7) stable; urgency=medium
+
+  * Add Set Color and Set Text output actions to light-control
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Wed, 06 Jul 2026 11:40:00 +0300
 
 wb-scenarios (1.9.6) stable; urgency=medium
 
