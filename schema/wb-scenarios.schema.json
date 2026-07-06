@@ -383,24 +383,65 @@
                     "type": "string",
                     "propertyOrder": 2,
                     "title": "outControls_behaviorType_title",
-                    "enum": ["setEnable", "setValueNumericInput"],
+                    "enum": [
+                      "setEnable",
+                      "setDisable",
+                      "setValueNumericInput",
+                      "setText",
+                      "setColor"
+                    ],
                     "default": "setEnable",
                     "options": {
                       "enum_titles": [
                         "Enable (switch)",
-                        "generalEnumSetValue"
+                        "Disable (switch)",
+                        "generalEnumSetValue",
+                        "generalEnumSetText",
+                        "generalEnumSetColor"
                       ]
                     }
                   },
                   "actionValue": {
-                    "type": "number",
+                    "_format": "wb-dynamic-type",
                     "propertyOrder": 3,
-                    "title": "generalActionValueTitle",
-                    "description": "outControls_actionValue_description",
-                    "default": 0,
+                    "title": "lightControlOnValueTitle",
                     "options": {
+                      "dynamicType": {
+                        "source": "behaviorType",
+                        "map": {
+                          "color": ["setColor"],
+                          "text": ["setText"],
+                          "number": ["setValueNumericInput"]
+                        }
+                      },
                       "dependencies": {
-                        "behaviorType": ["setValueNumericInput"]
+                        "behaviorType": [
+                          "setValueNumericInput",
+                          "setText",
+                          "setColor"
+                        ]
+                      }
+                    }
+                  },
+                  "resetValue": {
+                    "_format": "wb-dynamic-type",
+                    "propertyOrder": 4,
+                    "title": "lightControlOffValueTitle",
+                    "options": {
+                      "dynamicType": {
+                        "source": "behaviorType",
+                        "map": {
+                          "color": ["setColor"],
+                          "text": ["setText"],
+                          "number": ["setValueNumericInput"]
+                        }
+                      },
+                      "dependencies": {
+                        "behaviorType": [
+                          "setValueNumericInput",
+                          "setText",
+                          "setColor"
+                        ]
                       }
                     }
                   }
@@ -2326,6 +2367,8 @@
       "lightControlLightDevicesTitle": "Light devices",
       "lightControlLightDevicesArrDescription": "Devices switched on when scenario runs:",
       "lightControlLightDevicesObjTitle": "Light device",
+      "lightControlOnValueTitle": "Set on enable",
+      "lightControlOffValueTitle": "Set on disable",
       "lightControlMotionSensorsTitle": "Motion sensors",
       "lightControlMotionSensorsDelayTitle": "Delay after no motion before lights off (s).",
       "lightControlMotionSensorsArrDescription": "These motion sensors trigger this scenario:",
@@ -2529,6 +2572,8 @@
       "lightControlLightDevicesTitle": "Устройства освещения",
       "lightControlLightDevicesArrDescription": "Устройства, включаемые сценарием:",
       "lightControlLightDevicesObjTitle": "Устройство освещения",
+      "lightControlOnValueTitle": "Включить со значением",
+      "lightControlOffValueTitle": "Выключить со значением",
       "lightControlLightSwitchesTitle": "Выключатели света",
       "lightControlLightSwitchesEnableDelayTitle": "Автоотключение света и повторное включение автоматизации",
       "lightControlLightSwitchesDelayTitle": "Задержка после нажатия выключателя до выключения света и разблокировки датчиков (с).",
