@@ -18,7 +18,8 @@
  * @returns {boolean} Всегда true
  */
 function setEnable(actualValue, actionValue) {
-  return true;
+  var newCtrlValue = true;
+  return newCtrlValue;
 }
 
 /**
@@ -28,7 +29,8 @@ function setEnable(actualValue, actionValue) {
  * @returns {boolean} Всегда false
  */
 function setDisable(actualValue, actionValue) {
-  return false;
+  var newCtrlValue = false;
+  return newCtrlValue;
 }
 
 /**
@@ -38,7 +40,8 @@ function setDisable(actualValue, actionValue) {
  * @returns {number} Новое значение контрола
  */
 function setValueNumericInput(actualValue, actionValue) {
-  return Number(actionValue);
+  var newCtrlValue = Number(actionValue);
+  return newCtrlValue;
 }
 
 /**
@@ -48,7 +51,8 @@ function setValueNumericInput(actualValue, actionValue) {
  * @returns {string} Новое значение контрола
  */
 function setText(actualValue, actionValue) {
-  return actionValue;
+  var newCtrlValue = actionValue;
+  return newCtrlValue;
 }
 
 /**
@@ -64,11 +68,17 @@ function setColor(actualValue, actionValue) {
   var r = parseInt(hex.substr(0, 2), 16);
   var g = parseInt(hex.substr(2, 2), 16);
   var b = parseInt(hex.substr(4, 2), 16);
+
+  var newCtrlValue;
+
   // Guard against an empty or malformed hex (e.g. an untouched widget field)
   if (isNaN(r) || isNaN(g) || isNaN(b)) {
-    return '255;255;255'; // white fallback
+    newCtrlValue = '255;255;255'; // white fallback
+  } else {
+    newCtrlValue = r + ';' + g + ';' + b;
   }
-  return r + ';' + g + ';' + b;
+
+  return newCtrlValue;
 }
 
 /**
