@@ -1190,7 +1190,6 @@ function logicDisabledHandler(self, newValue, devName, cellName) {
  * @param {string} cellName - Cell name
  */
 function lightDevicesHandler(self, newValue, devName, cellName) {
-  var vd = self.genNames.vDevice;
   var topicName = devName + '/' + cellName;
 
   // Group state by comparing each control to its on/off target
@@ -1224,22 +1223,28 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
     // Consume one of our own pending changes, stay PARTIAL until the last one
     self.ctx.scenarioPendingCount--;
     if (self.ctx.scenarioPendingCount > 0) {
-      dev[vd + '/lastSwitchAction'] = lastActionType.PARTIAL_BY_SCENARIO;
+      dev[self.genNames.vDevice + '/lastSwitchAction'] =
+        lastActionType.PARTIAL_BY_SCENARIO;
       return;
     }
 
     // Last own change processed, then record the final state
     if (allLightOn && self.ctx.scenarioTargetState === true) {
-      dev[vd + '/lastSwitchAction'] = lastActionType.SCENARIO_ON;
+      dev[self.genNames.vDevice + '/lastSwitchAction'] =
+        lastActionType.SCENARIO_ON;
     } else if (allLightOff && self.ctx.scenarioTargetState === false) {
-      dev[vd + '/lastSwitchAction'] = lastActionType.SCENARIO_OFF;
+      dev[self.genNames.vDevice + '/lastSwitchAction'] =
+        lastActionType.SCENARIO_OFF;
     }
 
     // Sync the lightOn indicator only if it diverged from the target
-    if (dev[vd + '/lightOn'] !== self.ctx.scenarioTargetState) {
+    if (
+      dev[self.genNames.vDevice + '/lightOn'] !==
+      self.ctx.scenarioTargetState
+    ) {
       log.error('Not correct logic!');
       self.ctx.syncingLightOn = true;
-      dev[vd + '/lightOn'] = self.ctx.scenarioTargetState;
+      dev[self.genNames.vDevice + '/lightOn'] = self.ctx.scenarioTargetState;
       self.ctx.syncingLightOn = false;
     }
     // scenario finished switching
@@ -1254,23 +1259,25 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
 
   // Determine action type
   if (mixedState) {
-    dev[vd + '/lastSwitchAction'] = lastActionType.PARTIAL_EXT;
+    dev[self.genNames.vDevice + '/lastSwitchAction'] =
+      lastActionType.PARTIAL_EXT;
     // Don't change lightOn in "partial" state
   } else if (allLightOn) {
-    dev[vd + '/lastSwitchAction'] = lastActionType.EXT_ON;
+    dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_ON;
 
     // Sync lightOn topic (all activated)
-    if (dev[vd + '/lightOn'] !== true) {
+    if (dev[self.genNames.vDevice + '/lightOn'] !== true) {
       self.ctx.syncingLightOn = true;
-      dev[vd + '/lightOn'] = true;
+      dev[self.genNames.vDevice + '/lightOn'] = true;
       self.ctx.syncingLightOn = false;
     }
   } else if (allLightOff) {
-    dev[vd + '/lastSwitchAction'] = lastActionType.EXT_OFF;
+    dev[self.genNames.vDevice + '/lastSwitchAction'] =
+      lastActionType.EXT_OFF;
     // Sync lightOn topic (all deactivated)
-    if (dev[vd + '/lightOn'] !== false) {
+    if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
       self.ctx.syncingLightOn = true;
-      dev[vd + '/lightOn'] = false;
+      dev[self.genNames.vDevice + '/lightOn'] = false;
       self.ctx.syncingLightOn = false;
     }
   }
