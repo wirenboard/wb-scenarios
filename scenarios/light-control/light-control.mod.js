@@ -495,6 +495,12 @@ function resetLogicEnableTimer(self) {
 /**
  * Reset-value for a light device. Falls back to the type default when
  * resetValue is absent or empty
+ *
+ * TODO(Valerii): ideally the reset should restore the value the control held before
+ * the scenario changed it (captured on launch), not a static resetValue or
+ * type default. This matters most for setText/setColor, where a fixed default
+ * is arbitrary. No simple way to do this yet — left for a follow-up.
+ *
  * @param {Object} ctrl - Light device config (behaviorType, resetValue)
  * @returns {number|string|undefined} Off-value to apply on reset
  */

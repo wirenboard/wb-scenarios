@@ -3,10 +3,9 @@
  *       Описывает действия над контролами в зависимости
  *       от выбранного типа поведения
  *
- *       Модель «два значения»: launchResolver применяет значение включения,
- *       resetResolver — выключения. Switch игнорирует значение: setEnable
- *       (вкл → true, выкл → false), setDisable — инверсия (вкл → false,
- *       выкл → true); число/текст/цвет применяют переданное значение.
+ *       Модель «два значения»:
+ *        launchResolver — выполнение действия,
+ *        resetResolver — отмена действия.
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Комментарии в формате JSDoc <https://jsdoc.app/>
@@ -15,41 +14,41 @@
 /**
  * Действие включения switch-контрола
  * @param {boolean} actualValue - Актуальное состояние контрола
- * @param {*} value - Не используется
+ * @param {*} actionValue - Не используется
  * @returns {boolean} Всегда true
  */
-function setEnable(actualValue, value) {
+function setEnable(actualValue, actionValue) {
   return true;
 }
 
 /**
  * Действие выключения switch-контрола
  * @param {boolean} actualValue - Актуальное состояние контрола
- * @param {*} value - Не используется
+ * @param {*} actionValue - Не используется
  * @returns {boolean} Всегда false
  */
-function setDisable(actualValue, value) {
+function setDisable(actualValue, actionValue) {
   return false;
 }
 
 /**
  * Действие установки числового значения контрола
  * @param {number} actualValue - Актуальное состояние контрола
- * @param {number|string} value - Значение, заданное пользователем
+ * @param {number|string} actionValue - Значение, заданное пользователем
  * @returns {number} Новое значение контрола
  */
-function setValueNumeric(actualValue, value) {
-  return Number(value);
+function setValueNumericInput(actualValue, actionValue) {
+  return Number(actionValue);
 }
 
 /**
  * Действие установки текстового значения контрола
  * @param {string} actualValue - Актуальное состояние контрола
- * @param {string} value - Текст, заданный пользователем
+ * @param {string} actionValue - Текст, заданный пользователем
  * @returns {string} Новое значение контрола
  */
-function setText(actualValue, value) {
-  return value;
+function setText(actualValue, actionValue) {
+  return actionValue;
 }
 
 /**
@@ -57,11 +56,11 @@ function setText(actualValue, value) {
  * Виджет wb-dynamic-type отдаёт цвет hex-строкой (#rrggbb), а WB rgb-контрол
  * ожидает десятичный формат "R;G;B", поэтому конвертируем при публикации.
  * @param {string} actualValue - Актуальное состояние контрола
- * @param {string} value - Hex-цвет, заданный пользователем (напр. "#ff8040")
+ * @param {string} actionValue - Hex-цвет, заданный пользователем (напр. "#ff8040")
  * @returns {string} Цвет в формате "R;G;B" (напр. "255;128;64")
  */
-function setColor(actualValue, value) {
-  var hex = String(value).replace('#', '');
+function setColor(actualValue, actionValue) {
+  var hex = String(actionValue).replace('#', '');
   var r = parseInt(hex.substr(0, 2), 16);
   var g = parseInt(hex.substr(2, 2), 16);
   var b = parseInt(hex.substr(4, 2), 16);
@@ -77,8 +76,8 @@ function setColor(actualValue, value) {
  *
  * Содержит имя действия и соответствующие ему:
  * - Разрешённые типы контролов для данного действия
- * - launchResolver - обработчик включения (применяет значение включения)
- * - resetResolver  - обработчик выключения (применяет значение выключения)
+ * - launchResolver - обработчик выполнения действия
+ * - resetResolver  - обработчик отмены действия
  */
 var actionsTable = {
   setEnable: {
@@ -93,8 +92,8 @@ var actionsTable = {
   },
   setValueNumericInput: {
     reqCtrlTypes: ['value'],
-    launchResolver: setValueNumeric,
-    resetResolver: setValueNumeric,
+    launchResolver: setValueNumericInput,
+    resetResolver: setValueNumericInput,
   },
   setText: {
     reqCtrlTypes: ['text'],
