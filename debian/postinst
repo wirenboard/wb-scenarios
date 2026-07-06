@@ -35,7 +35,7 @@ migrate_add_control_mode() {
 }
 
 # Migration: schedule/astronomicalTimer add duration field if missing
-# Added in 1.9.6
+# Added in 1.9.8
 # Adds "duration" to schedule and astronomicalTimer scenarios
 migrate_add_duration() {
     local cfg="$1"
