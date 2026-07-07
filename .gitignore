@@ -31,3 +31,6 @@
 !/debian/*preinst
 !/debian/*postinst
 !/debian/*.lintian-overrides
+node_modules/
+package-lock.json
+package.json

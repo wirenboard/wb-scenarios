@@ -43,10 +43,11 @@ function whenChange(newValue) {
  */
 function whenGreaterThan(newValue, controlConfig) {
   var threshold = controlConfig && controlConfig.threshold;
-  if (typeof newValue !== 'number' || typeof threshold !== 'number') {
+  var numValue = Number(newValue);
+  if (typeof threshold !== 'number' || isNaN(numValue)) {
     return false;
   }
-  return newValue > threshold;
+  return numValue > threshold;
 }
 
 /**
@@ -57,10 +58,11 @@ function whenGreaterThan(newValue, controlConfig) {
  */
 function whenLessThan(newValue, controlConfig) {
   var threshold = controlConfig && controlConfig.threshold;
-  if (typeof newValue !== 'number' || typeof threshold !== 'number') {
+  var numValue = Number(newValue);
+  if (typeof threshold !== 'number' || isNaN(numValue)) {
     return false;
   }
-  return newValue < threshold;
+  return numValue < threshold;
 }
 
 /**

@@ -263,7 +263,7 @@ function inputChangeHandler(self, newValue, devName, cellName) {
   for (var j = 0; j < self.cfg.outControls.length; j++) {
     var curCtrlName = self.cfg.outControls[j].control;
     var curUserAction = self.cfg.outControls[j].behaviorType;
-    var curActionValue = self.cfg.outControls[j].actionValue;
+    var curActionValue = self.cfg.outControls[j].value;
     var actualValue = dev[curCtrlName];
     var newCtrlValue = aTable.actionsTable[curUserAction].handler(
       actualValue,
