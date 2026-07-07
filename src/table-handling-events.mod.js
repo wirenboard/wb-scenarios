@@ -36,6 +36,26 @@ function whenChange(newValue) {
 }
 
 /**
+ * Value exceeds threshold event
+ * @param {number} newValue - Numeric value of the control
+ * @param {Object} controlConfig - Control configuration with threshold
+ * @returns {boolean} Returns true if value is greater than threshold
+ */
+function whenGreaterThan(newValue, controlConfig) {
+  return newValue > controlConfig.threshold;
+}
+
+/**
+ * Value below threshold event
+ * @param {number} newValue - Numeric value of the control
+ * @param {Object} controlConfig - Control configuration with threshold
+ * @returns {boolean} Returns true if value is less than threshold
+ */
+function whenLessThan(newValue, controlConfig) {
+  return newValue < controlConfig.threshold;
+}
+
+/**
  * Events table
  * Contains event name and its corresponding:
  * - Allowed control types
@@ -53,6 +73,14 @@ var eventsTable = {
   whenEnabled: {
     reqCtrlTypes: ['switch'],
     handler: whenEnabled,
+  },
+  whenGreaterThan: {
+    reqCtrlTypes: ['value', 'range', 'temperature'],
+    handler: whenGreaterThan,
+  },
+  whenLessThan: {
+    reqCtrlTypes: ['value', 'range', 'temperature'],
+    handler: whenLessThan,
   },
 };
 

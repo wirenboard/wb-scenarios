@@ -252,7 +252,8 @@ function inputChangeHandler(self, newValue, devName, cellName) {
 
   // Check the configured trigger condition
   // @note: For "whenChange" we always continue
-  if (!eTable.eventsTable[eventType].handler(newValue)) {
+  // @note: threshold events (whenGreaterThan/whenLessThan) use matchedInControl.threshold
+  if (!eTable.eventsTable[eventType].handler(newValue, matchedInControl)) {
     log.debug('Event condition not met for behaviorType: ' + eventType);
     return;
   }

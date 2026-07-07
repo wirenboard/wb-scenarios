@@ -149,14 +149,28 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "generalBehaviorTypeTitle",
-                "enum": ["whenChange", "whenDisabled", "whenEnabled"],
+                "enum": ["whenChange", "whenDisabled", "whenEnabled", "whenGreaterThan", "whenLessThan"],
                 "default": "whenChange",
                 "options": {
                   "enum_titles": [
                     "When Change",
                     "When Disabled (switch)",
-                    "When Enabled (switch)"
+                    "When Enabled (switch)",
+                    "When Greater Than (value)",
+                    "When Less Than (value)"
                   ]
+                }
+              },
+              "threshold": {
+                "type": "number",
+                "propertyOrder": 3,
+                "title": "generalThresholdTitle",
+                "description": "generalThresholdDescription",
+                "default": 0,
+                "options": {
+                  "dependencies": {
+                    "behaviorType": ["whenGreaterThan", "whenLessThan"]
+                  }
                 }
               }
             },
@@ -2360,6 +2374,10 @@
       "outControls_arr_title": "Actions (Then)",
       "outControls_behaviorType_title": "Action logic",
       "outControls_actionValue_description": "If necessary",
+      "When Greater Than (value)": "When Greater Than (value)",
+      "When Less Than (value)": "When Less Than (value)",
+      "generalThresholdTitle": "Threshold",
+      "generalThresholdDescription": "Numeric threshold for comparison",
 
       "lightControlScenarioName": "Light control",
       "lightControlScenarioDescription": "The scenario controls lights via switch, motion-, or door-sensors.",
@@ -2559,6 +2577,10 @@
       "When Change": "Когда изменится",
       "When Disabled (switch)": "Когда отключилось (для переключателей)",
       "When Enabled (switch)": "Когда включилось (для переключателей)",
+      "When Greater Than (value)": "Когда превысит (значение)",
+      "When Less Than (value)": "Когда опустится ниже (значение)",
+      "generalThresholdTitle": "Порог",
+      "generalThresholdDescription": "Числовой порог для сравнения",
       "When Enabled": "Когда включилось",
       "Toggle (switch)": "Переключить (для переключателей)",
       "Enable (switch)": "Включить (для переключателей)",
