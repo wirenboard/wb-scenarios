@@ -42,7 +42,11 @@ function whenChange(newValue) {
  * @returns {boolean} Returns true if value is greater than threshold
  */
 function whenGreaterThan(newValue, controlConfig) {
-  return newValue > controlConfig.threshold;
+  var threshold = controlConfig && controlConfig.threshold;
+  if (typeof newValue !== 'number' || typeof threshold !== 'number') {
+    return false;
+  }
+  return newValue > threshold;
 }
 
 /**
@@ -52,7 +56,11 @@ function whenGreaterThan(newValue, controlConfig) {
  * @returns {boolean} Returns true if value is less than threshold
  */
 function whenLessThan(newValue, controlConfig) {
-  return newValue < controlConfig.threshold;
+  var threshold = controlConfig && controlConfig.threshold;
+  if (typeof newValue !== 'number' || typeof threshold !== 'number') {
+    return false;
+  }
+  return newValue < threshold;
 }
 
 /**

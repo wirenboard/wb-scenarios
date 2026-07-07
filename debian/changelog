@@ -1,3 +1,9 @@
+wb-scenarios (1.9.8) stable; urgency=medium
+
+  * Add threshold comparison events (whenGreaterThan/whenLessThan) to devices-control
+
+ -- Alexander Degtyarev <alexander.degtyarev@wirenboard.com>  Tue, 07 Jul 2026 12:00:00 +0300
+
 wb-scenarios (1.9.7) stable; urgency=medium
 
   * Add Set Color and Set Text output actions to light-control
