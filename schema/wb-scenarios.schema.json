@@ -149,7 +149,13 @@
                 "type": "string",
                 "propertyOrder": 2,
                 "title": "generalBehaviorTypeTitle",
-                "enum": ["whenChange", "whenDisabled", "whenEnabled", "whenGreaterThan", "whenLessThan"],
+                "enum": [
+                  "whenChange",
+                  "whenDisabled",
+                  "whenEnabled",
+                  "whenGreaterThan",
+                  "whenLessThan"
+                ],
                 "default": "whenChange",
                 "options": {
                   "enum_titles": [
