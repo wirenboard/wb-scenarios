@@ -1,8 +1,8 @@
 wb-scenarios (1.9.8) stable; urgency=medium
 
-  * schema: rename wb-dynamic-type options keys to sourceField and typeByValue
+  * schema: rename wb-dynamic-type options keys
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Tue, 07 Jul 2026 12:40:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Thu, 09 Jul 2026 16:53:00 +0300
 
 wb-scenarios (1.9.7) stable; urgency=medium
 
