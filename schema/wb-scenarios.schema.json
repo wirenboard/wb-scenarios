@@ -237,15 +237,19 @@
                 "description": "outControls_actionValue_description",
                 "options": {
                   "dynamicType": {
-                    "source": "behaviorType",
-                    "map": {
-                      "color": ["setColor"],
-                      "text": ["setText"],
-                      "number": [
-                        "setValue",
-                        "increaseValueBy",
-                        "decreaseValueBy"
-                      ]
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number",
+                      "increaseValueBy": "number",
+                      "decreaseValueBy": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
                     }
                   },
                   "dependencies": {
@@ -407,11 +411,17 @@
                     "title": "lightControlOnValueTitle",
                     "options": {
                       "dynamicType": {
-                        "source": "behaviorType",
-                        "map": {
-                          "color": ["setColor"],
-                          "text": ["setText"],
-                          "number": ["setValueNumericInput"]
+                        "sourceField": "behaviorType",
+                        "typeByValue": {
+                          "setColor": "color",
+                          "setText": "text",
+                          "setValueNumericInput": "number"
+                        },
+                        "defaultType": "number",
+                        "defaultValueByType": {
+                          "color": "#ffffff",
+                          "number": 0,
+                          "text": ""
                         }
                       },
                       "dependencies": {
@@ -429,11 +439,17 @@
                     "title": "lightControlOffValueTitle",
                     "options": {
                       "dynamicType": {
-                        "source": "behaviorType",
-                        "map": {
-                          "color": ["setColor"],
-                          "text": ["setText"],
-                          "number": ["setValueNumericInput"]
+                        "sourceField": "behaviorType",
+                        "typeByValue": {
+                          "setColor": "color",
+                          "setText": "text",
+                          "setValueNumericInput": "number"
+                        },
+                        "defaultType": "number",
+                        "defaultValueByType": {
+                          "color": "#ffffff",
+                          "number": 0,
+                          "text": ""
                         }
                       },
                       "dependencies": {
@@ -1266,15 +1282,19 @@
                 "title": "generalStartValueTitle",
                 "options": {
                   "dynamicType": {
-                    "source": "behaviorType",
-                    "map": {
-                      "color": ["setColor"],
-                      "text": ["setText"],
-                      "number": [
-                        "setValue",
-                        "increaseValueBy",
-                        "decreaseValueBy"
-                      ]
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number",
+                      "increaseValueBy": "number",
+                      "decreaseValueBy": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
                     }
                   },
                   "dependencies": {
@@ -1628,15 +1648,19 @@
                 "title": "generalStartValueTitle",
                 "options": {
                   "dynamicType": {
-                    "source": "behaviorType",
-                    "map": {
-                      "color": ["setColor"],
-                      "text": ["setText"],
-                      "number": [
-                        "setValue",
-                        "increaseValueBy",
-                        "decreaseValueBy"
-                      ]
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number",
+                      "increaseValueBy": "number",
+                      "decreaseValueBy": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
                     }
                   },
                   "dependencies": {
@@ -1946,11 +1970,17 @@
                 "title": "periodicTimerInitValueTitle",
                 "options": {
                   "dynamicType": {
-                    "source": "behaviorType",
-                    "map": {
-                      "color": ["setColor"],
-                      "text": ["setText"],
-                      "number": ["setValue"]
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
                     }
                   },
                   "dependencies": {
@@ -1964,11 +1994,17 @@
                 "title": "periodicTimerReverseValueTitle",
                 "options": {
                   "dynamicType": {
-                    "source": "behaviorType",
-                    "map": {
-                      "color": ["setColor"],
-                      "text": ["setText"],
-                      "number": ["setValue"]
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
                     }
                   },
                   "dependencies": {
