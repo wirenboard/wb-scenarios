@@ -1,3 +1,9 @@
+wb-scenarios (1.9.9) stable; urgency=medium
+
+  * Fix light-control: update lightOn-logic, startup sync, door yields
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Sat, 11 Jul 2026 20:31:25 +0300
+
 wb-scenarios (1.9.8) stable; urgency=medium
 
   * schema: rename wb-dynamic-type options keys
