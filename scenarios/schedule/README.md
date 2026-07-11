@@ -106,7 +106,11 @@
     "friday",
     "saturday",
     "sunday"
-  ]
+  ],
+  "duration": {
+    "durationUnit": "minutes",
+    "durationValue": 30
+  }
 }
 ```
 
@@ -118,6 +122,10 @@
   "scenarios": [
     {
       "componentVersion": 1,
+      "duration": {
+        "durationUnit": "seconds",
+        "durationValue": 5
+      },
       "enable": true,
       "name": "Расписание",
       "outControls": [

@@ -61,6 +61,12 @@ var OFFSET_MAX_MIN = 720; // +12 hours
  */
 
 /**
+ * @typedef {Object} DurationObj
+ * @property {'hours'|'minutes'|'seconds'} durationUnit
+ * @property {number} durationValue - integer count of units
+ */
+
+/**
  * @typedef {Object} AstronomicalTimerConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
@@ -68,8 +74,8 @@ var OFFSET_MAX_MIN = 720; // +12 hours
  * @property {EventSettings} eventSettings - Astronomical event configuration
  * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays
  *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
- * @property {Object} [duration] - Optional turn-off delay {unit, value}.
- *   value 0 or missing disables it
+ * @property {DurationObj} duration - Turn-off delay.
+ *   durationValue 0 or empty object disables it
  * @property {Array<Object>} outControls - Array of output controls to change
  *   Each object contains:
  *   - control: Control name ('device/control')
@@ -103,7 +109,7 @@ function AstronomicalTimerScenario() {
     cachedDaysOfWeekStr: '', // Scheduled days as string
     cachedNextExecutionMs: null, // Cached next execution time (ms), any future day
     firedToday: false, // Whether event has fired today
-    offTimerId: null, // Pending turn-off timer id
+    offTimerId: null, // Pending turn-off timer id, or null
   };
 }
 
@@ -844,8 +850,7 @@ function createTimeUpdateRule(self) {
 
 /**
  * Creates cleanup rule that reverses controls and cancels the turn-off timer
- * when the scenario is disabled. Not registered via self.addRule so it keeps
- * working after the scenario stops.
+ * when the scenario is disabled
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
  * @param {AstronomicalTimerConfig} cfg - Configuration object
  * @returns {boolean} True if rule created successfully, false otherwise
@@ -865,7 +870,7 @@ function createDisableRule(self, cfg) {
     log.error('Failed to create disable rule');
     return false;
   }
-
+  // This rule is not managed when user use switch enable/disable in vdev
   return true;
 }
 

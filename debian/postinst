@@ -34,9 +34,10 @@ migrate_add_control_mode() {
     fi
 }
 
-# Migration: schedule/astronomicalTimer add duration field if missing
-# Added in 1.9.8
-# Adds "duration" to schedule and astronomicalTimer scenarios
+# Migration: schedule/astronomicalTimer add "duration" field if missing
+# Added in 1.9.9 (2026-07-11)
+# Adds "duration" field (auto-off delay) with auto-off disabled (durationValue 0) to
+# schedule and astronomicalTimer scenarios that don't have it.
 migrate_add_duration() {
     local cfg="$1"
     if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1; then

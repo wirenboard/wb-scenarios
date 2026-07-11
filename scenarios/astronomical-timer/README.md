@@ -141,6 +141,10 @@ service wb-rules restart
     "thursday",
     "friday"
   ],
+  "duration": {
+    "durationUnit": "hours",
+    "durationValue": 6
+  },
   "outControls": [
     {
       "actionValue": 1,
@@ -178,6 +182,10 @@ service wb-rules restart
         "saturday",
         "sunday"
       ],
+      "duration": {
+        "durationUnit": "hours",
+        "durationValue": 8
+      },
       "outControls": [
         {
           "actionValue": 1,

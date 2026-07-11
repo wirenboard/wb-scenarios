@@ -22,14 +22,20 @@ var DAY_NAME_TO_NUMBER = constants.DAY_NAME_TO_NUMBER;
 var VALID_DAYS = constants.VALID_DAYS;
 
 /**
+ * @typedef {Object} DurationObj
+ * @property {'hours'|'minutes'|'seconds'} durationUnit
+ * @property {number} durationValue - integer count of units
+ */
+
+/**
  * @typedef {Object} ScheduleConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
  * @property {string} scheduleTime - Time to trigger in HH:MM format
  * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays
  *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
- * @property {Object} [duration] - Optional turn-off delay {unit, value}.
- *   value 0 or missing disables it
+ * @property {DurationObj} duration - Turn-off delay.
+ *   durationValue 0 or empty object disables it
  * @property {Array<Object>} outControls - Array of output controls to change
  *   Each object contains:
  *   - control: Control name ('device/control')
@@ -50,10 +56,9 @@ function ScheduleScenario() {
    * Context object for storing scenario runtime state
    * @type {Object}
    */
-  this.context = {
+  this.ctx = {
     cronRule: null,
-    // Pending turn-off timer id, or null. In-memory only — a restart drops it.
-    offTimerId: null,
+    offTimerId: null, // Pending turn-off timer id, or null
   };
 }
 
@@ -384,8 +389,7 @@ function createTimeUpdateRule(self) {
 
 /**
  * Creates cleanup rule that reverses controls and cancels the turn-off timer
- * when the scenario is disabled. Not registered via self.addRule so it keeps
- * working after the scenario stops.
+ * when the scenario is disabled
  * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {boolean} True if rule created successfully, false otherwise
@@ -394,9 +398,9 @@ function createDisableRule(self, cfg) {
   var disableRuleId = defineRule(self.genNames.ruleDisable, {
     whenChanged: [self.genNames.vDevice + '/rule_enabled'],
     then: function disableCleanupHandler(newValue) {
-      if (!newValue && self.context.offTimerId !== null) {
+      if (!newValue && self.ctx.offTimerId !== null) {
         durationReverse.executeReverse(cfg);
-        durationReverse.cancelOffTimer(self, self.context);
+        durationReverse.cancelOffTimer(self, self.ctx);
       }
     },
   });
@@ -405,7 +409,7 @@ function createDisableRule(self, cfg) {
     log.error('Failed to create disable rule');
     return false;
   }
-
+  // This rule is not managed when user use switch enable/disable in vdev
   return true;
 }
 
@@ -557,7 +561,7 @@ function scheduleHandler(self, cfg) {
 
   // Cancel any pending timer so the previous window cannot reverse mid-way
   if (durationReverse.usesTurnOffTimer(cfg)) {
-    durationReverse.cancelOffTimer(self, self.context);
+    durationReverse.cancelOffTimer(self, self.ctx);
   }
 
   // Execute all configured actions
@@ -594,7 +598,7 @@ function scheduleHandler(self, cfg) {
 
   // Arm the turn-off timer when a delay is set and there is something to reverse
   if (durationReverse.usesTurnOffTimer(cfg)) {
-    durationReverse.armOffTimer(self, cfg, self.context);
+    durationReverse.armOffTimer(self, cfg, self.ctx);
   }
 
   // Update next execution time display
@@ -671,7 +675,7 @@ function addCustomControlsToVirtualDevice(self, cfg) {
 
 /**
  * Creates all required rules for scenario
- * @param {ScheduleScenario} self - Reference to the AstronomicalTimerScenario instance
+ * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {boolean} True if all rules created successfully, false otherwise
  */

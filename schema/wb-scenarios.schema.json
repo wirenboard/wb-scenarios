@@ -1196,9 +1196,9 @@
             },
             "durationValue": {
               "title": "generalTimeTitle",
-              "description": "generalAutoOffTimeDescription",
               "type": "integer",
               "minimum": 0,
+              "maximum": 43200,
               "default": 0,
               "propertyOrder": 1,
               "options": {
@@ -1314,11 +1314,17 @@
                 "title": "generalReturnValueTitle",
                 "options": {
                   "dynamicType": {
-                    "source": "behaviorType",
-                    "map": {
-                      "color": ["setColor"],
-                      "text": ["setText"],
-                      "number": ["setValue"]
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
                     }
                   },
                   "dependencies": {
@@ -1562,9 +1568,9 @@
             },
             "durationValue": {
               "title": "generalTimeTitle",
-              "description": "generalAutoOffTimeDescription",
               "type": "integer",
               "minimum": 0,
+              "maximum": 43200,
               "default": 0,
               "propertyOrder": 1,
               "options": {
@@ -1680,11 +1686,17 @@
                 "title": "generalReturnValueTitle",
                 "options": {
                   "dynamicType": {
-                    "source": "behaviorType",
-                    "map": {
-                      "color": ["setColor"],
-                      "text": ["setText"],
-                      "number": ["setValue"]
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
                     }
                   },
                   "dependencies": {
@@ -2507,6 +2519,15 @@
       "generalPidKpTitle": "Kp (proportional)",
       "generalPidKiTitle": "Ki (integral)",
       "generalPidKdTitle": "Kd (derivative)",
+      "generalUnitTitle": "Unit",
+      "generalTimeTitle": "Time",
+      "generalUnitHours": "Hours",
+      "generalUnitMinutes": "Minutes",
+      "generalUnitSeconds": "Seconds",
+      "generalAutoOffDelayTitle": "Turn Off After",
+      "generalAutoOffDelayValueDescription": "When set above zero (max 12 h), value reversal is enabled. Sets channel values according to the \"Turn-Off Value\" field, if it is not empty. Channels with the \"Toggle\", \"Enable\" and \"Disable\" actions change to their opposite value.",
+      "generalReturnValueTitle": "Turn-Off Value",
+      "generalStartValueTitle": "Start Value",
 
       "devicesControlScenarioName": "«If-Then» Automation",
       "devicesControlScenarioDescription": "Triggers actions when specific events occur.<br>Example: switch pressed → light turns on, motion detected → curtains open.",
@@ -2581,11 +2602,6 @@
       "scheduleDefaultInputName": "Schedule",
       "scheduleTimeTitle": "Execution Time",
       "scheduleActionObjTitle": "Action",
-      "generalAutoOffDelayTitle": "Turn Off After",
-      "generalAutoOffDelayValueDescription": "After the selected time (max 12 h), channel values are set according to the \"Turn-Off Value\" field. Empty fields leave the control unchanged.",
-      "generalAutoOffTimeDescription": "A value of 0 disables auto-off.",
-      "generalReturnValueTitle": "Turn-Off Value",
-      "generalStartValueTitle": "Start Value",
 
       "astroTimerScenarioName": "Astronomical Timer",
       "astroTimerScenarioDescription": "Executes actions based on astronomical events (sunrise, sunset, twilight, etc.) with optional time offset.<br>Calculations are performed locally using geographic coordinates.",
@@ -2623,11 +2639,6 @@
       "periodicTimerWorkTimeDescription": "How long channels stay on during each cycle.",
       "periodicTimerIntervalTitle": "Repeat every",
       "periodicTimerIntervalDescription": "Interval between the start of each cycle.",
-      "generalUnitTitle": "Unit",
-      "generalTimeTitle": "Time",
-      "generalUnitHours": "Hours",
-      "generalUnitMinutes": "Minutes",
-      "generalUnitSeconds": "Seconds",
       "periodicTimerInitValueTitle": "Set on start",
       "periodicTimerReverseValueTitle": "Set on stop",
       "periodicTimerOutControlsTitle": "Actions",
@@ -2704,6 +2715,15 @@
       "generalPidKpTitle": "Kp (пропорциональный)",
       "generalPidKiTitle": "Ki (интегральный)",
       "generalPidKdTitle": "Kd (дифференциальный)",
+      "generalUnitTitle": "Ед. измерения",
+      "generalTimeTitle": "Время",
+      "generalUnitHours": "Часы",
+      "generalUnitMinutes": "Минуты",
+      "generalUnitSeconds": "Секунды",
+      "generalAutoOffDelayTitle": "Выключить через",
+      "generalAutoOffDelayValueDescription": "При значении больше нуля (макс 12 ч) запускается откат значений. Изменяет значения каналов согласно значению в поле \"Значение при отключении\", если оно не пустое. Каналы с действиями \"Переключить\", \"Включить\" и \"Выключить\" изменяются на противоположное значение.",
+      "generalReturnValueTitle": "Значение при отключении",
+      "generalStartValueTitle": "Значение при запуске",
 
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
@@ -2791,11 +2811,6 @@
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
       "scheduleDefaultInputName": "Расписание",
       "scheduleTimeTitle": "Время выполнения",
-      "generalAutoOffDelayTitle": "Выключить через",
-      "generalAutoOffDelayValueDescription": "Спустя выбранное время (макс 12 ч), изменяет значения каналов согласно значению в поле \"Значение при отключении\", пустые поля оставляют контрол без изменений.",
-      "generalAutoOffTimeDescription": "При значении 0, автовыключение не запускается.",
-      "generalReturnValueTitle": "Значение при отключении",
-      "generalStartValueTitle": "Значение при запуске",
 
       "astroTimerScenarioName": "Астрономический таймер",
       "astroTimerScenarioDescription": "Выполняет действия по астрономическим событиям (восход, закат, сумерки и др.) со смещением по времени.<br>Расчёт выполняется локально по географическим координатам.",
@@ -2833,11 +2848,6 @@
       "periodicTimerWorkTimeDescription": "Как долго каналы остаются включёнными в каждом цикле.",
       "periodicTimerIntervalTitle": "Повторять каждые",
       "periodicTimerIntervalDescription": "Интервал между началами циклов включения.",
-      "generalUnitTitle": "Ед. измерения",
-      "generalTimeTitle": "Время",
-      "generalUnitHours": "Часы",
-      "generalUnitMinutes": "Минуты",
-      "generalUnitSeconds": "Секунды",
       "periodicTimerInitValueTitle": "Включить со значением",
       "periodicTimerReverseValueTitle": "Выключить со значением",
       "periodicTimerOutControlsTitle": "Действия",

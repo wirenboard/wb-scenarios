@@ -30,15 +30,11 @@ function initializeScenario(scenarioCfg) {
   log.debug('Processing scenario config: "{}"', JSON.stringify(scenarioCfg));
 
   var scenario = new CustomTypeSc();
-  var rawDuration = scenarioCfg.duration;
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
     scheduleTime: scenarioCfg.scheduleTime || '12:00',
     scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
-    // Optional turn-off delay, absent in older configs → disabled (value 0)
-    duration: rawDuration
-      ? { unit: rawDuration.durationUnit, value: rawDuration.durationValue }
-      : { unit: 'minutes', value: 0 },
+    duration: scenarioCfg.duration || {},
     outControls: scenarioCfg.outControls || [],
   };
 
