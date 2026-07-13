@@ -14,7 +14,7 @@
 **О часовых поясах:** Сценарий работает, опираясь на **системное время** и **часовой пояс**, установленные на контроллере. При смене часового пояса необходимо перезапустить wb-rules:
 
 ```shell
-$ service wb-rules restart
+service wb-rules restart
 ```
 
 Если не перезапустить сервис, то время wb-rules продолжит использовать старый часовой пояс для старых и вновь создаваемых сценариев!
@@ -104,7 +104,7 @@ $ service wb-rules restart
 
 Действия полностью соответствуют структуре сценария `devices-control`:
 
-- **behaviorType** (string): Тип поведения из `table-handling-actions.mod.js`
+- **behaviorType** (string): Тип поведения из `control-interaction-registry.mod.js`
 - **control** (string): Имя контрола в формате "device/control"
 - **actionValue** (mixed): Значение для типов setValue, increaseValueBy, decreaseValueBy
 
@@ -278,7 +278,7 @@ AstronomicalTimerConfig:
    Каждый элемент массива содержит объект с полями:
    - `control` {string} Имя контрола в формате "device/control"
      Пример: 'lights/garden/switch'
-   - `behaviorType` {string} Тип поведения из table-handling-actions.mod.js
+   - `behaviorType` {string} Тип поведения из control-interaction-registry.mod.js
      Возможные значения: "setEnable", "setDisable", "setValue", "toggle",
      "increaseValueBy", "decreaseValueBy", "press", "hold", "release"
    - `actionValue` {mixed} Значение для типов setValue, increaseValueBy, decreaseValueBy

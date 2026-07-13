@@ -3,8 +3,8 @@
  * @description Input-Output link scenario class that extends ScenarioBase
  *              Module for initializing connections between multiple input and output
  *              MQTT topics. Supported control types see in tables:
- *                - eTable
- *                - aTable
+ *                - registry.eventsTable
+ *                - registry.actionsTable
  *              When any input topic changes according to configured
  *              event - all output topics change state according
  *              to configured action
@@ -16,8 +16,7 @@ var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
-var eTable = require('table-handling-events.mod');
-var aTable = require('table-handling-actions.mod');
+var registry = require('control-interaction-registry.mod');
 var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
 
@@ -168,11 +167,11 @@ DevicesControlScenario.prototype.validateCfg = function (cfg) {
   // Check control types
   var isInputControlsValid = validateControls(
     cfg.inControls,
-    eTable.eventsTable
+    registry.eventsTable
   );
   var isOutputControlsValid = validateControls(
     cfg.outControls,
-    aTable.actionsTable
+    registry.actionsTable
   );
 
   if (!isInputControlsValid || !isOutputControlsValid) {
@@ -252,7 +251,7 @@ function inputChangeHandler(self, newValue, devName, cellName) {
 
   // Check the configured trigger condition
   // @note: For "whenChange" we always continue
-  if (!eTable.eventsTable[eventType].handler(newValue)) {
+  if (!registry.eventsTable[eventType].handler(newValue)) {
     log.debug('Event condition not met for behaviorType: ' + eventType);
     return;
   }
@@ -264,7 +263,7 @@ function inputChangeHandler(self, newValue, devName, cellName) {
     var curUserAction = self.cfg.outControls[j].behaviorType;
     var curActionValue = self.cfg.outControls[j].actionValue;
     var actualValue = dev[curCtrlName];
-    var newCtrlValue = aTable.actionsTable[curUserAction].handler(
+    var newCtrlValue = registry.actionsTable[curUserAction].launchHandler(
       actualValue,
       curActionValue
     );

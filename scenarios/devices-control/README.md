@@ -255,12 +255,13 @@ main();
 - Для событий: `inControls.items.properties.behaviorType`
 - Для действий: `outControls.items.properties.behaviorType`
 
-2. Реализовать логику обработки
+1. Реализовать логику обработки
 
-Описания событий и действий находятся в отдельных файл с таблицами:
+Описания событий и действий находятся в едином реестре с таблицами
+`src/control-interaction-registry.mod.js`:
 
-- Для событий: `table-handling-events.mod.js`
-- Для действий: `table-handling-actions.mod.js`
+- Для событий: таблица `eventsTable`
+- Для действий: таблица `actionsTable`
 
 Процесс добавления выглядит следующим образом:
 

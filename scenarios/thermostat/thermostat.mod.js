@@ -8,7 +8,7 @@
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
-var aTable = require('table-handling-actions.mod');
+var registry = require('control-interaction-registry.mod');
 var PidEngine = require('pid-engine.mod').PidEngine;
 var constants = require('constants.mod');
 
@@ -30,8 +30,8 @@ var MS_PER_SECOND = constants.MS_PER_SECOND;
  * Only setEnable and setDisable are allowed.
  */
 var thermostatActionsTable = {
-  setEnable: aTable.actionsTable.setEnable,
-  setDisable: aTable.actionsTable.setDisable,
+  setEnable: registry.actionsTable.setEnable,
+  setDisable: registry.actionsTable.setDisable,
 };
 
 /**

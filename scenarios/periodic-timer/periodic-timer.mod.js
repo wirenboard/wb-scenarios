@@ -13,7 +13,7 @@
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
-var aTable = require('table-handling-actions.mod');
+var registry = require('control-interaction-registry.mod');
 var constants = require('constants.mod');
 var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
@@ -25,11 +25,11 @@ var extractMqttTopics =
  * reverse logic is handled explicitly by executeReverse().
  */
 var periodicTimerActionsTable = {
-  setEnable: aTable.actionsTable.setEnable,
-  setDisable: aTable.actionsTable.setDisable,
-  setValue: aTable.actionsTable.setValue,
-  setText: aTable.actionsTable.setText,
-  setColor: aTable.actionsTable.setColor,
+  setEnable: registry.actionsTable.setEnable,
+  setDisable: registry.actionsTable.setDisable,
+  setValue: registry.actionsTable.setValue,
+  setText: registry.actionsTable.setText,
+  setColor: registry.actionsTable.setColor,
 };
 
 // Actions that carry a payload in initValue/reverseValue (vs. on/off actions)
@@ -627,10 +627,9 @@ function executeStart(controls) {
   for (var i = 0; i < controls.length; i++) {
     var ctrl = controls[i];
     try {
-      var newValue = periodicTimerActionsTable[ctrl.behaviorType].handler(
-        dev[ctrl.mqttTopicName],
-        ctrl.initValue
-      );
+      var newValue = periodicTimerActionsTable[
+        ctrl.behaviorType
+      ].launchHandler(dev[ctrl.mqttTopicName], ctrl.initValue);
       log.debug('Start: set {} = {}', ctrl.mqttTopicName, newValue);
       dev[ctrl.mqttTopicName] = newValue;
     } catch (error) {
@@ -657,21 +656,20 @@ function executeReverse(controls) {
     try {
       var newValue;
       if (ctrl.behaviorType === 'setEnable') {
-        newValue = periodicTimerActionsTable.setDisable.handler(
+        newValue = periodicTimerActionsTable.setDisable.launchHandler(
           dev[ctrl.mqttTopicName],
           null
         );
       } else if (ctrl.behaviorType === 'setDisable') {
-        newValue = periodicTimerActionsTable.setEnable.handler(
+        newValue = periodicTimerActionsTable.setEnable.launchHandler(
           dev[ctrl.mqttTopicName],
           null
         );
       } else if (VALUE_BEARING_ACTIONS[ctrl.behaviorType]) {
         // setValue/setText/setColor: reverse applies reverseValue with the same handler
-        newValue = periodicTimerActionsTable[ctrl.behaviorType].handler(
-          dev[ctrl.mqttTopicName],
-          ctrl.reverseValue
-        );
+        newValue = periodicTimerActionsTable[
+          ctrl.behaviorType
+        ].launchHandler(dev[ctrl.mqttTopicName], ctrl.reverseValue);
       } else {
         continue;
       }

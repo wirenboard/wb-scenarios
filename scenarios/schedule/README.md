@@ -10,7 +10,7 @@
 > wb-rules командой:
 >
 > ```shell
-> $ service wb-rules restart
+> service wb-rules restart
 > ```
 >
 > Если не перезапустить сервис, то время wb-rules продолжит использовать
@@ -58,7 +58,7 @@
 
 Действия полностью соответствуют структуре сценария `devices-control`:
 
-- **behaviorType** (string): Тип поведения из `table-handling-actions.mod.js`
+- **behaviorType** (string): Тип поведения из `control-interaction-registry.mod.js`
 - **control** (string): Имя контрола
 - **actionValue** (mixed): Значение для типа поведения setValue, increaseValueBy, decreaseValueBy
 

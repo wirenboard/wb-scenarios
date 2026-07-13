@@ -1,3 +1,9 @@
+wb-scenarios (1.9.9) stable; urgency=medium
+
+  * Merge action/event registries into control-interaction-registry.mod.js
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 13 Jul 2026 13:28:00 +0300
+
 wb-scenarios (1.9.8) stable; urgency=medium
 
   * schema: rename wb-dynamic-type options keys
