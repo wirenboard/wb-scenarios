@@ -1166,10 +1166,52 @@
             }
           }
         },
+        "duration": {
+          "title": "generalAutoOffDelayTitle",
+          "description": "generalAutoOffDelayValueDescription",
+          "type": "object",
+          "_format": "grid",
+          "propertyOrder": 6,
+          "options": {
+            "grid_columns": 12,
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "durationUnit": {
+              "title": "generalUnitTitle",
+              "type": "string",
+              "enum": ["hours", "minutes", "seconds"],
+              "default": "minutes",
+              "propertyOrder": 2,
+              "options": {
+                "enum_titles": [
+                  "generalUnitHours",
+                  "generalUnitMinutes",
+                  "generalUnitSeconds"
+                ],
+                "grid_columns": 6
+              }
+            },
+            "durationValue": {
+              "title": "generalTimeTitle",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 43200,
+              "default": 0,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 6
+              }
+            }
+          },
+          "required": ["durationUnit", "durationValue"]
+        },
         "outControls": {
           "type": "array",
           "minItems": 1,
-          "propertyOrder": 6,
+          "propertyOrder": 7,
           "_title_note": "When options-> compact: true - this title not shown",
           "title": "generalActionsTitle",
           "description": "generalActionsDescription",
@@ -1237,8 +1279,7 @@
               "actionValue": {
                 "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
-                "title": "generalActionValueTitle",
-                "description": "outControls_actionValue_description",
+                "title": "generalStartValueTitle",
                 "options": {
                   "dynamicType": {
                     "sourceField": "behaviorType",
@@ -1266,6 +1307,30 @@
                     ]
                   }
                 }
+              },
+              "reverseValue": {
+                "_format": "wb-dynamic-type",
+                "propertyOrder": 4,
+                "title": "generalReturnValueTitle",
+                "options": {
+                  "dynamicType": {
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
+                    }
+                  },
+                  "dependencies": {
+                    "behaviorType": ["setValue", "setText", "setColor"]
+                  }
+                }
               }
             },
             "required": ["control", "behaviorType"]
@@ -1278,6 +1343,7 @@
         "name",
         "scheduleTime",
         "scheduleDaysOfWeek",
+        "duration",
         "outControls"
       ]
     },
@@ -1472,10 +1538,52 @@
             }
           }
         },
+        "duration": {
+          "title": "generalAutoOffDelayTitle",
+          "description": "generalAutoOffDelayValueDescription",
+          "type": "object",
+          "_format": "grid",
+          "propertyOrder": 6,
+          "options": {
+            "grid_columns": 12,
+            "disable_collapse": true,
+            "disable_edit_json": true,
+            "disable_properties": true
+          },
+          "properties": {
+            "durationUnit": {
+              "title": "generalUnitTitle",
+              "type": "string",
+              "enum": ["hours", "minutes", "seconds"],
+              "default": "minutes",
+              "propertyOrder": 2,
+              "options": {
+                "enum_titles": [
+                  "generalUnitHours",
+                  "generalUnitMinutes",
+                  "generalUnitSeconds"
+                ],
+                "grid_columns": 6
+              }
+            },
+            "durationValue": {
+              "title": "generalTimeTitle",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 43200,
+              "default": 0,
+              "propertyOrder": 1,
+              "options": {
+                "grid_columns": 6
+              }
+            }
+          },
+          "required": ["durationUnit", "durationValue"]
+        },
         "outControls": {
           "type": "array",
           "minItems": 1,
-          "propertyOrder": 6,
+          "propertyOrder": 7,
           "_title_note": "When options-> compact: true - this title not shown",
           "title": "generalActionsTitle",
           "description": "generalActionsDescription",
@@ -1543,8 +1651,7 @@
               "actionValue": {
                 "_format": "wb-dynamic-type",
                 "propertyOrder": 3,
-                "title": "generalActionValueTitle",
-                "description": "outControls_actionValue_description",
+                "title": "generalStartValueTitle",
                 "options": {
                   "dynamicType": {
                     "sourceField": "behaviorType",
@@ -1572,6 +1679,30 @@
                     ]
                   }
                 }
+              },
+              "reverseValue": {
+                "_format": "wb-dynamic-type",
+                "propertyOrder": 4,
+                "title": "generalReturnValueTitle",
+                "options": {
+                  "dynamicType": {
+                    "sourceField": "behaviorType",
+                    "typeByValue": {
+                      "setColor": "color",
+                      "setText": "text",
+                      "setValue": "number"
+                    },
+                    "defaultType": "number",
+                    "defaultValueByType": {
+                      "color": "#ffffff",
+                      "number": 0,
+                      "text": ""
+                    }
+                  },
+                  "dependencies": {
+                    "behaviorType": ["setValue", "setText", "setColor"]
+                  }
+                }
               }
             },
             "required": ["control", "behaviorType"]
@@ -1585,6 +1716,7 @@
         "coordinates",
         "eventSettings",
         "scheduleDaysOfWeek",
+        "duration",
         "outControls"
       ]
     },
@@ -1672,22 +1804,22 @@
           },
           "properties": {
             "workTimeUnit": {
-              "title": "periodicTimerUnitTitle",
+              "title": "generalUnitTitle",
               "type": "string",
               "enum": ["hours", "minutes", "seconds"],
               "default": "minutes",
               "propertyOrder": 2,
               "options": {
                 "enum_titles": [
-                  "periodicTimerUnitHours",
-                  "periodicTimerUnitMinutes",
-                  "periodicTimerUnitSeconds"
+                  "generalUnitHours",
+                  "generalUnitMinutes",
+                  "generalUnitSeconds"
                 ],
                 "grid_columns": 6
               }
             },
             "workTimeValue": {
-              "title": "periodicTimerValueTitle",
+              "title": "generalTimeTitle",
               "description": "periodicTimerWorkTimeDescription",
               "type": "integer",
               "minimum": 1,
@@ -1713,22 +1845,22 @@
           },
           "properties": {
             "intervalUnit": {
-              "title": "periodicTimerUnitTitle",
+              "title": "generalUnitTitle",
               "type": "string",
               "enum": ["hours", "minutes", "seconds"],
               "default": "minutes",
               "propertyOrder": 2,
               "options": {
                 "enum_titles": [
-                  "periodicTimerUnitHours",
-                  "periodicTimerUnitMinutes",
-                  "periodicTimerUnitSeconds"
+                  "generalUnitHours",
+                  "generalUnitMinutes",
+                  "generalUnitSeconds"
                 ],
                 "grid_columns": 6
               }
             },
             "intervalValue": {
-              "title": "periodicTimerValueTitle",
+              "title": "generalTimeTitle",
               "description": "periodicTimerIntervalDescription",
               "type": "integer",
               "minimum": 1,
@@ -2387,6 +2519,15 @@
       "generalPidKpTitle": "Kp (proportional)",
       "generalPidKiTitle": "Ki (integral)",
       "generalPidKdTitle": "Kd (derivative)",
+      "generalUnitTitle": "Unit",
+      "generalTimeTitle": "Time",
+      "generalUnitHours": "Hours",
+      "generalUnitMinutes": "Minutes",
+      "generalUnitSeconds": "Seconds",
+      "generalAutoOffDelayTitle": "Turn Off After",
+      "generalAutoOffDelayValueDescription": "When set above zero (max 12 h), value reversal is enabled. Sets channel values according to the \"Turn-Off Value\" field, if it is not empty. Channels with the \"Toggle\", \"Enable\" and \"Disable\" actions change to their opposite value.",
+      "generalReturnValueTitle": "Turn-Off Value",
+      "generalStartValueTitle": "Start Value",
 
       "devicesControlScenarioName": "«If-Then» Automation",
       "devicesControlScenarioDescription": "Triggers actions when specific events occur.<br>Example: switch pressed → light turns on, motion detected → curtains open.",
@@ -2498,11 +2639,6 @@
       "periodicTimerWorkTimeDescription": "How long channels stay on during each cycle.",
       "periodicTimerIntervalTitle": "Repeat every",
       "periodicTimerIntervalDescription": "Interval between the start of each cycle.",
-      "periodicTimerUnitTitle": "Unit",
-      "periodicTimerValueTitle": "Time",
-      "periodicTimerUnitHours": "Hours",
-      "periodicTimerUnitMinutes": "Minutes",
-      "periodicTimerUnitSeconds": "Seconds",
       "periodicTimerInitValueTitle": "Set on start",
       "periodicTimerReverseValueTitle": "Set on stop",
       "periodicTimerOutControlsTitle": "Actions",
@@ -2579,6 +2715,15 @@
       "generalPidKpTitle": "Kp (пропорциональный)",
       "generalPidKiTitle": "Ki (интегральный)",
       "generalPidKdTitle": "Kd (дифференциальный)",
+      "generalUnitTitle": "Ед. измерения",
+      "generalTimeTitle": "Время",
+      "generalUnitHours": "Часы",
+      "generalUnitMinutes": "Минуты",
+      "generalUnitSeconds": "Секунды",
+      "generalAutoOffDelayTitle": "Выключить через",
+      "generalAutoOffDelayValueDescription": "При значении больше нуля (макс 12 ч) запускается откат значений. Изменяет значения каналов согласно значению в поле \"Значение при отключении\", если оно не пустое. Каналы с действиями \"Переключить\", \"Включить\" и \"Выключить\" изменяются на противоположное значение.",
+      "generalReturnValueTitle": "Значение при отключении",
+      "generalStartValueTitle": "Значение при запуске",
 
       "Automation scenarios": "Сценарии автоматизации",
       "Scenarios": "Сценарии",
@@ -2703,11 +2848,6 @@
       "periodicTimerWorkTimeDescription": "Как долго каналы остаются включёнными в каждом цикле.",
       "periodicTimerIntervalTitle": "Повторять каждые",
       "periodicTimerIntervalDescription": "Интервал между началами циклов включения.",
-      "periodicTimerUnitTitle": "Ед. измерения",
-      "periodicTimerValueTitle": "Время",
-      "periodicTimerUnitHours": "Часы",
-      "periodicTimerUnitMinutes": "Минуты",
-      "periodicTimerUnitSeconds": "Секунды",
       "periodicTimerInitValueTitle": "Включить со значением",
       "periodicTimerReverseValueTitle": "Выключить со значением",
       "periodicTimerOutControlsTitle": "Действия",

@@ -1,8 +1,14 @@
-wb-scenarios (1.9.9) stable; urgency=medium
+wb-scenarios (1.10.0) stable; urgency=medium
 
   * Fix light-control: update lightOn-logic, startup sync, door yields
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Sat, 11 Jul 2026 20:31:25 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Jul 2026 12:47:00 +0300
+
+wb-scenarios (1.9.9) stable; urgency=medium
+
+  * Add auto-off delay to schedule and astronomical timer
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Jul 2026 11:29:00 +0300
 
 wb-scenarios (1.9.8) stable; urgency=medium
 
@@ -14,7 +20,7 @@ wb-scenarios (1.9.7) stable; urgency=medium
 
   * Add Set Color and Set Text output actions to light-control
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Wed, 06 Jul 2026 11:40:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 06 Jul 2026 11:40:00 +0300
 
 wb-scenarios (1.9.6) stable; urgency=medium
 
