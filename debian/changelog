@@ -2,7 +2,7 @@ wb-scenarios (1.9.9) stable; urgency=medium
 
   * Add auto-off delay to schedule and astronomical timer
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Sat, 11 Jul 2026 16:49:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Jul 2026 11:29:00 +0300
 
 wb-scenarios (1.9.8) stable; urgency=medium
 

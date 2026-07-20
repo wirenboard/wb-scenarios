@@ -1,5 +1,5 @@
 /**
- * @file duration-reverse.mod.js - ES5 module for wb-rules
+ * @file duration-reverse.mod.js - ES5 module for wb-rules v2.28
  * @description Shared auto-off helpers for the schedule and astronomical-timer
  *   scenarios: turn-off delay parsing/validation, reversing of reversible
  *   actions, the turn-off timer, and formatting of the turn-off / next-execution
