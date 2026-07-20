@@ -982,9 +982,7 @@ function createTimeUpdateRule(self, cfg) {
  * Create the disable/enable rule (rule_enabled switch).
  * On disable: stops the cycle (with reverse if in work phase) and sets
  * DISABLED state. On enable: refreshes display and starts cycle immediately
- * if currently inside the active window.
- * Intentionally NOT registered via self.addRule() so it remains active
- * even when the scenario is disabled — otherwise re-enabling would not work.
+ * if currently inside the active window
  * @param {PeriodicTimerScenario} self - Reference to the scenario instance
  * @param {PeriodicTimerConfig} cfg - Configuration object
  * @returns {boolean} True if rule created successfully, false otherwise
@@ -1011,7 +1009,7 @@ function createDisableRule(self, cfg) {
     log.error('Failed to create disable rule');
     return false;
   }
-
+  // This rule is not managed when user use switch enable/disable in vdev
   log.debug('Disable rule created');
   return true;
 }

@@ -10,7 +10,7 @@
 > wb-rules командой:
 >
 > ```shell
-> $ service wb-rules restart
+> service wb-rules restart
 > ```
 >
 > Если не перезапустить сервис, то время wb-rules продолжит использовать
@@ -54,6 +54,17 @@
 - **scheduleDaysOfWeek** (array): Массив дней недели для выполнения
   - Формат: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
+- **duration** (object): Автовыключение. По истечении заданного\
+  времени обратимые действия откатываются. Значение 0\
+  отключает автовыключение — действия выполняются один раз без отката
+  - **durationValue** (integer): Длительность (0 = выключено)
+  - **durationUnit** (string): Единицы — "hours", "minutes" или "seconds"
+  - Ограничение: не больше 12 часов
+  - Откатываются `toggle`, `setEnable` и `setDisable` (переключаются в\
+    обратное состояние), а также `setValue`/`setText`/`setColor` (к значению\
+    поля «Значение при отключении»). `increaseValueBy`/`decreaseValueBy` не\
+    откатываются
+
 ### Действия (outControls)
 
 Действия полностью соответствуют структуре сценария `devices-control`:
@@ -61,6 +72,9 @@
 - **behaviorType** (string): Тип поведения из `table-handling-actions.mod.js`
 - **control** (string): Имя контрола
 - **actionValue** (mixed): Значение для типа поведения setValue, increaseValueBy, decreaseValueBy
+- **reverseValue** (mixed, необязательно): Значение при отключении, к которому\
+  вернуть контрол (только для setValue/setText/setColor). Пусто — контрол\
+  не изменяется при откате
 
 ## Пример конфигурации
 
@@ -92,7 +106,11 @@
     "friday",
     "saturday",
     "sunday"
-  ]
+  ],
+  "duration": {
+    "durationUnit": "minutes",
+    "durationValue": 30
+  }
 }
 ```
 
@@ -104,6 +122,10 @@
   "scenarios": [
     {
       "componentVersion": 1,
+      "duration": {
+        "durationUnit": "seconds",
+        "durationValue": 5
+      },
       "enable": true,
       "name": "Расписание",
       "outControls": [
@@ -128,6 +150,8 @@
 - **Execute now** (pushbutton): Кнопка для немедленного выполнения действий
 - **Current time** (text): Отображение текущего времени системы, подтягивается из wb-rules-system
 - **Next execution** (text): Время следующего выполнения по расписанию
+- **Turns off at** (text): Время автовыключения (отката) — показывается только\
+  при включённом автовыключении (`duration` > 0) с обратимыми действиями
 
 Внешний вид виртуального устройства:
 
