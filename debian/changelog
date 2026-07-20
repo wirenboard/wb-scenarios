@@ -1,8 +1,8 @@
 wb-scenarios (1.10.0) stable; urgency=medium
 
-  * Fix light-control: update lightOn-logic, startup sync, door yields
+  * Fix light-control: split lightOn command/status, deterministic startup, gate door timer during motion
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Jul 2026 12:47:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Jul 2026 14:01:00 +0300
 
 wb-scenarios (1.9.9) stable; urgency=medium
 

@@ -1075,8 +1075,8 @@ function lightSwitchUsedHandler(self, newValue, devName, cellName) {
     resetLightOffTimer(self);
   }
 
-  var turnOn = !dev[self.genNames.vDevice + '/lightOn'];
-  if (turnOn === false) {
+  var newLightState = !dev[self.genNames.vDevice + '/lightOn'];
+  if (newLightState === false) {
     turnOffLight(self);
     dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
     return true;
