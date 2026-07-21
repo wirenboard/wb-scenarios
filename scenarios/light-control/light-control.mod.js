@@ -89,6 +89,7 @@ LightControlScenario.prototype.generateNames = function (idPrefix) {
     vDevice: scenarioPrefix + idPrefix,
     ruleLightDevsChange: baseRuleName + 'lightDevsChange',
     ruleLastSwitchActionChange: baseRuleName + 'lastSwitchActionChange',
+    ruleLightOnChange: baseRuleName + 'lightOnChange',
     ruleLogicDisabledChange: baseRuleName + 'logicDisabledChange',
     ruleDoorOpenChange: baseRuleName + 'doorOpenChange',
     ruleMotion: baseRuleName + 'motion',
@@ -886,6 +887,17 @@ function createRules(self, cfg) {
     return false;
   }
 
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleLightOnChange,
+      vd + '/lightOn',
+      lightOnChangeHandler
+    )
+  ) {
+    return false;
+  }
+
   return true;
 }
 
@@ -1290,6 +1302,27 @@ function lastSwitchActionHandler(self, newValue, devName, cellName) {
   }
 
   // Other values 'lastActionType' don't require a reaction
+}
+
+/**
+ * Handler for '/lightOn' indicator changes — DEBUG LOG ONLY.
+ *
+ * DO NOT add logic here and DO NOT route commands through '/lightOn'. It is a
+ * read-only status mirror. All on/off goes through turnOnLight()/turnOffLight().
+ *
+ * The rule is kept intentionally empty as a marker: '/lightOn' used to be a
+ * command bus, which silently dropped commands (writing the SAME value fires no
+ * whenChanged event, so an already-on indicator never re-applied the outputs).
+ * Moving logic back here or merging this with turnOnLight()/turnOffLight()
+ * brings that bug back.
+ *
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
+ * @param {boolean} newValue - New '/lightOn' value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function lightOnChangeHandler(self, newValue, devName, cellName) {
+  log.debug('"/lightOn" indicator changed to: {}', newValue);
 }
 
 /**
