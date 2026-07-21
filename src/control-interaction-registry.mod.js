@@ -1,5 +1,5 @@
 /**
- * @file Unified registry of control interactions for scenarios
+ * @file control-interaction-registry.mod.js - Unified registry of control interactions for scenarios
  *
  *       Exports two tables:
  *        - actionsTable — output effects applied to controls.
