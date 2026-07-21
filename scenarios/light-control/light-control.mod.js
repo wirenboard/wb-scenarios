@@ -54,7 +54,6 @@ function LightControlScenario() {
     scenarioActionInProgress: false, // scenario is currently changing lights
     scenarioTargetState: null, // true → should turn on, false → turn off
     scenarioPendingCount: 0, // remaining own changes to confirm before finalize
-    syncingLightOn: false, // flag to prevent recursion when syncing lightOn
     lightOffTimerId: null, // timer ID for turning off lights
     logicEnableTimerId: null, // timer ID for re-enabling automation logic
   };
@@ -90,12 +89,12 @@ LightControlScenario.prototype.generateNames = function (idPrefix) {
     vDevice: scenarioPrefix + idPrefix,
     ruleLightDevsChange: baseRuleName + 'lightDevsChange',
     ruleLastSwitchActionChange: baseRuleName + 'lastSwitchActionChange',
+    ruleLightOnChange: baseRuleName + 'lightOnChange',
     ruleLogicDisabledChange: baseRuleName + 'logicDisabledChange',
     ruleDoorOpenChange: baseRuleName + 'doorOpenChange',
     ruleMotion: baseRuleName + 'motion',
     ruleTimeToLightOffChange: baseRuleName + 'remainingTimeToLightOffChange',
     ruleTimeToLogicEnableChange: baseRuleName + 'remainingTimeToLogicEnableChange',
-    ruleLightOnChange: baseRuleName + 'lightOnChange',
     ruleLightSwitchUsed: baseRuleName + 'lightSwitchUsed',
     ruleOpeningSensorsChange: baseRuleName + 'openingSensorsChange',
     ruleMotionInProgress: baseRuleName + 'motionInProgress',
@@ -461,7 +460,7 @@ function startLogicEnableTimer(self, newDelayMs) {
  * @param {LightControlScenario} self - Reference to the LightControlScenario instance
  */
 function turnOffLightsByTimeout(self) {
-  dev[self.genNames.vDevice + '/lightOn'] = false;
+  turnOffLight(self);
   resetLightOffTimer(self);
 }
 
@@ -804,18 +803,6 @@ function createRules(self, cfg) {
     return false;
   }
 
-  // Rule for light on changes
-  if (
-    !createAndRegisterRule(
-      self,
-      gName.ruleLightOnChange,
-      vd + '/lightOn',
-      lightOnHandler
-    )
-  ) {
-    return false;
-  }
-
   // Rule for opening sensors changes
   if (
     !createAndRegisterRule(
@@ -900,6 +887,17 @@ function createRules(self, cfg) {
     return false;
   }
 
+  if (
+    !createAndRegisterRule(
+      self,
+      gName.ruleLightOnChange,
+      vd + '/lightOn',
+      lightOnChangeHandler
+    )
+  ) {
+    return false;
+  }
+
   return true;
 }
 
@@ -955,7 +953,7 @@ function motionInProgressHandler(self, newValue, devName, cellName) {
       clearTimeout(self.ctx.lightOffTimerId);
     }
     resetLightOffTimer(self);
-    dev[self.genNames.vDevice + '/lightOn'] = true;
+    turnOnLight(self);
   } else {
     // Detected motion end
     startLightOffTimer(self, self.cfg.delayByMotionSensors * 1000);
@@ -1012,9 +1010,8 @@ function applyScenarioState(self, targetState) {
     // Expect `changed` watchdog callbacks, finalize after the last one
     self.ctx.scenarioActionInProgress = true;
     self.ctx.scenarioPendingCount = changed;
-  } else {
-    // No values changed, then no callbacks will fire, mark the result directly
-    self.ctx.scenarioActionInProgress = false;
+  } else if (!self.ctx.scenarioActionInProgress) {
+    // Nothing changed and no batch is pending
     self.ctx.scenarioTargetState = null;
     dev[self.genNames.vDevice + '/lastSwitchAction'] = targetState
       ? lastActionType.SCENARIO_ON
@@ -1023,25 +1020,23 @@ function applyScenarioState(self, targetState) {
 }
 
 /**
- * Handler for light on control changes
- * @param {LightControlScenario} self - Reference to the LightControlScenario instance
- * @param {boolean} newValue - New light state value
- * @param {string} devName - Device name
- * @param {string} cellName - Cell name
+ * Applies on-values to all devices and sets the lightOn status.
+ * Single entry point for turning on
+ * @param {LightControlScenario} self - Scenario instance
  */
-function lightOnHandler(self, newValue, devName, cellName) {
-  // Don't react if we updated the indicator ourselves
-  if (self.ctx.syncingLightOn) return true;
+function turnOnLight(self) {
+  applyScenarioState(self, true);
+  dev[self.genNames.vDevice + '/lightOn'] = true;
+}
 
-  if (newValue === true) {
-    applyScenarioState(self, true);
-  } else if (newValue === false) {
-    applyScenarioState(self, false);
-  } else {
-    log.error('Light on - has incorrect type: {}', newValue);
-  }
-
-  return true;
+/**
+ * Applies off-values to all devices and clears the lightOn status.
+ * Single entry point for turning off
+ * @param {LightControlScenario} self - Scenario instance
+ */
+function turnOffLight(self) {
+  applyScenarioState(self, false);
+  dev[self.genNames.vDevice + '/lightOn'] = false;
 }
 
 /**
@@ -1093,13 +1088,15 @@ function lightSwitchUsedHandler(self, newValue, devName, cellName) {
   }
 
   var newLightState = !dev[self.genNames.vDevice + '/lightOn'];
-  dev[self.genNames.vDevice + '/lightOn'] = newLightState;
   if (newLightState === false) {
+    turnOffLight(self);
     dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = false;
     return true;
   }
 
+  turnOnLight(self);
   dev[self.genNames.vDevice + '/logicDisabledByWallSwitch'] = true;
+
   if (self.cfg.isDelayEnabledAfterSwitch === true) {
     startLightOffTimer(self, self.cfg.delayBlockAfterSwitch * 1000);
   }
@@ -1152,7 +1149,12 @@ function doorOpenHandler(self, newValue, devName, cellName) {
   var isDoorClosed = newValue === false;
 
   if (isDoorOpened) {
-    dev[self.genNames.vDevice + '/lightOn'] = true;
+    // Motion already holds the light on and manages its own timer,
+    // then the door adds nothing — skip quietly
+    if (dev[self.genNames.vDevice + '/motionInProgress'] === true) {
+      return true;
+    }
+    turnOnLight(self);
     startLightOffTimer(self, self.cfg.delayByOpeningSensors * 1000);
   } else if (isDoorClosed) {
     // Do nothing
@@ -1237,16 +1239,6 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
         lastActionType.SCENARIO_OFF;
     }
 
-    // Sync the lightOn indicator only if it diverged from the target
-    if (
-      dev[self.genNames.vDevice + '/lightOn'] !==
-      self.ctx.scenarioTargetState
-    ) {
-      log.error('Not correct logic!');
-      self.ctx.syncingLightOn = true;
-      dev[self.genNames.vDevice + '/lightOn'] = self.ctx.scenarioTargetState;
-      self.ctx.syncingLightOn = false;
-    }
     // scenario finished switching
     self.ctx.scenarioActionInProgress = false;
     self.ctx.scenarioTargetState = null;
@@ -1265,21 +1257,13 @@ function lightDevicesHandler(self, newValue, devName, cellName) {
   } else if (allLightOn) {
     dev[self.genNames.vDevice + '/lastSwitchAction'] = lastActionType.EXT_ON;
 
-    // Sync lightOn topic (all activated)
-    if (dev[self.genNames.vDevice + '/lightOn'] !== true) {
-      self.ctx.syncingLightOn = true;
-      dev[self.genNames.vDevice + '/lightOn'] = true;
-      self.ctx.syncingLightOn = false;
-    }
+    // Sync lightOn status (all activated)
+    dev[self.genNames.vDevice + '/lightOn'] = true;
   } else if (allLightOff) {
     dev[self.genNames.vDevice + '/lastSwitchAction'] =
       lastActionType.EXT_OFF;
-    // Sync lightOn topic (all deactivated)
-    if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
-      self.ctx.syncingLightOn = true;
-      dev[self.genNames.vDevice + '/lightOn'] = false;
-      self.ctx.syncingLightOn = false;
-    }
+    // Sync lightOn status (all deactivated)
+    dev[self.genNames.vDevice + '/lightOn'] = false;
   }
 }
 
@@ -1312,16 +1296,33 @@ function lastSwitchActionHandler(self, newValue, devName, cellName) {
     }
 
     // Sync lightOn indicator if needed
-    if (dev[self.genNames.vDevice + '/lightOn'] !== false) {
-      self.ctx.syncingLightOn = true;
-      dev[self.genNames.vDevice + '/lightOn'] = false;
-      self.ctx.syncingLightOn = false;
-    }
+    dev[self.genNames.vDevice + '/lightOn'] = false;
 
     return;
   }
 
   // Other values 'lastActionType' don't require a reaction
+}
+
+/**
+ * Handler for '/lightOn' indicator changes — DEBUG LOG ONLY.
+ *
+ * DO NOT add logic here and DO NOT route commands through '/lightOn'. It is a
+ * read-only status mirror. All on/off goes through turnOnLight()/turnOffLight().
+ *
+ * The rule is kept intentionally empty as a marker: '/lightOn' used to be a
+ * command bus, which silently dropped commands (writing the SAME value fires no
+ * whenChanged event, so an already-on indicator never re-applied the outputs).
+ * Moving logic back here or merging this with turnOnLight()/turnOffLight()
+ * brings that bug back.
+ *
+ * @param {LightControlScenario} self - Reference to the LightControlScenario instance
+ * @param {boolean} newValue - New '/lightOn' value
+ * @param {string} devName - Device name
+ * @param {string} cellName - Cell name
+ */
+function lightOnChangeHandler(self, newValue, devName, cellName) {
+  log.debug('"/lightOn" indicator changed to: {}', newValue);
 }
 
 /**
@@ -1358,6 +1359,9 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var rulesCreated = createRules(this, cfg);
 
   if (rulesCreated) {
+    // Startup synchronization. Turn the light off
+    turnOffLight(this);
+
     this.setState(ScenarioState.NORMAL);
     log.debug(
       'Light control scenario initialized successfully for device "{}"',

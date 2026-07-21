@@ -40,6 +40,7 @@ function initializeScenario(scenarioCfg) {
       offset: evtSettings.offset != null ? evtSettings.offset : 0,
     },
     scheduleDaysOfWeek: scenarioCfg.scheduleDaysOfWeek || [],
+    duration: scenarioCfg.duration || {},
     outControls: scenarioCfg.outControls || [],
   };
 

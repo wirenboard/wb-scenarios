@@ -1,8 +1,20 @@
-wb-scenarios (1.9.9) stable; urgency=medium
+wb-scenarios (1.10.1) stable; urgency=medium
 
   * Merge action/event registries into control-interaction-registry.mod.js
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 13 Jul 2026 13:28:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Tue, 21 Jul 2026 18:00:00 +0300
+
+wb-scenarios (1.10.0) stable; urgency=medium
+
+  * Fix light-control: split lightOn command/status, deterministic startup, gate door timer during motion
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Tue, 21 Jul 2026 16:40:00 +0300
+
+wb-scenarios (1.9.9) stable; urgency=medium
+
+  * Add auto-off delay to schedule and astronomical timer
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 20 Jul 2026 11:29:00 +0300
 
 wb-scenarios (1.9.8) stable; urgency=medium
 
@@ -14,7 +26,7 @@ wb-scenarios (1.9.7) stable; urgency=medium
 
   * Add Set Color and Set Text output actions to light-control
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Wed, 06 Jul 2026 11:40:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 06 Jul 2026 11:40:00 +0300
 
 wb-scenarios (1.9.6) stable; urgency=medium
 

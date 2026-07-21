@@ -10,6 +10,7 @@ var Logger = require('logger.mod').Logger;
 
 var registry = require('control-interaction-registry.mod');
 var constants = require('constants.mod');
+var durationReverse = require('duration-reverse.mod');
 var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
 
@@ -19,7 +20,12 @@ var log = new Logger(loggerFileLabel);
 var DAY_NAMES = constants.DAY_NAMES;
 var DAY_NAME_TO_NUMBER = constants.DAY_NAME_TO_NUMBER;
 var VALID_DAYS = constants.VALID_DAYS;
-var FULL_DAYS = constants.FULL_DAYS;
+
+/**
+ * @typedef {Object} DurationObj
+ * @property {'hours'|'minutes'|'seconds'} durationUnit
+ * @property {number} durationValue - integer count of units
+ */
 
 /**
  * @typedef {Object} ScheduleConfig
@@ -28,11 +34,14 @@ var FULL_DAYS = constants.FULL_DAYS;
  * @property {string} scheduleTime - Time to trigger in HH:MM format
  * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays
  *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+ * @property {DurationObj} duration - Turn-off delay.
+ *   durationValue 0 or empty object disables it
  * @property {Array<Object>} outControls - Array of output controls to change
  *   Each object contains:
  *   - control: Control name ('device/control')
  *   - behaviorType: Action type (setEnable, setDisable, setValue, etc.)
- *   - actionValue: Value to set (relevant for setValue)
+ *   - actionValue: Value to set (relevant for setValue/setText/setColor)
+ *   - reverseValue: Value restored after the delay (setValue/setText/setColor)
  */
 
 /**
@@ -47,8 +56,9 @@ function ScheduleScenario() {
    * Context object for storing scenario runtime state
    * @type {Object}
    */
-  this.context = {
+  this.ctx = {
     cronRule: null,
+    offTimerId: null, // Pending turn-off timer id, or null
   };
 }
 
@@ -70,6 +80,7 @@ ScheduleScenario.prototype.generateNames = function (idPrefix) {
     ruleMain: baseRuleName + 'mainRule',
     ruleManual: baseRuleName + 'manualRule',
     ruleTimeUpdate: baseRuleName + 'timeUpdateRule',
+    ruleDisable: baseRuleName + 'disableRule',
   };
 };
 
@@ -105,15 +116,15 @@ function validateControls(controls, table) {
   for (var i = 0; i < controls.length; i++) {
     var curCtrlName = controls[i].control;
     var curBehaviorType = controls[i].behaviorType;
-    var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
 
-    // behaviorType present in table
     if (!table[curBehaviorType]) {
       log.error(
         "Behavior type '" + curBehaviorType + "' not found in table"
       );
       return false;
     }
+
+    var reqCtrlTypes = table[curBehaviorType].reqCtrlTypes;
 
     if (!isControlTypeValid(curCtrlName, reqCtrlTypes)) {
       log.error(
@@ -230,7 +241,8 @@ ScheduleScenario.prototype.validateCfg = function (cfg) {
     var day = cfg.scheduleDaysOfWeek[i];
     if (typeof day !== 'string' || VALID_DAYS.indexOf(day) === -1) {
       log.error(
-        'Schedule validation error: invalid scheduleDaysOfWeek value: ' + day
+        'Schedule validation error: invalid scheduleDaysOfWeek value: {}',
+        day
       );
       return false;
     }
@@ -257,6 +269,13 @@ ScheduleScenario.prototype.validateCfg = function (cfg) {
 
   if (!isOutputControlsValid) {
     log.error('One or more controls are not of a valid type');
+    return false;
+  }
+
+  // Validate the optional turn-off delay
+  var durationError = durationReverse.validateDuration(cfg);
+  if (durationError) {
+    log.error('Schedule validation error: {}', durationError);
     return false;
   }
 
@@ -301,7 +320,18 @@ function createCronRule(self, cfg) {
   log.debug('Cron rule created successfully with ID: ' + ruleId);
   self.addRule(ruleId);
 
-  // Create manual trigger rule for the button
+  return true;
+}
+
+/**
+ * Creates manual trigger rule for the execute-now button
+ * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
+ */
+function createManualRule(self, cfg) {
+  log.debug('Creating manual trigger rule');
+
   var manualRuleId = defineRule(self.genNames.ruleManual, {
     whenChanged: [self.genNames.vDevice + '/execute_now'],
     then: function (newValue, devName, cellName) {
@@ -354,6 +384,32 @@ function createTimeUpdateRule(self) {
   log.debug('Time update rule created successfully');
   self.addRule(timeUpdateRuleId);
 
+  return true;
+}
+
+/**
+ * Creates cleanup rule that reverses controls and cancels the turn-off timer
+ * when the scenario is disabled
+ * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
+ * @param {ScheduleConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
+ */
+function createDisableRule(self, cfg) {
+  var disableRuleId = defineRule(self.genNames.ruleDisable, {
+    whenChanged: [self.genNames.vDevice + '/rule_enabled'],
+    then: function disableCleanupHandler(newValue) {
+      if (!newValue && self.ctx.offTimerId !== null) {
+        durationReverse.executeReverse(cfg);
+        durationReverse.cancelOffTimer(self, self.ctx);
+      }
+    },
+  });
+
+  if (!disableRuleId) {
+    log.error('Failed to create disable rule');
+    return false;
+  }
+  // This rule is not managed when user use switch enable/disable in vdev
   return true;
 }
 
@@ -459,73 +515,19 @@ function formatCurrentTime() {
 }
 
 /**
- * Formats date for display
- * @param {Date} date - Date to format
- * @returns {string} Formatted date string in format "YYYY-MM-DD HH:MM DayName"
- */
-function formatNextExecution(date) {
-  if (!date) {
-    return 'Invalid schedule';
-  }
-
-  var dayName = FULL_DAYS[date.getDay()];
-  var day = ('0' + date.getDate()).slice(-2);
-  var month = ('0' + (date.getMonth() + 1)).slice(-2);
-  var year = date.getFullYear();
-  var hours = ('0' + date.getHours()).slice(-2);
-  var minutes = ('0' + date.getMinutes()).slice(-2);
-
-  return (
-    dayName +
-    ' ' +
-    year +
-    '-' +
-    month +
-    '-' +
-    day +
-    ' ' +
-    hours +
-    ':' +
-    minutes
-  );
-}
-
-/**
  * Builds cron expression from configuration
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {string|null} Cron expression or null if invalid
  */
 function buildCronExpression(cfg) {
-  // Validate time values
-  if (cfg.hours < 0 || cfg.hours > 23) {
-    log.error('Invalid hours value: ' + cfg.hours);
-    return null;
-  }
-  if (cfg.minutes < 0 || cfg.minutes > 59) {
-    log.error('Invalid minutes value: ' + cfg.minutes);
-    return null;
-  }
-  if (cfg.seconds < 0 || cfg.seconds > 59) {
-    log.error('Invalid seconds value: ' + cfg.seconds);
-    return null;
-  }
+  // Time values (hours/minutes/seconds) are already validated in validateCfg
 
   // Build day of week string (0=Sunday, 1=Monday, etc.)
-  var dayMap = {
-    sunday: '0',
-    monday: '1',
-    tuesday: '2',
-    wednesday: '3',
-    thursday: '4',
-    friday: '5',
-    saturday: '6',
-  };
-
   var daysOfWeek = [];
   for (var i = 0; i < cfg.scheduleDaysOfWeek.length; i++) {
     var dayName = cfg.scheduleDaysOfWeek[i];
-    if (dayMap[dayName]) {
-      daysOfWeek.push(dayMap[dayName]);
+    if (DAY_NAME_TO_NUMBER.hasOwnProperty(dayName)) {
+      daysOfWeek.push(DAY_NAME_TO_NUMBER[dayName]);
     }
   }
 
@@ -555,6 +557,11 @@ function scheduleHandler(self, cfg) {
   if (!isActive) {
     log.debug('Scenario is disabled, skipping actions');
     return;
+  }
+
+  // Cancel any pending timer so the previous window cannot reverse mid-way
+  if (durationReverse.usesTurnOffTimer(cfg)) {
+    durationReverse.cancelOffTimer(self, self.ctx);
   }
 
   // Execute all configured actions
@@ -589,9 +596,14 @@ function scheduleHandler(self, cfg) {
     }
   }
 
+  // Arm the turn-off timer when a delay is set and there is something to reverse
+  if (durationReverse.usesTurnOffTimer(cfg)) {
+    durationReverse.armOffTimer(self, cfg, self.ctx);
+  }
+
   // Update next execution time display
   var nextExecution = getNextExecutionTime(cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
+  var nextExecutionText = durationReverse.formatNextExecution(nextExecution);
   dev[self.genNames.vDevice + '/next_execution'] = nextExecutionText;
 
   log.debug('Schedule actions completed for scenario: ' + self.idPrefix);
@@ -632,7 +644,7 @@ function addCustomControlsToVirtualDevice(self, cfg) {
 
   // Add next execution time display control
   var nextExecution = getNextExecutionTime(cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
+  var nextExecutionText = durationReverse.formatNextExecution(nextExecution);
   self.vd.devObj.addControl('next_execution', {
     title: {
       en: 'Next execution',
@@ -644,11 +656,26 @@ function addCustomControlsToVirtualDevice(self, cfg) {
     readonly: true,
     order: 4,
   });
+
+  // Add turn-off time display only when the turn-off timer is in use
+  if (durationReverse.usesTurnOffTimer(cfg)) {
+    self.vd.devObj.addControl('return_time', {
+      title: {
+        en: 'Turns off at',
+        ru: 'Выключится в',
+      },
+      type: 'text',
+      value: '--:--',
+      forceDefault: true,
+      readonly: true,
+      order: 5,
+    });
+  }
 }
 
 /**
  * Creates all required rules for scenario
- * @param {ScheduleScenario} self - Reference to the AstronomicalTimerScenario instance
+ * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
  * @param {ScheduleConfig} cfg - Configuration object
  * @returns {boolean} True if all rules created successfully, false otherwise
  */
@@ -659,7 +686,19 @@ function createRules(self, cfg) {
     return false;
   }
 
+  if (!createManualRule(self, cfg)) {
+    return false;
+  }
+
   if (!createTimeUpdateRule(self)) {
+    return false;
+  }
+
+  // Only needed when a turn-off timer can be active
+  if (
+    durationReverse.usesTurnOffTimer(cfg) &&
+    !createDisableRule(self, cfg)
+  ) {
     return false;
   }
 

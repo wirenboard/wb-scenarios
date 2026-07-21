@@ -13,6 +13,7 @@ var Logger = require('logger.mod').Logger;
 var SunCalc = require('suncalc.mod');
 var registry = require('control-interaction-registry.mod');
 var constants = require('constants.mod');
+var durationReverse = require('duration-reverse.mod');
 var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
 
@@ -22,7 +23,6 @@ var log = new Logger(loggerFileLabel);
 var DAY_NAMES = constants.DAY_NAMES;
 var DAY_NAME_TO_NUMBER = constants.DAY_NAME_TO_NUMBER;
 var VALID_DAYS = constants.VALID_DAYS;
-var FULL_DAYS = constants.FULL_DAYS;
 
 var ASTRO_EVENT_NAMES = {
   sunrise: { en: 'Sunrise', ru: 'Восход' },
@@ -61,6 +61,12 @@ var OFFSET_MAX_MIN = 720; // +12 hours
  */
 
 /**
+ * @typedef {Object} DurationObj
+ * @property {'hours'|'minutes'|'seconds'} durationUnit
+ * @property {number} durationValue - integer count of units
+ */
+
+/**
  * @typedef {Object} AstronomicalTimerConfig
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
@@ -68,11 +74,14 @@ var OFFSET_MAX_MIN = 720; // +12 hours
  * @property {EventSettings} eventSettings - Astronomical event configuration
  * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays
  *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
+ * @property {DurationObj} duration - Turn-off delay.
+ *   durationValue 0 or empty object disables it
  * @property {Array<Object>} outControls - Array of output controls to change
  *   Each object contains:
  *   - control: Control name ('device/control')
  *   - behaviorType: Action type (setEnable, setDisable, setValue, etc.)
- *   - actionValue: Value to set (relevant for setValue)
+ *   - actionValue: Value to set (relevant for setValue/setText/setColor)
+ *   - reverseValue: Value restored after the delay (setValue/setText/setColor)
  */
 
 /**
@@ -100,6 +109,7 @@ function AstronomicalTimerScenario() {
     cachedDaysOfWeekStr: '', // Scheduled days as string
     cachedNextExecutionMs: null, // Cached next execution time (ms), any future day
     firedToday: false, // Whether event has fired today
+    offTimerId: null, // Pending turn-off timer id, or null
   };
 }
 
@@ -121,6 +131,7 @@ AstronomicalTimerScenario.prototype.generateNames = function (idPrefix) {
     ruleMain: baseRuleName + 'mainRule',
     ruleManual: baseRuleName + 'manualRule',
     ruleTimeUpdate: baseRuleName + 'timeUpdateRule',
+    ruleDisable: baseRuleName + 'disableRule',
   };
 };
 
@@ -295,6 +306,13 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
     return false;
   }
 
+  // Validate the optional turn-off delay
+  var durationError = durationReverse.validateDuration(cfg);
+  if (durationError) {
+    log.error('Astronomical Timer validation error: {}', durationError);
+    return false;
+  }
+
   // Check that the event actually exists in the next MAX_DAYS_AHEAD days
   var nextExecution = calculateAndCacheEventTime(this, cfg);
   if (!nextExecution) {
@@ -348,7 +366,7 @@ function addCustomControlsToVirtualDevice(self, cfg) {
 
   // Add next execution time display control
   var nextExecution = calculateAndCacheEventTime(self, cfg);
-  var nextExecutionText = formatNextExecution(nextExecution);
+  var nextExecutionText = durationReverse.formatNextExecution(nextExecution);
   self.vd.devObj.addControl('next_execution', {
     title: {
       en: 'Next execution',
@@ -409,6 +427,21 @@ function addCustomControlsToVirtualDevice(self, cfg) {
       forceDefault: true, // Always must start from enabled state
       readonly: true,
       order: 7,
+    });
+  }
+
+  // Add turn-off time display only when the turn-off timer is in use
+  if (durationReverse.usesTurnOffTimer(cfg)) {
+    self.vd.devObj.addControl('return_time', {
+      title: {
+        en: 'Turns off at',
+        ru: 'Выключится в',
+      },
+      type: 'text',
+      value: '--:--',
+      forceDefault: true,
+      readonly: true,
+      order: 8,
     });
   }
 }
@@ -539,7 +572,7 @@ function updateEventTimeAndDisplay(self, cfg) {
   // to avoid unnecessary writes to MQTT on every cron tick
   if (self.ctx.cachedNextExecutionMs !== prevNextExecutionMs) {
     dev[self.genNames.vDevice + '/next_execution'] =
-      formatNextExecution(nextExecution);
+      durationReverse.formatNextExecution(nextExecution);
 
     if (cfg.eventSettings.offset !== 0) {
       if (nextExecution) {
@@ -579,38 +612,6 @@ function formatCurrentTime() {
   var currentDay = DAY_NAMES[currentDayNum] || 'Unknown';
 
   return currentDay + ' ' + currentDate + ' ' + currentTime;
-}
-
-/**
- * Format date for display
- * @param {Date} date
- * @returns {string} - Formated dateTime
- */
-function formatNextExecution(date) {
-  if (!date) {
-    return '--:--';
-  }
-
-  var dayName = FULL_DAYS[date.getDay()];
-  var day = ('0' + date.getDate()).slice(-2);
-  var month = ('0' + (date.getMonth() + 1)).slice(-2);
-  var year = date.getFullYear();
-  var hours = ('0' + date.getHours()).slice(-2);
-  var minutes = ('0' + date.getMinutes()).slice(-2);
-
-  return (
-    dayName +
-    ' ' +
-    year +
-    '-' +
-    month +
-    '-' +
-    day +
-    ' ' +
-    hours +
-    ':' +
-    minutes
-  );
 }
 
 /**
@@ -695,6 +696,11 @@ function astroHandler(self, cfg) {
     return;
   }
 
+  // Cancel any pending timer so the previous window cannot reverse mid-way
+  if (durationReverse.usesTurnOffTimer(cfg)) {
+    durationReverse.cancelOffTimer(self, self.ctx);
+  }
+
   // Execute all configured actions
   for (var i = 0; i < cfg.outControls.length; i++) {
     var outControl = cfg.outControls[i];
@@ -724,6 +730,11 @@ function astroHandler(self, cfg) {
           (error.message || error)
       );
     }
+  }
+
+  // Arm the turn-off timer when a delay is set and there is something to reverse
+  if (durationReverse.usesTurnOffTimer(cfg)) {
+    durationReverse.armOffTimer(self, cfg, self.ctx);
   }
 
   log.debug('Astro timer actions completed for: {}', self.idPrefix);
@@ -838,6 +849,32 @@ function createTimeUpdateRule(self) {
 }
 
 /**
+ * Creates cleanup rule that reverses controls and cancels the turn-off timer
+ * when the scenario is disabled
+ * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
+ * @param {AstronomicalTimerConfig} cfg - Configuration object
+ * @returns {boolean} True if rule created successfully, false otherwise
+ */
+function createDisableRule(self, cfg) {
+  var disableRuleId = defineRule(self.genNames.ruleDisable, {
+    whenChanged: [self.genNames.vDevice + '/rule_enabled'],
+    then: function disableCleanupHandler(newValue) {
+      if (!newValue && self.ctx.offTimerId !== null) {
+        durationReverse.executeReverse(cfg);
+        durationReverse.cancelOffTimer(self, self.ctx);
+      }
+    },
+  });
+
+  if (!disableRuleId) {
+    log.error('Failed to create disable rule');
+    return false;
+  }
+  // This rule is not managed when user use switch enable/disable in vdev
+  return true;
+}
+
+/**
  * Creates all required rules for scenario
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
  * @param {AstronomicalTimerConfig} cfg - Configuration object
@@ -855,6 +892,14 @@ function createRules(self, cfg) {
   }
 
   if (!createTimeUpdateRule(self)) {
+    return false;
+  }
+
+  // Only needed when a turn-off timer can be active
+  if (
+    durationReverse.usesTurnOffTimer(cfg) &&
+    !createDisableRule(self, cfg)
+  ) {
     return false;
   }
 

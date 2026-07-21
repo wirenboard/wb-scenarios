@@ -100,6 +100,15 @@ service wb-rules restart
 
 **Важно:** Проверка дней недели выполняется **после** применения смещения. Это означает, что если смещение переносит событие на другой день, то проверяется именно этот фактический день.
 
+### Автовыключение (duration)
+
+Обязательный объект. По истечении заданного времени после срабатывания обратимые действия откатываются. Значение 0 отключает автовыключение — действия выполняются один раз без отката.
+
+- **durationValue** (integer): Длительность (0 = выключено)
+- **durationUnit** (string): Единицы — "hours", "minutes" или "seconds"
+- Ограничение: не больше 12 часов
+- Откатываются `toggle`, `setEnable` и `setDisable` (переключаются в обратное состояние), а также `setValue`/`setText`/`setColor` (к значению поля «Значение при отключении»). `increaseValueBy`/`decreaseValueBy` не откатываются
+
 ### Действия (outControls)
 
 Действия полностью соответствуют структуре сценария `devices-control`:
@@ -107,6 +116,7 @@ service wb-rules restart
 - **behaviorType** (string): Тип поведения из `control-interaction-registry.mod.js`
 - **control** (string): Имя контрола в формате "device/control"
 - **actionValue** (mixed): Значение для типов setValue, increaseValueBy, decreaseValueBy
+- **reverseValue** (mixed, необязательно): Значение при отключении, к которому вернуть контрол (только для setValue/setText/setColor). Пусто — контрол не изменяется при откате
 
 ## Пример конфигурации
 
@@ -131,6 +141,10 @@ service wb-rules restart
     "thursday",
     "friday"
   ],
+  "duration": {
+    "durationUnit": "hours",
+    "durationValue": 6
+  },
   "outControls": [
     {
       "actionValue": 1,
@@ -168,6 +182,10 @@ service wb-rules restart
         "saturday",
         "sunday"
       ],
+      "duration": {
+        "durationUnit": "hours",
+        "durationValue": 8
+      },
       "outControls": [
         {
           "actionValue": 1,
@@ -190,6 +208,7 @@ service wb-rules restart
 - **Astronomical event time** (text): Исходное время астрособытия (отображается только при offset ≠ 0)
 - **Event type** (text): Тип астрономического события с локализованным названием
 - **Offset** (text): Величина смещения в минутах (отображается только при offset ≠ 0)
+- **Turns off at** (text): Время автовыключения (отката) — показывается только при включённом автовыключении (`duration` > 0) с обратимыми действиями
 
 ### Внешний вид
 
@@ -242,7 +261,7 @@ service wb-rules restart
 
 ### Описание параметров конфигурации
 
-Конфигурация имеет 6 параметров, из которых 1 необязательный.
+Конфигурация имеет 6 параметров, из которых 1 необязательный (`idPrefix`).
 
 AstronomicalTimerConfig:
 
@@ -280,10 +299,19 @@ AstronomicalTimerConfig:
      Пример: 'lights/garden/switch'
    - `behaviorType` {string} Тип поведения из control-interaction-registry.mod.js
      Возможные значения: "setEnable", "setDisable", "setValue", "toggle",
-     "increaseValueBy", "decreaseValueBy", "press", "hold", "release"
+     "increaseValueBy", "decreaseValueBy", "setText", "setColor"
    - `actionValue` {mixed} Значение для типов setValue, increaseValueBy, decreaseValueBy
      Для setEnable/setDisable используется булево значение (true/false)
      Для increaseValueBy/decreaseValueBy используется число
+   - `reverseValue` {mixed} Не обязательный. Значение при отключении, к
+     которому вернуть контрол (только setValue/setText/setColor). Пусто —
+     контрол не изменяется при откате
+6. `duration` {object} Обязательный. Автовыключение — откат обратимых
+   действий по истечении времени. Значение 0 отключает.
+   - `durationValue` {number} Длительность (0 = выключено)
+   - `durationUnit` {string} Единицы: "hours", "minutes" или "seconds"
+   - Ограничение: не больше 12 часов. Откатываются toggle, setEnable,
+     setDisable и setValue/setText/setColor (к reverseValue)
 
 ### Пример кода
 
