@@ -14,21 +14,10 @@
  */
 
 /**
- * Action to enable a switch control
+ * Action to disable the control
  * @param {boolean} actualValue - Current state of the control
  * @param {*} actionValue - Not used
- * @returns {boolean} Always true
- */
-function setEnable(actualValue, actionValue) {
-  var newCtrlValue = true;
-  return newCtrlValue;
-}
-
-/**
- * Action to disable a switch control
- * @param {boolean} actualValue - Current state of the control
- * @param {*} actionValue - Not used
- * @returns {boolean} Always false
+ * @returns {boolean} Always returns false
  */
 function setDisable(actualValue, actionValue) {
   var newCtrlValue = false;
@@ -36,10 +25,21 @@ function setDisable(actualValue, actionValue) {
 }
 
 /**
- * Action to toggle a switch control state
+ * Action to enable the control
  * @param {boolean} actualValue - Current state of the control
  * @param {*} actionValue - Not used
- * @returns {boolean} Inverted control state
+ * @returns {boolean} Always returns true
+ */
+function setEnable(actualValue, actionValue) {
+  var newCtrlValue = true;
+  return newCtrlValue;
+}
+
+/**
+ * Action to toggle the control state
+ * @param {boolean} actualValue - Current state of the control
+ * @param {*} actionValue - Not used
+ * @returns {boolean} Returns the opposite of the current control state
  */
 function toggle(actualValue, actionValue) {
   var newCtrlValue = !actualValue;
@@ -47,10 +47,10 @@ function toggle(actualValue, actionValue) {
 }
 
 /**
- * Action to set a control value
+ * Action to set control value to actionValue
  * @param {number} actualValue - Current state of the control
- * @param {number|string} actionValue - Target value, cast to Number
- * @returns {number} New control value
+ * @param {number|string} actionValue - Value set by user, cast to Number
+ * @returns {number} Returns new control value
  */
 function setValue(actualValue, actionValue) {
   var newCtrlValue = Number(actionValue);
@@ -58,10 +58,10 @@ function setValue(actualValue, actionValue) {
 }
 
 /**
- * Action to increase the control value by actionValue
+ * Action to increase control value by actionValue amount
  * @param {number} actualValue - Current state of the control
- * @param {number|string} actionValue - Delta to add, cast to Number
- * @returns {number} New control value
+ * @param {number|string} actionValue - Value to increase, cast to Number
+ * @returns {number} Returns new control value
  */
 function increaseValueBy(actualValue, actionValue) {
   var newCtrlValue = actualValue + Number(actionValue);
@@ -69,10 +69,10 @@ function increaseValueBy(actualValue, actionValue) {
 }
 
 /**
- * Action to decrease the control value by actionValue
+ * Action to decrease control value by actionValue amount
  * @param {number} actualValue - Current state of the control
- * @param {number|string} actionValue - Delta to subtract, cast to Number
- * @returns {number} New control value
+ * @param {number|string} actionValue - Value to decrease, cast to Number
+ * @returns {number} Returns new control value
  */
 function decreaseValueBy(actualValue, actionValue) {
   var newCtrlValue = actualValue - Number(actionValue);
@@ -80,10 +80,10 @@ function decreaseValueBy(actualValue, actionValue) {
 }
 
 /**
- * Action to set a text control value
+ * Action to set a text control value to actionValue
  * @param {string} actualValue - Current state of the control
  * @param {string} actionValue - Text set by user
- * @returns {string} New control value
+ * @returns {string} Returns new control value
  */
 function setText(actualValue, actionValue) {
   var newCtrlValue = actionValue;
