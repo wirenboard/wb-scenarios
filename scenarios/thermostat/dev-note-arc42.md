@@ -72,7 +72,7 @@ wb-scenarios.conf         -->  scenario-init-main.js
          |                          |
          |                     thermostat.mod.js
          |                          |
-         |                          ├── control-interaction-registry.mod (setEnable/setDisable)
+         |                          ├── table-handling-actions.mod (setEnable/setDisable)
          |                          ├── pid-engine.mod (PID computation)
          |                          |
          v                     [wb-rules engine]

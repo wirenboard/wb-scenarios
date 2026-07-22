@@ -113,7 +113,7 @@ service wb-rules restart
 
 Действия полностью соответствуют структуре сценария `devices-control`:
 
-- **behaviorType** (string): Тип поведения из `control-interaction-registry.mod.js`
+- **behaviorType** (string): Тип поведения из `table-handling-actions.mod.js`
 - **control** (string): Имя контрола в формате "device/control"
 - **actionValue** (mixed): Значение для типов setValue, increaseValueBy, decreaseValueBy
 - **reverseValue** (mixed, необязательно): Значение при отключении, к которому вернуть контрол (только для setValue/setText/setColor). Пусто — контрол не изменяется при откате
@@ -297,7 +297,7 @@ AstronomicalTimerConfig:
    Каждый элемент массива содержит объект с полями:
    - `control` {string} Имя контрола в формате "device/control"
      Пример: 'lights/garden/switch'
-   - `behaviorType` {string} Тип поведения из control-interaction-registry.mod.js
+   - `behaviorType` {string} Тип поведения из table-handling-actions.mod.js
      Возможные значения: "setEnable", "setDisable", "setValue", "toggle",
      "increaseValueBy", "decreaseValueBy", "setText", "setColor"
    - `actionValue` {mixed} Значение для типов setValue, increaseValueBy, decreaseValueBy

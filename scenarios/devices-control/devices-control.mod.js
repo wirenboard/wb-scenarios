@@ -3,8 +3,8 @@
  * @description Input-Output link scenario class that extends ScenarioBase
  *              Module for initializing connections between multiple input and output
  *              MQTT topics. Supported control types see in tables:
- *                - registry.eventsTable
- *                - registry.actionsTable
+ *                - eventsTable  (table-handling-events.mod)
+ *                - actionsTable (table-handling-actions.mod)
  *              When any input topic changes according to configured
  *              event - all output topics change state according
  *              to configured action
@@ -16,7 +16,8 @@ var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
-var registry = require('control-interaction-registry.mod');
+var registry = require('table-handling-actions.mod');
+var events = require('table-handling-events.mod');
 var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
 
@@ -167,7 +168,7 @@ DevicesControlScenario.prototype.validateCfg = function (cfg) {
   // Check control types
   var isInputControlsValid = validateControls(
     cfg.inControls,
-    registry.eventsTable
+    events.eventsTable
   );
   var isOutputControlsValid = validateControls(
     cfg.outControls,
@@ -251,7 +252,7 @@ function inputChangeHandler(self, newValue, devName, cellName) {
 
   // Check the configured trigger condition
   // @note: For "whenChange" we always continue
-  if (!registry.eventsTable[eventType].handler(newValue)) {
+  if (!events.eventsTable[eventType].handler(newValue)) {
     log.debug('Event condition not met for behaviorType: ' + eventType);
     return;
   }

@@ -8,7 +8,7 @@
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
-var registry = require('control-interaction-registry.mod');
+var registry = require('table-handling-actions.mod');
 var PidEngine = require('pid-engine.mod').PidEngine;
 var constants = require('constants.mod');
 

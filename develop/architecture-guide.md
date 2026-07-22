@@ -22,7 +22,8 @@
 - **wbsc-wait-controls** - ожидание готовности контролов
 - **ScenarioPersistentStorage** - [хранилище сценариев](scenario-persistent-storage.md)
 - **constants** - общие константы (`src/constants.mod.js`)
-- **control-interaction-registry** - реестр действий (`actionsTable`) и событий (`eventsTable`) над контролами (`src/control-interaction-registry.mod.js`)
+- **table-handling-actions** - таблица действий (`actionsTable`) над outControls (`src/table-handling-actions.mod.js`)
+- **table-handling-events** - таблица событий (`eventsTable`) над inControls (`src/table-handling-events.mod.js`)
 - **suncalc** - библиотека расчёта астрособытий (`src/suncalc.mod.js`)
 
 ## ScenarioBase - обязательные методы для наследников

@@ -1,14 +1,13 @@
 /**
- * @file control-interaction-registry.mod.js - Unified registry of control interactions for scenarios
+ * @file table-handling-actions.mod.js - Registry of output actions applied to controls
  *
- *       Exports two tables:
- *        - actionsTable — output effects applied to controls.
- *          Entry: { reqCtrlTypes, launchHandler, resetHandler }
- *            launchHandler — perform the action (former launchResolver),
- *            resetHandler  — undo the action (former resetResolver);
- *        - eventsTable — control events. Each handler is a predicate that
- *          takes the new control value and returns whether the event fired.
- *          Entry: { reqCtrlTypes, handler }
+ *       Exports the actionsTable — output effects applied to controls.
+ *       Entry: { reqCtrlTypes, launchHandler, resetHandler }
+ *         launchHandler — perform the action (former launchResolver),
+ *         resetHandler  — undo the action (former resetResolver).
+ *       Merges the two former action tables (table-handling-actions and
+ *       registry-action-resolvers). Control events live in a separate
+ *       module - table-handling-events.mod.js.
  *
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
@@ -117,36 +116,6 @@ function setColor(actualValue, actionValue) {
 }
 
 /**
- * Control activation event
- * @param {boolean} newValue - New state of the control
- * @returns {boolean} true if the control is enabled
- */
-function whenEnabled(newValue) {
-  var isEventTriggered = newValue === true;
-  return isEventTriggered;
-}
-
-/**
- * Control deactivation event
- * @param {boolean} newValue - New state of the control
- * @returns {boolean} true if the control is disabled
- */
-function whenDisabled(newValue) {
-  var isEventTriggered = newValue === false;
-  return isEventTriggered;
-}
-
-/**
- * Any control state change event
- * @param {*} newValue - New state of the control
- * @returns {boolean} Always true
- */
-function whenChange(newValue) {
-  var isEventTriggered = true; // Always triggers on change
-  return isEventTriggered;
-}
-
-/**
  * Registry of output effects
  *
  * Contains the action name and its corresponding:
@@ -205,27 +174,4 @@ var actionsTable = {
   },
 };
 
-/**
- * Registry of control events
- *
- * Contains the event name and its corresponding:
- * - reqCtrlTypes — allowed control types ([] — any type)
- * - handler      — predicate: returns whether the event fired
- */
-var eventsTable = {
-  whenChange: {
-    reqCtrlTypes: [], // [] empty - can use any type
-    handler: whenChange,
-  },
-  whenDisabled: {
-    reqCtrlTypes: ['switch'],
-    handler: whenDisabled,
-  },
-  whenEnabled: {
-    reqCtrlTypes: ['switch'],
-    handler: whenEnabled,
-  },
-};
-
 exports.actionsTable = actionsTable;
-exports.eventsTable = eventsTable;

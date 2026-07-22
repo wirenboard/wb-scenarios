@@ -257,11 +257,10 @@ main();
 
 1. Реализовать логику обработки
 
-Описания событий и действий находятся в едином реестре с таблицами
-`src/control-interaction-registry.mod.js`:
+Описания событий и действий находятся в отдельных таблицах:
 
-- Для событий: таблица `eventsTable`
-- Для действий: таблица `actionsTable`
+- Для событий: таблица `eventsTable` (`src/table-handling-events.mod.js`)
+- Для действий: таблица `actionsTable` (`src/table-handling-actions.mod.js`)
 
 Процесс добавления выглядит следующим образом:
 

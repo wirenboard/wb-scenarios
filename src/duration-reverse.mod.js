@@ -8,7 +8,7 @@
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
-var registry = require('control-interaction-registry.mod');
+var registry = require('table-handling-actions.mod');
 var constants = require('constants.mod');
 var Logger = require('logger.mod').Logger;
 

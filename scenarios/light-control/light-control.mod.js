@@ -10,7 +10,7 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
 var vdHelpers = require('virtual-device-helpers.mod');
-var registry = require('control-interaction-registry.mod');
+var registry = require('table-handling-actions.mod');
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
 var isControlTypeValid =

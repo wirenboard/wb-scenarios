@@ -69,7 +69,7 @@
 
 Действия полностью соответствуют структуре сценария `devices-control`:
 
-- **behaviorType** (string): Тип поведения из `control-interaction-registry.mod.js`
+- **behaviorType** (string): Тип поведения из `table-handling-actions.mod.js`
 - **control** (string): Имя контрола
 - **actionValue** (mixed): Значение для типа поведения setValue, increaseValueBy, decreaseValueBy
 - **reverseValue** (mixed, необязательно): Значение при отключении, к которому\
