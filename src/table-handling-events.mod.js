@@ -1,5 +1,5 @@
 /**
- * @file table-handling-events.mod.js - Registry of control events
+ * @file Module for registered control events table handling
  *
  *       Exports the eventsTable — control events. Each handler is a predicate
  *       that takes the new control value and returns whether the event fired.
@@ -12,7 +12,7 @@
 /**
  * Control activation event
  * @param {boolean} newValue - New state of the control
- * @returns {boolean} true if the control is enabled
+ * @returns {boolean} Returns true if control is enabled
  */
 function whenEnabled(newValue) {
   var isEventTriggered = newValue === true;
@@ -22,7 +22,7 @@ function whenEnabled(newValue) {
 /**
  * Control deactivation event
  * @param {boolean} newValue - New state of the control
- * @returns {boolean} true if the control is disabled
+ * @returns {boolean} Returns true if control is disabled
  */
 function whenDisabled(newValue) {
   var isEventTriggered = newValue === false;
@@ -30,9 +30,9 @@ function whenDisabled(newValue) {
 }
 
 /**
- * Any control state change event
- * @param {*} newValue - New state of the control
- * @returns {boolean} Always true
+ * Control state change event
+ * @param {any} newValue - New state of the control
+ * @returns {boolean} Always returns true
  */
 function whenChange(newValue) {
   var isEventTriggered = true; // Always triggers on change

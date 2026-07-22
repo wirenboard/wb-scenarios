@@ -13,7 +13,7 @@
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
-var registry = require('table-handling-actions.mod');
+var actionsTable = require('table-handling-actions.mod').actionsTable;
 var constants = require('constants.mod');
 var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
@@ -25,11 +25,11 @@ var extractMqttTopics =
  * reverse logic is handled explicitly by executeReverse().
  */
 var periodicTimerActionsTable = {
-  setEnable: registry.actionsTable.setEnable,
-  setDisable: registry.actionsTable.setDisable,
-  setValue: registry.actionsTable.setValue,
-  setText: registry.actionsTable.setText,
-  setColor: registry.actionsTable.setColor,
+  setEnable: actionsTable.setEnable,
+  setDisable: actionsTable.setDisable,
+  setValue: actionsTable.setValue,
+  setText: actionsTable.setText,
+  setColor: actionsTable.setColor,
 };
 
 // Actions that carry a payload in initValue/reverseValue (vs. on/off actions)

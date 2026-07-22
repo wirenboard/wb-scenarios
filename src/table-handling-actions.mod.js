@@ -1,5 +1,5 @@
 /**
- * @file table-handling-actions.mod.js - Registry of output actions applied to controls
+ * @file Module for control actions table handling
  *
  *       Exports the actionsTable — output effects applied to controls.
  *       Entry: { reqCtrlTypes, launchHandler, resetHandler }
@@ -9,7 +9,8 @@
  *       registry-action-resolvers). Control events live in a separate
  *       module - table-handling-events.mod.js.
  *
- * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
+ * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
+ * @link Comments in JSDoc format <https://jsdoc.app/>
  */
 
 /**

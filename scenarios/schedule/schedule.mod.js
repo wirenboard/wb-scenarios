@@ -8,7 +8,7 @@ var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
-var registry = require('table-handling-actions.mod');
+var actionsTable = require('table-handling-actions.mod').actionsTable;
 var constants = require('constants.mod');
 var durationReverse = require('duration-reverse.mod');
 var isControlTypeValid =
@@ -264,7 +264,7 @@ ScheduleScenario.prototype.validateCfg = function (cfg) {
   // Check control types
   var isOutputControlsValid = validateControls(
     cfg.outControls,
-    registry.actionsTable
+    actionsTable
   );
 
   if (!isOutputControlsValid) {
@@ -573,7 +573,7 @@ function scheduleHandler(self, cfg) {
 
     try {
       var actualValue = dev[curCtrlName];
-      var newCtrlValue = registry.actionsTable[curUserAction].launchHandler(
+      var newCtrlValue = actionsTable[curUserAction].launchHandler(
         actualValue,
         curActionValue
       );

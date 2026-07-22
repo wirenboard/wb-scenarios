@@ -11,7 +11,7 @@ var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 var SunCalc = require('suncalc.mod');
-var registry = require('table-handling-actions.mod');
+var actionsTable = require('table-handling-actions.mod').actionsTable;
 var constants = require('constants.mod');
 var durationReverse = require('duration-reverse.mod');
 var isControlTypeValid =
@@ -299,7 +299,7 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
   }
 
   // Check control types
-  if (!validateControls(cfg.outControls, registry.actionsTable)) {
+  if (!validateControls(cfg.outControls, actionsTable)) {
     log.error(
       'Astronomical Timer validation error: One or more controls have invalid type'
     );
@@ -710,7 +710,7 @@ function astroHandler(self, cfg) {
 
     try {
       var actualValue = dev[curCtrlName];
-      var newCtrlValue = registry.actionsTable[curUserAction].launchHandler(
+      var newCtrlValue = actionsTable[curUserAction].launchHandler(
         actualValue,
         curActionValue
       );

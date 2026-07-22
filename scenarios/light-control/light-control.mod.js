@@ -10,7 +10,7 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
 var vdHelpers = require('virtual-device-helpers.mod');
-var registry = require('table-handling-actions.mod');
+var actionsTable = require('table-handling-actions.mod').actionsTable;
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
 var isControlTypeValid =
@@ -124,21 +124,21 @@ LightControlScenario.prototype.defineControlsWaitConfig = function (cfg) {
 };
 
 /**
- * Validate outputs against the action registry
+ * Validate outputs against the actions table
  * @param {Array} lightDevices - Array of light device configs
  * @returns {boolean} True if every output is valid
  */
 function validateLightDevices(lightDevices) {
   for (var i = 0; i < lightDevices.length; i++) {
     var ctrl = lightDevices[i];
-    if (!registry.actionsTable[ctrl.behaviorType]) {
+    if (!actionsTable[ctrl.behaviorType]) {
       log.error(
         "Light-control validation error: behavior type '{}' not found",
         ctrl.behaviorType
       );
       return false;
     }
-    var reqCtrlTypes = registry.actionsTable[ctrl.behaviorType].reqCtrlTypes;
+    var reqCtrlTypes = actionsTable[ctrl.behaviorType].reqCtrlTypes;
     if (!isControlTypeValid(ctrl.mqttTopicName, reqCtrlTypes)) {
       log.error(
         "Light-control validation error: control '{}' is not of valid type for '{}'",
@@ -544,7 +544,7 @@ function controlValueEquals(controlValue, resolvedValue) {
 function precomputeLightDeviceTargets(cfg) {
   for (var i = 0; i < cfg.lightDevices.length; i++) {
     var ctrl = cfg.lightDevices[i];
-    var entry = registry.actionsTable[ctrl.behaviorType];
+    var entry = actionsTable[ctrl.behaviorType];
     ctrl.resolvedOnValue = entry.launchHandler(null, ctrl.actionValue);
     ctrl.resolvedOffValue = entry.resetHandler(
       null,

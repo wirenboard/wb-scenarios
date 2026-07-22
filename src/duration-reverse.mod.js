@@ -8,7 +8,7 @@
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
-var registry = require('table-handling-actions.mod');
+var actionsTable = require('table-handling-actions.mod').actionsTable;
 var constants = require('constants.mod');
 var Logger = require('logger.mod').Logger;
 
@@ -158,20 +158,17 @@ function executeReverse(cfg) {
       var newCtrlValue;
 
       if (behaviorType === 'toggle') {
-        newCtrlValue =
-          registry.actionsTable.toggle.launchHandler(actualValue);
+        newCtrlValue = actionsTable.toggle.launchHandler(actualValue);
       } else if (behaviorType === 'setEnable') {
-        newCtrlValue =
-          registry.actionsTable.setDisable.launchHandler(actualValue);
+        newCtrlValue = actionsTable.setDisable.launchHandler(actualValue);
       } else if (behaviorType === 'setDisable') {
-        newCtrlValue =
-          registry.actionsTable.setEnable.launchHandler(actualValue);
+        newCtrlValue = actionsTable.setEnable.launchHandler(actualValue);
       } else {
         var reverseValue = outControl.reverseValue;
         if (reverseValue === undefined || reverseValue === '') {
           continue;
         }
-        newCtrlValue = registry.actionsTable[behaviorType].launchHandler(
+        newCtrlValue = actionsTable[behaviorType].launchHandler(
           actualValue,
           reverseValue
         );
