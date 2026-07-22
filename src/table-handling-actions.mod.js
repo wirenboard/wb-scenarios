@@ -47,9 +47,9 @@ function toggle(actualValue, actionValue) {
 }
 
 /**
- * Action to set a numeric control value
+ * Action to set a control value
  * @param {number} actualValue - Current state of the control
- * @param {number|string} actionValue - Value set by user
+ * @param {number|string} actionValue - Target value, cast to Number
  * @returns {number} New control value
  */
 function setValue(actualValue, actionValue) {
@@ -60,7 +60,7 @@ function setValue(actualValue, actionValue) {
 /**
  * Action to increase the control value by actionValue
  * @param {number} actualValue - Current state of the control
- * @param {number|string} actionValue - Value set by user
+ * @param {number|string} actionValue - Delta to add, cast to Number
  * @returns {number} New control value
  */
 function increaseValueBy(actualValue, actionValue) {
@@ -71,7 +71,7 @@ function increaseValueBy(actualValue, actionValue) {
 /**
  * Action to decrease the control value by actionValue
  * @param {number} actualValue - Current state of the control
- * @param {number|string} actionValue - Value set by user
+ * @param {number|string} actionValue - Delta to subtract, cast to Number
  * @returns {number} New control value
  */
 function decreaseValueBy(actualValue, actionValue) {
@@ -121,8 +121,8 @@ function setColor(actualValue, actionValue) {
  *
  * Contains the action name and its corresponding:
  * - reqCtrlTypes  — allowed control types for the action
- * - launchHandler — action execution handler
- * - resetHandler  — action undo handler (for the "two-value model")
+ * - launchHandler — applies the action
+ * - resetHandler  — reverses the action
  */
 var actionsTable = {
   toggle: {

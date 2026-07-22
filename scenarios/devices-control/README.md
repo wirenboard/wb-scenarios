@@ -255,7 +255,7 @@ main();
 - Для событий: `inControls.items.properties.behaviorType`
 - Для действий: `outControls.items.properties.behaviorType`
 
-1. Реализовать логику обработки
+2. Реализовать логику обработки
 
 Описания событий и действий находятся в отдельных таблицах:
 
