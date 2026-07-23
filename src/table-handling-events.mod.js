@@ -1,6 +1,10 @@
 /**
  * @file Module for registered control events table handling
  *
+ *       Exports the eventsTable — control events. Each handler is a predicate
+ *       that takes the new control value and returns whether the event fired.
+ *       Entry: { reqCtrlTypes, handler }
+ *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  * @link Comments in JSDoc format <https://jsdoc.app/>
  */
@@ -36,10 +40,11 @@ function whenChange(newValue) {
 }
 
 /**
- * Events table
- * Contains event name and its corresponding:
- * - Allowed control types
- * - Handler
+ * Registry of control events
+ *
+ * Contains the event name and its corresponding:
+ * - reqCtrlTypes — allowed control types ([] — any type)
+ * - handler      — predicate: returns whether the event fired
  */
 var eventsTable = {
   whenChange: {

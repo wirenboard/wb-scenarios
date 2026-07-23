@@ -1,3 +1,9 @@
+wb-scenarios (1.10.1) stable; urgency=medium
+
+  * Merge the two action tables into table-handling-actions.mod.js
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Wed, 22 Jul 2026 15:18:00 +0300
+
 wb-scenarios (1.10.0) stable; urgency=medium
 
   * Fix light-control: split lightOn command/status, deterministic startup, gate door timer during motion
