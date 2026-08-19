@@ -65,7 +65,7 @@ function replaceChar(char) {
  *     with valid characters only
  */
 function translit(input) {
-  id = input
+  var id = input
     .toLowerCase()
     .split('')
     .map(replaceChar) // Replaces non-Latin symbols to latin char

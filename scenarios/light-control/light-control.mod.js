@@ -1352,7 +1352,7 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   if (cfg.isDebugEnabled === true) {
     log.debug('Scenario debug enabled - add extra controls to VD');
     var self = this;
-    ok = addAllLinkedDevicesToVd(self, cfg);
+    var ok = addAllLinkedDevicesToVd(self, cfg);
     if (!ok) return false;
   }
 
