@@ -52,10 +52,10 @@ function isControlExists(controlName) {
  * Добавляет RO (read-only) связанный контрол к виртуальному девайсу.
  * Используется для отображения статуса других датчиков в списке виртуального устройства.
  *
- * @param {Object} srcMqttControl - Строка MQTT control ('deviceName/cellName')
+ * @param {string} srcMqttControl - Строка MQTT control ('deviceName/cellName')
  * @param {Object} vDevObj - Объект виртуального девайса (как результат defineVirtualDevice)
+ * @param {string} vDevName - Имя виртуального девайса (используется в имени правила и топика)
  * @param {string} cellBaseName - Название базовой ячейки (например 'motion_sensor_0')
- * @param {string} cellType - Тип ячейки (например 'value')
  * @param {string} titlePrefix - Префикс для заголовка (например 'Motion:' или 'Opening:')
  * @returns {boolean} Возвращает true если все ок
  */
@@ -135,7 +135,7 @@ function addAlarm(vDevObj, cellBaseName, cellTitleRu, cellTitleEn) {
 
 /**
  * Toggles rules based on the provided value
- * @param {Array<number>} managedRulesId Array of rule IDs to toggle
+ * @param {Array<RuleId>} managedRulesId Array of rule IDs to toggle
  * @param {boolean} newValue Whether to enable or disable rules
  */
 function toggleRules(managedRulesId, newValue) {
@@ -175,7 +175,7 @@ function setVdTotalError(vdObj, errorMsg) {
  * @param {string} idPrefix Scenario ID prefix
  * @param {string} vdName The name of the virtual device
  * @param {string} vdTitle The title of the virtual device
- * @param {Array<number>} managedRulesId Array of rule IDs to toggle on switch
+ * @param {Array<RuleId>} managedRulesId Array of rule IDs to toggle on switch
  * @returns {Object|null} The virtual device object if created, otherwise null
  */
 function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
@@ -211,6 +211,7 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
     psWBSC['VdList'][vdName] = true;
   }
 
+  /** @type {ControlOptions} */
   var controlCfg = {
     title: {
       en: 'Activate scenario rule',

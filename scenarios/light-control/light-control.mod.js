@@ -582,6 +582,13 @@ function setValueAllDevicesByBehavior(actionControlsArr, state) {
  * @property {string} behaviorType - Sensor behavior type
  *   - whenEnabled
  *   - whenDisabled
+ *   - whileValueHigherThanThreshold (motion sensors, uses actionValue)
+ * @property {any} [actionValue] - Threshold for whileValueHigherThanThreshold;
+ *   for light devices - the value applied by the action
+ * @property {any} [resolvedOnValue] - Light devices only: value published on
+ *   "light on", precomputed by precomputeLightDeviceTargets()
+ * @property {any} [resolvedOffValue] - Light devices only: value published on
+ *   "light off", precomputed by precomputeLightDeviceTargets()
  * @property {string} [description] - Optional description of the sensor
  */
 
