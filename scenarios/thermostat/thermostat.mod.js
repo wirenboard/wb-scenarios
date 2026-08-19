@@ -790,7 +790,7 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
  *     Example: `vdCtrlCurTemp = vdObj.getControl('ctrlID')`
  * @param {Object} vdCtrlEnable - Control "Enable rules" in scenario virtual dev
  * @param {ThermostatConfig} cfg - Configuration parameters
- * @returns {RuleId} ID of the created rule (falsy if creation failed)
+ * @returns {RuleId} ID of the created rule
  */
 function createErrChangeRule(
   self,

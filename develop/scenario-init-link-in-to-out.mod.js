@@ -24,7 +24,7 @@ var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
 
 /**
  * Initialize scenario using specified settings
- * @param {object} scenarioCfg - Scenario object containing settings
+ * @param {Object} scenarioCfg - Scenario object containing settings
  * @returns {void}
  */
 function initializeScenario(scenarioCfg) {
