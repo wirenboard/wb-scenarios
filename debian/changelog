@@ -1,3 +1,17 @@
+wb-scenarios (1.10.2) stable; urgency=medium
+
+  * Fix scenario dying permanently when its virtual device name is held by
+    retained MQTT topics left by a previous wb-rules session or pushed back
+    by an MQTT bridge
+  * Remove retained topics only of virtual devices nobody owns any more, and
+    after initialization instead of before it: scenario startup no longer
+    waits ~3 s per known device
+  * Scenarios from the config now claim their names before rules in
+    /etc/wb-rules are loaded, so a rule defining a "wbsc_" device fails to
+    load instead of breaking the scenario
+
+ -- Victor Fedorov <victor.fedorov@wirenboard.com>  Fri, 21 Aug 2026 10:15:00 +0300
+
 wb-scenarios (1.10.1) stable; urgency=medium
 
   * Merge the two action tables into table-handling-actions.mod.js
