@@ -184,9 +184,9 @@ ScenarioBase.prototype.init = function (name, cfg) {
    */
   if (
     typeof __filename !== 'undefined' &&
-    this.getPsMeta('initScript', null) !== __filename
+    this.getPsMeta('vdInitScript', null) !== __filename
   ) {
-    this.setPsMeta('initScript', __filename);
+    this.setPsMeta('vdInitScript', __filename);
   }
 
   /**

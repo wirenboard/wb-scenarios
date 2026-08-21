@@ -26,14 +26,14 @@ var log = new Logger('WBSC-init-main');
 
 /**
  * Path of this script, as seen by wb-rules. Scenarios created while it was
- * loading store the same value in their 'initScript' meta, which is how the
+ * loading store the same value in their 'vdInitScript' meta, which is how the
  * sweep below tells its own scenarios from those defined in user rules.
  *
  * If wb-rules ever stops exposing __filename, this stays empty and matches
  * nothing, so the sweep does nothing instead of removing the wrong topics
  * @type {string}
  */
-var initScript = typeof __filename !== 'undefined' ? __filename : '';
+var vdInitScript = typeof __filename !== 'undefined' ? __filename : '';
 
 /**
  * Checks whether the name is held by a virtual device of a running scenario
@@ -61,7 +61,7 @@ function isVdInUse(vdName) {
  * Only scenarios created by this script are considered: they are all
  * initialized by the time this runs, so one that is not alive any more is
  * gone for good. Scenarios created from user rules store a different
- * 'initScript' - those files are loaded after this one, their devices do not
+ * 'vdInitScript' - those files are loaded after this one, their devices do not
  * exist yet and must not be swept.
  *
  * @returns {Array<string>} Names whose retained topics can be removed
@@ -73,8 +73,8 @@ function collectAbandonedVdNames() {
     .getStoredScenarioKeys()
     .forEach(function checkOne(idPrefix) {
       var isOurScenario =
-        scenarioPersistentStorage.getMeta(idPrefix, 'initScript', null) ===
-        initScript;
+        scenarioPersistentStorage.getMeta(idPrefix, 'vdInitScript', null) ===
+        vdInitScript;
       if (!isOurScenario) {
         return;
       }
@@ -88,7 +88,7 @@ function collectAbandonedVdNames() {
         return;
       }
 
-      // Always stored next to 'initScript' by ScenarioBase
+      // Always stored next to 'vdInitScript' by ScenarioBase
       var vdName = scenarioPersistentStorage.getMeta(idPrefix, 'vdName', null);
 
       if (isVdInUse(vdName)) {
