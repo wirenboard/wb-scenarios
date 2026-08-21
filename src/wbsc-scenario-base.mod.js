@@ -175,6 +175,29 @@ ScenarioBase.prototype.init = function (name, cfg) {
 
   this.setPsMeta('vdName', this.genNames.vDevice);
 
+  /**
+   * Path of the script that created this scenario. wb-rules keeps __filename
+   * per script context, so a scenario defined in /etc/wb-scenarios.conf gets
+   * the path of scenario-init-main.js, and one created from a user rule gets
+   * the path of that rule. It lets the init script tell apart the scenarios
+   * it owns from the ones it must not touch
+   */
+  if (
+    typeof __filename !== 'undefined' &&
+    this.getPsMeta('initScript', null) !== __filename
+  ) {
+    this.setPsMeta('initScript', __filename);
+  }
+
+  /**
+   * Drop the sweep mark: the name is taken by a running scenario again, so
+   * its topics must be sweepable once more after the next removal. Without
+   * this reset a name could be swept only once in the storage lifetime.
+   */
+  if (this.getPsMeta('vdSwept', false) === true) {
+    this.setPsMeta('vdSwept', false);
+  }
+
   this.vd = {
     devObj: devObj,
     setTotalError: function (errorMsg) {
@@ -273,7 +296,18 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function () {
 
   this._setScenarioEnableStatusFromStorage();
 
-  log.info('Scenario "{}" base initialization completed', this.name);
+  /**
+   * The VD name ties a "wbsc_" device to the scenario owning it, and the
+   * script path says where that scenario came from - the config or a
+   * particular user rule
+   */
+  log.info(
+    'Scenario "{}" base initialization completed, virtual device "{}", ' +
+      'created by "{}"',
+    this.name,
+    this.genNames.vDevice,
+    typeof __filename !== 'undefined' ? __filename : '<unknown>'
+  );
   return true;
 };
 
