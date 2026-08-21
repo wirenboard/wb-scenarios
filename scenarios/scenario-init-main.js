@@ -76,6 +76,7 @@ function collectAbandonedVdNames() {
         scenarioPersistentStorage.getMeta(idPrefix, 'vdInitScript', null) ===
         vdInitScript;
       if (!isOurScenario) {
+        log.debug('Skip "{}": created by another script', idPrefix);
         return;
       }
 
@@ -85,6 +86,7 @@ function collectAbandonedVdNames() {
         false
       );
       if (isSwept === true) {
+        log.debug('Skip "{}": topics already removed', idPrefix);
         return;
       }
 
@@ -92,6 +94,7 @@ function collectAbandonedVdNames() {
       var vdName = scenarioPersistentStorage.getMeta(idPrefix, 'vdName', null);
 
       if (isVdInUse(vdName)) {
+        log.debug('Skip "{}": virtual device is in use', idPrefix);
         return;
       }
 
