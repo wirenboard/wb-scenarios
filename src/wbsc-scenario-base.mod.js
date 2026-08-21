@@ -296,18 +296,7 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function () {
 
   this._setScenarioEnableStatusFromStorage();
 
-  /**
-   * The VD name ties a "wbsc_" device to the scenario owning it, and the
-   * script path says where that scenario came from - the config or a
-   * particular user rule
-   */
-  log.info(
-    'Scenario "{}" base initialization completed, virtual device "{}", ' +
-      'created by "{}"',
-    this.name,
-    this.genNames.vDevice,
-    typeof __filename !== 'undefined' ? __filename : '<unknown>'
-  );
+  log.info('Scenario "{}" base initialization completed', this.name);
   return true;
 };
 

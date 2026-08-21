@@ -201,8 +201,6 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
    * Only a name held by a live device is a real conflict, and wb-rules
    * reports it as an exception - see the catch below.
    */
-  log.debug('Creating virtual device "{}"', vdName);
-
   var vdObj = null;
   try {
     vdObj = defineVirtualDevice(vdName, vdCfg);
@@ -219,6 +217,27 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   if (!vdObj) {
     log.error('Virtual device "{}" not created', vdTitle);
     return null;
+  }
+
+  /**
+   * The only record that this name belongs to us, and the only one printed
+   * even when the scenario fails later - the message at the end of base
+   * initialization never appears then. wb-rules keeps __filename per script
+   * context, so it points at the config init script or at the user rule
+   */
+  log.info(
+    'Virtual device "{}" created for scenario "{}" by "{}"',
+    vdName,
+    vdTitle,
+    typeof __filename !== 'undefined' ? __filename : '<unknown>'
+  );
+
+  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
+  if (psWBSC['VdList'] !== undefined) {
+    psWBSC['VdList'][vdName] = true;
+  } else {
+    psWBSC['VdList'] = new StorableObject({});
+    psWBSC['VdList'][vdName] = true;
   }
 
   var controlCfg = {

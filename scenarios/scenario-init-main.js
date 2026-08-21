@@ -140,10 +140,14 @@ function sweepAbandonedVdTopics(vdNames) {
 }
 
 /**
- * Drops the device list used by versions before the registry was read here
+ * Resets the device list kept for rollback to 1.10.1 and older
+ *
+ * Those versions rebuild the list on every start and read it to know what to
+ * clean up. It is not used here, but createBasicVd() keeps filling it, so a
+ * downgrade finds the same data it used to
  * @returns {void}
  */
-function dropLegacyVdList() {
+function resetVdListForRollback() {
   var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
   if (psWBSC['VdList'] !== undefined) {
     psWBSC['VdList'] = null;
@@ -153,7 +157,7 @@ function dropLegacyVdList() {
 function main() {
   log.debug('Start initialisation all types scenarios');
 
-  dropLegacyVdList();
+  resetVdListForRollback();
 
   var registeredScenarios =
     scenarioPersistentStorage.getStoredScenarioKeys();
