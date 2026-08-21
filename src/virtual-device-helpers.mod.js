@@ -182,33 +182,43 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   var ctrlRuleEnabled = 'rule_enabled';
   var ctrlInitStatus = 'state';
 
-  var existingVdObj = getDevice(vdName);
-  if (existingVdObj !== undefined) {
-    log.error('Virtual device "{}" already exists in system', vdName);
-    return null;
-  }
-  log.debug(
-    'Virtual device "{}" does not exist in system -> create new VD',
-    vdName
-  );
-
   var vdCfg = {
     title: vdTitle,
     cells: {},
   };
-  var vdObj = defineVirtualDevice(vdName, vdCfg);
+
+  /**
+   * The name is intentionally NOT checked before creation (INT-1240)
+   *
+   * getDevice() resolves a device that exists only as retained MQTT topics
+   * too: our own leftovers from a previous wb-rules session, or copies
+   * pushed back by an MQTT bridge. wb-rules starts without '-cleanup', so
+   * such leftovers are there after every restart of the service. They have
+   * no live owner and defineVirtualDevice() takes the name back from them,
+   * therefore checking the name first turned a routine restart into a
+   * scenario that never starts again.
+   *
+   * Only a name held by a live device is a real conflict, and wb-rules
+   * reports it as an exception - see the catch below.
+   */
+  log.debug('Creating virtual device "{}"', vdName);
+
+  var vdObj = null;
+  try {
+    vdObj = defineVirtualDevice(vdName, vdCfg);
+  } catch (err) {
+    log.error(
+      'Virtual device "{}" not created: {}. If the name is taken by a live ' +
+        'device, find and remove its owner - the "wbsc_" namespace is ' +
+        'reserved for scenarios',
+      vdName,
+      err.message || err
+    );
+    return null;
+  }
   if (!vdObj) {
     log.error('Virtual device "{}" not created', vdTitle);
     return null;
-  }
-
-  // Saving all created virtual devices to persistent storage
-  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
-  if (psWBSC['VdList'] !== undefined) {
-    psWBSC['VdList'][vdName] = true;
-  } else {
-    psWBSC['VdList'] = new StorableObject({});
-    psWBSC['VdList'][vdName] = true;
   }
 
   var controlCfg = {
