@@ -222,15 +222,9 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   /**
    * The only record that this name belongs to us, and the only one printed
    * even when the scenario fails later - the message at the end of base
-   * initialization never appears then. wb-rules keeps __filename per script
-   * context, so it points at the config init script or at the user rule
+   * initialization never appears then
    */
-  log.info(
-    'Virtual device "{}" created for scenario "{}" by "{}"',
-    vdName,
-    vdTitle,
-    typeof __filename !== 'undefined' ? __filename : '<unknown>'
-  );
+  log.info('Virtual device "{}" created for scenario "{}"', vdName, vdTitle);
 
   var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
   if (psWBSC['VdList'] !== undefined) {
