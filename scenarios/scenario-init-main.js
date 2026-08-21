@@ -149,9 +149,7 @@ function sweepAbandonedVdTopics(vdNames) {
  */
 function resetVdListForRollback() {
   var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
-  if (psWBSC['VdList'] !== undefined) {
-    psWBSC['VdList'] = null;
-  }
+  psWBSC['VdList'] = null;
 }
 
 function main() {
