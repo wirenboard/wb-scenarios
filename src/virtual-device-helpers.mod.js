@@ -222,9 +222,16 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   /**
    * The only record that this name belongs to us, and the only one printed
    * even when the scenario fails later - the message at the end of base
-   * initialization never appears then
+   * initialization never appears then. The script name tells a scenario from
+   * the config apart from one created in a user rule
    */
-  log.info('Virtual device "{}" created for scenario "{}"', vdName, vdTitle);
+  var scriptPath = typeof __filename !== 'undefined' ? __filename : '';
+  log.info(
+    'Virtual device "{}" created for scenario "{}" by "{}"',
+    vdName,
+    vdTitle,
+    scriptPath.slice(scriptPath.lastIndexOf('/') + 1) || '<unknown>'
+  );
 
   var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
   if (psWBSC['VdList'] !== undefined) {
