@@ -188,7 +188,10 @@ function waitDevicesForgotten(vdNames, onDone) {
     if (new Date().getTime() >= deadline) {
       clearInterval(timerId);
       log.warning(
-        'Devices still known to the engine {}s after cleanup: {}',
+        'Devices are present again {}s after their topics were removed: ' +
+          '{}. Either the engine has not processed the removal yet, or ' +
+          'something keeps republishing these topics - an external client ' +
+          'or an MQTT bridge',
         DRAIN_TIMEOUT_MS / 1000,
         left.join(', ')
       );
