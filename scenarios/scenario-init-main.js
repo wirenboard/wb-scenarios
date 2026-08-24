@@ -32,6 +32,38 @@ var DRAIN_PERIOD_MS = 100;
 var DRAIN_TIMEOUT_MS = 5000;
 
 /**
+ * Topics that make up a device in the MQTT conventions of Wiren Board
+ *
+ * The lists are fixed on purpose: an empty payload is published to every one
+ * of them, whether the topic exists or not. A device whose meta was lost -
+ * for example one the engine republished only partially - has nothing for a
+ * tool that deletes only the topics it can see, and stays in the system
+ */
+var DEV_META_TOPICS = [
+  'meta',
+  'meta/name',
+  'meta/driver',
+  'meta/title',
+  'meta/model',
+  'meta/error',
+];
+var CTRL_TOPIC_SUFFIXES = [
+  '',
+  '/meta',
+  '/meta/type',
+  '/meta/order',
+  '/meta/readonly',
+  '/meta/units',
+  '/meta/min',
+  '/meta/max',
+  '/meta/precision',
+  '/meta/enum',
+  '/meta/error',
+  '/meta/description',
+  '/meta/title',
+];
+
+/**
  * Publishes the readiness flag, reset to false
  *
  * The flag lives on a control and not in a JS variable or in the persistent
@@ -201,10 +233,52 @@ function waitDevicesForgotten(vdNames, onDone) {
 }
 
 /**
- * Removes retained topics of the given devices and reports the failed ones
+ * Removes retained topics of one device by publishing empty payloads
  *
- * The tool prints a progress bar and a warning about an empty topic mask, and
- * both are of no use here, so only the marks of the failed removals are kept
+ * Virtual devices are never touched here: their topics are a projection of
+ * the engine state, removing them leaves the device alive but invisible
+ *
+ * @param {string} vdName - Virtual device name
+ * @returns {boolean} True if the topics were published for removal
+ */
+function wipeVdTopics(vdName) {
+  var vdObj = getDevice(vdName);
+  if (vdObj === undefined || vdObj.isVirtual() === true) {
+    return false;
+  }
+
+  vdObj.controlsList().forEach(function wipeControl(ctrl) {
+    var ctrlName;
+    try {
+      ctrlName = ctrl.getId();
+    } catch (err) {
+      log.warning(
+        'Cannot read a control of "{}", its topics are kept: {}',
+        vdName,
+        err.message || err
+      );
+      return;
+    }
+
+    CTRL_TOPIC_SUFFIXES.forEach(function wipeOne(suffix) {
+      publish(
+        '/devices/' + vdName + '/controls/' + ctrlName + suffix,
+        '',
+        2,
+        true
+      );
+    });
+  });
+
+  DEV_META_TOPICS.forEach(function wipeOne(topic) {
+    publish('/devices/' + vdName + '/' + topic, '', 2, true);
+  });
+
+  return true;
+}
+
+/**
+ * Removes retained topics of the given devices
  *
  * @param {Array<string>} vdNames - Names to remove
  * @param {Function} onDone - Called when the removal is over
@@ -218,27 +292,9 @@ function removeVdTopics(vdNames, onDone) {
   }
 
   log.info('Removing topics of devices: {}', vdNames.join(', '));
+  vdNames.forEach(wipeVdTopics);
 
-  var cmdList = '';
-  vdNames.forEach(function addOne(vdName) {
-    cmdList =
-      cmdList +
-      'mqtt-delete-retained /devices/' +
-      vdName +
-      '/# >/dev/null || echo "FAILED ' +
-      vdName +
-      '";';
-  });
-
-  runShellCommand('{ ' + cmdList + ' } 2>/dev/null', {
-    captureOutput: true,
-    exitCallback: function onRemovalDone(exitCode, capturedOutput) {
-      if (capturedOutput) {
-        log.error('Some topics were not removed: {}', capturedOutput);
-      }
-      waitDevicesForgotten(vdNames, onDone);
-    },
-  });
+  waitDevicesForgotten(vdNames, onDone);
 }
 
 /**
