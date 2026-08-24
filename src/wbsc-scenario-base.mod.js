@@ -13,6 +13,30 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var WAIT_DEF = require('wbsc-wait-controls.mod').WAIT_DEF;
 var waitControls = require('wbsc-wait-controls.mod').waitControls;
 var Logger = require('logger.mod').Logger;
+var constants = require('constants.mod');
+
+var READY_VD = constants.READY_FLAG_VD;
+var READY_CTRL = constants.READY_FLAG_CTRL;
+var READY_WAIT_PERIOD_MS = 500;
+var READY_WAIT_TIMEOUT_MS = 60000;
+
+/**
+ * Checks whether the init script has finished removing leftover devices
+ *
+ * Fails open on purpose: if the flag is not published at all, waiting for it
+ * would stop every scenario on the controller, while creating the device
+ * right away only risks the conflict this flag helps to avoid
+ *
+ * @returns {boolean} True if creation of virtual devices is allowed
+ */
+function isCleanupDone() {
+  var vdObj = getDevice(READY_VD);
+  if (vdObj === undefined || !vdObj.isControlExists(READY_CTRL)) {
+    return true;
+  }
+
+  return dev[READY_VD + '/' + READY_CTRL] === true;
+}
 
 var loggerFileLabel = 'WBSC‑base-mod';
 var log = new Logger(loggerFileLabel);
@@ -83,6 +107,14 @@ function ScenarioBase() {
    * @type {Object}
    */
   this._ps = null;
+
+  /**
+   * Set while the creation of the virtual device is postponed until the
+   * leftover cleanup is over
+   * @type {boolean}
+   * @private
+   */
+  this._waitingCleanup = false;
 }
 
 /**
@@ -136,8 +168,10 @@ ScenarioBase.prototype.setState = function (stateCode) {
  * @param {string} name - Scenario title / virtual‑device title
  * @param {Object} cfg - Raw configuration object supplied by user
  * @returns {boolean} Initialisation result
- *   - True on success
- *   - Throws on error
+ *   - True when the scenario is accepted: the virtual device is created now,
+ *     or later, once the init script reports the leftover cleanup is over
+ *   - Throws on error of the synchronous part; failures of the deferred part
+ *     are only logged, the caller does not see them
  */
 ScenarioBase.prototype.init = function (name, cfg) {
   if (this.getState() !== null) {
@@ -162,6 +196,94 @@ ScenarioBase.prototype.init = function (name, cfg) {
 
   this.genNames = this.generateNames(this.idPrefix);
 
+  /**
+   * Scenarios created from user rules reach this point long before the
+   * cleanup is over: their files are loaded by wb-rules itself, while it is
+   * still running. Waiting is the only option - creating a device whose
+   * leftover topics are still in the broker fails
+   */
+  if (!isCleanupDone()) {
+    if (this._waitingCleanup) {
+      throw new Error('Scenario was already launched earlier');
+    }
+
+    log.debug('Cleanup not done yet, postponing creation of virtual device');
+    this._waitingCleanup = true;
+    this._waitCleanupThenCreate();
+    return true;
+  }
+
+  return this._createVdAndContinue();
+};
+
+/**
+ * Polls the readiness flag and continues initialization once it is set
+ *
+ * The deadline is wall clock, not a count of periods: under load the ticks
+ * come later than asked, and a counter would drift past the timeout
+ *
+ * @private
+ * @returns {void}
+ */
+ScenarioBase.prototype._waitCleanupThenCreate = function () {
+  var self = this;
+  var deadline = new Date().getTime() + READY_WAIT_TIMEOUT_MS;
+
+  var timerId = setInterval(function onTick() {
+    if (isCleanupDone()) {
+      clearInterval(timerId);
+      self._waitingCleanup = false;
+
+      /**
+       * Nobody is above this call any more: the caller got 'true' long ago,
+       * so an exception would only reach the generic engine handler without
+       * the scenario name in it
+       */
+      try {
+        self._createVdAndContinue();
+      } catch (err) {
+        log.error(
+          'Deferred initialization failed for scenario "{}" with idPrefix ' +
+            '"{}": {}',
+          self.name,
+          self.idPrefix,
+          err.message || err
+        );
+      }
+      return;
+    }
+
+    if (new Date().getTime() >= deadline) {
+      clearInterval(timerId);
+      self._waitingCleanup = false;
+      log.error(
+        'Cleanup of leftover devices not finished in {}s, scenario "{}" ' +
+          'with idPrefix "{}" not started',
+        READY_WAIT_TIMEOUT_MS / 1000,
+        self.name,
+        self.idPrefix
+      );
+    }
+  }, READY_WAIT_PERIOD_MS);
+};
+
+/**
+ * Creates the virtual device and continues the initialization chain
+ *
+ * Split out of init() because it may run either right away or later, from
+ * the readiness flag poller
+ *
+ * @private
+ * @returns {boolean} True if initialization succeeded
+ */
+ScenarioBase.prototype._createVdAndContinue = function () {
+  /**
+   * Written before creation on purpose: a device published but not finished
+   * would otherwise have retained topics and no registry entry, so nothing
+   * could ever remove them
+   */
+  this.setPsMeta('vdName', this.genNames.vDevice);
+
   // TODO(Valerii): Need refactor for OOP
   var devObj = createBasicVd(
     this.idPrefix,
@@ -171,31 +293,6 @@ ScenarioBase.prototype.init = function (name, cfg) {
   );
   if (!devObj) {
     throw new Error('Basic VD creation failed');
-  }
-
-  this.setPsMeta('vdName', this.genNames.vDevice);
-
-  /**
-   * Path of the script that created this scenario. wb-rules keeps __filename
-   * per script context, so a scenario defined in /etc/wb-scenarios.conf gets
-   * the path of scenario-init-main.js, and one created from a user rule gets
-   * the path of that rule. It lets the init script tell apart the scenarios
-   * it owns from the ones it must not touch
-   */
-  if (
-    typeof __filename !== 'undefined' &&
-    this.getPsMeta('vdInitScript', null) !== __filename
-  ) {
-    this.setPsMeta('vdInitScript', __filename);
-  }
-
-  /**
-   * Drop the sweep mark: the name is taken by a running scenario again, so
-   * its topics must be sweepable once more after the next removal. Without
-   * this reset a name could be swept only once in the storage lifetime.
-   */
-  if (this.getPsMeta('vdSwept', false) === true) {
-    this.setPsMeta('vdSwept', false);
   }
 
   this.vd = {
@@ -221,7 +318,7 @@ ScenarioBase.prototype.init = function (name, cfg) {
   };
   this.setState(ScenarioState.INIT_STARTED);
 
-  var waitConfig = this.defineControlsWaitConfig(cfg);
+  var waitConfig = this.defineControlsWaitConfig(this.cfg);
   var isNeedWaitControls =
     waitConfig.controls && waitConfig.controls.length > 0;
   if (isNeedWaitControls) {

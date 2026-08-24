@@ -182,49 +182,47 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   var ctrlRuleEnabled = 'rule_enabled';
   var ctrlInitStatus = 'state';
 
+  /**
+   * A name occupied by leftover topics of our own previous session is not a
+   * conflict: the engine compares '/meta/driver' with its own name and takes
+   * such a device over. That comparison is the check we cannot do from JS, so
+   * refusing here on the mere presence of a device would kill the scenario
+   * for the whole session - exactly the defect this used to cause.
+   *
+   * A device created by a rule in this session is a real conflict, and it is
+   * worth naming separately: the engine refuses it too, but its message does
+   * not say which scenario asked
+   */
+  var existingVdObj = getDevice(vdName);
+  if (existingVdObj !== undefined && existingVdObj.isVirtual() === true) {
+    log.error(
+      'Virtual device "{}" is already created by another rule of this ' +
+        'session, scenario with idPrefix "{}" not started',
+      vdName,
+      idPrefix
+    );
+    return null;
+  }
+
   var vdCfg = {
     title: vdTitle,
     cells: {},
   };
-
-  /**
-   * The name is intentionally NOT checked before creation (INT-1240)
-   *
-   * getDevice() resolves a device that exists only as retained MQTT topics
-   * too: our own leftovers from a previous wb-rules session, or copies
-   * pushed back by an MQTT bridge. wb-rules starts without '-cleanup', so
-   * such leftovers are there after every restart of the service. They have
-   * no live owner and defineVirtualDevice() takes the name back from them,
-   * therefore checking the name first turned a routine restart into a
-   * scenario that never starts again.
-   *
-   * Only a name held by a live device is a real conflict, and wb-rules
-   * reports it as an exception - see the catch below.
-   */
   var vdObj = null;
   try {
     vdObj = defineVirtualDevice(vdName, vdCfg);
   } catch (err) {
     log.error(
-      'Virtual device "{}" not created: {}. If the name is taken by a live ' +
-        'device, find and remove its owner - the "wbsc_" namespace is ' +
-        'reserved for scenarios',
+      'Virtual device "{}" is held by something outside wb-scenarios, ' +
+        'scenario with idPrefix "{}" not started: {}',
       vdName,
+      idPrefix,
       err.message || err
     );
     return null;
   }
-  if (!vdObj) {
-    log.error('Virtual device "{}" not created', vdTitle);
-    return null;
-  }
 
-  /**
-   * The only record that this name belongs to us, and the only one printed
-   * even when the scenario fails later - the message at the end of base
-   * initialization never appears then. The script name tells a scenario from
-   * the config apart from one created in a user rule
-   */
+  /** The only record of this name being ours, printed even on a later failure */
   var scriptPath = typeof __filename !== 'undefined' ? __filename : '';
   log.info(
     'Virtual device "{}" created for scenario "{}" by "{}"',
