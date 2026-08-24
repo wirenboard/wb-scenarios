@@ -1,12 +1,9 @@
 wb-scenarios (1.10.2) stable; urgency=medium
 
-  * Fix scenario dying for good when its virtual device name is held by leftover retained topics
-  * Scenarios created from wb-rules files now wait for the leftover cleanup instead of failing on it, so their virtual devices appear a few seconds later than before
-  * Keep topics of running scenarios and of devices published by anything but scenarios
-  * Add the "system__wbsc_init" service device that reports when the cleanup is over, hidden from the device list as a system one
-  * Name the scenario that could not start and say whether the name is held by a rule of this session or from outside wb-scenarios
+  * Fix scenario dying for good when leftover retained topics hold its virtual device name
+  * Add the hidden "system__wbsc_init" service device that reports when the cleanup of leftover topics is over
 
- -- Victor Fedorov <victor.fedorov@wirenboard.com>  Fri, 21 Aug 2026 10:15:00 +0300
+ -- Victor Fedorov <victor.fedorov@wirenboard.com>  Mon, 24 Aug 2026 17:56:00 +0300
 
 wb-scenarios (1.10.1) stable; urgency=medium
 
