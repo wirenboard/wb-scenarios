@@ -197,8 +197,9 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   if (existingVdObj !== undefined && existingVdObj.isVirtual() === true) {
     log.error(
       'Virtual device "{}" is already created by another rule of this ' +
-        'session, scenario with idPrefix "{}" not started',
+        'session, scenario "{}" with idPrefix "{}" not started',
       vdName,
+      vdTitle,
       idPrefix
     );
     return null;
@@ -214,8 +215,9 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   } catch (err) {
     log.error(
       'Virtual device "{}" is held by something outside wb-scenarios, ' +
-        'scenario with idPrefix "{}" not started: {}',
+        'scenario "{}" with idPrefix "{}" not started: {}',
       vdName,
+      vdTitle,
       idPrefix,
       err.message || err
     );
