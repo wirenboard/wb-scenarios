@@ -6,7 +6,6 @@
  */
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
-var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
 var vdHelpers = require('virtual-device-helpers.mod');
@@ -1362,7 +1361,6 @@ LightControlScenario.prototype.initSpecific = function (deviceTitle, cfg) {
     // Startup synchronization. Turn the light off
     turnOffLight(this);
 
-    this.setState(ScenarioState.NORMAL);
     log.debug(
       'Light control scenario initialized successfully for device "{}"',
       deviceTitle

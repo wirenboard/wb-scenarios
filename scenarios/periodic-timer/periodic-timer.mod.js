@@ -149,6 +149,20 @@ PeriodicTimerScenario.prototype.defineControlsWaitConfig = function (cfg) {
 };
 
 /**
+ * Enabled scenario waits outside of the active window and works inside it.
+ * @param {boolean} isEnabled - Position of the runtime enable switch
+ * @returns {number} ScenarioState constant
+ */
+PeriodicTimerScenario.prototype.computeState = function (isEnabled) {
+  if (!isEnabled) {
+    return ScenarioState.DISABLED;
+  }
+  return isCurrentlyInWindow(this.cfg)
+    ? ScenarioState.NORMAL
+    : ScenarioState.WAITING;
+};
+
+/**
  * Validate all controls against periodicTimerActionsTable.
  * For setValue also checks that initValue and reverseValue are numbers.
  * @param {ControlConfig[]} controls - Array of control configurations
@@ -579,22 +593,6 @@ function getNextStopTime(self, cfg) {
 }
 
 /**
- * Compute scenario state based on enabled flag and current window position.
- * @param {PeriodicTimerScenario} self - Reference to the scenario instance
- * @param {PeriodicTimerConfig} cfg - Configuration object
- * @returns {number} ScenarioState constant
- */
-function computeState(self, cfg) {
-  var isEnabled = dev[self.genNames.vDevice + '/rule_enabled'];
-  if (!isEnabled) {
-    return ScenarioState.DISABLED;
-  }
-  return isCurrentlyInWindow(cfg)
-    ? ScenarioState.NORMAL
-    : ScenarioState.WAITING;
-}
-
-/**
  * Refresh all display controls: current_time, state, next_start, next_stop.
  * Single point of truth for VD display updates — called from all rule handlers.
  * @param {PeriodicTimerScenario} self - Reference to the scenario instance
@@ -602,7 +600,7 @@ function computeState(self, cfg) {
  */
 function refreshDisplay(self, cfg) {
   var vDevName = self.genNames.vDevice;
-  var state = computeState(self, cfg);
+  var state = self.computeState(dev[vDevName + '/rule_enabled']);
   dev[vDevName + '/current_time'] = formatCurrentTime();
   self.setState(state);
   if (state === ScenarioState.DISABLED) {
@@ -1054,8 +1052,6 @@ PeriodicTimerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var rulesCreated = createRules(this, cfg);
 
   if (rulesCreated) {
-    this.setState(computeState(this, cfg));
-
     // Do not start the cycle if storage says the scenario is disabled.
     var enabledFromStorage = this.getPsUserSetting('rule_enabled', true);
     if (enabledFromStorage && isCurrentlyInWindow(cfg)) {

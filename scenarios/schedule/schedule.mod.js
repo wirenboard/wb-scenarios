@@ -5,7 +5,6 @@
  */
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
-var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
 var actionsTable = require('table-handling-actions.mod').actionsTable;
@@ -730,7 +729,6 @@ ScheduleScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var rulesCreated = createRules(this, cfg);
 
   if (rulesCreated) {
-    this.setState(ScenarioState.NORMAL);
     log.debug(
       'Schedule scenario initialized successfully for device "{}"',
       deviceTitle

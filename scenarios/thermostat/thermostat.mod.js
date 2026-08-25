@@ -127,6 +127,18 @@ ThermostatScenario.prototype = Object.create(ScenarioBase.prototype);
 ThermostatScenario.prototype.constructor = ThermostatScenario;
 
 /**
+ * A critical error of a used channel outranks the runtime enable switch.
+ * @param {boolean} isEnabled - Position of the runtime enable switch
+ * @returns {number} ScenarioState constant
+ */
+ThermostatScenario.prototype.computeState = function (isEnabled) {
+  if (hasAnyCriticalErr(this.cfg)) {
+    return ScenarioState.USED_CONTROL_ERROR;
+  }
+  return ScenarioBase.prototype.computeState.call(this, isEnabled);
+};
+
+/**
  * Control key strings for virtual device
  */
 var vdCtrl = {
@@ -773,12 +785,21 @@ function getActuatorsCriticalErr(actuators) {
  * @param {ThermostatConfig} cfg - Configuration parameters
  */
 function tryClearReadonly(vdCtrlEnable, cfg) {
-  if (
-    !hasCriticalErr(dev[cfg.tempSensor + '#error']) &&
-    !getActuatorsCriticalErr(cfg.actuators)
-  ) {
+  if (!hasAnyCriticalErr(cfg)) {
     vdCtrlEnable.setReadonly(false);
   }
+}
+
+/**
+ * Checks whether any used channel is in a critical error state
+ * @param {Object} cfg - Configuration
+ * @returns {boolean} True if the sensor or any actuator has an r/w error
+ */
+function hasAnyCriticalErr(cfg) {
+  return (
+    hasCriticalErr(dev[cfg.tempSensor + '#error']) ||
+    getActuatorsCriticalErr(cfg.actuators) !== ''
+  );
 }
 
 /**
@@ -830,7 +851,7 @@ function createErrChangeRule(
           newValue
         );
         tryClearReadonly(vdCtrlEnable, cfg);
-        self.setState(ScenarioState.NORMAL);
+        self.setState(self.computeState(vdCtrlEnable.getValue()));
 
         // If on this topic was running timer - disable this timer
         if (self.ctx.errorTimers[sourceErrTopic]) {
@@ -1302,7 +1323,6 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       updateHeatingState(vdCtrlActuator, cfg, data);
     }
 
-    this.setState(ScenarioState.NORMAL);
     log.debug(
       'Thermostat scenario initialized successfully for device "{}"',
       deviceTitle
