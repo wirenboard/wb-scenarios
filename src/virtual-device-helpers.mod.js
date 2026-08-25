@@ -182,27 +182,57 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   var ctrlRuleEnabled = 'rule_enabled';
   var ctrlInitStatus = 'state';
 
+  /**
+   * A name occupied by leftover topics of our own previous session is not a
+   * conflict: the engine compares '/meta/driver' with its own name and takes
+   * such a device over. That comparison is the check we cannot do from JS, so
+   * refusing here on the mere presence of a device would kill the scenario
+   * for the whole session - exactly the defect this used to cause.
+   *
+   * A device created by a rule in this session is a real conflict, and it is
+   * worth naming separately: the engine refuses it too, but its message does
+   * not say which scenario asked
+   */
   var existingVdObj = getDevice(vdName);
-  if (existingVdObj !== undefined) {
-    log.error('Virtual device "{}" already exists in system', vdName);
+  if (existingVdObj !== undefined && existingVdObj.isVirtual() === true) {
+    log.error(
+      'Virtual device "{}" is already created by another rule of this ' +
+        'session, scenario "{}" with idPrefix "{}" not started',
+      vdName,
+      vdTitle,
+      idPrefix
+    );
     return null;
   }
-  log.debug(
-    'Virtual device "{}" does not exist in system -> create new VD',
-    vdName
-  );
 
   var vdCfg = {
     title: vdTitle,
     cells: {},
   };
-  var vdObj = defineVirtualDevice(vdName, vdCfg);
-  if (!vdObj) {
-    log.error('Virtual device "{}" not created', vdTitle);
+  var vdObj = null;
+  try {
+    vdObj = defineVirtualDevice(vdName, vdCfg);
+  } catch (err) {
+    log.error(
+      'Virtual device "{}" is held by something outside wb-scenarios, ' +
+        'scenario "{}" with idPrefix "{}" not started: {}',
+      vdName,
+      vdTitle,
+      idPrefix,
+      err.message || err
+    );
     return null;
   }
 
-  // Saving all created virtual devices to persistent storage
+  /** The only record of this name being ours, printed even on a later failure */
+  var scriptPath = typeof __filename !== 'undefined' ? __filename : '';
+  log.info(
+    'Virtual device "{}" created for scenario "{}" by "{}"',
+    vdName,
+    vdTitle,
+    scriptPath.slice(scriptPath.lastIndexOf('/') + 1) || '<unknown>'
+  );
+
   var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
   if (psWBSC['VdList'] !== undefined) {
     psWBSC['VdList'][vdName] = true;

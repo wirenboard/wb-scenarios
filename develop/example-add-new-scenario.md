@@ -402,17 +402,16 @@ var setupLinkInToOut = require('scenario-init-link-in-to-out.mod').setup; // Д�
 2. **Добавить вызов** в функции `main()` после других вызовов setup:
 
 ```javascript
-runShellCommand(cmdList, {
-  captureOutput: true,
-  captureErrorOutput: true,
-  exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
-    setupDevicesControl();
-    setupLightControl();
-    setupThermostat();
-    setupSchedule();
-    setupAstronomicalTimer();
-    setupLinkInToOut(); // Добавить эту строку
-  },
+removeVdTopics(collectNamesToClean(), function onCleanupDone() {
+  setupDevicesControl();
+  setupLightControl();
+  setupThermostat();
+  setupSchedule();
+  setupAstronomicalTimer();
+  setupPeriodicTimer();
+  setupChannelMap();
+  setupPidController();
+  setupLinkInToOut(); // Добавить эту строку
 });
 ```
 
