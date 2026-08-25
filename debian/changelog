@@ -1,7 +1,6 @@
 wb-scenarios (1.10.2) stable; urgency=medium
 
   * Fix scenario dying for good when leftover retained topics hold its virtual device name
-  * Add the hidden "system__wbsc_init" service device that reports when the cleanup of leftover topics is over
 
  -- Victor Fedorov <victor.fedorov@wirenboard.com>  Mon, 24 Aug 2026 17:56:00 +0300
 

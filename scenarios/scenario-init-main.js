@@ -12,7 +12,7 @@
 
 var scenarioPersistentStorage =
   require('wbsc-persistent-storage.mod').getInstance();
-var constants = require('constants.mod');
+var scenarioBase = require('wbsc-scenario-base.mod');
 var setupDevicesControl = require('scenario-init-devices-control.mod').setup;
 var setupLightControl = require('scenario-init-light-control.mod').setup;
 var setupThermostat = require('scenario-init-thermostat.mod').setup;
@@ -26,8 +26,6 @@ var Logger = require('logger.mod').Logger;
 
 var log = new Logger('WBSC-init-main');
 
-var READY_VD = constants.READY_FLAG_VD;
-var READY_CTRL = constants.READY_FLAG_CTRL;
 var DRAIN_PERIOD_MS = 100;
 var DRAIN_TIMEOUT_MS = 5000;
 
@@ -62,56 +60,6 @@ var CTRL_TOPIC_SUFFIXES = [
   '/meta/description',
   '/meta/title',
 ];
-
-/**
- * Publishes the readiness flag, reset to false
- *
- * The flag lives on a control and not in a JS variable or in the persistent
- * storage: 'forceDefault' resets it on every wb-rules start by itself, and a
- * control is readable from the context of any rule file
- *
- * @returns {boolean} True if the flag is published and readable
- */
-function publishReadyFlagVd() {
-  var vdObj = null;
-  try {
-    vdObj = defineVirtualDevice(READY_VD, {
-      title: { en: 'Scenarios init', ru: 'Инициализация сценариев' },
-      cells: {},
-    });
-  } catch (err) {
-    log.error('Cannot publish readiness flag: {}', err.message || err);
-    return false;
-  }
-
-  vdObj.addControl(READY_CTRL, {
-    title: { en: 'Cleanup done', ru: 'Очистка завершена' },
-    type: 'switch',
-    value: false,
-    forceDefault: true,
-    readonly: true,
-    order: 1,
-  });
-
-  /** addControl() reports failures to syslog only, so check the result */
-  if (!vdObj.isControlExists(READY_CTRL)) {
-    log.error('Readiness flag control "{}" not created', READY_CTRL);
-    return false;
-  }
-
-  /**
-   * Older versions build their cleanup list from 'VdList', and this device is
-   * not a scenario, so nothing else would ever remove its topics after
-   * a downgrade
-   */
-  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
-  if (psWBSC['VdList'] === undefined) {
-    psWBSC['VdList'] = new StorableObject({});
-  }
-  psWBSC['VdList'][READY_VD] = true;
-
-  return true;
-}
 
 /**
  * Checks whether the topics of this name must be left alone
@@ -297,29 +245,21 @@ function removeVdTopics(vdNames, onDone) {
   waitDevicesForgotten(vdNames, onDone);
 }
 
-/**
- * Drops the device list kept for rollback to 1.10.1 and older
- *
- * Those versions rebuild the list on every start and read it to know what to
- * clean up. It is not used here, but createBasicVd() keeps filling it, so a
- * downgrade finds the same data it used to
- * @returns {void}
- */
-function resetVdListForRollback() {
-  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
-  psWBSC['VdList'] = null;
-}
-
 function main() {
   log.debug('Start initialisation all types scenarios');
 
-  resetVdListForRollback();
-  var isFlagPublished = publishReadyFlagVd();
+  scenarioBase.closeCleanupGate();
+
+  /**
+   * Versions 1.10.1 and older rebuild this list on every start and clean up
+   * by it. It is not used here, but createBasicVd() keeps filling it, so a
+   * downgrade finds the same data it used to
+   */
+  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
+  psWBSC['VdList'] = null;
 
   removeVdTopics(collectNamesToClean(), function onCleanupDone() {
-    if (isFlagPublished) {
-      dev[READY_VD + '/' + READY_CTRL] = true;
-    }
+    scenarioBase.openCleanupGate();
     log.info('Cleanup done, starting scenarios');
 
     setupDevicesControl();

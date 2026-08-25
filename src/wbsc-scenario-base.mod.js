@@ -13,29 +13,43 @@ var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var WAIT_DEF = require('wbsc-wait-controls.mod').WAIT_DEF;
 var waitControls = require('wbsc-wait-controls.mod').waitControls;
 var Logger = require('logger.mod').Logger;
-var constants = require('constants.mod');
-
-var READY_VD = constants.READY_FLAG_VD;
-var READY_CTRL = constants.READY_FLAG_CTRL;
-var READY_WAIT_PERIOD_MS = 500;
-var READY_WAIT_TIMEOUT_MS = 60000;
+var GATE_POLL_PERIOD_MS = 500;
+var GATE_TIMEOUT_MS = 60000;
 
 /**
- * Checks whether the init script has finished removing leftover devices
+ * Gate that holds scenarios while the topics left by the previous session are
+ * being removed
  *
- * Fails open on purpose: if the flag is not published at all, waiting for it
- * would stop every scenario on the controller, while creating the device
- * right away only risks the conflict this flag helps to avoid
+ * The flag lives in 'module.static' - the storage shared by every rule file
+ * that requires this module. A plain variable would not do: wb-rules gives
+ * each rule file its own JS context, and they see nothing of each other. It
+ * costs no device in the system, unlike a control, but it survives the reload
+ * of a single rule file, so scenario-init-main.js closes the gate explicitly
+ * on every run
  *
- * @returns {boolean} True if creation of virtual devices is allowed
+ * Open unless somebody closed it: without the init script there is nothing to
+ * wait for, and a gate closed by default would stop every scenario
+ *
+ * @returns {boolean} True if virtual devices may be created
  */
-function isCleanupDone() {
-  var vdObj = getDevice(READY_VD);
-  if (vdObj === undefined || !vdObj.isControlExists(READY_CTRL)) {
-    return true;
-  }
+function isCleanupGateOpen() {
+  return module.static.cleanupDone !== false;
+}
 
-  return dev[READY_VD + '/' + READY_CTRL] === true;
+/**
+ * Closes the gate for the time of the cleanup, called by the init script
+ * @returns {void}
+ */
+function closeCleanupGate() {
+  module.static.cleanupDone = false;
+}
+
+/**
+ * Opens the gate, letting the postponed scenarios create their devices
+ * @returns {void}
+ */
+function openCleanupGate() {
+  module.static.cleanupDone = true;
 }
 
 var loggerFileLabel = 'WBSC‑base-mod';
@@ -202,12 +216,16 @@ ScenarioBase.prototype.init = function (name, cfg) {
    * still running. Waiting is the only option - creating a device whose
    * leftover topics are still in the broker fails
    */
-  if (!isCleanupDone()) {
+  if (!isCleanupGateOpen()) {
     if (this._waitingCleanup) {
       throw new Error('Scenario was already launched earlier');
     }
 
-    log.debug('Cleanup not done yet, postponing creation of virtual device');
+    log.info(
+      'Cleanup of leftover devices is not done yet, creation of the virtual ' +
+        'device for scenario "{}" is postponed',
+      this.name
+    );
     this._waitingCleanup = true;
     this._waitCleanupThenCreate();
     return true;
@@ -217,7 +235,7 @@ ScenarioBase.prototype.init = function (name, cfg) {
 };
 
 /**
- * Polls the readiness flag and continues initialization once it is set
+ * Polls the cleanup gate and continues initialization once it opens
  *
  * The deadline is wall clock, not a count of periods: under load the ticks
  * come later than asked, and a counter would drift past the timeout
@@ -227,10 +245,10 @@ ScenarioBase.prototype.init = function (name, cfg) {
  */
 ScenarioBase.prototype._waitCleanupThenCreate = function () {
   var self = this;
-  var deadline = new Date().getTime() + READY_WAIT_TIMEOUT_MS;
+  var deadline = new Date().getTime() + GATE_TIMEOUT_MS;
 
   var timerId = setInterval(function onTick() {
-    if (isCleanupDone()) {
+    if (isCleanupGateOpen()) {
       clearInterval(timerId);
       self._waitingCleanup = false;
 
@@ -259,19 +277,19 @@ ScenarioBase.prototype._waitCleanupThenCreate = function () {
       log.error(
         'Cleanup of leftover devices not finished in {}s, scenario "{}" ' +
           'with idPrefix "{}" not started',
-        READY_WAIT_TIMEOUT_MS / 1000,
+        GATE_TIMEOUT_MS / 1000,
         self.name,
         self.idPrefix
       );
     }
-  }, READY_WAIT_PERIOD_MS);
+  }, GATE_POLL_PERIOD_MS);
 };
 
 /**
  * Creates the virtual device and continues the initialization chain
  *
  * Split out of init() because it may run either right away or later, from
- * the readiness flag poller
+ * the cleanup gate poller
  *
  * @private
  * @returns {boolean} True if initialization succeeded
@@ -563,3 +581,5 @@ ScenarioBase.prototype.defineControlsWaitConfig = function (cfg) {
 };
 
 exports.ScenarioBase = ScenarioBase;
+exports.closeCleanupGate = closeCleanupGate;
+exports.openCleanupGate = openCleanupGate;
