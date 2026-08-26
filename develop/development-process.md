@@ -145,7 +145,7 @@ YourScenario.prototype.initSpecific = function (name, cfg) {
   this.cfg = cfg;
 
   // Создание правил
-  var inputRule = defineRule(this.names.ruleInput, {
+  var ruleId = defineRule(this.names.ruleInput, {
     whenChanged: cfg.inputControl,
     then: function (newValue, devName, cellName) {
       // Бизнес-логика сценария
@@ -154,10 +154,7 @@ YourScenario.prototype.initSpecific = function (name, cfg) {
   });
 
   // Сохранение ID правил
-  this.addRule(inputRule.getId());
-
-  // Установка рабочего состояния
-  this.setState(ScenarioState.NORMAL);
+  this.addRule(ruleId);
 
   return true;
 };
@@ -168,6 +165,18 @@ YourScenario.prototype.defineControlsWaitConfig = function (cfg) {
     controls: [cfg.inputControl],
     timeout: 10000,
   };
+};
+
+// НЕОБЯЗАТЕЛЬНЫЙ: Состояние по положению рабочего тумблера
+// нужен, только если рабочих состояний больше двух
+// Пример из periodic-timer, вне активного окна сценарий ждет
+YourScenario.prototype.computeState = function (isEnabled) {
+  if (!isEnabled) {
+    return ScenarioState.DISABLED;
+  }
+  return isCurrentlyInWindow(this.cfg)
+    ? ScenarioState.NORMAL
+    : ScenarioState.WAITING;
 };
 
 // Экспорт модуля

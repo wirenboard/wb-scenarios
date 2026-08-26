@@ -81,7 +81,7 @@ YourScenario.prototype.initSpecific = function (name, cfg) {
   this.cfg = cfg;
 
   // Создание правил wb-rules
-  var inputRule = defineRule(this.names.ruleInput, {
+  var ruleId = defineRule(this.names.ruleInput, {
     whenChanged: cfg.inputControl,
     then: function (newValue, devName, cellName) {
       // Логика обработки события
@@ -89,10 +89,7 @@ YourScenario.prototype.initSpecific = function (name, cfg) {
   });
 
   // Сохранение ID правил для управления ими
-  this.addRule(inputRule.getId());
-
-  // Установка состояния сценария
-  this.setState(ScenarioState.NORMAL);
+  this.addRule(ruleId);
 
   return true;
 };
@@ -116,10 +113,33 @@ YourScenario.prototype.defineControlsWaitConfig = function (cfg) {
 };
 ```
 
+### `computeState(isEnabled)`
+
+Состояние работающего сценария ведет базовый класс - после успешной
+`initSpecific()` он создает правило на `rule_enabled` и пишет в контрол `State`
+результат `computeState()`. По умолчанию это `NORMAL` при включенном тумблере и
+`DISABLED` при выключенном, вызывать `setState()` в `initSpecific()` не нужно.
+
+Переопределяется, если рабочих состояний больше двух. Позиция тумблера приходит
+аргументом, читать контрол внутри метода не надо.
+
+**Пример:**
+
+```javascript
+YourScenario.prototype.computeState = function (isEnabled) {
+  if (!isEnabled) {
+    return ScenarioState.DISABLED;
+  }
+  return isCurrentlyInWindow(this.cfg)
+    ? ScenarioState.NORMAL
+    : ScenarioState.WAITING;
+};
+```
+
 ## Доступные методы базового класса
 
 - **`getState()`** - получить текущее состояние сценария
-- **`setState(stateCode)`** - установить состояние сценария
+- **`setState(stateCode)`** - установить состояние напрямую, минуя `computeState()`
 - **`addRule(ruleId)`** - сохранить ID правила для управления
 - **`enable()`** - включить все правила сценария
 - **`disable()`** - отключить все правила сценария
@@ -141,6 +161,8 @@ YourScenario.prototype.defineControlsWaitConfig = function (cfg) {
 6. **LINKED_CONTROLS_TIMEOUT (5)** - таймаут ожидания готовности контролов
 7. **NORMAL (6)** - сценарий работает нормально (**основное рабочее состояние**)
 8. **USED_CONTROL_ERROR (7)** - ошибка при работе с контролами во время выполнения
+9. **WAITING (8)** - сценарий включен, но рабочие условия не наступили
+10. **DISABLED (9)** - рабочий тумблер сценария выключен
 
 ## Стандартная структура сценария
 
@@ -190,7 +212,9 @@ function initializeScenario(scenarioCfg) {
 
 1. **Наследование**: Всегда наследуйтесь от ScenarioBase
 2. **Валидация**: Тщательно валидируйте конфигурацию в `validateCfg()`
-3. **Состояния**: Используйте `setState()` для отслеживания состояния сценария
+3. **Состояния**: Рабочее состояние ведет базовый класс - переопределяйте
+   `computeState()`, если состояний больше двух. `setState()` нужен только
+   для мгновенных переходов, не ждущих переключения тумблера
 4. **Ошибки**: Логируйте ошибки через Logger для единообразия
 5. **Правила**: Сохраняйте ID всех создаваемых правил через `addRule()`
 6. **Контролы**: Используйте `defineControlsWaitConfig()` для критически важных контролов
