@@ -31,6 +31,12 @@ var VALID_DAYS = constants.VALID_DAYS;
  * @property {string} [idPrefix] - Optional prefix for scenario identification
  *   If not provided, it will be generated from the scenario name
  * @property {string} scheduleTime - Time to trigger in HH:MM format
+ * @property {number} [hours] - Trigger hour (0-23), filled in from
+ *   scheduleTime by parseScheduleTime() during validation
+ * @property {number} [minutes] - Trigger minute (0-59), filled in from
+ *   scheduleTime by parseScheduleTime() during validation
+ * @property {number} [seconds] - Trigger second (always 0), filled in
+ *   by parseScheduleTime() during validation
  * @property {Array<string>} scheduleDaysOfWeek - Array of selected weekdays
  *   Valid values: "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
  * @property {DurationObj} duration - Turn-off delay.
@@ -612,7 +618,6 @@ function scheduleHandler(self, cfg) {
  * Adds required custom controls cells to the virtual device
  * @param {ScheduleScenario} self - Reference to the ScheduleScenario instance
  * @param {ScheduleConfig} cfg - Configuration object
- * @returns {boolean} True if initialization succeeded
  */
 function addCustomControlsToVirtualDevice(self, cfg) {
   log.debug('Start add custom controls to virtual device');

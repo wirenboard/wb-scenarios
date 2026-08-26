@@ -334,7 +334,6 @@ AstronomicalTimerScenario.prototype.validateCfg = function (cfg) {
  * Adds required custom controls cells to the virtual device
  * @param {AstronomicalTimerScenario} self - Reference to the AstronomicalTimerScenario instance
  * @param {AstronomicalTimerConfig} cfg - Configuration object
- * @returns {boolean} True if initialization succeeded
  */
 function addCustomControlsToVirtualDevice(self, cfg) {
   log.debug('Start add custom controls to virtual device');

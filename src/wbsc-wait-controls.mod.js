@@ -62,10 +62,12 @@ function isControlHealthy(controlPath) {
  * Wait for controls to become ready
  *
  * @param {string[]} controls - Array of control paths, e.g. ["wb-gpio/Relay_1", "wb-gpio/Relay_2"]
- * @param {Object} [options] - Configuration options
+ * @param {Object|Function} options - Configuration options, or the callback
+ *                                itself when options are omitted
  * @param {number} [options.timeout=WAIT_DEF.CONTROLS_WAIT_TIMEOUT_MS] - Max waiting time in milliseconds
  * @param {number} [options.period=WAIT_DEF.CONTROLS_WAIT_PERIOD_MS] - Polling period in milliseconds
- * @param {Function} callback - Callback called upon success or timeout
+ * @param {Function} [callback] - Callback called upon success or timeout
+ *                                (required unless passed as the options argument)
  *                                Signature: callback(err, param1, param2, ...)
  *                                where err is null on success or ControlsTimeoutError on failure
  * @param {...any} [params] - Additional parameters passed to the callback

@@ -67,7 +67,7 @@ function ScenarioBase() {
 
   /**
    * Collection of rule IDs for management
-   * @type {Array<number>}
+   * @type {Array<RuleId>}
    * @private
    */
   this._rules = [];
@@ -315,7 +315,7 @@ ScenarioBase.prototype._createStateRule = function () {
 /**
  * Convenience wrapper to collect rule IDs created inside subclasses.
  *
- * @param {number} id - ID from defineRule
+ * @param {RuleId} id - ID from defineRule
  */
 ScenarioBase.prototype.addRule = function (id) {
   this._rules.push(id);

@@ -12,7 +12,7 @@
 
 /**
  * Creates a copy of an array or transforms a Arguments collection into an arr
- * @param {Array|Arguments} srcArr Source array or Arguments collection
+ * @param {Array|IArguments} srcArr Source array or Arguments collection
  * @return {Array} A new array with the same elements
  */
 function copyArray(srcArr) {
@@ -40,7 +40,7 @@ function Logger(label) {
 /**
  * Logs a message if the logger is enabled
  * @param {Function} logMethod The log function to call (log.debug, etc.)
- * @param {Arguments} logArgs Arguments for call global log.*** func
+ * @param {IArguments} logArgs Arguments for call global log.*** func
  * @private
  */
 
