@@ -192,9 +192,6 @@ CustomScenario.prototype.initSpecific = function () {
 
   this.addRule(ruleId); // Добавляем правила которые управляются в виртуальном устройстве
 
-  // При необходимости можно поменять состояние отображаемое в девайсе
-  scenario.setState(ScenarioState.CONFIG_INVALID);
-
   return true; // В случае успеха нужно вернуть true
 };
 

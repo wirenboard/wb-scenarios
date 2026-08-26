@@ -398,7 +398,7 @@ ChannelMapScenario extends ScenarioBase
 | Контрол        | Тип             | Описание                                                             |
 | -------------- | --------------- | -------------------------------------------------------------------- |
 | `rule_enabled` | switch          | Вкл/выкл сценария (из базового класса)                               |
-| `state`        | value, readonly | Статус: `NORMAL` / `WAITING` / `DISABLED`                            |
+| `state`        | value, readonly | Статус: `NORMAL` / `DISABLED`                                        |
 | `warning`      | text            | Отображается при наличии некорректных связей (type/min/max mismatch) |
 
 ---

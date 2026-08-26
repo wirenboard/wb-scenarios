@@ -271,7 +271,7 @@ ThermostatScenario extends ScenarioBase
 | Контрол               | Тип              | Описание                                                                   |
 | --------------------- | ---------------- | -------------------------------------------------------------------------- |
 | `rule_enabled`        | switch           | Вкл/выкл сценария (из базового класса)                                     |
-| `state`               | enum, readonly   | Состояние инициализации (из базового класса)                               |
+| `state`               | enum, readonly   | Состояние сценария, включая ошибку канала (из базового класса)             |
 | `target_temperature`  | range            | Целевая температура (min..max)                                             |
 | `current_temperature` | value, readonly  | Текущее показание датчика                                                  |
 | `actuator_status`     | switch, readonly | Общий статус нагрева (логический)                                          |

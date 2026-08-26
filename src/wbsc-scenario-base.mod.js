@@ -251,7 +251,7 @@ ScenarioBase.prototype.init = function (name, cfg) {
  * @returns {boolean} True if initialization succeeds
  */
 ScenarioBase.prototype._continueInitAfterControlsReady = function () {
-  var errMsg = '';
+  var errMsg;
 
   if (this.validateCfg(this.cfg) !== true) {
     this.setState(ScenarioState.CONFIG_INVALID);
@@ -275,6 +275,8 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function () {
   // Created here because init failures set a diagnostic state and call
   // disable() - the rule would replace it with DISABLED
   if (!this._createStateRule()) {
+    this.disable();
+
     errMsg = 'State rule creation failed';
     this.vd.setTotalError(errMsg);
     throw new Error(errMsg);

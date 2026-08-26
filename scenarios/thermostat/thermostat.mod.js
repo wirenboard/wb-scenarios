@@ -125,18 +125,6 @@ ThermostatScenario.prototype = Object.create(ScenarioBase.prototype);
 ThermostatScenario.prototype.constructor = ThermostatScenario;
 
 /**
- * A critical error of a used channel outranks the runtime enable switch.
- * @param {boolean} isEnabled - Position of the runtime enable switch
- * @returns {number} ScenarioState constant
- */
-ThermostatScenario.prototype.computeState = function (isEnabled) {
-  if (hasAnyCriticalErr(this.cfg)) {
-    return ScenarioState.USED_CONTROL_ERROR;
-  }
-  return ScenarioBase.prototype.computeState.call(this, isEnabled);
-};
-
-/**
  * Control key strings for virtual device
  */
 var vdCtrl = {
@@ -178,6 +166,18 @@ ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {
 
   var allTopics = [].concat(cfg.tempSensor, actuatorTopics);
   return { controls: allTopics };
+};
+
+/**
+ * A critical error of a used channel outranks the runtime enable switch.
+ * @param {boolean} isEnabled - Position of the runtime enable switch
+ * @returns {number} ScenarioState constant
+ */
+ThermostatScenario.prototype.computeState = function (isEnabled) {
+  if (hasAnyCriticalErr(this.cfg)) {
+    return ScenarioState.USED_CONTROL_ERROR;
+  }
+  return ScenarioBase.prototype.computeState.call(this, isEnabled);
 };
 
 /**
@@ -791,7 +791,7 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
 
 /**
  * Checks whether any used channel is in a critical error state
- * @param {Object} cfg - Configuration
+ * @param {ThermostatConfig} cfg - Configuration object
  * @returns {boolean} True if the sensor or any actuator has an r/w error
  */
 function hasAnyCriticalErr(cfg) {
@@ -885,7 +885,7 @@ function createErrChangeRule(
             self.ctx.errorCheckTimeoutMs,
             currentErrorVal
           );
-          self.setState(ScenarioState.USED_CONTROL_ERROR);
+          self.setState(self.computeState(vdCtrlEnable.getValue()));
           vdCtrlEnable.setReadonly(true);
           vdCtrlEnable.setValue(false);
         } else {

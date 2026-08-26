@@ -75,18 +75,6 @@ PidControllerScenario.prototype = Object.create(ScenarioBase.prototype);
 PidControllerScenario.prototype.constructor = PidControllerScenario;
 
 /**
- * A critical error of a used channel outranks the runtime enable switch.
- * @param {boolean} isEnabled - Position of the runtime enable switch
- * @returns {number} ScenarioState constant
- */
-PidControllerScenario.prototype.computeState = function (isEnabled) {
-  if (hasAnyCriticalErr(this.cfg)) {
-    return ScenarioState.USED_CONTROL_ERROR;
-  }
-  return ScenarioBase.prototype.computeState.call(this, isEnabled);
-};
-
-/**
  * Control key strings for virtual device
  */
 var vdCtrl = {
@@ -125,6 +113,18 @@ PidControllerScenario.prototype.defineControlsWaitConfig = function (cfg) {
   var actuatorTopics = extractMqttTopics(cfg.actuators || []);
   var allTopics = [].concat(cfg.sensor, actuatorTopics);
   return { controls: allTopics };
+};
+
+/**
+ * A critical error of a used channel outranks the runtime enable switch.
+ * @param {boolean} isEnabled - Position of the runtime enable switch
+ * @returns {number} ScenarioState constant
+ */
+PidControllerScenario.prototype.computeState = function (isEnabled) {
+  if (hasAnyCriticalErr(this.cfg)) {
+    return ScenarioState.USED_CONTROL_ERROR;
+  }
+  return ScenarioBase.prototype.computeState.call(this, isEnabled);
 };
 
 /**
@@ -512,7 +512,7 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
 
 /**
  * Checks whether any used channel is in a critical error state
- * @param {Object} cfg - Configuration
+ * @param {PidControllerConfig} cfg - Configuration
  * @returns {boolean} True if the sensor or any actuator has an r/w error
  */
 function hasAnyCriticalErr(cfg) {
@@ -586,7 +586,7 @@ function createErrChangeRule(
             sourceErrTopic,
             self.ctx.errorCheckTimeoutMs
           );
-          self.setState(ScenarioState.USED_CONTROL_ERROR);
+          self.setState(self.computeState(vdCtrlEnable.getValue()));
           vdCtrlEnable.setReadonly(true);
           vdCtrlEnable.setValue(false);
         }
