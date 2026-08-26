@@ -140,14 +140,13 @@ PidEngine.prototype.reset = function () {
 
 /**
  * Get current PID state for debugging/logging
- * @returns {Object} PID components and output
- * @returns {number} returns.p - Last P component
- * @returns {number} returns.i - Last I component
- *     (= current integral value)
- * @returns {number} returns.d - Last D component
- * @returns {number} returns.integral - Accumulated
- *     integral value
- * @returns {number} returns.output - Last output
+ * @returns {{p: number, i: number, d: number, integral: number, output: number}}
+ *     PID components and output:
+ *     - p: Last P component
+ *     - i: Last I component (= current integral value)
+ *     - d: Last D component
+ *     - integral: Accumulated integral value
+ *     - output: Last output
  */
 PidEngine.prototype.getState = function () {
   return {

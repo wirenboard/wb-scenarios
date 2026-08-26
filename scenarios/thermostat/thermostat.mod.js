@@ -66,9 +66,7 @@ var thermostatActionsTable = {
  * PID mode (controlMode === 'pid'):
  * @property {Object} pidSettings - PID settings object
  * @property {number} pidSettings.deadBand - Dead band around setpoint (°C)
- * @property {number} pidSettings.kp - Proportional gain
- * @property {number} pidSettings.ki - Integral gain
- * @property {number} pidSettings.kd - Derivative gain
+ * @property {PidCoefficients} pidSettings.pidCoefficients - PID gains (kp, ki, kd)
  * @property {number} pidSettings.pwmPeriodSec - PWM cycle duration (seconds)
  * @property {number} pidSettings.pidRecalcCycles - Recompute PID every N cycles
  * @property {number} pidSettings.minOnTimeSec - Minimum actuator ON time (s)
@@ -383,6 +381,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
  * @param {number} initialTemp - Initial value for the target temperature
  */
 function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
+  /** @type {ControlOptions} */
   var controlCfg = {
     title: {
       en: 'Temperature Setpoint',
@@ -791,7 +790,7 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
  *     Example: `vdCtrlCurTemp = vdObj.getControl('ctrlID')`
  * @param {Object} vdCtrlEnable - Control "Enable rules" in scenario virtual dev
  * @param {ThermostatConfig} cfg - Configuration parameters
- * @returns {boolean} True if rule created successfully
+ * @returns {RuleId} ID of the created rule
  */
 function createErrChangeRule(
   self,
