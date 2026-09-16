@@ -2479,7 +2479,10 @@
         "disable_collapse": true,
         "disable_array_reorder": true,
         "disable_array_delete_last_row": true,
-        "enable_array_copy": true
+        "enable_array_copy": true,
+        "wb": {
+          "fit_tabs": true
+        }
       },
       "_format": "tabs"
     }

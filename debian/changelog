@@ -1,3 +1,9 @@
+wb-scenarios (1.10.3) stable; urgency=medium
+
+  * Fit the scenario tab list and the selected scenario form into the window
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Wed, 16 Sep 2026 17:48:00 +0300
+
 wb-scenarios (1.10.2) stable; urgency=medium
 
   * Declare implicit globals (ok in light-control, id in translit) found by wb-rules checkJs
