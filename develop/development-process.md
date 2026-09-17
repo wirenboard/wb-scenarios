@@ -175,7 +175,7 @@ YourScenario.prototype.computeState = function (isEnabled) {
     return ScenarioState.DISABLED;
   }
   return isCurrentlyInWindow(this.cfg)
-    ? ScenarioState.NORMAL
+    ? ScenarioState.ACTIVE
     : ScenarioState.WAITING;
 };
 

@@ -50,10 +50,10 @@ function ScenarioBase() {
   this.idPrefix = null;
 
   /**
-   * Collection of generated unique names/IDs
+   * Collection of generated unique names/IDs returned by generateNames()
+   * Besides 'vDevice' it holds one key per rule created by the subclass
    * @type {Object|null}
-   * @property {string} vdId - Virtual device ID
-   * @property {Array<string>} ruleIds - Rule IDs
+   * @property {string} vDevice - Virtual device ID
    */
   this.genNames = null; // generated names (vd‑id, rule‑id’s …)
 
@@ -263,8 +263,7 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function () {
   }
   log.debug('Configuration validation passed successfully!');
 
-  var ok = this.initSpecific(this.name, this.cfg);
-  if (ok === false) {
+  if (this.initSpecific(this.name, this.cfg) !== true) {
     this.disable();
 
     errMsg = 'Specific scenario initialization failed';
@@ -274,7 +273,7 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function () {
 
   // Created here because init failures set a diagnostic state and call
   // disable() - the rule would replace it with DISABLED
-  if (!this._createStateRule()) {
+  if (this._createStateRule() !== true) {
     this.disable();
 
     errMsg = 'State rule creation failed';
@@ -451,7 +450,8 @@ ScenarioBase.prototype.validateCfg = function (cfg) {
  * @abstract
  * @param {string} name - Scenario name
  * @param {Object} cfg - Configuration object
- * @returns {boolean} True if initialized successfully, false if not
+ * @returns {boolean} True if initialized successfully
+ *   Any other returned value is treated as a failure
  */
 ScenarioBase.prototype.initSpecific = function (name, cfg) {
   throw new Error('initSpecific() must be overridden by derived class');
@@ -490,7 +490,7 @@ ScenarioBase.prototype.defineControlsWaitConfig = function (cfg) {
  * @returns {number} State code from ScenarioState enum
  */
 ScenarioBase.prototype.computeState = function (isEnabled) {
-  return isEnabled ? ScenarioState.NORMAL : ScenarioState.DISABLED;
+  return isEnabled ? ScenarioState.ACTIVE : ScenarioState.DISABLED;
 };
 
 exports.ScenarioBase = ScenarioBase;

@@ -117,7 +117,7 @@ YourScenario.prototype.defineControlsWaitConfig = function (cfg) {
 
 Состояние работающего сценария ведет базовый класс - после успешной
 `initSpecific()` он создает правило на `rule_enabled` и пишет в контрол `State`
-результат `computeState()`. По умолчанию это `NORMAL` при включенном тумблере и
+результат `computeState()`. По умолчанию это `ACTIVE` при включенном тумблере и
 `DISABLED` при выключенном, вызывать `setState()` в `initSpecific()` не нужно.
 
 Переопределяется, если рабочих состояний больше двух. Позиция тумблера приходит
@@ -131,7 +131,7 @@ YourScenario.prototype.computeState = function (isEnabled) {
     return ScenarioState.DISABLED;
   }
   return isCurrentlyInWindow(this.cfg)
-    ? ScenarioState.NORMAL
+    ? ScenarioState.ACTIVE
     : ScenarioState.WAITING;
 };
 ```
@@ -159,7 +159,7 @@ YourScenario.prototype.computeState = function (isEnabled) {
 4. **LINKED_CONTROLS_READY (3)** - все необходимые контролы готовы к использованию
 5. **CONFIG_INVALID (4)** - ошибка валидации конфигурации в `validateCfg()`
 6. **LINKED_CONTROLS_TIMEOUT (5)** - таймаут ожидания готовности контролов
-7. **NORMAL (6)** - сценарий работает нормально (**основное рабочее состояние**)
+7. **ACTIVE (6)** - сценарий работает нормально (**основное рабочее состояние**)
 8. **USED_CONTROL_ERROR (7)** - ошибка при работе с контролами во время выполнения
 9. **WAITING (8)** - сценарий включен, но рабочие условия не наступили
 10. **DISABLED (9)** - рабочий тумблер сценария выключен
