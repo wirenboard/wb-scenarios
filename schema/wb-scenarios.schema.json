@@ -2481,7 +2481,7 @@
         "disable_array_delete_last_row": true,
         "enable_array_copy": true,
         "wb": {
-          "fit_tabs": true
+          "fit_tabs_to_window": true
         }
       },
       "_format": "tabs"
