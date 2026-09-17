@@ -7,7 +7,6 @@
  */
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
-var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
@@ -585,7 +584,6 @@ ChannelMapScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var rulesCreated = createRules(this, sourceMap);
 
   if (rulesCreated) {
-    this.setState(ScenarioState.NORMAL);
     log.debug(
       'Channel Map scenario initialized for device "{}"',
       deviceTitle

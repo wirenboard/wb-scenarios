@@ -350,7 +350,7 @@ workTime: {
 | `active_window` | text, readonly  | Временное окно: «18:00 - 19:00»                                   |
 | `next_start`    | text, readonly  | Следующий старт цикла (или открытие окна); `--:--` при отключении |
 | `next_stop`     | text, readonly  | Конец текущей или следующей рабочей фазы; `--:--` при отключении  |
-| `state`         | value, readonly | NORMAL=6 / WAITING=8 / DISABLED=9                                 |
+| `state`         | value, readonly | ACTIVE=6 / WAITING=8 / DISABLED=9                                 |
 
 `next_start` и `next_stop` обновляются в реальном времени через ctx:
 
