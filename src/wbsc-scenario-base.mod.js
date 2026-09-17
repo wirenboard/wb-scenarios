@@ -253,7 +253,17 @@ ScenarioBase.prototype.init = function (name, cfg) {
 ScenarioBase.prototype._continueInitAfterControlsReady = function () {
   var errMsg;
 
-  if (this.validateCfg(this.cfg) !== true) {
+  var isCfgValid = false;
+  try {
+    isCfgValid = this.validateCfg(this.cfg);
+  } catch (e) {
+    log.error(
+      'Exception in validateCfg() for scenario "{}": {}',
+      this.name,
+      e.message
+    );
+  }
+  if (isCfgValid !== true) {
     this.setState(ScenarioState.CONFIG_INVALID);
     this.disable();
 
@@ -261,12 +271,23 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function () {
     this.vd.setTotalError(errMsg);
     throw new Error(errMsg);
   }
-  log.debug('Configuration validation passed successfully!');
+  log.debug('Configuration validation passed for scenario: "{}"', this.name);
 
-  if (this.initSpecific(this.name, this.cfg) !== true) {
+  var isSpecificInited = false;
+  try {
+    isSpecificInited = this.initSpecific(this.name, this.cfg);
+  } catch (e) {
+    log.error(
+      'Exception in initSpecific() for scenario "{}": {}',
+      this.name,
+      e.message
+    );
+  }
+  if (isSpecificInited !== true) {
     this.disable();
 
-    errMsg = 'Specific scenario initialization failed';
+    errMsg =
+      'Specific initialization failed for scenario: "' + this.name + '"';
     this.vd.setTotalError(errMsg);
     throw new Error(errMsg);
   }
@@ -276,7 +297,7 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function () {
   if (this._createStateRule() !== true) {
     this.disable();
 
-    errMsg = 'State rule creation failed';
+    errMsg = 'State rule creation failed for scenario: "' + this.name + '"';
     this.vd.setTotalError(errMsg);
     throw new Error(errMsg);
   }

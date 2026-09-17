@@ -125,7 +125,6 @@ ScenarioBase - базовый класс для создания сценари�
 
 ```js
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
-var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var log = new (require('logger.mod').Logger)('test-scenario');
 
 // = = = Три строчки ниже - это наследование в js ES5 = = =
