@@ -50,10 +50,10 @@ function ScenarioBase() {
   this.idPrefix = null;
 
   /**
-   * Collection of generated unique names/IDs
+   * Collection of generated unique names/IDs returned by generateNames()
+   * Besides 'vDevice' it holds one key per rule created by the subclass
    * @type {Object|null}
-   * @property {string} vdId - Virtual device ID
-   * @property {Array<string>} ruleIds - Rule IDs
+   * @property {string} vDevice - Virtual device ID
    */
   this.genNames = null; // generated names (vd‑id, rule‑id’s …)
 
@@ -251,22 +251,53 @@ ScenarioBase.prototype.init = function (name, cfg) {
  * @returns {boolean} True if initialization succeeds
  */
 ScenarioBase.prototype._continueInitAfterControlsReady = function () {
-  if (this.validateCfg(this.cfg) !== true) {
+  var errMsg;
+
+  var isCfgValid = false;
+  try {
+    isCfgValid = this.validateCfg(this.cfg);
+  } catch (e) {
+    log.error(
+      'Exception in validateCfg() for scenario "{}": {}',
+      this.name,
+      e.message
+    );
+  }
+  if (isCfgValid !== true) {
     this.setState(ScenarioState.CONFIG_INVALID);
     this.disable();
 
-    var errMsg =
-      'Config validation failed for scenario: "' + this.name + '"';
+    errMsg = 'Config validation failed for scenario: "' + this.name + '"';
     this.vd.setTotalError(errMsg);
     throw new Error(errMsg);
   }
-  log.debug('Configuration validation passed successfully!');
+  log.debug('Configuration validation passed for scenario: "{}"', this.name);
 
-  var ok = this.initSpecific(this.name, this.cfg);
-  if (ok === false) {
+  var isSpecificInited = false;
+  try {
+    isSpecificInited = this.initSpecific(this.name, this.cfg);
+  } catch (e) {
+    log.error(
+      'Exception in initSpecific() for scenario "{}": {}',
+      this.name,
+      e.message
+    );
+  }
+  if (isSpecificInited !== true) {
     this.disable();
 
-    var errMsg = 'Specific scenario initialization failed';
+    errMsg =
+      'Specific initialization failed for scenario: "' + this.name + '"';
+    this.vd.setTotalError(errMsg);
+    throw new Error(errMsg);
+  }
+
+  // Created here because init failures set a diagnostic state and call
+  // disable() - the rule would replace it with DISABLED
+  if (this._createStateRule() !== true) {
+    this.disable();
+
+    errMsg = 'State rule creation failed for scenario: "' + this.name + '"';
     this.vd.setTotalError(errMsg);
     throw new Error(errMsg);
   }
@@ -274,6 +305,32 @@ ScenarioBase.prototype._continueInitAfterControlsReady = function () {
   this._setScenarioEnableStatusFromStorage();
 
   log.info('Scenario "{}" base initialization completed', this.name);
+  return true;
+};
+
+/**
+ * Creates the rule which keeps the 'state' control in sync with the runtime
+ * enable switch
+ *
+ * @private
+ * @returns {boolean} True if rule created successfully
+ */
+ScenarioBase.prototype._createStateRule = function () {
+  var self = this;
+
+  var ruleId = defineRule(this.genNames.vDevice + '_state', {
+    whenChanged: [this.genNames.vDevice + '/rule_enabled'],
+    then: function stateHandler(newValue) {
+      self.setState(self.computeState(newValue));
+    },
+  });
+
+  if (!ruleId) {
+    log.error('Failed to create the state rule');
+    return false;
+  }
+  // This rule is not managed when user use switch enable/disable in vdev
+  log.debug('State rule created with ID "{}"', ruleId);
   return true;
 };
 
@@ -374,6 +431,9 @@ ScenarioBase.prototype._setScenarioEnableStatusFromStorage = function () {
     if (ctrl.getValue() !== initialValue) {
       ctrl.setValue(initialValue);
     }
+    // Set unconditionally - equal values leave the control untouched and the
+    // state rule does not fire
+    this.setState(this.computeState(initialValue));
   }
 };
 
@@ -411,7 +471,8 @@ ScenarioBase.prototype.validateCfg = function (cfg) {
  * @abstract
  * @param {string} name - Scenario name
  * @param {Object} cfg - Configuration object
- * @returns {boolean} True if initialized successfully, false if not
+ * @returns {boolean} True if initialized successfully
+ *   Any other returned value is treated as a failure
  */
 ScenarioBase.prototype.initSpecific = function (name, cfg) {
   throw new Error('initSpecific() must be overridden by derived class');
@@ -440,6 +501,17 @@ ScenarioBase.prototype.initSpecific = function (name, cfg) {
  */
 ScenarioBase.prototype.defineControlsWaitConfig = function (cfg) {
   return {}; // Empty object by default - no waiting
+};
+
+/**
+ * Get the state to show for the given position of the runtime enable switch
+ * Override in subclass which has more states than enabled and disabled
+ *
+ * @param {boolean} isEnabled - Position of the runtime enable switch
+ * @returns {number} State code from ScenarioState enum
+ */
+ScenarioBase.prototype.computeState = function (isEnabled) {
+  return isEnabled ? ScenarioState.ACTIVE : ScenarioState.DISABLED;
 };
 
 exports.ScenarioBase = ScenarioBase;

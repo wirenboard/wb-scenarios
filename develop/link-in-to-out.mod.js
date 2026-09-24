@@ -8,7 +8,6 @@
  */
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
-var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
 var Logger = require('logger.mod').Logger;
 
 var loggerFileLabel = 'WBSC-link-in-to-out-mod';
@@ -123,16 +122,6 @@ function createRules(self, cfg) {
  * @param {string} cellName Control name
  */
 function handleInputChange(self, newValue, devName, cellName) {
-  // Check scenario state
-  var currentState = self.getState();
-  if (currentState !== ScenarioState.NORMAL) {
-    log.debug(
-      'Scenario is not in NORMAL state ({}), ignoring input change',
-      currentState
-    );
-    return;
-  }
-
   log.debug('Input changed: ' + newValue);
 
   // Apply inversion logic
@@ -180,7 +169,6 @@ LinkInToOutScenario.prototype.initSpecific = function (deviceTitle, cfg) {
   var rulesCreated = createRules(this, cfg);
 
   if (rulesCreated) {
-    this.setState(ScenarioState.NORMAL);
     log.debug(
       'Link-in-to-out scenario initialized successfully for device "{}"',
       deviceTitle

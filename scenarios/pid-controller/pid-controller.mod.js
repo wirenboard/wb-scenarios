@@ -116,6 +116,18 @@ PidControllerScenario.prototype.defineControlsWaitConfig = function (cfg) {
 };
 
 /**
+ * A critical error of a used channel outranks the runtime enable switch.
+ * @param {boolean} isEnabled - Position of the runtime enable switch
+ * @returns {number} ScenarioState constant
+ */
+PidControllerScenario.prototype.computeState = function (isEnabled) {
+  if (hasAnyCriticalErr(this.cfg)) {
+    return ScenarioState.USED_CONTROL_ERROR;
+  }
+  return ScenarioBase.prototype.computeState.call(this, isEnabled);
+};
+
+/**
  * Configuration validation
  * @param {PidControllerConfig} cfg - Configuration object
  * @returns {boolean} True if configuration is valid
@@ -493,12 +505,21 @@ function getActuatorsCriticalErr(actuators) {
  * @param {PidControllerConfig} cfg - Configuration
  */
 function tryClearReadonly(vdCtrlEnable, cfg) {
-  if (
-    !hasCriticalErr(dev[cfg.sensor + '#error']) &&
-    !getActuatorsCriticalErr(cfg.actuators)
-  ) {
+  if (!hasAnyCriticalErr(cfg)) {
     vdCtrlEnable.setReadonly(false);
   }
+}
+
+/**
+ * Checks whether any used channel is in a critical error state
+ * @param {PidControllerConfig} cfg - Configuration
+ * @returns {boolean} True if the sensor or any actuator has an r/w error
+ */
+function hasAnyCriticalErr(cfg) {
+  return (
+    hasCriticalErr(dev[cfg.sensor + '#error']) ||
+    getActuatorsCriticalErr(cfg.actuators) !== ''
+  );
 }
 
 /**
@@ -538,7 +559,7 @@ function createErrChangeRule(
           sourceErrTopic
         );
         tryClearReadonly(vdCtrlEnable, cfg);
-        self.setState(ScenarioState.NORMAL);
+        self.setState(self.computeState(vdCtrlEnable.getValue()));
 
         if (self.ctx.errorTimers[sourceErrTopic]) {
           clearTimeout(self.ctx.errorTimers[sourceErrTopic]);
@@ -565,7 +586,7 @@ function createErrChangeRule(
             sourceErrTopic,
             self.ctx.errorCheckTimeoutMs
           );
-          self.setState(ScenarioState.USED_CONTROL_ERROR);
+          self.setState(self.computeState(vdCtrlEnable.getValue()));
           vdCtrlEnable.setReadonly(true);
           vdCtrlEnable.setValue(false);
         }
@@ -813,7 +834,6 @@ PidControllerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       startPidCycle(this, cfg);
     }
 
-    this.setState(ScenarioState.NORMAL);
     log.debug(
       'PID controller scenario initialized successfully for device "{}"',
       deviceTitle
