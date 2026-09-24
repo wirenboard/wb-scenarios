@@ -1,9 +1,15 @@
-wb-scenarios (1.10.3) stable; urgency=medium
+wb-scenarios (1.10.4) stable; urgency=medium
 
   * Show Disabled state when the scenario runtime switch is off
   * Report the used channel error in thermostat and PID whenever it is present, instead of Active
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Thu, 17 Sep 2026 17:58:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Thu, 24 Sep 2026 12:45:00 +0300
+
+wb-scenarios (1.10.3) stable; urgency=medium
+
+  * Fit the scenario tab list and the selected scenario form into the window
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Wed, 16 Sep 2026 17:48:00 +0300
 
 wb-scenarios (1.10.2) stable; urgency=medium
 
