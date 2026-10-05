@@ -1,19 +1,17 @@
 /**
- * @file scenario-init-main.js - ES5 script for wb-rules v2.34
+ * @file scenario-init-main.js - ES5 script for wb-rules v2.47
  * @description Main initialization script for WB scenarios management
  *     This script performs:
- *     - Cleanup of previous MQTT retained messages for virtual devices
- *     - Sequential initialization of:
- *       * Devices control scenarios
- *       * Light control scenarios
- *       * Thermostat scenarios
- *     - Persistent storage reset for scenario devices
+ *     - Removal of scenario devices left by the previous wb-rules session
+ *     - Sequential initialization of all scenario types from the config
  *
  * @author Mikhail Burchu <mikhail.burchu@wirenboard.com>
  */
 
 var scenarioPersistentStorage =
   require('wbsc-persistent-storage.mod').getInstance();
+var removeLeftoverVd =
+  require('virtual-device-helpers.mod').removeLeftoverVd;
 var setupDevicesControl = require('scenario-init-devices-control.mod').setup;
 var setupLightControl = require('scenario-init-light-control.mod').setup;
 var setupThermostat = require('scenario-init-thermostat.mod').setup;
@@ -27,22 +25,24 @@ var Logger = require('logger.mod').Logger;
 
 var log = new Logger('WBSC-init-main');
 
+/**
+ * Removes leftover devices of all scenarios, including the deleted ones
+ * @returns {void}
+ */
+function removeLeftoverScenarioVds() {
+  var scenarioPrefix = 'wbsc_';
+
+  getDevicesList().forEach(function removeIfLeftover(devObj) {
+    if (devObj.getId().indexOf(scenarioPrefix) === 0) {
+      removeLeftoverVd(devObj);
+    }
+  });
+}
+
 function main() {
   log.debug('Start initialisation all types scenarios');
 
-  // Retrieving all previously created virtual devices from persistent storage
-  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
-  var cmdList = '';
-  if (psWBSC['VdList'] !== undefined) {
-    var VdList = Object.keys(psWBSC['VdList']);
-    VdList.forEach(function (Vdevice) {
-      cmdList =
-        cmdList +
-        'mqtt-delete-retained /devices/' +
-        Vdevice +
-        '/# > /dev/null 2>&1;';
-    });
-  }
+  removeLeftoverScenarioVds();
 
   var registeredScenarios =
     scenarioPersistentStorage.getStoredScenarioKeys();
@@ -54,22 +54,14 @@ function main() {
     log.debug('Persistent storage registry is empty');
   }
 
-  runShellCommand(cmdList, {
-    //Removing all previously created virtual devices from topics
-    captureOutput: true,
-    captureErrorOutput: true,
-    exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
-      setupDevicesControl();
-      setupLightControl();
-      setupThermostat();
-      setupSchedule();
-      setupAstronomicalTimer();
-      setupPeriodicTimer();
-      setupChannelMap();
-      setupPidController();
-    },
-  });
-  psWBSC['VdList'] = null; // Removing all previously created virtual devices from persistent storage
+  setupDevicesControl();
+  setupLightControl();
+  setupThermostat();
+  setupSchedule();
+  setupAstronomicalTimer();
+  setupPeriodicTimer();
+  setupChannelMap();
+  setupPidController();
 }
 
 main();

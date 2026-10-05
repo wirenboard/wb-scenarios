@@ -396,24 +396,26 @@ var setupThermostat = require('scenario-init-thermostat.mod').setup;
 var setupSchedule = require('scenario-init-schedule.mod').setup;
 var setupAstronomicalTimer =
   require('scenario-init-astronomical-timer.mod').setup;
+var setupPeriodicTimer = require('scenario-init-periodic-timer.mod').setup;
+var setupChannelMap = require('scenario-init-channel-map.mod').setup;
+var setupPidController = require('scenario-init-pid-controller.mod').setup;
 var setupLinkInToOut = require('scenario-init-link-in-to-out.mod').setup; // Добавить эту строку
 ```
 
 2. **Добавить вызов** в функции `main()` после других вызовов setup:
 
 ```javascript
-runShellCommand(cmdList, {
-  captureOutput: true,
-  captureErrorOutput: true,
-  exitCallback: function (exitCode, capturedOutput, capturedErrorOutput) {
-    setupDevicesControl();
-    setupLightControl();
-    setupThermostat();
-    setupSchedule();
-    setupAstronomicalTimer();
-    setupLinkInToOut(); // Добавить эту строку
-  },
-});
+removeLeftoverScenarioVds();
+
+setupDevicesControl();
+setupLightControl();
+setupThermostat();
+setupSchedule();
+setupAstronomicalTimer();
+setupPeriodicTimer();
+setupChannelMap();
+setupPidController();
+setupLinkInToOut(); // Добавить эту строку
 ```
 
 ---
