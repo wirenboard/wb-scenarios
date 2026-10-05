@@ -1,3 +1,10 @@
+wb-scenarios (1.10.5) stable; urgency=medium
+
+  * Fix scenario not starting when retained topics of the previous wb-rules session hold its virtual device name
+  * Fix scenarios created in user rules failing to start on every second wb-rules restart
+
+ -- Victor Fedorov <victor.fedorov@wirenboard.com>  Mon, 05 Oct 2026 13:00:00 +0300
+
 wb-scenarios (1.10.4) stable; urgency=medium
 
   * Show Disabled state when the scenario runtime switch is off

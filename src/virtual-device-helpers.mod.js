@@ -1,5 +1,5 @@
 /**
- * @file virtual-device-helpers.mod.js - ES5 module for wb-rules v2.28
+ * @file virtual-device-helpers.mod.js - ES5 module for wb-rules v2.47
  * @description Module containing functions used for creating virtual devices
  *   and their modification
  *
@@ -171,7 +171,91 @@ function setVdTotalError(vdObj, errorMsg) {
 }
 
 /**
- * Creates a basic virtual device with a rule switch if it not already exist
+ * Describes controls of an external device as cells for defineVirtualDevice
+ * @param {Object} devObj External device object
+ * @returns {Object} Cells with the same names, types, values and limits
+ */
+function describeLeftoverCells(devObj) {
+  var cells = {};
+  devObj.controlsList().forEach(function describeOne(ctrl) {
+    var type = ctrl.getType() || 'value';
+    var cell = { type: type };
+    if (type !== 'pushbutton') {
+      try {
+        cell.value = ctrl.getValue();
+      } catch (err) {
+        cell.value = type === 'switch' || type === 'alarm' ? false : 0;
+      }
+    }
+    // Unset limits are reported as +-Number.MAX_VALUE
+    if (Math.abs(ctrl.getMin()) < Number.MAX_VALUE) {
+      cell.min = ctrl.getMin();
+    }
+    if (Math.abs(ctrl.getMax()) < Number.MAX_VALUE) {
+      cell.max = ctrl.getMax();
+    }
+    cells[ctrl.getId()] = cell;
+  });
+  return cells;
+}
+
+/**
+ * Removes a device left in the broker by a previous wb-rules session
+ * @param {Object} devObj Device object from getDevice() or getDevicesList()
+ * @returns {boolean} True if the device was a leftover and is removed
+ */
+function removeLeftoverVd(devObj) {
+  var vdName = devObj.getId();
+  var erroredIds;
+
+  try {
+    if (devObj.isVirtual()) {
+      return false;
+    }
+    var driverId = devObj.getDriverId();
+    if (driverId !== 'wb-rules' && driverId !== '') {
+      return false;
+    }
+    erroredIds = devObj
+      .controlsList()
+      .filter(function hasError(ctrl) {
+        return !!ctrl.getError();
+      })
+      .map(function getId(ctrl) {
+        return ctrl.getId();
+      });
+
+    // Controls missing from the cells are dropped with their topics kept
+    defineVirtualDevice(vdName, {
+      title: vdName,
+      cells: describeLeftoverCells(devObj),
+    });
+    removeVirtualDevice(vdName);
+  } catch (err) {
+    log.error(
+      'Leftover device "{}" not removed: {}',
+      vdName,
+      err.message || err
+    );
+    return false;
+  }
+
+  // Driver removal keeps the legacy meta/error topic
+  erroredIds.forEach(function clearError(ctrlId) {
+    publish(
+      '/devices/' + vdName + '/controls/' + ctrlId + '/meta/error',
+      '',
+      2,
+      true
+    );
+  });
+
+  log.info('Leftover device "{}" removed', vdName);
+  return true;
+}
+
+/**
+ * Creates a basic virtual device with a rule switch, removing a leftover one
  * @param {string} idPrefix Scenario ID prefix
  * @param {string} vdName The name of the virtual device
  * @param {string} vdTitle The title of the virtual device
@@ -183,14 +267,17 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   var ctrlInitStatus = 'state';
 
   var existingVdObj = getDevice(vdName);
-  if (existingVdObj !== undefined) {
-    log.error('Virtual device "{}" already exists in system', vdName);
+  if (existingVdObj !== undefined && !removeLeftoverVd(existingVdObj)) {
+    log.error(
+      'Virtual device "{}" for scenario "{}" not created: the name is ' +
+        'taken by {} device of driver "{}"',
+      vdName,
+      vdTitle,
+      existingVdObj.isVirtual() ? 'a virtual' : 'an external',
+      existingVdObj.getDriverId()
+    );
     return null;
   }
-  log.debug(
-    'Virtual device "{}" does not exist in system -> create new VD',
-    vdName
-  );
 
   var vdCfg = {
     title: vdTitle,
@@ -200,15 +287,6 @@ function createBasicVd(idPrefix, vdName, vdTitle, managedRulesId) {
   if (!vdObj) {
     log.error('Virtual device "{}" not created', vdTitle);
     return null;
-  }
-
-  // Saving all created virtual devices to persistent storage
-  var psWBSC = new PersistentStorage('wb-scenarios', { global: true });
-  if (psWBSC['VdList'] !== undefined) {
-    psWBSC['VdList'][vdName] = true;
-  } else {
-    psWBSC['VdList'] = new StorableObject({});
-    psWBSC['VdList'][vdName] = true;
   }
 
   /** @type {ControlOptions} */
@@ -306,4 +384,5 @@ exports.addGroupTitleRO = addGroupTitleRO;
 exports.addAlarm = addAlarm;
 exports.toggleRules = toggleRules;
 exports.setVdTotalError = setVdTotalError;
+exports.removeLeftoverVd = removeLeftoverVd;
 exports.createBasicVd = createBasicVd;
