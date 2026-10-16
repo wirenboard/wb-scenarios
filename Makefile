@@ -21,6 +21,7 @@ SRC_DIR := src/
 # Целевые пути
 CONFIG_DEST := $(DESTDIR)/etc
 WB_CONFIGS_DEST := $(DESTDIR)/etc/wb-configs.d
+WB_PREPARE_DEST := $(DESTDIR)/etc/wb-prepare.d
 IMAGE_DEST := $(DESTDIR)/var/www/images/wb-scenarios
 SCHEMA_DEST := $(DESTDIR)$(PREFIX)/share/wb-mqtt-confed/schemas
 # Используем системный путь до скриптов /usr/share/wb-rules-system/rules
@@ -31,7 +32,7 @@ RULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-system/rules
 # для пользовательских модулей
 MODULES_DEST := $(DESTDIR)$(PREFIX)/share/wb-rules-modules
 
-# Целевой путь для скрипта wb-scenarios-reloader
+# Целевой путь для служебных скриптов сценариев
 SCRIPTS_DEST := $(DESTDIR)$(PREFIX)/lib/wb-scenarios
 
 # Целевой путь для пункта меню HomeUI
@@ -97,12 +98,16 @@ install:
 	@echo "Copying scenarios/scenario-init-main.js to $(RULES_DEST)"
 	@install -Dm644 scenarios/scenario-init-main.js -t $(RULES_DEST)/
 
-	@# Установка скрипта wb-scenarios-reloader
+	@# Установка служебных скриптов сценариев
 	@echo "Copying $(RELOADER_SCRIPT) to $(SCRIPTS_DEST)"
 	@install -Dm755 $(RELOADER_SCRIPT) -t $(SCRIPTS_DEST)/
+	@install -Dm755 wb-scenarios-migrate -t $(SCRIPTS_DEST)/
 
 	@echo "Copying $(WB_CONFIG_FILE) to $(WB_CONFIGS_DEST)"
 	@install -Dm644 $(WB_CONFIG_FILE) -t $(WB_CONFIGS_DEST)/
+
+	@echo "Copying 45wb-scenarios-firstboot to $(WB_PREPARE_DEST)"
+	@install -Dm755 45wb-scenarios-firstboot -t $(WB_PREPARE_DEST)/
 
 	@# Установка файла меню для HomeUI
 	@echo "Copying $(MENU_FILE) to $(HOMEUI_MENU_DEST)"
