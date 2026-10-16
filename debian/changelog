@@ -1,3 +1,9 @@
+wb-scenarios (1.10.2+wb100) stable; urgency=medium
+
+  * Run configuration migrations on first boot after FIT updates
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Fri, 16 Oct 2026 10:41:00 +0300
+
 wb-scenarios (1.10.2) stable; urgency=medium
 
   * Declare implicit globals (ok in light-control, id in translit) found by wb-rules checkJs
