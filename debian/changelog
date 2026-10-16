@@ -1,3 +1,9 @@
+wb-scenarios (1.10.6) stable; urgency=medium
+
+  * Run configuration migrations on first boot after FIT updates
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Thu, 15 Oct 2026 18:41:00 +0300
+
 wb-scenarios (1.10.5) stable; urgency=medium
 
   * Fix scenario not starting when retained topics of the previous wb-rules session hold its virtual device name

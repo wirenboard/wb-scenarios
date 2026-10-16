@@ -201,7 +201,10 @@ schema/
 └── wb-scenarios.schema.json             # Определение thermostat
 
 debian/
-└── postinst                             # Миграция actuator → actuators
+└── postinst                             # Запуск миграций при установке пакета
+
+wb-scenarios-migrate                     # Миграции конфигурации
+45wb-scenarios-firstboot                 # Запуск миграций при первом старте нового rootfs
 ```
 
 ### 5.2. Класс ThermostatScenario
@@ -283,10 +286,10 @@ Per-actuator VD контролы НЕ создаются (решение: не �
 
 ---
 
-## 7. Миграция конфига (postinst)
+## 7. Миграции конфигурации
 
-При обновлении с версий до 1.7.6, `debian/postinst` конвертирует
-старый формат конфига:
+Функция `migrate_actuator_to_actuators` в `wb-scenarios-migrate` преобразует
+формат конфига, использовавшийся до версии 1.7.6:
 
 ```json
 // Было (до 1.7.6):
@@ -298,6 +301,12 @@ Per-actuator VD контролы НЕ создаются (решение: не �
 
 Миграция через `jq`: находит все thermostat-сценарии с полем `actuator`,
 создаёт массив `actuators` и удаляет старое поле.
+
+Функция `migrate_add_control_mode` добавляет `controlMode` со значением
+`hysteresis`, если режим управления не задан.
+
+Запуск миграций при пакетном обновлении и загрузке после FIT описан в разделе
+[«Миграции конфигурации»](../../develop/install-variants-and-build-pkg.md#миграции-конфигурации).
 
 ---
 

@@ -13,7 +13,7 @@
 ### Дополнительная информация
 
 4. **[Описание используемого стиля и окружения](environment-guide.md)** - настройка среды разработки, линтеры, форматтеры
-5. **[Варианты установки и сборки сценариев](install-variants-and-build-pkg.md)** - различные способы установки и развертывания
+5. **[Варианты установки и сборки сценариев](install-variants-and-build-pkg.md)** - установка, сборка и миграции конфигурации
 6. **[Работа с Pull Request](pull-request-workflow.md)** — именование веток, процесс ревью, каскадные PR
 
 ## Что такое сценарии WB
@@ -46,7 +46,11 @@
       ],
       "scenarioType": "schedule",
       "scheduleDaysOfWeek": ["tuesday"],
-      "scheduleTime": "14:02"
+      "scheduleTime": "14:02",
+      "duration": {
+        "durationUnit": "minutes",
+        "durationValue": 0
+      }
     }
   ]
 }
