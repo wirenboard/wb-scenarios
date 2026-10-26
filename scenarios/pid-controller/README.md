@@ -155,6 +155,7 @@ function main() {
     sensor: 'wb-msw-v4_34/Temperature',
     setpoint: 22,
     setpointLimits: { min: 5, max: 35 },
+    setpointStep: 0.1, // Optional slider step of the setpoint in the widget, 0.1 by default
     pidCoefficients: { kp: 10, ki: 0.005, kd: 2 },
     calculationPeriodSec: 30,
     deadBand: 0.2,

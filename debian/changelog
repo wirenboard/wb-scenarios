@@ -1,3 +1,10 @@
+wb-scenarios (1.10.7) stable; urgency=medium
+
+  * Fix the thermostat and PID setpoint slider dropping a fractional setpoint when touched
+  * Add an optional setpoint slider step to thermostat and PID, 0.1 by default
+
+ -- Andrey Ksenofontov <andrey.ksenofontov@wirenboard.com>  Mon, 26 Oct 2026 03:27:00 +0300
+
 wb-scenarios (1.10.6) stable; urgency=medium
 
   * Run configuration migrations on first boot after FIT updates
