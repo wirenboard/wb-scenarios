@@ -172,7 +172,7 @@ PidControllerScenario (extends ScenarioBase)
 │   → {controls: [sensor, ...actuators]}
 │
 ├── validateCfg(cfg)
-│   → проверки: setpoint limits, coefficients, period,
+│   → проверки: setpoint limits, setpoint step, coefficients, period,
 │     deadband, actuators (precision 0-2, min < max)
 │
 └── initSpecific(name, cfg)
@@ -200,14 +200,14 @@ PidControllerScenario (extends ScenarioBase)
 
 Создаётся `wbsc_<idPrefix>` с контролами:
 
-| Контрол         | Тип        | RO  | Описание              |
-| --------------- | ---------- | --- | --------------------- |
-| `rule_enabled`  | switch     | нет | Вкл/выкл сценария     |
-| `state`         | enum value | да  | Состояние (0-9)       |
-| `setpoint`      | range      | нет | Уставка (min..max)    |
-| `current_value` | value      | да  | Показание датчика     |
-| `output_power`  | value, %   | да  | Мощность ПИД (0-100%) |
-| `pid_reset`     | pushbutton | —   | Сброс интегратора     |
+| Контрол         | Тип        | RO  | Описание                                                       |
+| --------------- | ---------- | --- | -------------------------------------------------------------- |
+| `rule_enabled`  | switch     | нет | Вкл/выкл сценария                                              |
+| `state`         | enum value | да  | Состояние (0-9)                                                |
+| `setpoint`      | range      | нет | Уставка (min..max), шаг ползунка в precision, по умолчанию 0.1 |
+| `current_value` | value      | да  | Показание датчика                                              |
+| `output_power`  | value, %   | да  | Мощность ПИД (0-100%)                                          |
+| `pid_reset`     | pushbutton | —   | Сброс интегратора                                              |
 
 ---
 

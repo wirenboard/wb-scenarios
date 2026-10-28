@@ -39,6 +39,7 @@ function initializeScenario(scenarioCfg) {
     targetTemp: scenarioCfg.targetTemperature,
     tempLimitsMin: scenarioCfg.temperatureLimits.min,
     tempLimitsMax: scenarioCfg.temperatureLimits.max,
+    targetTempStep: scenarioCfg.targetTemperatureStep,
     tempSensor: scenarioCfg.temperatureSensor,
     actuators: scenarioCfg.actuators,
     controlMode: scenarioCfg.controlMode,

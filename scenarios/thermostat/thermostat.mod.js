@@ -7,6 +7,8 @@
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
+var isRangeStepValid = require('virtual-device-helpers.mod').isRangeStepValid;
+var getRangeStep = require('virtual-device-helpers.mod').getRangeStep;
 var Logger = require('logger.mod').Logger;
 var actionsTable = require('table-handling-actions.mod').actionsTable;
 var PidEngine = require('pid-engine.mod').PidEngine;
@@ -54,6 +56,8 @@ var thermostatActionsTable = {
  * @property {number} targetTemp - Target temperature set by the user
  * @property {number} tempLimitsMin - Lower limit for temperature setting
  * @property {number} tempLimitsMax - Upper limit for temperature setting
+ * @property {number} [targetTempStep] - Slider step of the target temperature
+ *   control, published as the control precision. Defaults to 0.1
  * @property {string} tempSensor - Name of the input control topic - monitored
  *   Example: temperature sensor whose value should be tracked
  *   'temp_sensor/temp_value'
@@ -202,6 +206,14 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
     log.error(
       'Thermostat validation error: target temperature "{}" must be in the range from "Min" to "Max"',
       cfg.targetTemp
+    );
+  }
+
+  var isTargetTempStepCorrect = isRangeStepValid(cfg.targetTempStep);
+  if (!isTargetTempStepCorrect) {
+    log.error(
+      'Thermostat validation error: target temperature step must be a number > 0, but got "{}"',
+      cfg.targetTempStep
     );
   }
 
@@ -378,6 +390,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
   var isCfgValid =
     isLimitsCorrect &&
     isTargetTempCorrect &&
+    isTargetTempStepCorrect &&
     isModeParamsCorrect &&
     isTempSensorValid &&
     isActuatorsValid &&
@@ -403,6 +416,7 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
     value: initialTemp,
     min: cfg.tempLimitsMin,
     max: cfg.tempLimitsMax,
+    precision: getRangeStep(cfg.targetTempStep),
     order: 2,
   };
   self.vd.devObj.addControl(vdCtrl.targetTemp, controlCfg);

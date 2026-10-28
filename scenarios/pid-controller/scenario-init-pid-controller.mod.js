@@ -39,6 +39,7 @@ function initializeScenario(scenarioCfg) {
     sensor: scenarioCfg.sensor,
     setpoint: scenarioCfg.setpoint,
     setpointLimits: scenarioCfg.setpointLimits,
+    setpointStep: scenarioCfg.setpointStep,
     pidCoefficients: scenarioCfg.pidCoefficients,
     calculationPeriodSec: scenarioCfg.calculationPeriodSec,
     deadBand: scenarioCfg.deadBand,
