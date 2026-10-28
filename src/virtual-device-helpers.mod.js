@@ -177,7 +177,7 @@ var DEFAULT_RANGE_STEP = 0.1;
 
 /**
  * Checks an optional slider step of a 'range' control from a scenario config
- * @param {number|undefined} step Step from the config, may be omitted
+ * @param {number|undefined} step Value from the config, may be omitted
  * @returns {boolean} True if the step is omitted or is a number > 0
  */
 function isRangeStepValid(step) {
@@ -186,10 +186,10 @@ function isRangeStepValid(step) {
 
 /**
  * Resolves the slider step of a 'range' control, published as meta/precision.
- * The web UI takes the slider step from it; without it the step is 1 and
+ * The web UI takes the slider step from it. Without it the step is 1 and
  * a touch of the slider drops a fractional setpoint
- * @param {number|undefined} step Step from the config, may be omitted
- * @returns {number} Step to use for the control precision
+ * @param {number|undefined} step Value from the config, may be omitted
+ * @returns {number} Value for the control precision
  */
 function getRangeStep(step) {
   return step !== undefined ? step : DEFAULT_RANGE_STEP;
