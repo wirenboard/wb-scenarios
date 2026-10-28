@@ -171,25 +171,23 @@ function setVdTotalError(vdObj, errorMsg) {
 }
 
 /**
- * Slider step of a 'range' setpoint control when the config omits it
+ * Default slider step of a 'range' control
  */
 var DEFAULT_RANGE_STEP = 0.1;
 
 /**
- * Checks an optional slider step of a 'range' control from a scenario config
- * @param {number|undefined} step Value from the config, may be omitted
- * @returns {boolean} True if the step is omitted or is a number > 0
+ * Checks the slider step of a 'range' control
+ * @param {number|undefined} step Config value
+ * @returns {boolean} True if omitted or greater than 0
  */
 function isRangeStepValid(step) {
   return step === undefined || (typeof step === 'number' && step > 0);
 }
 
 /**
- * Resolves the slider step of a 'range' control, published as meta/precision.
- * The web UI takes the slider step from it. Without it the step is 1 and
- * a touch of the slider drops a fractional setpoint
- * @param {number|undefined} step Value from the config, may be omitted
- * @returns {number} Value for the control precision
+ * Returns the slider step of a 'range' control
+ * @param {number|undefined} step Config value
+ * @returns {number} Config value or the default step
  */
 function getRangeStep(step) {
   return step !== undefined ? step : DEFAULT_RANGE_STEP;
