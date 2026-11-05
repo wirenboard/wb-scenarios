@@ -220,7 +220,7 @@ ThermostatScenario extends ScenarioBase
 │   → [tempSensor, ...actuators[].mqttTopicName]
 │
 ├── validateCfg(cfg)
-│   → limits, targetTemp, hysteresis, pidSettings (deadBand,
+│   → limits, targetTemp, targetTempStep, hysteresis, pidSettings (deadBand,
 │     pidCoefficients, pwmPeriodSec, pidRecalcCycles, minOn/OffTime),
 │     sensorType, actuators
 │
@@ -232,7 +232,7 @@ ThermostatScenario extends ScenarioBase
     │   └── валидация диапазона
     │
     ├── addCustomControlsToVirtualDevice()
-    │   ├── target_temperature (range, min..max)
+    │   ├── target_temperature (range, min..max, precision = шаг)
     │   ├── current_temperature (value, readonly)
     │   ├── actuator_status (switch, readonly)
     │   ├── output_power (value, %, readonly)        # только PID
@@ -275,7 +275,7 @@ ThermostatScenario extends ScenarioBase
 | --------------------- | ---------------- | -------------------------------------------------------------------------- |
 | `rule_enabled`        | switch           | Вкл/выкл сценария (из базового класса)                                     |
 | `state`               | enum, readonly   | Состояние сценария, включая ошибку канала (из базового класса)             |
-| `target_temperature`  | range            | Целевая температура (min..max)                                             |
+| `target_temperature`  | range            | Целевая температура (min..max), шаг ползунка в precision, по умолчанию 0.1 |
 | `current_temperature` | value, readonly  | Текущее показание датчика                                                  |
 | `actuator_status`     | switch, readonly | Общий статус нагрева (логический)                                          |
 | `output_power`        | value, readonly  | только PID, Выход ПИД-регулятора (0–100%)                                  |

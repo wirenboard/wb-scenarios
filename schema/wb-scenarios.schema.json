@@ -811,13 +811,24 @@
             }
           }
         },
+        "targetTemperatureStep": {
+          "type": "number",
+          "title": "thermostatTargetTemperatureStepTitle",
+          "default": 0.1,
+          "minimum": 0,
+          "exclusiveMinimum": true,
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 12
+          }
+        },
         "controlMode": {
           "type": "string",
           "title": "thermostatControlModeTitle",
           "description": "thermostatControlModeDescription",
           "enum": ["hysteresis", "pid"],
           "default": "hysteresis",
-          "propertyOrder": 5,
+          "propertyOrder": 6,
           "options": {
             "grid_columns": 12,
             "enum_titles": [
@@ -831,7 +842,7 @@
           "title": "thermostatHysteresisTitle",
           "description": "thermostatHysteresisDescription",
           "default": 1,
-          "propertyOrder": 6,
+          "propertyOrder": 7,
           "options": {
             "grid_columns": 12,
             "wb": { "show_editor": true },
@@ -844,7 +855,7 @@
           "type": "object",
           "title": "thermostatPidSettingsTitle",
           "_format": "grid",
-          "propertyOrder": 7,
+          "propertyOrder": 8,
           "options": {
             "grid_columns": 12,
             "disable_collapse": true,
@@ -2284,10 +2295,21 @@
             }
           }
         },
+        "setpointStep": {
+          "type": "number",
+          "title": "pidControllerSetpointStepTitle",
+          "default": 0.1,
+          "minimum": 0,
+          "exclusiveMinimum": true,
+          "propertyOrder": 6,
+          "options": {
+            "grid_columns": 12
+          }
+        },
         "pidCoefficients": {
           "type": "object",
           "title": "generalPidCoefficientsTitle",
-          "propertyOrder": 6,
+          "propertyOrder": 7,
           "_format": "grid",
           "options": {
             "disable_collapse": true,
@@ -2333,7 +2355,7 @@
           "description": "pidControllerCalcPeriodDescription",
           "default": 30,
           "minimum": 1,
-          "propertyOrder": 7,
+          "propertyOrder": 8,
           "options": {
             "grid_columns": 12
           }
@@ -2343,7 +2365,7 @@
           "_format": "wb-autocomplete",
           "title": "pidControllerSensorTitle",
           "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 8,
+          "propertyOrder": 9,
           "options": {
             "grid_columns": 12,
             "inputAttributes": {
@@ -2359,7 +2381,7 @@
         "actuators": {
           "type": "array",
           "minItems": 1,
-          "propertyOrder": 9,
+          "propertyOrder": 10,
           "title": "pidControllerActuatorsTitle",
           "description": "pidControllerActuatorsDescription",
           "_format": "table",
@@ -2574,6 +2596,7 @@
       "thermostatTempLimitsObjTitle": "Temperature Adjustment Limits in Widget",
       "thermostatTempLimitsMinTitle": "Low (°C)",
       "thermostatTempLimitsMaxTitle": "Top (°C)",
+      "thermostatTargetTemperatureStepTitle": "Target Temperature Step in Widget (°C)",
       "thermostatHysteresisTitle": "Hysteresis (°C)",
       "thermostatHysteresisDescription": "Turn on = Set temperature - Hysteresis.<br>Turn off = Set temperature + Hysteresis.",
       "thermostatTemperatureSensorTitle": "Temperature Channel",
@@ -2670,6 +2693,7 @@
       "pidControllerSetpointLimitsTitle": "Setpoint adjustment limits in widget",
       "pidControllerSetpointLimitsMinTitle": "Low",
       "pidControllerSetpointLimitsMaxTitle": "High",
+      "pidControllerSetpointStepTitle": "Setpoint step in widget",
       "pidControllerCalcPeriodTitle": "PID recalculation interval (s)",
       "pidControllerCalcPeriodDescription": "How often the PID engine recomputes the power. A smaller value gives a faster response.",
       "pidControllerActuatorsTitle": "Output",
@@ -2784,6 +2808,7 @@
       "thermostatTempLimitsObjTitle": "Границы изменения температуры в виджете",
       "thermostatTempLimitsMinTitle": "Нижняя (°C)",
       "thermostatTempLimitsMaxTitle": "Верхняя (°C)",
+      "thermostatTargetTemperatureStepTitle": "Шаг изменения температуры в виджете (°C)",
       "thermostatHysteresisTitle": "Гистерезис (°C)",
       "thermostatHysteresisDescription": "Включение = Заданная температура - Гистерезис.<br>Выключение = Заданная температура + Гистерезис.",
       "thermostatTemperatureSensorTitle": "Канал температуры",
@@ -2879,6 +2904,7 @@
       "pidControllerSetpointLimitsTitle": "Границы изменения уставки в виджете",
       "pidControllerSetpointLimitsMinTitle": "Нижняя",
       "pidControllerSetpointLimitsMaxTitle": "Верхняя",
+      "pidControllerSetpointStepTitle": "Шаг изменения уставки в виджете",
       "pidControllerCalcPeriodTitle": "Интервал пересчёта ПИД (с)",
       "pidControllerCalcPeriodDescription": "Как часто ПИД пересчитывает мощность. Меньше — быстрее реакция.",
       "pidControllerActuatorsTitle": "Выход",

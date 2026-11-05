@@ -8,6 +8,8 @@
 
 var ScenarioBase = require('wbsc-scenario-base.mod').ScenarioBase;
 var ScenarioState = require('virtual-device-helpers.mod').ScenarioState;
+var isRangeStepValid = require('virtual-device-helpers.mod').isRangeStepValid;
+var getRangeStep = require('virtual-device-helpers.mod').getRangeStep;
 var Logger = require('logger.mod').Logger;
 var PidEngine = require('pid-engine.mod').PidEngine;
 var constants = require('constants.mod');
@@ -38,6 +40,8 @@ var MS_PER_SECOND = constants.MS_PER_SECOND;
  * @property {string} sensor - MQTT topic of input sensor
  * @property {number} setpoint - Initial target value
  * @property {{min: number, max: number}} setpointLimits - Setpoint limits
+ * @property {number} [setpointStep] - Slider step of the setpoint control,
+ *   published as the control precision. Defaults to 0.1
  * @property {{kp: number, ki: number, kd: number}} pidCoefficients - PID coefficients
  * @property {number} calculationPeriodSec - PID recalculation interval
  * @property {number} deadBand - Dead zone around setpoint
@@ -149,6 +153,14 @@ PidControllerScenario.prototype.validateCfg = function (cfg) {
     log.error(
       'PID validation error: setpoint "{}" must be in range [Min, Max]',
       cfg.setpoint
+    );
+  }
+
+  var isSetpointStepCorrect = isRangeStepValid(cfg.setpointStep);
+  if (!isSetpointStepCorrect) {
+    log.error(
+      'PID validation error: setpoint step must be a number > 0, got "{}"',
+      cfg.setpointStep
     );
   }
 
@@ -266,6 +278,7 @@ PidControllerScenario.prototype.validateCfg = function (cfg) {
   return (
     isLimitsCorrect &&
     isSetpointCorrect &&
+    isSetpointStepCorrect &&
     isCoeffsValid &&
     isPeriodValid &&
     isDeadBandValid &&
@@ -290,6 +303,7 @@ function addCustomControlsToVirtualDevice(self, cfg, initialSetpoint) {
     value: initialSetpoint,
     min: cfg.setpointLimits.min,
     max: cfg.setpointLimits.max,
+    precision: getRangeStep(cfg.setpointStep),
     order: 2,
   });
 

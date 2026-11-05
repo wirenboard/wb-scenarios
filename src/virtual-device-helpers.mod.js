@@ -171,6 +171,29 @@ function setVdTotalError(vdObj, errorMsg) {
 }
 
 /**
+ * Default slider step of a 'range' control
+ */
+var DEFAULT_RANGE_STEP = 0.1;
+
+/**
+ * Checks the slider step of a 'range' control
+ * @param {number|undefined} step Config value
+ * @returns {boolean} True if omitted or greater than 0
+ */
+function isRangeStepValid(step) {
+  return step === undefined || (typeof step === 'number' && step > 0);
+}
+
+/**
+ * Returns the slider step of a 'range' control
+ * @param {number|undefined} step Config value
+ * @returns {number} Config value or the default step
+ */
+function getRangeStep(step) {
+  return step !== undefined ? step : DEFAULT_RANGE_STEP;
+}
+
+/**
  * Describes controls of an external device as cells for defineVirtualDevice
  * @param {Object} devObj External device object
  * @returns {Object} Cells with the same names, types, values and limits
@@ -384,5 +407,7 @@ exports.addGroupTitleRO = addGroupTitleRO;
 exports.addAlarm = addAlarm;
 exports.toggleRules = toggleRules;
 exports.setVdTotalError = setVdTotalError;
+exports.isRangeStepValid = isRangeStepValid;
+exports.getRangeStep = getRangeStep;
 exports.removeLeftoverVd = removeLeftoverVd;
 exports.createBasicVd = createBasicVd;
