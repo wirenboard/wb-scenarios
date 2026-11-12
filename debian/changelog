@@ -1,3 +1,11 @@
+wb-scenarios (1.10.8) stable; urgency=medium
+
+  * Update LICENSE: Automation Technologies, LLC (Wiren Board) as the copyright holder,
+    2024 as the first publication year, use restricted to Wiren Board equipment
+  * Fill debian/copyright in the DEP-5 format
+
+ -- Ekaterina Volkova <ekaterina.volkova@wirenboard.com>  Thu, 12 Nov 2026 14:40:07 +0300
+
 wb-scenarios (1.10.7) stable; urgency=medium
 
   * Add a setpoint slider step to thermostat and PID, 0.1 by default
