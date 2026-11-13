@@ -121,7 +121,7 @@
   "configVersion": 1,
   "scenarios": [
     {
-      "componentVersion": 1,
+      "componentVersion": 2,
       "duration": {
         "durationUnit": "seconds",
         "durationValue": 5

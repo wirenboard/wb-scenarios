@@ -18,7 +18,7 @@ var Logger = require('logger.mod').Logger;
  */
 var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
-  reqVerScenario: 1, // Required version of this scenario type config
+  reqVerScenario: 3, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
   scenarioTypeStr: 'thermostat',
 };
