@@ -3,51 +3,50 @@ set -e
 
 DATA_CONFIG="/mnt/data/etc/wb-scenarios.conf"
 
+# Each migration moves the scenarios of its type from config version N
+# to N + 1. Modules and schema defaults use the last version.
+
+TMP=""
+trap 'rm -f "$TMP"' EXIT # deletes the temporary file if a migration stops
+
+# Applies change to the scenarios that selector finds and sets next_version.
+# The rename keeps the previous config if the script stops.
+apply_migration() {
+    local cfg="$1" selector="$2" change="$3" next_version="$4"
+    [ -f "$cfg" ] || return 0 # no config, nothing to migrate
+    jq -e ".scenarios[]? | select($selector)" "$cfg" >/dev/null 2>&1 || return 0
+    TMP=$(mktemp "$cfg.XXXXXX")
+    jq "(.scenarios[] | select($selector)) |= ($change | .componentVersion = $next_version)" "$cfg" > "$TMP"
+    chmod 644 "$TMP" # mktemp makes 0600
+    mv "$TMP" "$cfg"
+}
+
 # Migration: thermostat actuator (string) -> actuators (array)
 # Added in 1.7.6 (2026-03-20)
 # Converts old single-actuator config to new multi-actuator format
-# Runs on every install; jq query is a no-op if already migrated
+# Thermostat config version 1 -> 2
 migrate_actuator_to_actuators() {
-    local cfg="$1"
-    if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1; then
-        if jq -e '.scenarios[]? | select(.scenarioType == "thermostat" and .actuator != null)' "$cfg" >/dev/null 2>&1; then
-            TMP=$(mktemp)
-            jq '(.scenarios[] | select(.scenarioType == "thermostat" and .actuator != null)) |=
-                (. + { actuators: [{ mqttTopicName: .actuator, behaviorType: "setEnable" }] } | del(.actuator))
-            ' "$cfg" > "$TMP" && mv "$TMP" "$cfg"
-        fi
-    fi
+    apply_migration "$1" '.scenarioType == "thermostat" and .componentVersion == 1' \
+        'if .actuator != null then . + { actuators: [{ mqttTopicName: .actuator, behaviorType: "setEnable" }] } | del(.actuator) else . end' 2
 }
 
 # Migration: thermostat add controlMode field if missing
 # Added in 1.8.3 (2026-04-10)
 # Adds controlMode: "hysteresis" to thermostat scenarios that don't have it
+# Thermostat config version 2 -> 3
 migrate_add_control_mode() {
-    local cfg="$1"
-    if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1; then
-        if jq -e '.scenarios[]? | select(.scenarioType == "thermostat" and .controlMode == null)' "$cfg" >/dev/null 2>&1; then
-            TMP=$(mktemp)
-            jq '(.scenarios[] | select(.scenarioType == "thermostat" and .controlMode == null)) |=
-                (. + { controlMode: "hysteresis" })
-            ' "$cfg" > "$TMP" && mv "$TMP" "$cfg"
-        fi
-    fi
+    apply_migration "$1" '.scenarioType == "thermostat" and .componentVersion == 2' \
+        'if .controlMode == null then . + { controlMode: "hysteresis" } else . end' 3
 }
 
 # Migration: schedule/astronomicalTimer add "duration" field if missing
 # Added in 1.9.9 (2026-07-11)
 # Adds "duration" field (auto-off delay) with auto-off disabled (durationValue 0) to
 # schedule and astronomicalTimer scenarios that don't have it.
+# Schedule and astronomicalTimer config version 1 -> 2
 migrate_add_duration() {
-    local cfg="$1"
-    if [ -f "$cfg" ] && command -v jq >/dev/null 2>&1; then
-        if jq -e '.scenarios[]? | select((.scenarioType == "schedule" or .scenarioType == "astronomicalTimer") and .duration == null)' "$cfg" >/dev/null 2>&1; then
-            TMP=$(mktemp)
-            jq '(.scenarios[] | select((.scenarioType == "schedule" or .scenarioType == "astronomicalTimer") and .duration == null)) |=
-                (. + { duration: { durationUnit: "minutes", durationValue: 0 } })
-            ' "$cfg" > "$TMP" && mv "$TMP" "$cfg"
-        fi
-    fi
+    apply_migration "$1" '(.scenarioType == "schedule" or .scenarioType == "astronomicalTimer") and .componentVersion == 1' \
+        'if .duration == null then . + { duration: { durationUnit: "minutes", durationValue: 0 } } else . end' 2
 }
 
 migrate_actuator_to_actuators "$DATA_CONFIG"

@@ -1,3 +1,10 @@
+wb-scenarios (1.10.8) stable; urgency=medium
+
+  * Run each config migration once, by the scenario config version
+  * Write the migrated config in one rename and stop on write errors
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Thu, 13 Nov 2026 10:18:00 +0300
+
 wb-scenarios (1.10.7) stable; urgency=medium
 
   * Add a setpoint slider step to thermostat and PID, 0.1 by default
