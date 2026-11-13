@@ -32,10 +32,11 @@ function findAllScenariosWithType(
 
     if (scenario.componentVersion !== reqScenarioCfgVer) {
       log.error(
-        'Scenario with name "{}" cfg ver mismatch. Expected: "{}", got: "{}"',
+        'Scenario "{}" of type "{}" is not started: componentVersion is {}, but this wb-scenarios version expects {}',
         scenario.name,
-        reqScenarioCfgVer,
-        scenario.componentVersion
+        scenario.scenarioType,
+        scenario.componentVersion,
+        reqScenarioCfgVer
       );
       continue;
     }
@@ -78,10 +79,11 @@ function findAllActiveScenariosWithType(
     var isValidCfgVer = scenario.componentVersion === reqScenarioCfgVer;
     if (!isValidCfgVer) {
       log.error(
-        'Scenario with name "{}" cfg ver mismatch. Expected: "{}", got: "{}"',
+        'Scenario "{}" of type "{}" is not started: componentVersion is {}, but this wb-scenarios version expects {}',
         scenario.name,
-        reqScenarioCfgVer,
-        scenario.componentVersion
+        scenario.scenarioType,
+        scenario.componentVersion,
+        reqScenarioCfgVer
       );
       continue;
     }
