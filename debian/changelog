@@ -2,8 +2,9 @@ wb-scenarios (1.10.8) stable; urgency=medium
 
   * Run each config migration once, by the scenario config version
   * Write the migrated config in one rename and stop on write errors
+  * Check the config version in the schedule and devices control scenarios
 
- -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Thu, 13 Nov 2026 10:18:00 +0300
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Thu, 13 Nov 2026 18:49:00 +0300
 
 wb-scenarios (1.10.7) stable; urgency=medium
 
