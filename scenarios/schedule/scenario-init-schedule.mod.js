@@ -14,7 +14,7 @@ var Logger = require('logger.mod').Logger;
  */
 var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
-  reqVerScenario: 1, // Required version of this scenario type config
+  reqVerScenario: 2, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
   scenarioTypeStr: 'schedule',
 };
@@ -70,33 +70,6 @@ function initializeScenario(scenarioCfg) {
   }
 }
 
-/**
- * Find and return all enabled scenarios of the requested type
- * @param {Array} listScenario - Array of all scenarios from the config
- * @param {string} searchScenarioType - Scenario type we are looking for
- * @returns {Array} Array of active scenarios of that type
- */
-function findAllActiveScenariosWithType(listScenario, searchScenarioType) {
-  var matchedScenarios = [];
-  for (var i = 0; i < listScenario.length; i++) {
-    var scenario = listScenario[i];
-    // The `enable` field was intended to be removed completely, but was hidden instead
-    // to maintain backward compatibility with older package versions. Some users may still
-    // have this field set to `false` in their configs.
-    // IMPORTANT: Removing this check would re-enable scenarious that were explicitly disabled,
-    // potentially causing unintended behavior.
-    var isEnabled =
-      scenario.hasOwnProperty('enable') && scenario.enable === false
-        ? false
-        : true;
-    var isTarget = scenario.scenarioType === searchScenarioType && isEnabled;
-    if (isTarget) {
-      matchedScenarios.push(scenario);
-    }
-  }
-  return matchedScenarios;
-}
-
 function setup() {
   log.debug('Start initialisation "{}" type scenarios', CFG.scenarioTypeStr);
   var listAllScenarios = scHelpers.readAndValidateScenariosConfig(
@@ -105,9 +78,10 @@ function setup() {
   );
   if (!listAllScenarios) return;
 
-  var targetScenarios = findAllActiveScenariosWithType(
+  var targetScenarios = scHelpers.findAllActiveScenariosWithType(
     listAllScenarios,
-    CFG.scenarioTypeStr
+    CFG.scenarioTypeStr,
+    CFG.reqVerScenario
   );
 
   if (targetScenarios.length === 0) {

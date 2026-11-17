@@ -15,7 +15,7 @@ var Logger = require('logger.mod').Logger;
  */
 var CFG = {
   reqVerGeneralCfg: 1,
-  reqVerScenario: 1,
+  reqVerScenario: 2,
   configPath: '/etc/wb-scenarios.conf',
   scenarioTypeStr: 'astronomicalTimer',
 };

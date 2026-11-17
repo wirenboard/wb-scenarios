@@ -70,6 +70,13 @@
             "hidden": true
           }
         },
+        "componentVersion": {
+          "type": "integer",
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
         "enable": {
           "title": "generalScenarioGenerateRuleTitle",
           "type": "boolean",
@@ -268,7 +275,13 @@
           }
         }
       },
-      "required": ["scenarioType", "name", "inControls", "outControls"]
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "inControls",
+        "outControls"
+      ]
     },
     "lightControl": {
       "title": "lightControlScenarioName",
@@ -732,7 +745,7 @@
           "title": "Config version",
           "minimum": 1,
           "maximum": 256,
-          "default": 1,
+          "default": 3,
           "options": {
             "hidden": true
           }
@@ -1084,7 +1097,7 @@
         },
         "componentVersion": {
           "type": "integer",
-          "default": 1,
+          "default": 2,
           "options": {
             "hidden": true
           }
@@ -1377,7 +1390,7 @@
         },
         "componentVersion": {
           "type": "integer",
-          "default": 1,
+          "default": 2,
           "options": {
             "hidden": true
           }

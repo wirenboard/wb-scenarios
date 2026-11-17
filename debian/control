@@ -11,6 +11,7 @@ Package: wb-scenarios
 Architecture: all
 Depends: ${shlibs:Depends},
          ${misc:Depends},
+         jq,
          wb-rules (>= 2.47.1~~),
          wb-mqtt-homeui (>= 2.260.1~~)
 Description: Scenarios for Wiren Board
