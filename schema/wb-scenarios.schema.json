@@ -70,6 +70,13 @@
             "hidden": true
           }
         },
+        "componentVersion": {
+          "type": "integer",
+          "default": 1,
+          "options": {
+            "hidden": true
+          }
+        },
         "enable": {
           "title": "generalScenarioGenerateRuleTitle",
           "type": "boolean",
@@ -268,7 +275,13 @@
           }
         }
       },
-      "required": ["scenarioType", "name", "inControls", "outControls"]
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "inControls",
+        "outControls"
+      ]
     },
     "lightControl": {
       "title": "lightControlScenarioName",
