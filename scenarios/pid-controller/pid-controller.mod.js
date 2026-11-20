@@ -841,7 +841,8 @@ PidControllerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       cfg.pidCoefficients.kp,
       cfg.pidCoefficients.ki,
       cfg.pidCoefficients.kd,
-      cfg.deadBand
+      cfg.deadBand,
+      constants.HeatFlowDirection.HEATING
     );
 
     if (enabledFromStorage) {

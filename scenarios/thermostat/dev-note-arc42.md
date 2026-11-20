@@ -4,16 +4,22 @@
 
 ### 1.1. Описание задачи
 
-Сценарий **Thermostat** поддерживает заданную температуру с помощью одного из двух алгоритмов:
+Сценарий **Thermostat** поддерживает заданную температуру нагревом, охлаждением
+или обоими контурами сразу. Каждый контур работает по одному из двух алгоритмов:
 
 - Гистерезис (двухпозиционное регулирование),
 - PID (пропорционально-интегрально-дифференциальный регулятор).
 
 Управление осуществляется одним или несколькими актуаторами (реле, клапаны и т.п.).
+Датчик температуры у контуров общий.
 
 ### 1.2. Функциональные требования
 
 - Поддержание целевой температуры с настраиваемым гистерезисом или с помощью PID‑регулятора
+- Нагрев и охлаждение включаются независимо, у каждого контура своя уставка,
+  свои границы ползунка, свой режим и свой список актуаторов
+- Одновременно работает только один контур, его выбирает сценарий по температуре
+- Уставка нагрева должна быть ниже уставки охлаждения, иначе это ошибка настройки
 - Управление массивом актуаторов (один или несколько)
 - Инверсия логики управления для отдельных актуаторов (`setEnable`/`setDisable`)
 - Сохранение целевой температуры в persistent storage между перезапусками
@@ -26,7 +32,7 @@
 | Приоритет | Цель         | Описание                                                  |
 | --------- | ------------ | --------------------------------------------------------- |
 | 1         | Надёжность   | Корректная работа при ошибках датчиков/актуаторов         |
-| 2         | Безопасность | Отключение нагрева при критических ошибках                |
+| 2         | Безопасность | Отключение обоих контуров при критических ошибках         |
 | 3         | Простота     | UI понятен пользователю без документации                  |
 | 4         | Гибкость     | Поддержка двух принципиально разных алгоритмов управления |
 
@@ -48,7 +54,8 @@
 - **JSON Schema Draft-04** — формат схемы UI
 - **Типы контролов**: актуаторы только `switch`, датчик — `value` или `temperature`
 - **PID-движок**: используется модуль pid-engine.mod, реализующий ПИД с защитой
-  от интегрального насыщения и зоной нечувствительности
+  от интегрального насыщения и зоной нечувствительности. Направление теплового
+  потока (нагрев или охлаждение) передаётся в конструктор
 
 ### 2.2. Кодстайл
 
@@ -73,7 +80,10 @@ wb-scenarios.conf         -->  scenario-init-main.js
          |                     thermostat.mod.js
          |                          |
          |                          ├── table-handling-actions.mod (setEnable/setDisable)
-         |                          ├── pid-engine.mod (PID computation)
+         |                          ├── circuit-switcher.mod (active circuit)
+         |                          ├── thermostat-hysteresis.mod (hysteresis)
+         |                          ├── thermostat-pid.mod (PID with PWM)
+         |                          |       └── pid-engine.mod (PID computation)
          |                          |
          v                     [wb-rules engine]
     /devices/wbsc_*/               |
@@ -86,14 +96,15 @@ wb-scenarios.conf         -->  scenario-init-main.js
 
 ### 4.1. Режимы управления
 
-Сценарий поддерживает два взаимоисключающих алгоритма, выбираемых параметром `controlMode`:
+Каждый контур поддерживает два взаимоисключающих алгоритма, выбираемых параметром `controlMode`:
 
 1. Гистерезис (hysteresis)
 
 Классический гистерезис с мёртвой зоной:
 
 ```
-        OFF зона          Мёртвая зона          ON зона
+      нагрев ON         Мёртвая зона         нагрев OFF
+    охлаждение OFF                          охлаждение ON
   ──────────────────┬───────────────────┬──────────────────
                     |                   |
               lowerLimit          upperLimit
@@ -102,18 +113,21 @@ wb-scenarios.conf         -->  scenario-init-main.js
 
 - При `curTemp >= upperLimit` → выключить нагрев
 - При `curTemp <= lowerLimit` → включить нагрев
+- Охлаждение наоборот, при `curTemp >= upperLimit` включить, при `curTemp <= lowerLimit` выключить
 - В мёртвой зоне → сохранить текущее состояние (без изменений)
 
 2. PID (pid)
 
 Используется пропорционально-интегрально-дифференциальный регулятор, выход которого (0–100%)
 преобразуется в длительность включения актуатора внутри фиксированного периода.
+У охлаждения ошибка считается как текущая температура минус уставка, Д-составляющая
+меняет знак вместе с ней. Интеграл стартует с нуля, то есть с «не охлаждать».
 
 Все параметры PID-режима сгруппированы в объекте `pidSettings`:
 
 - deadBand — зона нечувствительности (°C). Внутри неё П-, И- и Д-составляющие умножаются на 0.1 для предотвращения микропереключений.
 - pidCoefficients (Kp, Ki, Kd) — коэффициенты регулятора (вложенный объект).
-- pwmPeriodSec — период цикла (целое число секунд). Должен быть больше minOffTimeSec.
+- pwmPeriodSec — период цикла (целое число секунд). Должен быть больше суммы minOnTimeSec и minOffTimeSec.
 - pidRecalcCycles — PID пересчитывается не каждый цикл, а раз в N периодов (экономия ресурсов, допускается инерционность тепловых процессов).
 - minOnTimeSec / minOffTimeSec — минимальное время включения и выключения за период. Защищает реле от слишком коротких импульсов (например, при 100% мощности гарантируется пауза minOffTimeSec).
 
@@ -126,22 +140,22 @@ wb-scenarios.conf         -->  scenario-init-main.js
    Иначе включаем сейчас и планируем выключение через onTime секунд (setTimeout).
 5. Запланировать следующий цикл через pwmPeriodSec.
 
-Таймеры управляются централизованно (startPidMode, stopPidMode), чтобы избежать утечек при выключении сценария.
+Таймеры управляются централизованно (PidRegulator.start, PidRegulator.stop), чтобы избежать утечек при выключении сценария.
 
 ### 4.2. Массив актуаторов с инверсией
 
 Каждый актуатор имеет `behaviorType`:
 
-- **setEnable** — при нагреве включаем (`true`), при охлаждении выключаем (`false`)
-- **setDisable** — инвертированная логика: при нагреве выключаем, при охлаждении включаем
+- **setEnable** — при работе контура включаем (`true`), иначе выключаем (`false`)
+- **setDisable** — инвертированная логика: при работе контура выключаем, иначе включаем
 
 Формула вычисления значения (XNOR):
 
 ```
-desiredValue = shouldHeat === (behaviorType === 'setEnable')
+desiredValue = shouldWork === (behaviorType === 'setEnable')
 ```
 
-| shouldHeat | behaviorType | desiredValue |
+| shouldWork | behaviorType | desiredValue |
 | ---------- | ------------ | ------------ |
 | true       | setEnable    | true         |
 | true       | setDisable   | false        |
@@ -152,18 +166,22 @@ desiredValue = shouldHeat === (behaviorType === 'setEnable')
 
 ### 4.3. Persistent Storage
 
-Целевая температура сохраняется через ScenarioBase API:
+Целевая температура каждого контура сохраняется через ScenarioBase API:
 
 ```
-this.getPsUserSetting('targetTemp', defaultValue)
-this.setPsUserSetting('targetTemp', value)
+this.getPsUserSetting('heatingTargetTemp', defaultValue)
+this.setPsUserSetting('heatingTargetTemp', value)
 ```
 
 Хранится в общем хранилище `wb-scenarios-common-persistent-data`:
 
 ```
-scenariosRegistry[idPrefix].userSettings.targetTemp = <number>
+scenariosRegistry[idPrefix].userSettings.heatingTargetTemp = <number>
+scenariosRegistry[idPrefix].userSettings.coolingTargetTemp = <number>
 ```
+
+Если ключа нагрева ещё нет, целевая температура нагрева берётся из ключа
+`targetTemp`, в котором её хранили до разделения на контуры.
 
 При первом запуске выполняется одноразовая миграция из старого
 хранилища `wbscThermostatSettings` (до версии 1.7.6).
@@ -178,10 +196,87 @@ scenariosRegistry[idPrefix].userSettings.targetTemp = <number>
 3. При исчезновении ошибки → readonly снимается только когда ВСЕ ошибки (датчика и всех актуаторов) очищены
 
 Ошибка датчика — отображается на контроле `current_temperature`.
-Ошибки актуаторов — отображаются на контроле `actuator_status`.
+Ошибки актуаторов — отображаются на контроле статуса своего контура
+(`heating_actuator_status` или `cooling_actuator_status`).
 Несколько актуаторов разделяют один VD-контрол, поэтому при очистке
 ошибки проверяются ВСЕ актуаторы: красный снимается только когда
 ни один актуатор не имеет критической ошибки.
+
+### 4.5. Контуры и регуляторы
+
+В конфиге сценария контур включают галки `isHeatingEnabled` и
+`isCoolingEnabled`, и `scenario-init-thermostat.mod.js` передаёт модулю блок
+`heating` или `cooling` только при поднятой галке. В конфиге модуля контур
+включён, если есть его блок. Имя контура совпадает с направлением теплового
+потока (`HeatFlowDirection.HEATING` или `HeatFlowDirection.COOLING`).
+
+Сценарий (`thermostat.mod.js`) отвечает за датчик, ошибки, уставки, выбор
+активного контура и виртуальное устройство. Алгоритм контура живёт в
+регуляторе, выбранном параметром `controlMode` блока:
+
+- `HysteresisRegulator` из `thermostat-hysteresis.mod.js`,
+- `PidRegulator` из `thermostat-pid.mod.js`.
+
+Регулятор получает объект контура `Circuit` и берёт из него эти поля:
+
+| Поле             | Назначение                                              |
+| ---------------- | ------------------------------------------------------- |
+| `getTemperature` | Текущая температура датчика                             |
+| `getSetpoint`    | Уставка контура с ползунка виртуального устройства      |
+| `setWorking`     | Включить или выключить контур, записать каналы и статус |
+| `log`            | Логгер с меткой сценария и контура                      |
+
+Оба регулятора реализуют `start`, `stop` и `update`. Регулятор не знает о
+втором контуре и работает так же, как в сценарии с одним контуром.
+У PID-регулятора есть ещё `reset` для кнопки сброса.
+
+### 4.6. Активный контур
+
+Одновременно работает только один контур, активный. Его регулятор запущен и
+включает каналы по своему алгоритму и своей уставке. Регулятор второго контура
+остановлен, этот контур выключен. Активный контур выбирает `CircuitSwitcher` из
+`src/circuit-switcher.mod.js` при изменении температуры и уставки. Модуль не
+знает полей конфига и имён контролов, поэтому подходит любому сценарию с
+нагревом и охлаждением.
+
+- Температура ниже уставки нагрева. Активен нагрев.
+- Температура выше уставки охлаждения. Активно охлаждение.
+- Температура между уставками. Активным остаётся прежний контур. Нагрев
+  остаётся активным, пока температура не поднимется выше уставки охлаждения.
+  Охлаждение остаётся активным, пока температура не опустится ниже уставки
+  нагрева. PID нагрева выше своей уставки сам снижает выход вплоть до 0 % и при
+  переходе через уставку не сбрасывается.
+
+При смене контура `updateActiveCircuit()` останавливает прежний регулятор `stop()` и
+запускает новый `start()`, как при выключении и включении сценария.
+
+При включении сценария `start()` запускает активный контур, а второй
+выключает, чтобы актуаторы, оставшиеся включёнными с прошлого запуска, не
+работали. Пока температура между уставками и активного контура ещё нет,
+выключены оба.
+
+Нагрев поэтому не поднимает температуру выше уставки охлаждения, даже если по
+своему гистерезису работал бы дальше. Охлаждение так же не опускает её ниже
+уставки нагрева.
+
+### 4.7. Пересечение уставок
+
+При обоих контурах уставка нагрева должна быть ниже уставки охлаждения.
+
+- В конфиге пересечение ловит `validateCfg`, сценарий не стартует (`CONFIG_INVALID`).
+- С карточки пересечение ловит `checkSetpoints()` переключателя при изменении
+  любого ползунка и при инициализации, ведь сохранённые уставки могут пересечься
+  и при верном конфиге. Оба контура останавливаются, `updateSetpointsCrossing`
+  сценария ставит на оба ползунка ошибку `r`, `computeState` возвращает
+  `CONFIG_INVALID`. После исправления ошибки снимаются, и если сценарий включён,
+  `start()` снова выбирает активный контур.
+
+Правило ползунка не отключается вместе со сценарием, поэтому пересечение видно
+и в выключенном сценарии, а уставка сохраняется в хранилище. Актуаторы
+выключенного сценария при этом не трогаются. Включение сценария при пересечении
+оставляет оба контура выключенными.
+
+Минимального зазора между уставками нет. Запас на инерцию помещения выбирает пользователь.
 
 ---
 
@@ -192,13 +287,18 @@ scenariosRegistry[idPrefix].userSettings.targetTemp = <number>
 ```
 scenarios/thermostat/
 ├── thermostat.mod.js                    # Класс ThermostatScenario
+├── thermostat-hysteresis.mod.js         # Регулятор контура, гистерезис
+├── thermostat-pid.mod.js                # Регулятор контура, PID с ШИМ
 ├── scenario-init-thermostat.mod.js      # Модуль инициализации
 ├── README.md                            # Документация пользователя
 ├── dev-note-arc42.md                    # Архитектурная документация
 └── img/                                 # Скриншоты для README
 
+src/
+└── circuit-switcher.mod.js              # Выбор активного контура, CircuitSwitcher
+
 schema/
-└── wb-scenarios.schema.json             # Определение thermostat
+└── wb-scenarios.schema.json             # Определения thermostat и thermostatCircuit
 
 debian/
 └── postinst                             # Запуск миграций при установке пакета
@@ -213,56 +313,51 @@ wb-scenarios-migrate                     # Миграции конфигурац
 ThermostatScenario extends ScenarioBase
 │
 ├── generateNames(idPrefix)
-│   → vDevice, ruleTempChanged, ruleSetScStatus,
-│     ruleSetTargetTemp, ruleSensorErr, rulePidReset (только PID)
+│   → vDevice, ruleTempChanged, ruleSetScStatus, ruleSensorErr
 │
 ├── defineControlsWaitConfig(cfg)
-│   → [tempSensor, ...actuators[].mqttTopicName]
+│   → [tempSensor, ...actuators[].mqttTopicName обоих контуров]
 │
 ├── validateCfg(cfg)
-│   → limits, targetTemp, targetTempStep, hysteresis, pidSettings (deadBand,
-│     pidCoefficients, pwmPeriodSec, pidRecalcCycles, minOn/OffTime),
-│     sensorType, actuators
+│   → логгер сценария ctx.log, затем targetTempStep, sensorType, хотя бы один контур,
+│     для каждого контура limits, targetTemp, hysteresis, pidSettings, actuators,
+│     повтор канала во всех списках, между контурами пересечение уставок
+│
+├── computeState(isEnabled)
+│   → ошибка канала > пересечение уставок > вкл/выкл
 │
 └── initSpecific(name, cfg)
     │
-    ├── restoreTargetTemperature()
-    │   ├── getPsUserSetting('targetTemp')
-    │   ├── миграция из старого wbscThermostatSettings (если нужно)
+    ├── restoreTargetTemperature()     # для каждого включённого контура
+    │   ├── getPsUserSetting('<контур>TargetTemp')
+    │   ├── у нагрева — прежний ключ targetTemp и wbscThermostatSettings
     │   └── валидация диапазона
     │
     ├── addCustomControlsToVirtualDevice()
-    │   ├── target_temperature (range, min..max, precision = шаг)
     │   ├── current_temperature (value, readonly)
-    │   ├── actuator_status (switch, readonly)
-    │   ├── output_power (value, %, readonly)        # только PID
-    │   ├── output_timing (text, readonly)           # только PID
-    │   └── pid_reset (pushbutton)                   # только PID
+    │   └── addCircuitControls()       # для каждого включённого контура
     │
-    └── createRules()
-        ├── Режим гистерезиса:
-        │   ├── ruleTempChanged        # whenChanged tempSensor
-        │   │   → обновить curTemp VD, пересчитать нагрев
-        │   ├── ruleSetScStatus        # whenChanged rule_enabled
-        │   │   → ON: пересчитать нагрев, OFF: turnOffAllActuators
-        │   └── ruleSetTargetTemp      # whenChanged target_temperature
-        │       → сохранить в PS, пересчитать нагрев
-        │
-        ├── Режим PID:
-        │   ├── ruleTempChanged        # whenChanged tempSensor
-        │   │   → только обновить curTemp VD
-        │   ├── ruleSetScStatus        # whenChanged rule_enabled
-        │   │   → ON: startPidMode(), OFF: stopPidMode()
-        │   ├── ruleSetTargetTemp      # whenChanged target_temperature
-        │   │   → сохранить в PS (PID подхватит на следующем цикле)
-        │   └── rulePidReset           # whenChanged pid_reset
-        │       → сброс интегральной суммы и перезапуск цикла
-        │
-        └── Общие правила ошибок:
-            ├── ruleSensorErr          # whenChanged tempSensor#error
-            │   → createErrChangeRule с targetVdCtrl = curTemp
-            └── actuator_err_N         # whenChanged actuator[N]#error
-                → createErrChangeRule с targetVdCtrl = actuatorStatus
+    ├── createCircuit()                # для каждого включённого контура
+    │   → объект контура Circuit с регулятором
+    │
+    ├── new CircuitSwitcher(ctx.circuits, ctx.log) → ctx.switcher
+    │
+    ├── createRules()
+    │   ├── ruleTempChanged            # whenChanged tempSensor
+    │   │   → обновить curTemp VD, switcher.updateActiveCircuit()
+    │   ├── ruleSetScStatus            # whenChanged rule_enabled
+    │   │   → ON: switcher.start(), OFF: switcher.stop()
+    │   ├── для каждого контура
+    │   │   ├── <контур>_set_target_t  # whenChanged <контур>_target_temperature
+    │   │   │   → сохранить в PS, проверить пересечение, switcher.updateActiveCircuit()
+    │   │   └── <контур>_pid_reset     # только PID, whenChanged <контур>_pid_reset
+    │   │       → reset() у регулятора
+    │   └── правила ошибок
+    │       ├── ruleSensorErr          # targetVdCtrl = curTemp
+    │       └── <контур>_actuator_err_N # targetVdCtrl = <контур>_actuator_status
+    │
+    ├── updateSetpointsCrossing()
+    └── switcher.start()               # если сценарий включён
 ```
 
 ---
@@ -271,17 +366,18 @@ ThermostatScenario extends ScenarioBase
 
 Создаётся `wbsc_<idPrefix>` с контролами:
 
-| Контрол               | Тип              | Описание                                                                   |
-| --------------------- | ---------------- | -------------------------------------------------------------------------- |
-| `rule_enabled`        | switch           | Вкл/выкл сценария (из базового класса)                                     |
-| `state`               | enum, readonly   | Состояние сценария, включая ошибку канала (из базового класса)             |
-| `target_temperature`  | range            | Целевая температура (min..max), шаг ползунка в precision, по умолчанию 0.1 |
-| `current_temperature` | value, readonly  | Текущее показание датчика                                                  |
-| `actuator_status`     | switch, readonly | Общий статус нагрева (логический)                                          |
-| `output_power`        | value, readonly  | только PID, Выход ПИД-регулятора (0–100%)                                  |
-| `output_timing`       | text, readonly   | только PID, Длительности вкл/выкл в текущем цикле, формат "on / off" (сек) |
-| `pid_reset`           | pushbutton       | только PID, Кнопка сброса интегральной суммы ПИД                           |
+| Контрол                       | Тип              | Описание                                                                   |
+| ----------------------------- | ---------------- | -------------------------------------------------------------------------- |
+| `rule_enabled`                | switch           | Вкл/выкл сценария (из базового класса)                                     |
+| `state`                       | enum, readonly   | Состояние сценария, включая ошибку канала (из базового класса)             |
+| `current_temperature`         | value, readonly  | Текущее показание датчика                                                  |
+| `<контур>_target_temperature` | range            | Целевая температура (min..max), шаг ползунка в precision, по умолчанию 0.1 |
+| `<контур>_actuator_status`    | switch, readonly | Общий статус контура (логический)                                          |
+| `<контур>_output_power`       | value, readonly  | только PID, Выход ПИД-регулятора (0–100%)                                  |
+| `<контур>_output_timing`      | text, readonly   | только PID, Длительности вкл/выкл в текущем цикле, формат "on / off" (сек) |
+| `<контур>_pid_reset`          | pushbutton       | только PID, Кнопка сброса интегральной суммы ПИД                           |
 
+`<контур>` — `heating` или `cooling`, контролы создаются только для включённых контуров.
 Per-actuator VD контролы НЕ создаются (решение: не засорять интерфейс).
 
 ---
@@ -307,6 +403,24 @@ Per-actuator VD контролы НЕ создаются (решение: не �
 `hysteresis`, если режим управления не задан, и переводит версию конфига 2
 в версию 3.
 
+Функция `migrate_thermostat_circuits` (1.10.9) переводит версию конфига 3 в версию 4.
+Поля `targetTemperature`, `temperatureLimits`, `controlMode`, `hysteresis`,
+`pidSettings` и `actuators` уходят в блок `heating`, ставятся
+`isHeatingEnabled: true` и `isCoolingEnabled: false`. Поле `targetTemperatureStep`
+остаётся на верхнем уровне.
+
+```json
+// Было (componentVersion 3):
+{ "componentVersion": 3, "targetTemperature": 22, "controlMode": "hysteresis", "hysteresis": 1, "actuators": [] }
+
+// Стало (componentVersion 4):
+{ "componentVersion": 4, "isHeatingEnabled": true, "heating": { "targetTemperature": 22, "controlMode": "hysteresis", "hysteresis": 1, "actuators": [] }, "isCoolingEnabled": false }
+```
+
+Имена контролов виртуального устройства меняются вместе с конфигом
+(`target_temperature` → `heating_target_temperature` и т.д.). Ссылки на старые
+имена в панелях и правилах пользователя миграция не трогает.
+
 Запуск миграций при пакетном обновлении и загрузке после FIT описан в разделе
 [«Миграции конфигурации»](../../develop/install-variants-and-build-pkg.md#миграции-конфигурации).
 
@@ -322,11 +436,11 @@ Readonly на `rule_enabled` снимается только когда ВСЕ �
 ### 8.2. Температура вне диапазона после изменения лимитов
 
 Если сохранённая температура выходит за новые границы `tempLimitsMin`/`tempLimitsMax`,
-она сбрасывается на `cfg.targetTemp` с предупреждением в лог.
+она сбрасывается на `targetTemp` контура с предупреждением в лог.
 
 ### 8.3. Оптимизация записи
 
-Запись в актуаторы и VD-контрол `actuator_status` выполняется
+Запись в актуаторы и VD-контрол статуса контура выполняется
 только при изменении значения (проверка `!==` перед записью).
 
 ### 8.4. Защита реле в PID-режиме
@@ -350,4 +464,3 @@ minOnTimeSec предотвращает слишком короткие импу
 | Миграция из старого PS `wbscThermostatSettings`    | Низкий    | Удалить код миграции после 2027-04                         |
 | Per-actuator статус не отображается                | Низкий    | Добавить если будет запрос от пользователей                |
 | Дублирование error-handling логики                 | Средний   | Вынести в ScenarioBase                                     |
-| PID-движок не поддерживает адаптивное изменение dt | Низкий    | Сейчас dt фиксирован, это допустимо для тепловых процессов |

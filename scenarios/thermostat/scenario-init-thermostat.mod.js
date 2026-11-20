@@ -18,12 +18,32 @@ var Logger = require('logger.mod').Logger;
  */
 var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
-  reqVerScenario: 3, // Required version of this scenario type config
+  reqVerScenario: 4, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
   scenarioTypeStr: 'thermostat',
 };
 
 var log = new Logger('WBSC-' + CFG.scenarioTypeStr + '-init');
+
+/**
+ * Converts a circuit block of the scenario config into the module format
+ * @param {Object} [scenarioCircuitCfg] - The "heating" or "cooling" block of
+ *   the scenario config
+ * @returns {Object} Circuit configuration of the module
+ */
+function toCircuitCfg(scenarioCircuitCfg) {
+  var block = scenarioCircuitCfg || {};
+  var limits = block.temperatureLimits || {};
+  return {
+    targetTemp: block.targetTemperature,
+    tempLimitsMin: limits.min,
+    tempLimitsMax: limits.max,
+    actuators: block.actuators,
+    controlMode: block.controlMode,
+    hysteresis: block.hysteresis,
+    pidSettings: block.pidSettings,
+  };
+}
 
 /**
  * Initializes a scenario using the specified settings
@@ -36,16 +56,15 @@ function initializeScenario(scenarioCfg) {
   var scenario = new CustomTypeSc();
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
-    targetTemp: scenarioCfg.targetTemperature,
-    tempLimitsMin: scenarioCfg.temperatureLimits.min,
-    tempLimitsMax: scenarioCfg.temperatureLimits.max,
-    targetTempStep: scenarioCfg.targetTemperatureStep,
     tempSensor: scenarioCfg.temperatureSensor,
-    actuators: scenarioCfg.actuators,
-    controlMode: scenarioCfg.controlMode,
-    hysteresis: scenarioCfg.hysteresis,
-    pidSettings: scenarioCfg.pidSettings,
+    targetTempStep: scenarioCfg.targetTemperatureStep,
   };
+  if (scenarioCfg.isHeatingEnabled) {
+    cfg.heating = toCircuitCfg(scenarioCfg.heating);
+  }
+  if (scenarioCfg.isCoolingEnabled) {
+    cfg.cooling = toCircuitCfg(scenarioCfg.cooling);
+  }
 
   try {
     // Returns true if VD created successfully; full initialization continue asynchronously

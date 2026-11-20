@@ -745,7 +745,7 @@
           "title": "Config version",
           "minimum": 1,
           "maximum": 256,
-          "default": 3,
+          "default": 4,
           "options": {
             "hidden": true
           }
@@ -784,11 +784,116 @@
             "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
           }
         },
+        "temperatureSensor": {
+          "type": "string",
+          "_format": "wb-autocomplete",
+          "title": "thermostatTemperatureSensorTitle",
+          "pattern": "^[^/+#]+/[^/+#]+$",
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12,
+            "inputAttributes": {
+              "placeholder": "generalMqttTopicNamePlaceholder"
+            },
+            "wb": {
+              "data": "devices"
+            },
+            "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName"
+          },
+          "minLength": 1
+        },
+        "targetTemperatureStep": {
+          "type": "number",
+          "title": "thermostatTargetTemperatureStepTitle",
+          "default": 0.1,
+          "minimum": 0,
+          "exclusiveMinimum": true,
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "isHeatingEnabled": {
+          "type": "boolean",
+          "title": "thermostatHeatingEnabledTitle",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "heating": {
+          "$ref": "#/definitions/thermostatCircuit",
+          "title": "thermostatHeatingTitle",
+          "propertyOrder": 6,
+          "properties": {
+            "targetTemperature": { "default": 22 }
+          },
+          "options": {
+            "dependencies": {
+              "isHeatingEnabled": true
+            }
+          }
+        },
+        "isCoolingEnabled": {
+          "type": "boolean",
+          "title": "thermostatCoolingEnabledTitle",
+          "default": false,
+          "_format": "checkbox",
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "cooling": {
+          "$ref": "#/definitions/thermostatCircuit",
+          "title": "thermostatCoolingTitle",
+          "propertyOrder": 8,
+          "properties": {
+            "targetTemperature": { "default": 26 }
+          },
+          "options": {
+            "dependencies": {
+              "isCoolingEnabled": true
+            }
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "temperatureSensor",
+        "isHeatingEnabled",
+        "isCoolingEnabled"
+      ],
+      "defaultProperties": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "temperatureSensor",
+        "isHeatingEnabled",
+        "heating",
+        "isCoolingEnabled",
+        "cooling"
+      ]
+    },
+    "thermostatCircuit": {
+      "type": "object",
+      "_format": "grid",
+      "options": {
+        "grid_columns": 12,
+        "disable_collapse": true,
+        "disable_edit_json": true,
+        "disable_properties": true,
+        "wb": { "show_editor": true }
+      },
+      "properties": {
         "targetTemperature": {
           "type": "number",
           "title": "thermostatTargetTemperatureTitle",
-          "default": 22,
-          "propertyOrder": 3,
+          "propertyOrder": 1,
           "options": {
             "grid_columns": 12
           }
@@ -796,7 +901,7 @@
         "temperatureLimits": {
           "type": "object",
           "title": "thermostatTempLimitsObjTitle",
-          "propertyOrder": 4,
+          "propertyOrder": 2,
           "_format": "grid",
           "options": {
             "disable_collapse": true,
@@ -824,24 +929,13 @@
             }
           }
         },
-        "targetTemperatureStep": {
-          "type": "number",
-          "title": "thermostatTargetTemperatureStepTitle",
-          "default": 0.1,
-          "minimum": 0,
-          "exclusiveMinimum": true,
-          "propertyOrder": 5,
-          "options": {
-            "grid_columns": 12
-          }
-        },
         "controlMode": {
           "type": "string",
           "title": "thermostatControlModeTitle",
           "description": "thermostatControlModeDescription",
           "enum": ["hysteresis", "pid"],
           "default": "hysteresis",
-          "propertyOrder": 6,
+          "propertyOrder": 3,
           "options": {
             "grid_columns": 12,
             "enum_titles": [
@@ -855,7 +949,7 @@
           "title": "thermostatHysteresisTitle",
           "description": "thermostatHysteresisDescription",
           "default": 1,
-          "propertyOrder": 7,
+          "propertyOrder": 4,
           "options": {
             "grid_columns": 12,
             "wb": { "show_editor": true },
@@ -868,7 +962,7 @@
           "type": "object",
           "title": "thermostatPidSettingsTitle",
           "_format": "grid",
-          "propertyOrder": 8,
+          "propertyOrder": 5,
           "options": {
             "grid_columns": 12,
             "disable_collapse": true,
@@ -981,28 +1075,10 @@
             }
           }
         },
-        "temperatureSensor": {
-          "type": "string",
-          "_format": "wb-autocomplete",
-          "title": "thermostatTemperatureSensorTitle",
-          "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 13,
-          "options": {
-            "grid_columns": 12,
-            "inputAttributes": {
-              "placeholder": "generalMqttTopicNamePlaceholder"
-            },
-            "wb": {
-              "data": "devices"
-            },
-            "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName"
-          },
-          "minLength": 1
-        },
         "actuators": {
           "type": "array",
           "minItems": 1,
-          "propertyOrder": 14,
+          "propertyOrder": 6,
           "title": "thermostatActuatorsTitle",
           "description": "thermostatActuatorsDescription",
           "_format": "table",
@@ -1056,25 +1132,9 @@
         }
       },
       "required": [
-        "scenarioType",
-        "componentVersion",
-        "name",
         "targetTemperature",
         "temperatureLimits",
         "controlMode",
-        "temperatureSensor",
-        "actuators"
-      ],
-      "defaultProperties": [
-        "scenarioType",
-        "componentVersion",
-        "name",
-        "targetTemperature",
-        "temperatureLimits",
-        "controlMode",
-        "hysteresis",
-        "pidSettings",
-        "temperatureSensor",
         "actuators"
       ]
     },
@@ -2603,7 +2663,7 @@
       "lightControlLightSwitchesObjTitle": "Switch",
 
       "thermostatScenarioName": "Thermostat",
-      "thermostatScenarioDescription": "Temperature control for discrete (ON/OFF) outputs — relays, valves, boilers.<br><br>Available modes:<br>• <b>Hysteresis</b> — turn the heater on when the temperature is below the setpoint, off when it is above the setpoint. Simple and reliable, suits systems with high thermal inertia (underfloor heating, radiators).<br>• <b>PID</b> — PID controller with PWM. The PID engine computes power 0–100%, which is split into an ON interval and an OFF interval within a fixed cycle. Holds the setpoint and protects the relay via min ON/OFF time. Suitable for precise control of fast-response heaters.",
+      "thermostatScenarioDescription": "Temperature control for discrete (ON/OFF) outputs — relays, valves, boilers, air conditioners. Heating and cooling are enabled separately, each with its own setpoint and mode.<br><br>Available modes:<br>• <b>Hysteresis</b> — heating turns on below the setpoint and off above it, cooling the other way round. Simple and reliable, suits systems with high thermal inertia (underfloor heating, radiators).<br>• <b>PID</b> — PID controller with PWM. The PID engine computes power 0–100%, which is split into an ON interval and an OFF interval within a fixed cycle. Holds the setpoint and protects the relay via min ON/OFF time.",
       "thermostatDefaultInputName": "Heater",
       "thermostatTargetTemperatureTitle": "Target Temperature (°C)",
       "thermostatTempLimitsObjTitle": "Temperature Adjustment Limits in Widget",
@@ -2611,12 +2671,16 @@
       "thermostatTempLimitsMaxTitle": "Top (°C)",
       "thermostatTargetTemperatureStepTitle": "Target Temperature Step in Widget (°C)",
       "thermostatHysteresisTitle": "Hysteresis (°C)",
-      "thermostatHysteresisDescription": "Turn on = Set temperature - Hysteresis.<br>Turn off = Set temperature + Hysteresis.",
+      "thermostatHysteresisDescription": "Heating turns on below the setpoint by the hysteresis and off above it by the hysteresis, cooling the other way round.",
       "thermostatTemperatureSensorTitle": "Temperature Channel",
-      "thermostatActuatorsTitle": "Heater Channels",
-      "thermostatActuatorsDescription": "Channels controlled by the thermostat when heating is needed:",
-      "thermostatActuatorObjTitle": "Heater Channel",
-      "thermostatActuatorBehaviorTitle": "When Heating",
+      "thermostatHeatingEnabledTitle": "Enable Heating",
+      "thermostatHeatingTitle": "Heating Settings",
+      "thermostatCoolingEnabledTitle": "Enable Cooling",
+      "thermostatCoolingTitle": "Cooling Settings",
+      "thermostatActuatorsTitle": "Control Channels",
+      "thermostatActuatorsDescription": "Channels the thermostat controls when this circuit is running",
+      "thermostatActuatorObjTitle": "Channel",
+      "thermostatActuatorBehaviorTitle": "When Running",
       "thermostatActuatorEnumEnable": "Turn on (switch)",
       "thermostatActuatorEnumDisable": "Turn off (switch, inverted)",
 
@@ -2628,13 +2692,13 @@
       "thermostatDeadBandDescription": "Within ±deadband around the setpoint, P/I/D components are multiplied by 0.1 to avoid chattering",
       "thermostatPidSettingsTitle": "PID Settings",
       "thermostatPwmPeriodTitle": "Cycle Time (s)",
-      "thermostatPwmPeriodDescription": "Duration of one control cycle. The actuator turns on for (computed power %) × cycle time.",
+      "thermostatPwmPeriodDescription": "Duration of one control cycle. Heating or cooling works for (computed power %) × cycle time.",
       "thermostatPidRecalcCyclesTitle": "PID Recalculation Interval (cycles)",
       "thermostatPidRecalcCyclesDescription": "PID recalculates every N control cycles. Actual recalculation interval = cycle time × N",
       "thermostatMinOnTimeTitle": "Minimum ON Time (s)",
-      "thermostatMinOnTimeDescription": "Minimum heater ON time within a cycle. Protects mechanical relays from chattering. 0 disables the limit.",
+      "thermostatMinOnTimeDescription": "Minimum work time within a cycle. Protects mechanical relays from chattering. 0 disables the limit.",
       "thermostatMinOffTimeTitle": "Minimum OFF Time (s)",
-      "thermostatMinOffTimeDescription": "Minimum heater OFF time within a cycle. Protects mechanical relays from chattering. 0 disables the limit.",
+      "thermostatMinOffTimeDescription": "Minimum pause within a cycle. Protects mechanical relays from chattering. 0 disables the limit.",
 
       "scheduleScenarioName": "Schedule",
       "scheduleScenarioDescription": "Executes actions at a specified time and day of the week.</p>If the time or time zone is changed, the wb-rules service must be restarted.",
@@ -2815,7 +2879,7 @@
       "lightControlOpeningSensorsEnumWhenEnabled": "Когда включилось",
 
       "thermostatScenarioName": "Термостат",
-      "thermostatScenarioDescription": "Регулирование температуры для дискретных (ON/OFF) выходов — реле, клапанов, котлов.<br><br>Доступные режимы:<br>• <b>Гистерезис</b> — простое двухпозиционное управление: включает нагреватель, если температура ниже уставки, и выключает, если выше уставки. Просто, надёжно, подходит для систем с большой тепловой инерцией (тёплый пол, радиаторы).<br>• <b>ПИД</b> — ПИД-регулятор с ШИМ. Алгоритм считает требуемую мощность 0–100 %, которая разбивается на интервал включения и выключения внутри фиксированного периода. Держит уставку при минимальных колебаниях, а минимальное время вкл/выкл защищает реле. Подходит для точного управления быстрыми нагревателями.",
+      "thermostatScenarioDescription": "Регулирование температуры для дискретных (ON/OFF) выходов — реле, клапанов, котлов, кондиционеров. Нагрев и охлаждение включаются отдельно, у каждого своя заданная температура и свой режим.<br><br>Доступные режимы:<br>• <b>Гистерезис</b> — нагрев включается ниже уставки и выключается выше неё, охлаждение наоборот. Просто, надёжно, подходит для систем с большой тепловой инерцией (тёплый пол, радиаторы).<br>• <b>ПИД</b> — ПИД-регулятор с ШИМ. Алгоритм считает требуемую мощность 0–100 %, которая разбивается на интервал включения и выключения внутри фиксированного периода. Держит уставку при минимальных колебаниях, а минимальное время вкл/выкл защищает реле.",
       "thermostatDefaultInputName": "Теплый пол в комнате",
       "thermostatTargetTemperatureTitle": "Заданная температура (°C)",
       "thermostatTempLimitsObjTitle": "Границы изменения температуры в виджете",
@@ -2823,12 +2887,16 @@
       "thermostatTempLimitsMaxTitle": "Верхняя (°C)",
       "thermostatTargetTemperatureStepTitle": "Шаг изменения температуры в виджете (°C)",
       "thermostatHysteresisTitle": "Гистерезис (°C)",
-      "thermostatHysteresisDescription": "Включение = Заданная температура - Гистерезис.<br>Выключение = Заданная температура + Гистерезис.",
+      "thermostatHysteresisDescription": "Нагрев включается при температуре ниже заданной на гистерезис и выключается при температуре выше заданной на гистерезис, охлаждение наоборот.",
       "thermostatTemperatureSensorTitle": "Канал температуры",
-      "thermostatActuatorsTitle": "Каналы нагревателей",
-      "thermostatActuatorsDescription": "Каналы, которыми управляет термостат при необходимости нагрева:",
-      "thermostatActuatorObjTitle": "Канал нагревателя",
-      "thermostatActuatorBehaviorTitle": "При нагреве",
+      "thermostatHeatingEnabledTitle": "Включить нагрев",
+      "thermostatHeatingTitle": "Настройки нагрева",
+      "thermostatCoolingEnabledTitle": "Включить охлаждение",
+      "thermostatCoolingTitle": "Настройки охлаждения",
+      "thermostatActuatorsTitle": "Каналы управления",
+      "thermostatActuatorsDescription": "Каналы, которыми термостат управляет при работе этого контура",
+      "thermostatActuatorObjTitle": "Канал",
+      "thermostatActuatorBehaviorTitle": "При работе",
       "thermostatActuatorEnumEnable": "Включить (переключатель)",
       "thermostatActuatorEnumDisable": "Выключить (переключатель, инверсия)",
 
@@ -2840,13 +2908,13 @@
       "thermostatDeadBandDescription": "В пределах ±зоны от уставки компоненты P/I/D умножаются на 0.1, чтобы избежать частых переключений",
       "thermostatPidSettingsTitle": "Настройки ПИД",
       "thermostatPwmPeriodTitle": "Время цикла (с)",
-      "thermostatPwmPeriodDescription": "Длительность одного цикла управления. Устройство включается на (вычисленная мощность %) × время цикла.",
+      "thermostatPwmPeriodDescription": "Длительность одного цикла управления. Нагрев или охлаждение работает (вычисленная мощность %) × время цикла.",
       "thermostatPidRecalcCyclesTitle": "Интервал пересчёта ПИД (циклов)",
       "thermostatPidRecalcCyclesDescription": "ПИД пересчитывается каждые N циклов управления. Реальный интервал пересчёта = время цикла × N",
       "thermostatMinOnTimeTitle": "Минимальное время работы (с)",
-      "thermostatMinOnTimeDescription": "Минимальная длительность включения нагревателя внутри цикла. Защищает механическое реле от частых переключений. 0 — без ограничения.",
+      "thermostatMinOnTimeDescription": "Минимальное время работы внутри цикла. Защищает механическое реле от частых переключений. 0 — без ограничения.",
       "thermostatMinOffTimeTitle": "Минимальное время паузы (с)",
-      "thermostatMinOffTimeDescription": "Минимальная длительность выключения нагревателя внутри цикла. Защищает механическое реле от частых переключений. 0 — без ограничения.",
+      "thermostatMinOffTimeDescription": "Минимальная пауза внутри цикла. Защищает механическое реле от частых переключений. 0 — без ограничения.",
 
       "scheduleScenarioName": "Расписание",
       "scheduleScenarioDescription": "Выполняет действия в заданное время и день недели.</p>При изменении времени или часового пояса необходимо перезапустить сервис wb-rules.",
