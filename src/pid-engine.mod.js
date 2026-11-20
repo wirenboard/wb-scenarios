@@ -1,6 +1,8 @@
 /**
  * @file pid-engine.mod.js - PID controller algorithm
  * @description Pure PID algorithm without MQTT/wb-rules deps
+ *     - Heat flow direction: heating raises the output below the setpoint,
+ *       cooling raises it above the setpoint
  *     - P: proportional to current error
  *     - I: integral with anti-windup (clamping 0..100)
  *     - D: derivative on measurement with low-pass filter
@@ -8,6 +10,8 @@
  *
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
+
+var HeatFlowDirection = require('constants.mod').HeatFlowDirection;
 
 /**
  * Gain multiplier inside the deadband zone.
@@ -49,13 +53,18 @@ function clamp(val, min, max) {
  * @param {number} kd - Derivative gain
  * @param {number} deadband - Deadband zone width
  *     (same units as setpoint, e.g. degrees C)
+ * @param {HeatFlowDirection} heatFlowDirection - Heat flow direction
  * @constructor
  */
-function PidEngine(kp, ki, kd, deadband) {
+function PidEngine(kp, ki, kd, deadband, heatFlowDirection) {
   this.kp = kp;
   this.ki = ki;
   this.kd = kd;
   this.deadband = deadband || 0;
+  // +1 for heating, -1 for cooling: cooling counts the error as
+  // measurement minus setpoint
+  this.heatFlowSign =
+    heatFlowDirection === HeatFlowDirection.HEATING ? 1 : -1;
 
   // Internal state
   this.integral = 0;
@@ -87,7 +96,7 @@ function PidEngine(kp, ki, kd, deadband) {
  * @returns {number} Output clamped to 0..100
  */
 PidEngine.prototype.compute = function (setpoint, measurement, dt) {
-  var error = setpoint - measurement;
+  var error = this.heatFlowSign * (setpoint - measurement);
 
   // Deadband: reduce gain near setpoint
   var inDeadband = Math.abs(error) < this.deadband;
@@ -108,7 +117,7 @@ PidEngine.prototype.compute = function (setpoint, measurement, dt) {
     this.filteredDerivative =
       (1 - D_FILTER_ALPHA) * this.filteredDerivative +
       D_FILTER_ALPHA * rawDerivative;
-    D = -this.kd * this.filteredDerivative * gainFactor;
+    D = -this.heatFlowSign * this.kd * this.filteredDerivative * gainFactor;
   }
   this.lastMeasurement = measurement;
 

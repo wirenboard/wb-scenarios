@@ -1,6 +1,10 @@
 /**
  * @file thermostat.mod.js - ES5 module for wb-rules v2.34
  * @description Thermostat scenario class that extends ScenarioBase
+ *     Heating and cooling circuits share the temperature sensor. One circuit
+ *     regulates at a time, circuit-switcher.mod.js picks it by the temperature.
+ *     Regulators of the circuits live in thermostat-hysteresis.mod.js and
+ *     thermostat-pid.mod.js
  *
  * @author Vitalii Gaponov <vitalii.gaponov@wirenboard.com>
  */
@@ -11,8 +15,11 @@ var isRangeStepValid = require('virtual-device-helpers.mod').isRangeStepValid;
 var getRangeStep = require('virtual-device-helpers.mod').getRangeStep;
 var Logger = require('logger.mod').Logger;
 var actionsTable = require('table-handling-actions.mod').actionsTable;
-var PidEngine = require('pid-engine.mod').PidEngine;
-var constants = require('constants.mod');
+var HeatFlowDirection = require('constants.mod').HeatFlowDirection;
+var HysteresisRegulator =
+  require('thermostat-hysteresis.mod').HysteresisRegulator;
+var PidRegulator = require('thermostat-pid.mod').PidRegulator;
+var CircuitSwitcher = require('circuit-switcher.mod').CircuitSwitcher;
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
 var isControlTypeValid =
@@ -21,11 +28,6 @@ var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
-var log = new Logger(loggerFileLabel);
-
-var MAX_CYCLE_TIME_DEVIATION_RATIO =
-  constants.MAX_CYCLE_TIME_DEVIATION_RATIO;
-var MS_PER_SECOND = constants.MS_PER_SECOND;
 
 /**
  * Actions table for thermostat actuators.
@@ -39,7 +41,7 @@ var thermostatActionsTable = {
 /**
  * @typedef {Object} ActuatorConfig
  * @property {string} mqttTopicName - MQTT topic of the actuator (e.g. 'relay_module/K2')
- * @property {'setEnable'|'setDisable'} behaviorType - Action when heating is needed
+ * @property {'setEnable'|'setDisable'} behaviorType - Action when the circuit works
  */
 
 /**
@@ -50,31 +52,55 @@ var thermostatActionsTable = {
  */
 
 /**
- * @typedef {Object} ThermostatConfig
- * @property {string} [idPrefix] - Optional prefix for scenario identification
- *   If not provided, it will be generated from the scenario name
+ * @typedef {Object} PidSettings
+ * @property {number} deadBand - Dead band around setpoint (°C)
+ * @property {PidCoefficients} pidCoefficients - PID gains (kp, ki, kd)
+ * @property {number} pwmPeriodSec - PWM cycle duration (seconds)
+ * @property {number} pidRecalcCycles - Recompute PID every N cycles
+ * @property {number} minOnTimeSec - Minimum circuit work time in a cycle (s)
+ * @property {number} minOffTimeSec - Minimum circuit pause in a cycle (s)
+ */
+
+/**
+ * @typedef {Object} ThermostatCircuitConfig
  * @property {number} targetTemp - Target temperature set by the user
  * @property {number} tempLimitsMin - Lower limit for temperature setting
  * @property {number} tempLimitsMax - Upper limit for temperature setting
- * @property {number} [targetTempStep] - Slider step of the target temperature
- *   control, published as the control precision. Defaults to 0.1
+ * @property {Array<ActuatorConfig>} actuators - List of output controls
+ * @property {'hysteresis'|'pid'} controlMode - Control algorithm selector
+ * @property {number} [hysteresis] - Switching range (°C), hysteresis mode
+ * @property {PidSettings} [pidSettings] - PID settings, PID mode
+ */
+
+/**
+ * @typedef {Object} ThermostatConfig
+ * @property {string} [idPrefix] - Optional prefix for scenario identification
+ *   If not provided, it will be generated from the scenario name
  * @property {string} tempSensor - Name of the input control topic - monitored
  *   Example: temperature sensor whose value should be tracked
  *   'temp_sensor/temp_value'
- * @property {Array<ActuatorConfig>} actuators - List of output controls
- * @property {'hysteresis'|'pid'} controlMode - Control algorithm selector
- *
- * Hysteresis mode (controlMode === 'hysteresis'):
- * @property {number} hysteresis - Hysteresis value (switching range, °C)
- *
- * PID mode (controlMode === 'pid'):
- * @property {Object} pidSettings - PID settings object
- * @property {number} pidSettings.deadBand - Dead band around setpoint (°C)
- * @property {PidCoefficients} pidSettings.pidCoefficients - PID gains (kp, ki, kd)
- * @property {number} pidSettings.pwmPeriodSec - PWM cycle duration (seconds)
- * @property {number} pidSettings.pidRecalcCycles - Recompute PID every N cycles
- * @property {number} pidSettings.minOnTimeSec - Minimum actuator ON time (s)
- * @property {number} pidSettings.minOffTimeSec - Minimum actuator OFF time (s)
+ * @property {number} [targetTempStep] - Slider step of the target temperature
+ *   controls of both circuits, published as the control precision.
+ *   Defaults to 0.1
+ * @property {ThermostatCircuitConfig} [heating] - Heating circuit,
+ *   absent when heating is off
+ * @property {ThermostatCircuitConfig} [cooling] - Cooling circuit,
+ *   absent when cooling is off
+ */
+
+/**
+ * Runtime of one enabled circuit
+ * The regulator gets the circuit and uses getTemperature, getSetpoint,
+ * setWorking and log
+ * @typedef {Object} Circuit
+ * @property {HeatFlowDirection} name - Circuit name
+ * @property {ThermostatCircuitConfig} cfg - Circuit configuration
+ * @property {function(): number} getTemperature - Current temperature
+ * @property {function(): number} getSetpoint - Setpoint of the circuit
+ * @property {function(boolean): void} setWorking - Turns the circuit on or off,
+ *   each channel follows its behaviorType
+ * @property {Logger} log - Logger of the circuit
+ * @property {HysteresisRegulator|PidRegulator} regulator - Regulator
  */
 
 /**
@@ -88,9 +114,9 @@ function ThermostatScenario() {
   /**
    * Context object for storing scenario runtime state
    *
-   * Target temperature is persisted via ScenarioBase PS API:
-   *   this.getPsUserSetting('targetTemp', defaultValue)
-   *   this.setPsUserSetting('targetTemp', value)
+   * Target temperature of each circuit is persisted via ScenarioBase PS API:
+   *   this.getPsUserSetting('heatingTargetTemp', defaultValue)
+   *   this.setPsUserSetting('heatingTargetTemp', value)
    *
    * One persistent-storage for all scenarios of this type,
    * contains target temperature set by user in virtual device.
@@ -98,10 +124,13 @@ function ThermostatScenario() {
    * @example
    *   scenariosRegistry = {
    *     "bathroom_floor": {
-   *       "userSettings": { "targetTemp": 22 }
+   *       "userSettings": { "heatingTargetTemp": 22 }
    *     },
    *     "kitchen_heater": {
-   *       "userSettings": { "targetTemp": 24 }
+   *       "userSettings": { "heatingTargetTemp": 24 }
+   *     },
+   *     "living_room": {
+   *       "userSettings": { "heatingTargetTemp": 21, "coolingTargetTemp": 25 }
    *     },
    *     ...
    *   }
@@ -116,13 +145,9 @@ function ThermostatScenario() {
     // restores rule_enabled=false from storage, which fires the disable rule and
     // would otherwise reset user-controlled actuators on every wb-rules restart.
     suppressNextDisable: false,
-    // PID mode state
-    pid: null, // PidEngine instance
-    cycleTimerId: null, // setTimeout ID for next PWM cycle
-    offTimerId: null, // setTimeout ID for turning off actuators mid-cycle
-    pwmCycleCount: 0, // Counter for PID recalculation
-    pidOutput: 0, // Last PID output (0-100)
-    lastComputeTime: null, // Timestamp of last PID computation (ms)
+    circuits: {}, // Enabled circuits by name
+    switcher: null, // Picks the active circuit, created in initSpecific
+    log: null, // Logger labeled with this scenario, created in validateCfg
   };
 }
 ThermostatScenario.prototype = Object.create(ScenarioBase.prototype);
@@ -133,13 +158,95 @@ ThermostatScenario.prototype.constructor = ThermostatScenario;
  */
 var vdCtrl = {
   ruleEnabled: 'rule_enabled',
-  targetTemp: 'target_temperature',
   curTemp: 'current_temperature',
-  actuatorStatus: 'actuator_status',
-  outputPower: 'output_power',
-  outputTiming: 'output_timing',
-  pidReset: 'pid_reset',
 };
+
+/**
+ * Card titles of the circuit controls
+ */
+var circuitTitles = {
+  heating: {
+    targetTemp: {
+      en: 'Heating Setpoint',
+      ru: 'Заданная температура нагрева',
+    },
+    actuatorStatus: { en: 'Heating Status', ru: 'Статус нагрева' },
+    outputPower: { en: 'Heating Power', ru: 'Мощность нагрева' },
+    outputTiming: {
+      en: 'Heating ON / OFF (s)',
+      ru: 'Нагрев вкл / выкл (с)',
+    },
+    pidReset: { en: 'Reset Heating PID', ru: 'Сброс ПИД нагрева' },
+  },
+  cooling: {
+    targetTemp: {
+      en: 'Cooling Setpoint',
+      ru: 'Заданная температура охлаждения',
+    },
+    actuatorStatus: { en: 'Cooling Status', ru: 'Статус охлаждения' },
+    outputPower: { en: 'Cooling Power', ru: 'Мощность охлаждения' },
+    outputTiming: {
+      en: 'Cooling ON / OFF (s)',
+      ru: 'Охлаждение вкл / выкл (с)',
+    },
+    pidReset: { en: 'Reset Cooling PID', ru: 'Сброс ПИД охлаждения' },
+  },
+};
+
+/**
+ * Order of the first circuit control on the card
+ */
+var circuitFirstCtrlOrder = {
+  heating: 3,
+  cooling: 8,
+};
+
+/**
+ * Control key strings of a circuit in virtual device
+ * @param {HeatFlowDirection} circuitName - Circuit name
+ * @returns {Object} Control keys
+ */
+function getCircuitCtrlIds(circuitName) {
+  return {
+    targetTemp: circuitName + '_target_temperature',
+    actuatorStatus: circuitName + '_actuator_status',
+    outputPower: circuitName + '_output_power',
+    outputTiming: circuitName + '_output_timing',
+    pidReset: circuitName + '_pid_reset',
+  };
+}
+
+/**
+ * Prefix of the rule names of a circuit
+ * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
+ * @param {HeatFlowDirection} circuitName - Circuit name
+ * @returns {string} Rule name prefix
+ */
+function getCircuitRuleNamePrefix(self, circuitName) {
+  return self.genNames.vDevice + '_' + circuitName + '_';
+}
+
+/**
+ * PersistentStorage key of the circuit setpoint set from the virtual device
+ * @param {HeatFlowDirection} circuitName - Circuit name
+ * @returns {string} Storage key
+ */
+function getTargetTempStorageKey(circuitName) {
+  return circuitName + 'TargetTemp';
+}
+
+/**
+ * Names of the enabled circuits
+ * @param {ThermostatConfig} cfg - Configuration object
+ * @returns {Array<HeatFlowDirection>} Enabled circuit names
+ */
+function getEnabledCircuitNames(cfg) {
+  return [HeatFlowDirection.HEATING, HeatFlowDirection.COOLING].filter(
+    function isEnabled(circuitName) {
+      return !!cfg[circuitName];
+    }
+  );
+}
 
 /**
  * Generates name identifiers for virtual device and rules
@@ -154,9 +261,7 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
     vDevice: scenarioPrefix + idPrefix,
     ruleTempChanged: baseRuleName + 'temp_changed',
     ruleSetScStatus: baseRuleName + 'set_sc_status',
-    ruleSetTargetTemp: baseRuleName + 'set_target_t',
     ruleSensorErr: baseRuleName + 'sensor_error_changed',
-    rulePidReset: baseRuleName + 'pid_reset',
   };
 };
 
@@ -166,14 +271,20 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
  * @returns {Object} Waiting configuration object
  */
 ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {
-  var actuatorTopics = extractMqttTopics(cfg.actuators || []);
+  var actuatorTopics = [];
+  getEnabledCircuitNames(cfg).forEach(function addTopics(circuitName) {
+    actuatorTopics = actuatorTopics.concat(
+      extractMqttTopics(cfg[circuitName].actuators || [])
+    );
+  });
 
   var allTopics = [].concat(cfg.tempSensor, actuatorTopics);
   return { controls: allTopics };
 };
 
 /**
- * A critical error of a used channel outranks the runtime enable switch.
+ * A critical error of a used channel outranks crossed setpoints,
+ * and both outrank the runtime enable switch.
  * @param {boolean} isEnabled - Position of the runtime enable switch
  * @returns {number} ScenarioState constant
  */
@@ -181,15 +292,25 @@ ThermostatScenario.prototype.computeState = function (isEnabled) {
   if (hasAnyCriticalErr(this.cfg)) {
     return ScenarioState.USED_CONTROL_ERROR;
   }
+  if (this.ctx.switcher.isSetpointsCrossed) {
+    return ScenarioState.CONFIG_INVALID;
+  }
   return ScenarioBase.prototype.computeState.call(this, isEnabled);
 };
 
 /**
- * Configuration validation
- * @param {ThermostatConfig} cfg - Configuration object
+ * Validates configuration of one circuit
+ * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
+ * @param {HeatFlowDirection} circuitName - Circuit name
+ * @param {ThermostatCircuitConfig} cfg - Circuit configuration
  * @returns {boolean} True if configuration is valid, false otherwise
  */
-ThermostatScenario.prototype.validateCfg = function (cfg) {
+function validateCircuitCfg(self, circuitName, cfg) {
+  // The circuit label in the log tells heating from cooling
+  var log = new Logger(
+    loggerFileLabel + '/' + self.idPrefix + '/' + circuitName
+  );
+
   var isLimitsCorrect = cfg.tempLimitsMin < cfg.tempLimitsMax;
   if (!isLimitsCorrect) {
     log.error(
@@ -209,46 +330,15 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
     );
   }
 
-  var isTargetTempStepCorrect = isRangeStepValid(cfg.targetTempStep);
-  if (!isTargetTempStepCorrect) {
-    log.error(
-      'Thermostat validation error: target temperature step must be a number > 0, but got "{}"',
-      cfg.targetTempStep
-    );
-  }
-
-  var isModeParamsCorrect = true;
+  var isHysteresisCorrect = true;
   if (cfg.controlMode === 'hysteresis') {
     if (!(cfg.hysteresis > 0)) {
       log.error(
         'Thermostat validation error: hysteresis value must be greater than 0, but got "{}"',
         cfg.hysteresis
       );
-      isModeParamsCorrect = false;
+      isHysteresisCorrect = false;
     }
-  } else if (cfg.controlMode === 'pid') {
-    if (
-      typeof cfg.pidSettings.deadBand !== 'number' ||
-      cfg.pidSettings.deadBand < 0
-    ) {
-      log.error(
-        'Thermostat validation error: dead band value must be greater than 0, but got "{}"',
-        cfg.pidSettings.deadBand
-      );
-      isModeParamsCorrect = false;
-    }
-  }
-
-  var tempSensorType = dev[cfg.tempSensor + '#type'];
-  var isTempSensorValid =
-    tempSensorType === null ||
-    tempSensorType === 'value' ||
-    tempSensorType === 'temperature';
-  if (!isTempSensorValid) {
-    log.error(
-      'Thermostat validation error: sensor type must be "value" or "temperature", but got "{}"',
-      tempSensorType
-    );
   }
 
   // Validate actuators array
@@ -288,8 +378,19 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
         'Thermostat validation error: pidSettings object is missing, but got "{}"',
         cfg.pidSettings
       );
+      return false;
+    }
+    if (
+      typeof cfg.pidSettings.deadBand !== 'number' ||
+      cfg.pidSettings.deadBand < 0
+    ) {
+      log.error(
+        'Thermostat validation error: dead band must be a number >= 0, but got "{}"',
+        cfg.pidSettings.deadBand
+      );
       isPidValid = false;
-    } else if (
+    }
+    if (
       !cfg.pidSettings.pidCoefficients ||
       typeof cfg.pidSettings.pidCoefficients !== 'object'
     ) {
@@ -390,38 +491,178 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
   var isCfgValid =
     isLimitsCorrect &&
     isTargetTempCorrect &&
-    isTargetTempStepCorrect &&
-    isModeParamsCorrect &&
-    isTempSensorValid &&
+    isHysteresisCorrect &&
     isActuatorsValid &&
     isPidValid;
 
   return isCfgValid;
+}
+
+/**
+ * Configuration validation
+ * @param {ThermostatConfig} cfg - Configuration object
+ * @returns {boolean} True if configuration is valid, false otherwise
+ */
+ThermostatScenario.prototype.validateCfg = function (cfg) {
+  // validateCfg is the first method that logs
+  this.ctx.log = new Logger(loggerFileLabel + '/' + this.idPrefix);
+  var self = this;
+
+  var isTargetTempStepCorrect = isRangeStepValid(cfg.targetTempStep);
+  if (!isTargetTempStepCorrect) {
+    self.ctx.log.error(
+      'Thermostat validation error: target temperature step must be a number > 0, but got "{}"',
+      cfg.targetTempStep
+    );
+  }
+
+  var tempSensorType = dev[cfg.tempSensor + '#type'];
+  var isTempSensorValid =
+    tempSensorType === null ||
+    tempSensorType === 'value' ||
+    tempSensorType === 'temperature';
+  if (!isTempSensorValid) {
+    self.ctx.log.error(
+      'Thermostat validation error: sensor type must be "value" or "temperature", but got "{}"',
+      tempSensorType
+    );
+  }
+
+  var circuitNames = getEnabledCircuitNames(cfg);
+  if (circuitNames.length === 0) {
+    self.ctx.log.error(
+      'Thermostat validation error: heating, cooling or both must be enabled'
+    );
+    return false;
+  }
+
+  var isCircuitsValid = true;
+  circuitNames.forEach(function checkCircuit(circuitName) {
+    if (!validateCircuitCfg(self, circuitName, cfg[circuitName])) {
+      isCircuitsValid = false;
+    }
+  });
+
+  var isActuatorsUnique = true;
+  if (isCircuitsValid) {
+    var usedTopics = [];
+    var repeatedTopics = [];
+    circuitNames.forEach(function collectTopics(circuitName) {
+      extractMqttTopics(cfg[circuitName].actuators).forEach(
+        function checkTopic(topic) {
+          if (usedTopics.indexOf(topic) === -1) {
+            usedTopics.push(topic);
+          } else if (repeatedTopics.indexOf(topic) === -1) {
+            repeatedTopics.push(topic);
+          }
+        }
+      );
+    });
+    if (repeatedTopics.length > 0) {
+      self.ctx.log.error(
+        'Thermostat validation error: channels "{}" are used more than once',
+        repeatedTopics.join(', ')
+      );
+      isActuatorsUnique = false;
+    }
+  }
+
+  var isCircuitsCompatible = true;
+  if (isCircuitsValid && circuitNames.length === 2) {
+    if (cfg.heating.targetTemp >= cfg.cooling.targetTemp) {
+      self.ctx.log.error(
+        'Thermostat validation error: heating target temperature "{}" must be below cooling target temperature "{}"',
+        cfg.heating.targetTemp,
+        cfg.cooling.targetTemp
+      );
+      isCircuitsCompatible = false;
+    }
+  }
+
+  return (
+    isTargetTempStepCorrect &&
+    isTempSensorValid &&
+    isCircuitsValid &&
+    isActuatorsUnique &&
+    isCircuitsCompatible
+  );
 };
+
+/**
+ * Adds the controls of one circuit to the virtual device
+ * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
+ * @param {ThermostatConfig} cfg - Configuration object
+ * @param {HeatFlowDirection} circuitName - Circuit name
+ * @param {number} initialTemp - Initial value for the target temperature
+ */
+function addCircuitControls(self, cfg, circuitName, initialTemp) {
+  var circuitCfg = cfg[circuitName];
+  var ctrlIds = getCircuitCtrlIds(circuitName);
+  var titles = circuitTitles[circuitName];
+  var order = circuitFirstCtrlOrder[circuitName];
+
+  /** @type {ControlOptions} */
+  var controlCfg = {
+    title: titles.targetTemp,
+    type: 'range',
+    value: initialTemp,
+    min: circuitCfg.tempLimitsMin,
+    max: circuitCfg.tempLimitsMax,
+    precision: getRangeStep(cfg.targetTempStep),
+    order: order,
+  };
+  self.vd.devObj.addControl(ctrlIds.targetTemp, controlCfg);
+
+  controlCfg = {
+    title: titles.actuatorStatus,
+    type: 'switch',
+    // Default to OFF: the circuit is started explicitly by the scenario logic.
+    value: false,
+    forceDefault: true,
+    order: order + 1,
+    readonly: true,
+  };
+  self.vd.devObj.addControl(ctrlIds.actuatorStatus, controlCfg);
+
+  if (circuitCfg.controlMode === 'pid') {
+    controlCfg = {
+      title: titles.outputPower,
+      type: 'value',
+      value: 0,
+      units: '%',
+      order: order + 2,
+      readonly: true,
+    };
+    self.vd.devObj.addControl(ctrlIds.outputPower, controlCfg);
+
+    controlCfg = {
+      title: titles.outputTiming,
+      type: 'text',
+      value: '-',
+      order: order + 3,
+      readonly: true,
+    };
+    self.vd.devObj.addControl(ctrlIds.outputTiming, controlCfg);
+
+    controlCfg = {
+      title: titles.pidReset,
+      type: 'pushbutton',
+      order: order + 4,
+    };
+    self.vd.devObj.addControl(ctrlIds.pidReset, controlCfg);
+  }
+}
 
 /**
  * Adds required custom controls cells to the virtual device
  * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
  * @param {ThermostatConfig} cfg - Configuration object
- * @param {number} initialTemp - Initial value for the target temperature
+ * @param {Object<string, number>} initialTemps - Initial target temperature
+ *   of each enabled circuit by name
  */
-function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
+function addCustomControlsToVirtualDevice(self, cfg, initialTemps) {
   /** @type {ControlOptions} */
   var controlCfg = {
-    title: {
-      en: 'Temperature Setpoint',
-      ru: 'Заданная температура',
-    },
-    type: 'range',
-    value: initialTemp,
-    min: cfg.tempLimitsMin,
-    max: cfg.tempLimitsMax,
-    precision: getRangeStep(cfg.targetTempStep),
-    order: 2,
-  };
-  self.vd.devObj.addControl(vdCtrl.targetTemp, controlCfg);
-
-  controlCfg = {
     title: {
       en: 'Current Temperature',
       ru: 'Текущая температура',
@@ -429,89 +670,34 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemp) {
     type: 'value',
     units: 'deg C',
     value: dev[cfg.tempSensor],
-    order: 3,
+    order: 2,
     readonly: true,
   };
   self.vd.devObj.addControl(vdCtrl.curTemp, controlCfg);
 
-  controlCfg = {
-    title: {
-      en: 'Heating Status',
-      ru: 'Статус нагрева',
-    },
-    type: 'switch',
-    // Default to OFF: heating is started explicitly by the scenario logic.
-    value: false,
-    forceDefault: true,
-    order: 4,
-    readonly: true,
-  };
-  self.vd.devObj.addControl(vdCtrl.actuatorStatus, controlCfg);
-
-  if (cfg.controlMode === 'pid') {
-    controlCfg = {
-      title: { en: 'Power', ru: 'Мощность' },
-      type: 'value',
-      value: 0,
-      units: '%',
-      order: 5,
-      readonly: true,
-    };
-    self.vd.devObj.addControl(vdCtrl.outputPower, controlCfg);
-
-    controlCfg = {
-      title: {
-        en: 'ON / OFF (s)',
-        ru: 'Вкл / Выкл (с)',
-      },
-      type: 'text',
-      value: '-',
-      order: 6,
-      readonly: true,
-    };
-    self.vd.devObj.addControl(vdCtrl.outputTiming, controlCfg);
-
-    controlCfg = {
-      title: {
-        en: 'Reset PID',
-        ru: 'Сброс ПИД',
-      },
-      type: 'pushbutton',
-      order: 7,
-    };
-    self.vd.devObj.addControl(vdCtrl.pidReset, controlCfg);
-  }
+  getEnabledCircuitNames(cfg).forEach(function addControls(circuitName) {
+    addCircuitControls(self, cfg, circuitName, initialTemps[circuitName]);
+  });
 }
 
 /**
- * Set a VD control value only if it differs from the current one.
- * Avoids spurious MQTT publishes and rule re-triggering.
- * @param {Object} ctrl - VD control object
- * @param {*} value - Desired value
- */
-function setCtrlIfChanged(ctrl, value) {
-  if (ctrl.getValue() !== value) {
-    ctrl.setValue(value);
-  }
-}
-
-/**
- * Apply heating state to all actuators.
+ * Apply the circuit state to all its actuators.
  * Only writes to actuators whose current state differs from desired.
  * @param {Array<ActuatorConfig>} actuators - List of actuator configurations
- * @param {boolean} shouldHeat - Whether heating should be active
+ * @param {boolean} shouldWork - Whether the circuit should work
+ * @param {Logger} circuitLog - Logger of the circuit
  */
-function applyHeatingToActuators(actuators, shouldHeat) {
+function applyToActuators(actuators, shouldWork, circuitLog) {
   for (var i = 0; i < actuators.length; i++) {
     var act = actuators[i];
     try {
-      // XNOR: setEnable turns ON when heating, setDisable turns OFF when heating
-      var desiredValue = shouldHeat === (act.behaviorType === 'setEnable');
+      // XNOR: setEnable turns ON when working, setDisable turns OFF when working
+      var desiredValue = shouldWork === (act.behaviorType === 'setEnable');
       if (dev[act.mqttTopicName] !== desiredValue) {
         dev[act.mqttTopicName] = desiredValue;
       }
     } catch (error) {
-      log.error(
+      circuitLog.error(
         'Failed to set actuator "{}": {}',
         act.mqttTopicName,
         error.message || error
@@ -521,259 +707,100 @@ function applyHeatingToActuators(actuators, shouldHeat) {
 }
 
 /**
- * @typedef {Object} HeatingStateData
- * @property {number} curTemp - The current temperature (°C)
- * @property {number} targetTemp - The target temperature (°C)
- * @property {number} hysteresis - The hysteresis value (°C)
- *
- * @example
- * var data = {
- *   curTemp: 22,
- *   targetTemp: 24,
- *   hysteresis: 2
- * };
- */
-
-/**
- * Updates the heating state based on current temperature, target
- * temperature, and hysteresis. Applies new state to all actuators if changed.
- * @param {Object} vdCtrlActuator - VD control for actuator status
- * @param {ThermostatConfig} cfg - Configuration object
- * @param {HeatingStateData} data - Heating state data
- */
-function updateHeatingState(vdCtrlActuator, cfg, data) {
-  // WARNING: Called on every temperature change. We always recalculate whether
-  // heating should be on or off, but the actual switch (setValue) only fires
-  // when the value needs to change (guarded by getValue() !== target check).
-  var upperLimit = data.targetTemp + data.hysteresis;
-  var lowerLimit = data.targetTemp - data.hysteresis;
-
-  if (data.curTemp >= upperLimit) {
-    log.debug(
-      'Heater turned OFF, current/target temperatures: "{}"/"{}" °C',
-      data.curTemp,
-      data.targetTemp
-    );
-    applyHeatingToActuators(cfg.actuators, false);
-    setCtrlIfChanged(vdCtrlActuator, false);
-  } else if (data.curTemp <= lowerLimit) {
-    log.debug(
-      'Heater turned ON, current/target temperatures: "{}"/"{}" °C',
-      data.curTemp,
-      data.targetTemp
-    );
-    applyHeatingToActuators(cfg.actuators, true);
-    setCtrlIfChanged(vdCtrlActuator, true);
-  }
-}
-
-/**
- * Turn off all actuators (reverse state)
- * @param {Object} vdCtrlActuator - VD control for actuator status
- * @param {ThermostatConfig} cfg - Configuration object
- */
-function turnOffAllActuators(vdCtrlActuator, cfg) {
-  applyHeatingToActuators(cfg.actuators, false);
-  setCtrlIfChanged(vdCtrlActuator, false);
-}
-
-/**
- * Cancel all PID/PWM timers
- * @param {Object} ctx - Scenario runtime context
- */
-function cancelPidTimers(ctx) {
-  if (ctx.cycleTimerId) {
-    clearTimeout(ctx.cycleTimerId);
-    ctx.cycleTimerId = null;
-  }
-  if (ctx.offTimerId) {
-    clearTimeout(ctx.offTimerId);
-    ctx.offTimerId = null;
-  }
-}
-
-/**
- * Recompute PID output and update the corresponding VD control.
- * Called at the start of each PID cycle (every N PWM cycles).
+ * Creates the runtime and the regulator of one circuit
+ * The circuit controls must already exist in the virtual device
  * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @param {ThermostatConfig} cfg - Configuration object
+ * @param {HeatFlowDirection} circuitName - Circuit name
+ * @param {ThermostatCircuitConfig} circuitCfg - Circuit configuration
+ * @returns {Circuit} Circuit runtime
  */
-function recomputePidOutput(self, cfg) {
-  var now = Date.now();
-  var setpoint = self.vd.devObj.getControl(vdCtrl.targetTemp).getValue();
-  var measurement = dev[cfg.tempSensor];
-
-  // Determine dt for PID computation
-  var dt;
-  var configuredDt =
-    cfg.pidSettings.pwmPeriodSec * cfg.pidSettings.pidRecalcCycles;
-
-  if (self.ctx.lastComputeTime === null) {
-    dt = configuredDt;
-    log.debug('First PID cycle, using configured dt: {} sec', dt);
-  } else {
-    var actualDt = (now - self.ctx.lastComputeTime) / MS_PER_SECOND;
-    var deviation = Math.abs(actualDt - configuredDt) / configuredDt;
-
-    if (deviation > MAX_CYCLE_TIME_DEVIATION_RATIO) {
-      log.warning(
-        'PID cycle time deviation: actual={} sec, configured={} sec (deviation={}%)',
-        actualDt.toFixed(2),
-        configuredDt,
-        (deviation * 100).toFixed(1)
-      );
-    }
-
-    dt = actualDt;
-  }
-
-  self.ctx.lastComputeTime = now;
-
-  self.ctx.pidOutput = self.ctx.pid.compute(setpoint, measurement, dt);
-  self.vd.devObj
-    .getControl(vdCtrl.outputPower)
-    .setValue(Math.round(self.ctx.pidOutput));
-
-  var state = self.ctx.pid.getState();
-  log.debug(
-    'PID computed: setpoint={} measurement={} output={} P={} I={} D={}',
-    setpoint,
-    measurement,
-    self.ctx.pidOutput.toFixed(1),
-    state.p.toFixed(2),
-    state.i.toFixed(2),
-    state.d.toFixed(2)
-  );
-}
-
-/**
- * Run one PWM cycle:
- * - At the start of each PID cycle (every N PWM cycles, when
- *   pwmCycleCount === 0) delegates PID recompute to recomputePidOutput
- * - Converts current pidOutput (%) into on/off durations
- * - Applies min ON / min OFF safety constraints
- * - Drives actuators (full ON, full OFF, or ON-then-OFF via setTimeout)
- * - Schedules its own next invocation via setTimeout
- *
- * Lifecycle is controlled externally: started by startPidMode, stopped by
- * stopPidMode (which cancels both the cycle timer and the in-cycle off timer).
- *
- * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @param {ThermostatConfig} cfg - Configuration object
- */
-function runPwmCycle(self, cfg) {
-  var vdCtrlActuator = self.vd.devObj.getControl(vdCtrl.actuatorStatus);
-  var vdCtrlOutputTiming = self.vd.devObj.getControl(vdCtrl.outputTiming);
-
-  // Recompute PID at the start of each PID cycle (every N PWM cycles).
-  // pwmCycleCount === 0 means "we're at the start of a PID cycle".
-  if (self.ctx.pwmCycleCount === 0) {
-    recomputePidOutput(self, cfg);
-  }
-  self.ctx.pwmCycleCount =
-    (self.ctx.pwmCycleCount + 1) % cfg.pidSettings.pidRecalcCycles;
-
-  // Calculate on/off durations from duty cycle
-  var onTime = (self.ctx.pidOutput / 100) * cfg.pidSettings.pwmPeriodSec;
-  var offTime = cfg.pidSettings.pwmPeriodSec - onTime;
-  var originalOnTime = onTime;
-  var originalOffTime = offTime;
-  var constraintsApplied = false;
-
-  // Apply min on constraints
-  if (onTime > 0 && onTime < cfg.pidSettings.minOnTimeSec) {
-    onTime = 0;
-    offTime = cfg.pidSettings.pwmPeriodSec - onTime;
-    constraintsApplied = true;
-  }
-
-  // Apply min off constraints
-  if (offTime < cfg.pidSettings.minOffTimeSec) {
-    offTime = cfg.pidSettings.minOffTimeSec;
-    onTime = cfg.pidSettings.pwmPeriodSec - offTime;
-    constraintsApplied = true;
-  }
-
-  if (constraintsApplied) {
-    log.debug(
-      'Cycle adjusted: ON {}s -> {}s, OFF {}s -> {}s (PID output={}%)',
-      originalOnTime.toFixed(2),
-      onTime.toFixed(2),
-      originalOffTime.toFixed(2),
-      offTime.toFixed(2),
-      self.ctx.pidOutput.toFixed(1)
-    );
-  }
-
-  // Updating the display of working timers
-  vdCtrlOutputTiming.setValue(
-    Math.round(onTime) + ' / ' + Math.round(offTime)
+function createCircuit(self, circuitName, circuitCfg) {
+  var ctrlIds = getCircuitCtrlIds(circuitName);
+  var vdCtrlTargetTemp = self.vd.devObj.getControl(ctrlIds.targetTemp);
+  var vdCtrlStatus = self.vd.devObj.getControl(ctrlIds.actuatorStatus);
+  var circuitLog = new Logger(
+    loggerFileLabel + '/' + self.idPrefix + '/' + circuitName
   );
 
-  if (onTime >= cfg.pidSettings.pwmPeriodSec) {
-    // 100% duty — stay on the whole cycle
-    applyHeatingToActuators(cfg.actuators, true);
-    setCtrlIfChanged(vdCtrlActuator, true);
-  } else if (onTime <= 0) {
-    // 0% duty — stay off the whole cycle
-    applyHeatingToActuators(cfg.actuators, false);
-    setCtrlIfChanged(vdCtrlActuator, false);
+  // The regulator reads the temperature and the setpoint and turns
+  // the circuit on or off only through these functions
+  /** @type {Circuit} */
+  var circuit = {
+    name: circuitName,
+    cfg: circuitCfg,
+    getTemperature: function getTemperature() {
+      return dev[self.cfg.tempSensor];
+    },
+    getSetpoint: function getSetpoint() {
+      return vdCtrlTargetTemp.getValue();
+    },
+    // Writes the channels of the circuit and its status on the card
+    setWorking: function setWorking(shouldWork) {
+      applyToActuators(circuitCfg.actuators, shouldWork, circuitLog);
+      if (vdCtrlStatus.getValue() !== shouldWork) {
+        vdCtrlStatus.setValue(shouldWork);
+        circuitLog.debug(
+          'Turned {}, current/target temperatures: "{}"/"{}" °C',
+          shouldWork ? 'ON' : 'OFF',
+          circuit.getTemperature(),
+          circuit.getSetpoint()
+        );
+      }
+    },
+    log: circuitLog,
+    regulator: null, // Set below, the regulator gets this circuit
+  };
+
+  if (circuitCfg.controlMode === 'pid') {
+    var pidControls = {
+      outputPower: self.vd.devObj.getControl(ctrlIds.outputPower),
+      outputTiming: self.vd.devObj.getControl(ctrlIds.outputTiming),
+    };
+    circuit.regulator = new PidRegulator(
+      circuitName,
+      circuitCfg.pidSettings,
+      circuit,
+      pidControls
+    );
   } else {
-    // Partial duty: on, then off after onTime
-    applyHeatingToActuators(cfg.actuators, true);
-    setCtrlIfChanged(vdCtrlActuator, true);
-    self.ctx.offTimerId = setTimeout(function () {
-      self.ctx.offTimerId = null;
-      applyHeatingToActuators(cfg.actuators, false);
-      setCtrlIfChanged(vdCtrlActuator, false);
-    }, onTime * MS_PER_SECOND);
+    circuit.regulator = new HysteresisRegulator(
+      circuitName,
+      circuitCfg.hysteresis,
+      circuit
+    );
   }
-
-  // Schedule next cycle
-  self.ctx.cycleTimerId = setTimeout(function () {
-    self.ctx.cycleTimerId = null;
-    runPwmCycle(self, cfg);
-  }, cfg.pidSettings.pwmPeriodSec * MS_PER_SECOND);
+  return circuit;
 }
 
 /**
- * Stop PID mode: cancel timers, turn off actuators, reset PID
+ * Checks whether the circuits may regulate
  * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @param {ThermostatConfig} cfg - Configuration object
+ * @returns {boolean} True if the scenario is enabled and setpoints are valid
  */
-function stopPidMode(self, cfg) {
-  cancelPidTimers(self.ctx);
-  applyHeatingToActuators(cfg.actuators, false);
-  if (self.ctx.pid) {
-    self.ctx.pid.reset();
-  }
-  self.ctx.pwmCycleCount = 0;
-  self.ctx.pidOutput = 0;
-  self.ctx.lastComputeTime = null; // Reset timestamp on stop
-
-  // Reset VD controls
-  var vdCtrlActuator = self.vd.devObj.getControl(vdCtrl.actuatorStatus);
-  var vdCtrlOutputPower = self.vd.devObj.getControl(vdCtrl.outputPower);
-  var vdCtrlOutputTiming = self.vd.devObj.getControl(vdCtrl.outputTiming);
-
-  setCtrlIfChanged(vdCtrlActuator, false);
-  vdCtrlOutputPower.setValue(0);
-  vdCtrlOutputTiming.setValue('-');
-  log.debug('PID mode stopped, timers cancelled, PID reset');
+function canRegulate(self) {
+  var isEnabled = self.vd.devObj.getControl(vdCtrl.ruleEnabled).getValue();
+  return isEnabled && !self.ctx.switcher.isSetpointsCrossed;
 }
 
 /**
- * Start PID mode: kick off the PWM cycle loop.
- * First runPwmCycle call will recompute PID (because pwmCycleCount === 0).
+ * Checks the setpoints and marks both setpoint controls with an error
+ * while the heating setpoint is not below the cooling one
  * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @param {ThermostatConfig} cfg - Configuration object
+ * @returns {boolean} True if the check result changed
  */
-function startPidMode(self, cfg) {
-  self.ctx.pwmCycleCount = 0;
-  self.ctx.pidOutput = 0;
-  self.ctx.lastComputeTime = null; // Reset timestamp on start
-  runPwmCycle(self, cfg);
-  log.debug('PID mode started');
+function updateSetpointsCrossing(self) {
+  var switcher = self.ctx.switcher;
+  if (!switcher.checkSetpoints()) {
+    return false;
+  }
+
+  var ctrlError = switcher.isSetpointsCrossed ? 'r' : '';
+  Object.keys(self.ctx.circuits).forEach(function markSetpoint(name) {
+    self.vd.devObj
+      .getControl(getCircuitCtrlIds(name).targetTemp)
+      .setError(ctrlError);
+  });
+  return true;
 }
 
 /**
@@ -811,7 +838,9 @@ function tryClearReadonly(vdCtrlEnable, cfg) {
 function hasAnyCriticalErr(cfg) {
   return (
     hasCriticalErr(dev[cfg.tempSensor + '#error']) ||
-    getActuatorsCriticalErr(cfg.actuators) !== ''
+    getEnabledCircuitNames(cfg).some(function hasActuatorErr(name) {
+      return getActuatorsCriticalErr(cfg[name].actuators) !== '';
+    })
   );
 }
 
@@ -824,7 +853,8 @@ function hasAnyCriticalErr(cfg) {
  * @param {Object} targetVdCtrl - The target virtual device control for sync
  *     Example: `vdCtrlCurTemp = vdObj.getControl('ctrlID')`
  * @param {Object} vdCtrlEnable - Control "Enable rules" in scenario virtual dev
- * @param {ThermostatConfig} cfg - Configuration parameters
+ * @param {Array<ActuatorConfig>|null} actuators - Actuators of the circuit
+ *     sharing the target control, null for the sensor
  * @returns {RuleId} ID of the created rule
  */
 function createErrChangeRule(
@@ -833,12 +863,13 @@ function createErrChangeRule(
   sourceErrTopic,
   targetVdCtrl,
   vdCtrlEnable,
-  cfg
+  actuators
 ) {
-  // Multiple actuators share one VD control (actuator_status).
+  // Multiple actuators of a circuit share one VD control
+  // (<circuit>_actuator_status).
   // On error clear we must check that ALL actuators are clean
   // before removing the red highlight from the shared control.
-  var isActuatorErrRule = ruleName.indexOf('actuator_err_') !== -1;
+  var isActuatorErrRule = actuators !== null;
 
   var ruleCfg = {
     whenChanged: [sourceErrTopic],
@@ -854,23 +885,23 @@ function createErrChangeRule(
       } else if (hasCriticalErr(newValue)) {
         targetVdCtrl.setError(newValue);
       } else {
-        targetVdCtrl.setError(getActuatorsCriticalErr(cfg.actuators));
+        targetVdCtrl.setError(getActuatorsCriticalErr(actuators));
       }
 
       if (!hasCriticalErr(newValue)) {
-        log.debug(
+        self.ctx.log.debug(
           'Error cleared or non-critical error (p) detected for topic "{}". New state: "{}"',
           sourceErrTopic,
           newValue
         );
-        tryClearReadonly(vdCtrlEnable, cfg);
+        tryClearReadonly(vdCtrlEnable, self.cfg);
         self.setState(self.computeState(vdCtrlEnable.getValue()));
 
         // If on this topic was running timer - disable this timer
         if (self.ctx.errorTimers[sourceErrTopic]) {
           clearTimeout(self.ctx.errorTimers[sourceErrTopic]);
           self.ctx.errorTimers[sourceErrTopic] = null;
-          log.debug(
+          self.ctx.log.debug(
             'Debounce timer for error for topic "{}" disabled',
             sourceErrTopic
           );
@@ -878,7 +909,7 @@ function createErrChangeRule(
         return;
       }
 
-      log.warning(
+      self.ctx.log.warning(
         'Get critical error (r/w) for topic "{}". New error state: "{}"',
         sourceErrTopic,
         newValue
@@ -893,7 +924,7 @@ function createErrChangeRule(
         // When timer stop - check still critical errors r/w
         var currentErrorVal = dev[sourceErrTopic];
         if (hasCriticalErr(currentErrorVal)) {
-          log.error(
+          self.ctx.log.error(
             'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
             sourceErrTopic,
             self.ctx.errorCheckTimeoutMs,
@@ -903,7 +934,7 @@ function createErrChangeRule(
           vdCtrlEnable.setReadonly(true);
           vdCtrlEnable.setValue(false);
         } else {
-          log.debug(
+          self.ctx.log.debug(
             'Error in topic "{}" cleared before timer disabled. Scenario still running.',
             sourceErrTopic
           );
@@ -921,18 +952,27 @@ function createErrChangeRule(
  * Restore target temperature from persistent storage (if saved previously)
  * If the stored value is invalid or missing, we use cfg.targetTemp and save it
  *
+ * Heating also reads the targetTemp key stored before the circuits split.
  * Includes one-time migration from old PersistentStorage('wbscThermostatSettings')
  *
  * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @param {ThermostatConfig} cfg - Thermostat config
+ * @param {HeatFlowDirection} circuitName - Circuit name
+ * @param {ThermostatCircuitConfig} cfg - Circuit configuration
  * @returns {number} The target temperature to use
  */
-function restoreTargetTemperature(self, cfg) {
-  var storedTemp = self.getPsUserSetting('targetTemp', undefined);
+function restoreTargetTemperature(self, circuitName, cfg) {
+  var storageKey = getTargetTempStorageKey(circuitName);
+  var storedTemp = self.getPsUserSetting(storageKey, undefined);
+  var isHeating = circuitName === HeatFlowDirection.HEATING;
+
+  // Heating setpoint stored before the circuits split
+  if (storedTemp === undefined && isHeating) {
+    storedTemp = self.getPsUserSetting('targetTemp', undefined);
+  }
 
   // TODO(Valerii 2026-03-20): Remove old storage migration after one year
   // Migration from old PersistentStorage('wbscThermostatSettings')
-  if (storedTemp === undefined) {
+  if (storedTemp === undefined && isHeating) {
     try {
       var oldPs = new PersistentStorage('wbscThermostatSettings', {
         global: true,
@@ -942,7 +982,7 @@ function restoreTargetTemperature(self, cfg) {
         if (typeof oldTemp === 'number') {
           storedTemp = oldTemp;
           oldPs[self.idPrefix] = null;
-          log.debug(
+          self.ctx.log.debug(
             'Migrated targetTemp="{}" from old storage for scenario="{}"',
             storedTemp,
             self.idPrefix
@@ -950,7 +990,7 @@ function restoreTargetTemperature(self, cfg) {
         }
       }
     } catch (err) {
-      log.error('Error reading old persistent storage: {}', err);
+      self.ctx.log.error('Error reading old persistent storage: {}', err);
     }
   }
 
@@ -960,9 +1000,10 @@ function restoreTargetTemperature(self, cfg) {
     storedTemp <= cfg.tempLimitsMax;
 
   if (isValidStoredTemp) {
-    self.setPsUserSetting('targetTemp', storedTemp);
-    log.debug(
-      'Restored targetTemp="{}" for scenario="{}"',
+    self.setPsUserSetting(storageKey, storedTemp);
+    self.ctx.log.debug(
+      'Restored {}="{}" for scenario="{}"',
+      storageKey,
       storedTemp,
       self.idPrefix
     );
@@ -971,14 +1012,14 @@ function restoreTargetTemperature(self, cfg) {
 
   // Either no stored value, or it's out of range
   var usedTemp = cfg.targetTemp;
-  self.setPsUserSetting('targetTemp', usedTemp);
+  self.setPsUserSetting(storageKey, usedTemp);
 
   // Show warning only if something was stored but invalid
   if (typeof storedTemp === 'number') {
-    log.warning(
+    self.ctx.log.warning(
       'Stored temp="{}" is out of range or invalid for "{}". Reset to "{}"',
       storedTemp,
-      self.idPrefix,
+      storageKey,
       usedTemp
     );
   }
@@ -986,216 +1027,83 @@ function restoreTargetTemperature(self, cfg) {
 }
 
 /**
- * Creates rules for hysteresis mode
+ * Creates the rules of one circuit
  * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @param {ThermostatConfig} cfg - Configuration object
- * @returns {boolean} True if all rules created successfully, false otherwise
- */
-function createHysteresisRules(self, cfg) {
-  log.debug('Hysteresis: start all required rules creation');
-
-  var vdCtrlCurTemp = self.vd.devObj.getControl(vdCtrl.curTemp);
-  var vdCtrlActuator = self.vd.devObj.getControl(vdCtrl.actuatorStatus);
-  var vdCtrlTargetTemp = self.vd.devObj.getControl(vdCtrl.targetTemp);
-  var vdCtrlEnable = self.vd.devObj.getControl(vdCtrl.ruleEnabled);
-
-  var ruleId = null;
-
-  // Temperature changed rule
-  ruleId = defineRule(self.genNames.ruleTempChanged, {
-    whenChanged: [cfg.tempSensor],
-    then: function (newValue, devName, cellName) {
-      vdCtrlCurTemp.setValue(newValue);
-
-      // Cause this rule is not disabled when the scenario is disabled,
-      // We update heating state only if the scenario is enabled
-      if (vdCtrlEnable.getValue()) {
-        var data = {
-          curTemp: newValue,
-          targetTemp: vdCtrlTargetTemp.getValue(),
-          hysteresis: cfg.hysteresis,
-        };
-        updateHeatingState(vdCtrlActuator, cfg, data);
-      }
-    },
-  });
-  if (!ruleId) {
-    log.error('Hysteresis: failed to create temperature changed rule');
-    return false;
-  }
-  // This rule not disable when user use switch in virtual device
-  log.debug(
-    'Hysteresis: temperature changed rule created with ID "{}"',
-    ruleId
-  );
-
-  // Scenario status rule
-  ruleId = defineRule(self.genNames.ruleSetScStatus, {
-    whenChanged: [self.genNames.vDevice + '/' + vdCtrl.ruleEnabled],
-    then: function (newValue, devName, cellName) {
-      if (newValue) {
-        var data = {
-          curTemp: dev[cfg.tempSensor],
-          targetTemp: vdCtrlTargetTemp.getValue(),
-          hysteresis: cfg.hysteresis,
-        };
-        updateHeatingState(vdCtrlActuator, cfg, data);
-      } else {
-        if (self.ctx.suppressNextDisable) {
-          self.ctx.suppressNextDisable = false;
-          log.debug(
-            'Hysteresis: skipping initial disable from storage restore'
-          );
-          return;
-        }
-        turnOffAllActuators(vdCtrlActuator, cfg);
-      }
-    },
-  });
-  if (!ruleId) {
-    log.error('Hysteresis: failed to create scenario status rule');
-    return false;
-  }
-  // This rule is not managed when user use switch enable/disable in vdev
-  log.debug('Hysteresis: scenario status rule created with ID "{}"', ruleId);
-
-  // Target temperature change rule
-  ruleId = defineRule(self.genNames.ruleSetTargetTemp, {
-    whenChanged: [self.genNames.vDevice + '/' + vdCtrl.targetTemp],
-    then: function (newValue, devName, cellName) {
-      // Save the new temperature to persistent storage
-      try {
-        self.setPsUserSetting('targetTemp', newValue);
-        log.debug(
-          'Hysteresis: target temperature "{}" saved in persistent storage for scenario="{}"',
-          newValue,
-          self.idPrefix
-        );
-      } catch (err) {
-        log.error(
-          'Hysteresis: error saving target temperature to storage: {}',
-          err
-        );
-      }
-      var data = {
-        curTemp: dev[cfg.tempSensor],
-        targetTemp: newValue,
-        hysteresis: cfg.hysteresis,
-      };
-      updateHeatingState(vdCtrlActuator, cfg, data);
-    },
-  });
-  if (!ruleId) {
-    log.error('Hysteresis: failed to create target temperature change rule');
-    return false;
-  }
-  self.addRule(ruleId);
-  log.debug(
-    'Hysteresis: target temp change rule created with ID "{}"',
-    ruleId
-  );
-
-  return true;
-}
-
-/**
- * Creates rules for PID mode
- * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @param {ThermostatConfig} cfg - Configuration object
+ * @param {Circuit} circuit - Circuit runtime
  * @returns {boolean} True if all rules created successfully
  */
-function createPidRules(self, cfg) {
-  log.debug('PID: start all required rules creation');
+function createCircuitRules(self, circuit) {
+  var ctrlIds = getCircuitCtrlIds(circuit.name);
+  var ruleNamePrefix = getCircuitRuleNamePrefix(self, circuit.name);
+  var storageKey = getTargetTempStorageKey(circuit.name);
+  var vdCtrlEnable = self.vd.devObj.getControl(vdCtrl.ruleEnabled);
 
-  var vdCtrlCurTemp = self.vd.devObj.getControl(vdCtrl.curTemp);
-
-  var ruleId = null;
-
-  // Temperature changed → update VD display only (PID reads sensor on its timer)
-  ruleId = defineRule(self.genNames.ruleTempChanged, {
-    whenChanged: [cfg.tempSensor],
-    then: function (newValue, devName, cellName) {
-      vdCtrlCurTemp.setValue(newValue);
-    },
-  });
-  if (!ruleId) {
-    log.error('PID: failed to create temperature changed rule');
-    return false;
-  }
-  // This rule not disable when user use switch in virtual device
-  log.debug('PID: temperature display rule created with ID "{}"', ruleId);
-
-  // Scenario enabled/disabled then start or stop PID
-  ruleId = defineRule(self.genNames.ruleSetScStatus, {
-    whenChanged: [self.genNames.vDevice + '/' + vdCtrl.ruleEnabled],
-    then: function (newValue) {
-      if (newValue) {
-        startPidMode(self, cfg);
-      } else {
-        if (self.ctx.suppressNextDisable) {
-          self.ctx.suppressNextDisable = false;
-          log.debug('PID: skipping initial disable from storage restore');
-          return;
-        }
-        stopPidMode(self, cfg);
-      }
-    },
-  });
-  if (!ruleId) {
-    log.error('PID: failed to create scenario status rule');
-    return false;
-  }
-  // This rule is not managed when user use switch enable/disable in vdev
-  log.debug('PID: scenario status rule created with ID "{}"', ruleId);
-
-  // Target temperature changed then save only (PID picks up new setpoint on next cycle)
-  ruleId = defineRule(self.genNames.ruleSetTargetTemp, {
-    whenChanged: [self.genNames.vDevice + '/' + vdCtrl.targetTemp],
-    then: function (newValue, devName, cellName) {
-      // Save the new temperature to persistent storage
+  // Works when the scenario is disabled too, so crossed setpoints
+  // show up right away
+  var ruleId = defineRule(ruleNamePrefix + 'set_target_t', {
+    whenChanged: [self.genNames.vDevice + '/' + ctrlIds.targetTemp],
+    then: function onTargetTempChanged(newValue) {
       try {
-        self.setPsUserSetting('targetTemp', newValue);
-        log.debug(
-          'PID: target temperature "{}" saved in persistent storage for scenario="{}"',
-          newValue,
-          self.idPrefix
+        self.setPsUserSetting(storageKey, newValue);
+        self.ctx.log.debug(
+          '{} "{}" saved in persistent storage',
+          storageKey,
+          newValue
         );
       } catch (err) {
-        log.error(
-          'PID: error saving target temperature to storage: {}',
+        self.ctx.log.error(
+          'Error saving {} to storage: {}',
+          storageKey,
           err
         );
       }
+
+      var isEnabled = vdCtrlEnable.getValue();
+      var isCrossingChanged = updateSetpointsCrossing(self);
+      if (isCrossingChanged) {
+        // Channels of a disabled scenario stay untouched
+        if (isEnabled) {
+          self.ctx.switcher.start();
+        }
+        self.setState(self.computeState(isEnabled));
+      } else if (canRegulate(self)) {
+        self.ctx.switcher.updateActiveCircuit();
+      }
     },
   });
   if (!ruleId) {
-    log.error('PID: failed to create target temperature change rule');
+    self.ctx.log.error(
+      'Failed to create {} target temperature rule',
+      circuit.name
+    );
     return false;
   }
-  self.addRule(ruleId);
-  log.debug('PID: target temp rule created with ID "{}"', ruleId);
+  self.ctx.log.debug(
+    '{} target temperature rule created with ID "{}"',
+    circuit.name,
+    ruleId
+  );
 
-  // PID reset button
-  ruleId = defineRule(self.genNames.rulePidReset, {
-    whenChanged: [self.genNames.vDevice + '/' + vdCtrl.pidReset],
-    then: function () {
-      if (!self.ctx.pid) return;
-      self.ctx.pid.reset();
-      self.ctx.pidOutput = 0;
-      self.ctx.lastComputeTime = null; // Reset timestamp on PID reset
-      log.debug('PID reset by user');
+  if (circuit.cfg.controlMode !== 'pid') {
+    return true;
+  }
 
-      // Restart cycle immediately with fresh PID compute
-      cancelPidTimers(self.ctx);
-      startPidMode(self, cfg);
+  ruleId = defineRule(ruleNamePrefix + 'pid_reset', {
+    whenChanged: [self.genNames.vDevice + '/' + ctrlIds.pidReset],
+    then: function onPidReset() {
+      circuit.regulator.reset();
     },
   });
   if (!ruleId) {
-    log.error('PID: failed to create PID reset rule');
+    self.ctx.log.error('Failed to create {} PID reset rule', circuit.name);
     return false;
   }
   self.addRule(ruleId);
-  log.debug('PID: reset button rule created with ID "{}"', ruleId);
+  self.ctx.log.debug(
+    '{} PID reset rule created with ID "{}"',
+    circuit.name,
+    ruleId
+  );
 
   return true;
 }
@@ -1208,7 +1116,6 @@ function createPidRules(self, cfg) {
  */
 function createErrorRules(self, cfg) {
   var vdCtrlCurTemp = self.vd.devObj.getControl(vdCtrl.curTemp);
-  var vdCtrlActuator = self.vd.devObj.getControl(vdCtrl.actuatorStatus);
   var vdCtrlEnable = self.vd.devObj.getControl(vdCtrl.ruleEnabled);
 
   var ruleId = null;
@@ -1221,41 +1128,51 @@ function createErrorRules(self, cfg) {
     sensorErrTopic,
     vdCtrlCurTemp,
     vdCtrlEnable,
-    cfg
+    null
   );
   if (!ruleId) {
-    log.error('Failed to create tempSensor error handling rule');
+    self.ctx.log.error('Failed to create tempSensor error handling rule');
     return false;
   }
   // This rule not disable when user use switch in virtual device
-  log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
+  self.ctx.log.debug(
+    'Temp. sensor error handling rule created with ID="{}"',
+    ruleId
+  );
 
-  // Error handling rules for each actuator
-  var baseRuleName = 'wbsc_' + self.idPrefix + '_';
-  for (var i = 0; i < cfg.actuators.length; i++) {
-    var actuatorErrTopic = cfg.actuators[i].mqttTopicName + '#error';
-    var actuatorErrRuleName = baseRuleName + 'actuator_err_' + i;
-    ruleId = createErrChangeRule(
-      self,
-      actuatorErrRuleName,
-      actuatorErrTopic,
-      vdCtrlActuator,
-      vdCtrlEnable,
-      cfg
+  // Error handling rules for each actuator, shown on the circuit status
+  var circuitNames = Object.keys(self.ctx.circuits);
+  for (var c = 0; c < circuitNames.length; c++) {
+    var circuit = self.ctx.circuits[circuitNames[c]];
+    var actuators = circuit.cfg.actuators;
+    var vdCtrlStatus = self.vd.devObj.getControl(
+      getCircuitCtrlIds(circuit.name).actuatorStatus
     );
-    if (!ruleId) {
-      log.error(
-        'Failed to create error handling rule for actuator "{}"',
-        cfg.actuators[i].mqttTopicName
+    var ruleNamePrefix = getCircuitRuleNamePrefix(self, circuit.name);
+
+    for (var i = 0; i < actuators.length; i++) {
+      ruleId = createErrChangeRule(
+        self,
+        ruleNamePrefix + 'actuator_err_' + i,
+        actuators[i].mqttTopicName + '#error',
+        vdCtrlStatus,
+        vdCtrlEnable,
+        actuators
       );
-      return false;
+      if (!ruleId) {
+        self.ctx.log.error(
+          'Failed to create error handling rule for actuator "{}"',
+          actuators[i].mqttTopicName
+        );
+        return false;
+      }
+      // This rule not disable when user use switch in virtual device
+      self.ctx.log.debug(
+        'Actuator error handling rule created for "{}" with ID="{}"',
+        actuators[i].mqttTopicName,
+        ruleId
+      );
     }
-    // This rule not disable when user use switch in virtual device
-    log.debug(
-      'Actuator error handling rule created for "{}" with ID="{}"',
-      cfg.actuators[i].mqttTopicName,
-      ruleId
-    );
   }
 
   return true;
@@ -1268,15 +1185,57 @@ function createErrorRules(self, cfg) {
  * @returns {boolean} True if all rules created successfully, false otherwise
  */
 function createRules(self, cfg) {
-  var rulesState = false;
+  var vdCtrlCurTemp = self.vd.devObj.getControl(vdCtrl.curTemp);
 
-  if (cfg.controlMode === 'pid') {
-    rulesState = createPidRules(self, cfg);
-  } else {
-    rulesState = createHysteresisRules(self, cfg);
+  // Picks the active circuit by the temperature
+  var ruleId = defineRule(self.genNames.ruleTempChanged, {
+    whenChanged: [cfg.tempSensor],
+    then: function onTemperatureChanged(newValue) {
+      vdCtrlCurTemp.setValue(newValue);
+
+      if (canRegulate(self)) {
+        self.ctx.switcher.updateActiveCircuit();
+      }
+    },
+  });
+  if (!ruleId) {
+    self.ctx.log.error('Failed to create temperature changed rule');
+    return false;
   }
+  // This rule not disable when user use switch in virtual device
+  self.ctx.log.debug(
+    'Temperature changed rule created with ID "{}"',
+    ruleId
+  );
 
-  if (!rulesState) return false;
+  ruleId = defineRule(self.genNames.ruleSetScStatus, {
+    whenChanged: [self.genNames.vDevice + '/' + vdCtrl.ruleEnabled],
+    then: function onScenarioSwitched(newValue) {
+      if (newValue) {
+        self.ctx.switcher.start();
+        return;
+      }
+      if (self.ctx.suppressNextDisable) {
+        self.ctx.suppressNextDisable = false;
+        self.ctx.log.debug('Skipping initial disable from storage restore');
+        return;
+      }
+      self.ctx.switcher.stop();
+    },
+  });
+  if (!ruleId) {
+    self.ctx.log.error('Failed to create scenario status rule');
+    return false;
+  }
+  // This rule is not managed when user use switch enable/disable in vdev
+  self.ctx.log.debug('Scenario status rule created with ID "{}"', ruleId);
+
+  var circuitNames = Object.keys(self.ctx.circuits);
+  for (var i = 0; i < circuitNames.length; i++) {
+    if (!createCircuitRules(self, self.ctx.circuits[circuitNames[i]])) {
+      return false;
+    }
+  }
 
   return createErrorRules(self, cfg);
 }
@@ -1297,13 +1256,29 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * The async initialization chain guarantees that all prerequisites are met.
    * No need to re-validate or check control existence here.
    */
-  log.debug('Start init thermostat scenario');
-  log.setLabel(loggerFileLabel + '/' + this.idPrefix);
+  var self = this;
+  this.ctx.log.debug('Start init thermostat scenario');
 
-  // Restore target temperature from storage
-  var usedTemp = restoreTargetTemperature(this, cfg);
+  // Restore the target temperature of each circuit from storage
+  var initialTemps = {};
+  getEnabledCircuitNames(cfg).forEach(function restoreTemp(circuitName) {
+    initialTemps[circuitName] = restoreTargetTemperature(
+      self,
+      circuitName,
+      cfg[circuitName]
+    );
+  });
 
-  addCustomControlsToVirtualDevice(this, cfg, usedTemp);
+  addCustomControlsToVirtualDevice(this, cfg, initialTemps);
+
+  getEnabledCircuitNames(cfg).forEach(function initCircuit(circuitName) {
+    self.ctx.circuits[circuitName] = createCircuit(
+      self,
+      circuitName,
+      cfg[circuitName]
+    );
+  });
+  this.ctx.switcher = new CircuitSwitcher(this.ctx.circuits, this.ctx.log);
 
   // Create all rules
   var rulesCreated = createRules(this, cfg);
@@ -1314,29 +1289,13 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       this.ctx.suppressNextDisable = true;
     }
 
-    if (cfg.controlMode === 'pid') {
-      this.ctx.pid = new PidEngine(
-        cfg.pidSettings.pidCoefficients.kp,
-        cfg.pidSettings.pidCoefficients.ki,
-        cfg.pidSettings.pidCoefficients.kd,
-        cfg.pidSettings.deadBand
-      );
-      if (enabledFromStorage) {
-        startPidMode(this, cfg);
-      }
-    } else if (enabledFromStorage) {
-      // Set initial heater state after initialization
-      var vdCtrlActuator = this.vd.devObj.getControl(vdCtrl.actuatorStatus);
-      var vdCtrlTargetTemp = this.vd.devObj.getControl(vdCtrl.targetTemp);
-      var data = {
-        curTemp: dev[cfg.tempSensor],
-        targetTemp: vdCtrlTargetTemp.getValue(),
-        hysteresis: cfg.hysteresis,
-      };
-      updateHeatingState(vdCtrlActuator, cfg, data);
+    // Setpoints saved from the card may cross even with a valid config
+    updateSetpointsCrossing(this);
+    if (enabledFromStorage) {
+      this.ctx.switcher.start();
     }
 
-    log.debug(
+    this.ctx.log.debug(
       'Thermostat scenario initialized successfully for device "{}"',
       deviceTitle
     );
