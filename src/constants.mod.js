@@ -46,6 +46,16 @@ var MS_PER_HOUR = MS_PER_MINUTE * 60;
 // Maximum allowed deviation of actual cycle time from configured
 var MAX_CYCLE_TIME_DEVIATION_RATIO = 0.05;
 
+/**
+ * Heat flow direction enum - heating or cooling
+ * Used by the PID engine and the thermostat circuits
+ * @enum {string}
+ */
+var HeatFlowDirection = {
+  HEATING: 'heating',
+  COOLING: 'cooling',
+};
+
 exports.DAY_NAMES = DAY_NAMES;
 exports.DAY_NAME_TO_NUMBER = DAY_NAME_TO_NUMBER;
 exports.VALID_DAYS = VALID_DAYS;
@@ -54,3 +64,4 @@ exports.MS_PER_SECOND = MS_PER_SECOND;
 exports.MS_PER_MINUTE = MS_PER_MINUTE;
 exports.MS_PER_HOUR = MS_PER_HOUR;
 exports.MAX_CYCLE_TIME_DEVIATION_RATIO = MAX_CYCLE_TIME_DEVIATION_RATIO;
+exports.HeatFlowDirection = HeatFlowDirection;

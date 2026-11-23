@@ -22,6 +22,7 @@
 - **wbsc-wait-controls** - ожидание готовности контролов
 - **ScenarioPersistentStorage** - [хранилище сценариев](scenario-persistent-storage.md)
 - **constants** - общие константы (`src/constants.mod.js`)
+- **circuit-switcher** - выбор активного контура в сценариях с нагревом и охлаждением (`src/circuit-switcher.mod.js`)
 - **table-handling-actions** - таблица действий для outControls (`src/table-handling-actions.mod.js`)
 - **table-handling-events** - таблица событий для inControls (`src/table-handling-events.mod.js`)
 - **suncalc** - библиотека расчёта астрособытий (`src/suncalc.mod.js`)
