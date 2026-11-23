@@ -167,4 +167,35 @@ PidEngine.prototype.getState = function () {
   };
 };
 
+/**
+ * Checks the PID settings that all scenarios with PidEngine have.
+ * The scenario writes the texts to its log
+ * @param {{kp: number, ki: number, kd: number}} pidCoefficients - PID gains
+ * @param {number} deadBand - Dead band around the setpoint
+ * @returns {Array<string>} Error texts, empty if the settings are correct
+ */
+function getPidSettingsErrors(pidCoefficients, deadBand) {
+  var errors = [];
+  if (!pidCoefficients || typeof pidCoefficients !== 'object') {
+    errors.push('PID coefficients object is missing');
+  } else {
+    var gainTitles = { kp: 'Kp', ki: 'Ki', kd: 'Kd' };
+    Object.keys(gainTitles).forEach(function checkGain(key) {
+      var gain = pidCoefficients[key];
+      if (typeof gain !== 'number' || gain < 0) {
+        errors.push(
+          gainTitles[key] + ' must be a number >= 0, but got "' + gain + '"'
+        );
+      }
+    });
+  }
+  if (typeof deadBand !== 'number' || deadBand < 0) {
+    errors.push(
+      'dead band must be a number >= 0, but got "' + deadBand + '"'
+    );
+  }
+  return errors;
+}
+
 exports.PidEngine = PidEngine;
+exports.getPidSettingsErrors = getPidSettingsErrors;

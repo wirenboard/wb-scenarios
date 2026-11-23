@@ -207,6 +207,24 @@ function extractMqttTopics(devices) {
 }
 
 /**
+ * Finds MQTT topics that occur in the list more than once
+ * @param {Device[]} devices - Collection of device configuration objects
+ * @returns {string[]} Each repeated topic once, empty if all are unique
+ */
+function findRepeatedMqttTopics(devices) {
+  var usedTopics = [];
+  var repeatedTopics = [];
+  extractMqttTopics(devices).forEach(function checkTopic(topic) {
+    if (usedTopics.indexOf(topic) === -1) {
+      usedTopics.push(topic);
+    } else if (repeatedTopics.indexOf(topic) === -1) {
+      repeatedTopics.push(topic);
+    }
+  });
+  return repeatedTopics;
+}
+
+/**
  * Check if control type is valid for the action
  * @param {string} controlName - Control name
  * @param {Array} reqCtrlTypes - List of allowed types
@@ -240,4 +258,5 @@ exports.readAndValidateScenariosConfig = readAndValidateScenariosConfig;
 exports.getIdPrefix = getIdPrefix;
 exports.getGlobalScenarioStore = getGlobalScenarioStore;
 exports.extractMqttTopics = extractMqttTopics;
+exports.findRepeatedMqttTopics = findRepeatedMqttTopics;
 exports.isControlTypeValid = isControlTypeValid;

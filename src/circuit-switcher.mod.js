@@ -6,6 +6,8 @@
  * @author Valerii Trofimov <valeriy.trofimov@wirenboard.com>
  */
 
+var HeatFlowDirection = require('constants.mod').HeatFlowDirection;
+
 /**
  * @typedef {Object} SwitchedRegulator
  * @property {function(): void} start - Starts regulation
@@ -20,8 +22,24 @@
  * @property {string} name - Circuit name
  * @property {function(): number} getTemperature - Current temperature
  * @property {function(): number} getSetpoint - Setpoint of the circuit
+ * @property {function(boolean): void} showSetpointError - Shows or clears
+ *   the error on the setpoint control of the circuit
  * @property {SwitchedRegulator} regulator - Regulator of the circuit
  */
+
+/**
+ * Names of the enabled circuits. The scenario config has a block for each
+ * enabled circuit, and the block key is the circuit name
+ * @param {Object} cfg - Scenario configuration
+ * @returns {Array<string>} Enabled circuit names
+ */
+function getEnabledCircuitNames(cfg) {
+  return [HeatFlowDirection.HEATING, HeatFlowDirection.COOLING].filter(
+    function isEnabled(circuitName) {
+      return !!cfg[circuitName];
+    }
+  );
+}
 
 /**
  * Switches the heating and cooling circuits of one scenario
@@ -38,6 +56,7 @@
 function CircuitSwitcher(circuits, log) {
   this.circuits = circuits;
   this.log = log;
+  this.isStarted = false; // The scenario is on, start() was called last
   this.activeCircuit = null; // Circuit that regulates now, the other one is off
   this.isSetpointsCrossed = false; // Heating setpoint is not below cooling one
 }
@@ -66,12 +85,25 @@ CircuitSwitcher.prototype._pickCircuit = function pickCircuit() {
 };
 
 /**
+ * Turns all circuits off
+ * @private
+ */
+CircuitSwitcher.prototype._stopCircuits = function stopCircuits() {
+  var self = this;
+  this.activeCircuit = null;
+  Object.keys(this.circuits).forEach(function stopCircuit(name) {
+    self.circuits[name].regulator.stop();
+  });
+};
+
+/**
  * Turns the inactive circuit off and starts the circuit picked for the
  * current temperature. While the setpoints cross both circuits are off
  */
 CircuitSwitcher.prototype.start = function start() {
+  this.isStarted = true;
   if (this.isSetpointsCrossed) {
-    this.stop();
+    this._stopCircuits();
     return;
   }
 
@@ -90,22 +122,24 @@ CircuitSwitcher.prototype.start = function start() {
 };
 
 /**
- * Turns all circuits off
+ * Turns all circuits off until the next start()
  */
 CircuitSwitcher.prototype.stop = function stop() {
-  var self = this;
-  this.activeCircuit = null;
-  Object.keys(this.circuits).forEach(function stopCircuit(name) {
-    self.circuits[name].regulator.stop();
-  });
+  this.isStarted = false;
+  this._stopCircuits();
 };
 
 /**
  * Switches to the circuit picked for the current temperature, otherwise
- * updates the active one
+ * updates the active one. Does nothing while the switcher is stopped or
+ * the setpoints cross
  */
 CircuitSwitcher.prototype.updateActiveCircuit =
   function updateActiveCircuit() {
+    if (!this.isStarted || this.isSetpointsCrossed) {
+      return;
+    }
+
     var activeCircuit = this.activeCircuit;
     var nextCircuit = this._pickCircuit();
     if (nextCircuit === activeCircuit) {
@@ -128,10 +162,12 @@ CircuitSwitcher.prototype.updateActiveCircuit =
   };
 
 /**
- * Checks that the heating setpoint is below the cooling one
+ * Checks that the heating setpoint is below the cooling one and shows the
+ * error on both setpoint controls while it is not
  * @returns {boolean} True if the check result changed
+ * @private
  */
-CircuitSwitcher.prototype.checkSetpoints = function checkSetpoints() {
+CircuitSwitcher.prototype._checkSetpoints = function checkSetpoints() {
   var heating = this.circuits.heating;
   var cooling = this.circuits.cooling;
   if (!heating || !cooling) {
@@ -146,6 +182,8 @@ CircuitSwitcher.prototype.checkSetpoints = function checkSetpoints() {
   }
 
   this.isSetpointsCrossed = isCrossed;
+  heating.showSetpointError(isCrossed);
+  cooling.showSetpointError(isCrossed);
   if (isCrossed) {
     this.log.error(
       'Heating setpoint "{}" must be below cooling setpoint "{}"',
@@ -162,4 +200,24 @@ CircuitSwitcher.prototype.checkSetpoints = function checkSetpoints() {
   return true;
 };
 
+/**
+ * Applies the setpoints after a change or after a restore from storage.
+ * If the setpoints start or stop to cross, a started switcher starts again,
+ * otherwise the active circuit is updated. Channels of a stopped switcher
+ * stay untouched
+ * @returns {boolean} True if the setpoints started or stopped to cross,
+ *   the scenario then updates its state
+ */
+CircuitSwitcher.prototype.onSetpointChanged = function onSetpointChanged() {
+  if (!this._checkSetpoints()) {
+    this.updateActiveCircuit();
+    return false;
+  }
+  if (this.isStarted) {
+    this.start();
+  }
+  return true;
+};
+
 exports.CircuitSwitcher = CircuitSwitcher;
+exports.getEnabledCircuitNames = getEnabledCircuitNames;

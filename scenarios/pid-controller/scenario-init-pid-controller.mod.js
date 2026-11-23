@@ -18,7 +18,7 @@ var Logger = require('logger.mod').Logger;
  */
 var CFG = {
   reqVerGeneralCfg: 1, // Required version of common config structure
-  reqVerScenario: 1, // Required version of this scenario type config
+  reqVerScenario: 2, // Required version of this scenario type config
   configPath: '/etc/wb-scenarios.conf', // TODO(Valerii): Need refactor into a constant
   scenarioTypeStr: 'pidController',
 };
@@ -37,14 +37,15 @@ function initializeScenario(scenarioCfg) {
   var cfg = {
     idPrefix: scenarioCfg.idPrefix,
     sensor: scenarioCfg.sensor,
-    setpoint: scenarioCfg.setpoint,
-    setpointLimits: scenarioCfg.setpointLimits,
     setpointStep: scenarioCfg.setpointStep,
-    pidCoefficients: scenarioCfg.pidCoefficients,
-    calculationPeriodSec: scenarioCfg.calculationPeriodSec,
-    deadBand: scenarioCfg.deadBand,
-    actuators: scenarioCfg.actuators,
   };
+  // Circuit blocks of the scenario config have the module format
+  if (scenarioCfg.isHeatingEnabled) {
+    cfg.heating = scenarioCfg.heating || {};
+  }
+  if (scenarioCfg.isCoolingEnabled) {
+    cfg.cooling = scenarioCfg.cooling || {};
+  }
 
   try {
     // Returns true if VD created successfully; full initialization continue asynchronously

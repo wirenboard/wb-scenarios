@@ -69,8 +69,21 @@ migrate_thermostat_circuits() {
         | del(.[$keys[]]) + { isHeatingEnabled: true, heating: $heating, isCoolingEnabled: false }' 4
 }
 
+# Migration: PID controller heating and cooling circuits
+# Added in 1.10.10 (2026-11-20)
+# Moves the circuit settings of the PID controller into the "heating" block,
+# enables heating and disables cooling.
+# PidController config version 1 -> 2
+migrate_pid_controller_circuits() {
+    apply_migration "$1" '.scenarioType == "pidController" and .componentVersion == 1' \
+        '["setpoint", "setpointLimits", "deadBand", "pidCoefficients", "calculationPeriodSec", "actuators"] as $keys
+        | with_entries(select(.key | IN($keys[]))) as $heating
+        | del(.[$keys[]]) + { isHeatingEnabled: true, heating: $heating, isCoolingEnabled: false }' 2
+}
+
 migrate_actuator_to_actuators "$DATA_CONFIG"
 migrate_add_control_mode "$DATA_CONFIG"
 migrate_add_duration "$DATA_CONFIG"
 migrate_add_devices_control_version "$DATA_CONFIG"
 migrate_thermostat_circuits "$DATA_CONFIG"
+migrate_pid_controller_circuits "$DATA_CONFIG"

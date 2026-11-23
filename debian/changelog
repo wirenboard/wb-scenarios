@@ -1,3 +1,9 @@
+wb-scenarios (1.10.10) stable; urgency=medium
+
+  * Add cooling to the PID controller
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Mon, 23 Nov 2026 11:24:00 +0300
+
 wb-scenarios (1.10.9) stable; urgency=medium
 
   * Add cooling to the thermostat

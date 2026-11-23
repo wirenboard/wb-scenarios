@@ -10,10 +10,12 @@
 ### 1.2. Функциональные требования
 
 - Пересчёт ПИД-алгоритма с настраиваемым интервалом
+- Нагрев и охлаждение, у каждого свои уставка, настройки ПИД и выходы.
+  Одновременно работает только один контур
 - Маппинг выхода ПИД (0-100%) в единицы актуатора (min..max)
 - Поддержка прямого и инвертированного режима актуаторов
 - Управление массивом актуаторов с индивидуальными диапазонами
-- Сохранение уставки в persistent storage между перезапусками
+- Сохранение уставок в persistent storage между перезапусками
 - Обработка ошибок датчика и актуаторов с debounce-таймером
 - Автоматическое отключение при критических ошибках
 - Виртуальное устройство для управления через WebUI
@@ -84,9 +86,9 @@
               ┌─────────────────┼─────────────────┐
               ▼                 ▼                   ▼
     ┌──────────────┐ ┌──────────────────┐ ┌──────────────────┐
-    │ pid-engine   │ │ Виртуальное      │ │ MQTT-актуаторы   │
-    │ .mod.js      │ │ устройство       │ │ (аналоговые      │
-    │ (алгоритм)   │ │ wbsc_<idPrefix>  │ │ выходы)          │
+    │ регулятор    │ │ Виртуальное      │ │ MQTT-актуаторы   │
+    │ контура      │ │ устройство       │ │ (аналоговые      │
+    │ → pid-engine │ │ wbsc_<idPrefix>  │ │ выходы)          │
     └──────────────┘ └──────────────────┘ └──────────────────┘
 ```
 
@@ -104,7 +106,8 @@
 
 ### 4.2. Цикл расчёта
 
-Каждые `calculationPeriodSec` секунд:
+Цикл идёт только у активного контура. Каждые `calculationPeriodSec` секунд
+этого контура:
 
 1. Чтение датчика и уставки
 2. Вычисление ПИД-выхода (0-100%)
@@ -127,9 +130,116 @@ inverted: value = outputMax - (pidOutput / 100) * (outputMax - outputMin)
 
 - `0` — до целого
 - `1` — до десятых (один знак после запятой)
-- `2` — до сотых (два знака после запятой, по умолчанию)
+- `2` — до сотых (два знака после запятой)
 
-Округление выполняется для каждого актуатора независимо.
+По умолчанию `1`. Округление выполняется для каждого актуатора независимо.
+
+### 4.5. Контуры и регуляторы
+
+В конфиге сценария контур включают галки `isHeatingEnabled` и
+`isCoolingEnabled`, и `scenario-init-pid-controller.mod.js` передаёт модулю
+блок `heating` или `cooling` только при поднятой галке. В конфиге модуля контур
+включён, если есть его блок. Имя контура совпадает с направлением теплового
+потока (`HeatFlowDirection.HEATING` или `HeatFlowDirection.COOLING`).
+
+Сценарий (`pid-controller.mod.js`) отвечает за датчик, ошибки, уставки,
+пересчёт выхода в единицы актуаторов и виртуальное устройство. Цикл ПИД
+контура живёт в `PidControllerRegulator` из `pid-controller-regulator.mod.js`.
+Регулятор передаёт направление в `PidEngine` и получает объект контура
+`Circuit` с этими полями:
+
+| Поле             | Назначение                                         |
+| ---------------- | -------------------------------------------------- |
+| `name`           | Имя контура, с него начинаются строки лога контура |
+| `getTemperature` | Текущее значение датчика                           |
+| `getSetpoint`    | Уставка контура с ползунка виртуального устройства |
+| `setOutput`      | Записать мощность 0-100 % в выходы и на карточку   |
+| `log`            | Логгер сценария                                    |
+
+Переключатель контуров ещё вызывает у контура `showSetpointError`, когда
+уставки начинают или перестают пересекаться.
+
+Регулятор реализует `start`, `stop`, `update` и `reset`. `start`
+сбрасывает ПИД. `stop` ставит выходы контура на 0 %. `update` пустой, потому
+что ПИД читает датчик и уставку в начале каждого цикла.
+
+### 4.6. Активный контур
+
+Одновременно работает только один контур, активный. Его регулятор запущен и
+считает мощность по своей уставке. Регулятор второго контура остановлен,
+выходы этого контура стоят на 0 %. Активный контур выбирает `CircuitSwitcher`
+из `src/circuit-switcher.mod.js` при изменении значения датчика и уставки.
+Модуль не знает полей блока контура и имён контролов. Из конфига модуль знает
+только ключи `heating` и `cooling`, по ним `getEnabledCircuitNames` находит
+включённые контуры.
+
+Переключатель знает, включён ли сценарий. `start()` запоминает, что сценарий
+включён, `stop()` запоминает, что выключен. Пока сценарий выключен или уставки
+пересекаются, `updateActiveCircuit()` ничего не делает.
+
+- Значение ниже уставки нагрева. Активен нагрев.
+- Значение выше уставки охлаждения. Активно охлаждение.
+- Значение между уставками. Активным остаётся прежний контур. ПИД нагрева выше
+  своей уставки сам снижает мощность вплоть до 0 % и при переходе через уставку
+  не сбрасывается. ПИД охлаждения так же снижает мощность ниже своей уставки.
+
+При смене контура `updateActiveCircuit()` останавливает прежний регулятор
+`stop()` и запускает новый `start()`. Новый регулятор начинает ПИД с нуля.
+
+При включении сценария `start()` запускает активный контур, а выходы второго
+ставит на 0 %. Так второй контур не работает со значением с прошлого запуска.
+Пока значение между уставками и активного контура ещё нет, на 0 % стоят оба
+контура.
+
+### 4.7. Пересечение уставок
+
+При обоих контурах уставка нагрева должна быть ниже уставки охлаждения.
+
+- В конфиге пересечение ловит `validateCfg`, сценарий не стартует
+  (`CONFIG_INVALID`).
+- С карточки пересечение ловит `onSetpointChanged()` переключателя при
+  изменении любого ползунка и при инициализации, ведь сохранённые уставки
+  могут пересечься и при верном конфиге. Оба контура останавливаются и ставят выходы
+  на 0 %. Переключатель вызывает у обоих контуров `showSetpointError`, и
+  сценарий ставит на ползунок ошибку `r`. `computeState` возвращает
+  `CONFIG_INVALID`. После исправления ошибки снимаются, и если сценарий
+  включён, `start()` снова выбирает активный контур.
+
+Правило ползунка вызывает `onSetpointChanged()` переключателя. Если
+пересечение появилось или пропало, запущенный переключатель запускается заново,
+а сценарий пересчитывает состояние. Иначе запущенный переключатель обновляет
+активный контур.
+
+Правило ползунка не отключается вместе со сценарием, поэтому пересечение видно
+и в выключенном сценарии, а уставка сохраняется в хранилище. Выходы
+выключенного сценария при этом не трогаются. Включение сценария при
+пересечении оставляет оба контура на 0 %.
+
+Минимального зазора между уставками нет. Запас на инерцию выбирает
+пользователь.
+
+### 4.8. Миграция конфигурации
+
+Функция `migrate_pid_controller_circuits` в `wb-scenarios-migrate` (1.10.10)
+переводит версию конфига 1 в версию 2. Поля `setpoint`, `setpointLimits`,
+`deadBand`, `pidCoefficients`, `calculationPeriodSec` и `actuators` уходят в
+блок `heating`, ставятся `isHeatingEnabled: true` и `isCoolingEnabled: false`.
+Поля `sensor` и `setpointStep` остаются на верхнем уровне.
+
+```json
+// Было (componentVersion 1):
+{ "componentVersion": 1, "sensor": "wb-msw-v4_34/Temperature", "setpoint": 22, "deadBand": 0.2, "actuators": [] }
+
+// Стало (componentVersion 2):
+{ "componentVersion": 2, "sensor": "wb-msw-v4_34/Temperature", "isHeatingEnabled": true, "heating": { "setpoint": 22, "deadBand": 0.2, "actuators": [] }, "isCoolingEnabled": false }
+```
+
+Имена контролов виртуального устройства меняются вместе с конфигом
+(`setpoint` → `heating_setpoint` и т.д.). Ссылки на старые имена в панелях и
+правилах пользователя миграция не трогает.
+
+Запуск миграций при пакетном обновлении и загрузке после FIT описан в разделе
+[«Миграции конфигурации»](../../develop/install-variants-and-build-pkg.md#миграции-конфигурации).
 
 ---
 
@@ -140,16 +250,20 @@ inverted: value = outputMax - (pidOutput / 100) * (outputMax - outputMin)
 ```
 scenarios/pid-controller/
 ├── pid-controller.mod.js              # Класс PidControllerScenario
+├── pid-controller-regulator.mod.js    # Регулятор контура, PidControllerRegulator
 ├── scenario-init-pid-controller.mod.js # Загрузчик конфигурации
 ├── README.md                          # Пользовательская документация
 ├── dev-note-arc42.md                  # Данный документ
 └── img/                               # Скриншоты
 
 src/
-└── pid-engine.mod.js                  # PID-алгоритм (без MQTT)
+├── pid-engine.mod.js                  # PID-алгоритм (без MQTT), проверка настроек ПИД
+└── circuit-switcher.mod.js            # Выбор активного контура, CircuitSwitcher
 
 schema/
-└── wb-scenarios.schema.json           # Определение pidController
+└── wb-scenarios.schema.json           # Определения pidController и pidControllerCircuit
+
+wb-scenarios-migrate                   # Миграции конфигурации
 ```
 
 ### 5.2. Класс PidControllerScenario
@@ -158,41 +272,44 @@ schema/
 PidControllerScenario (extends ScenarioBase)
 │
 ├── ctx:
-│   ├── pid              (PidEngine instance)
-│   ├── cycleTimerId     (setTimeout ID)
-│   ├── pidOutput        (last output 0-100)
+│   ├── circuits         (включённые контуры по имени)
+│   ├── switcher         (CircuitSwitcher)
 │   ├── errorTimers      (debounce timers)
 │   └── suppressNextDisable (init flag)
 │
 ├── generateNames(idPrefix)
-│   → vDevice, ruleSensorChanged, ruleSetScStatus,
-│     ruleSetSetpoint, rulePidReset, ruleSensorErr
+│   → vDevice, ruleSensorChanged, ruleSetScStatus, ruleSensorErr
 │
 ├── defineControlsWaitConfig(cfg)
-│   → {controls: [sensor, ...actuators]}
+│   → {controls: [sensor, ...actuators обоих контуров]}
 │
 ├── validateCfg(cfg)
-│   → проверки: setpoint limits, setpoint step, coefficients, period,
-│     deadband, actuators (precision 0-2, min < max)
+│   → setpoint step, sensor type, хотя бы один контур, для каждого контура
+│     setpoint limits, setpoint, настройки ПИД
+│     (getPidSettingsErrors), period, actuators (precision 0-2, min < max),
+│     повтор выхода во всех списках, между контурами пересечение уставок
+│
+├── computeState(isEnabled)
+│   → ошибка канала > пересечение уставок > вкл/выкл
 │
 └── initSpecific(name, cfg)
-    1. Restore setpoint from storage
-    2. Add VD controls
-    3. Create rules
-    4. Create PidEngine
-    5. Start calculation cycle
+    1. Restore setpoint of each circuit from storage
+    2. Add VD controls (current_value, controls of each circuit)
+    3. Create circuits with regulators, new CircuitSwitcher
+    4. Create rules
+    5. switcher.onSetpointChanged(), switcher.start() если сценарий включён по хранилищу
 ```
 
 ### 5.3. Правила (rules)
 
-| Правило          | Триггер        | Действие                   |
-| ---------------- | -------------- | -------------------------- |
-| `sensor_changed` | Датчик         | Обновить VD current_value  |
-| `set_sc_status`  | rule_enabled   | Start/stop цикл, reset PID |
-| `set_setpoint`   | setpoint       | Сохранить в storage        |
-| `pid_reset`      | Кнопка         | Reset интеграла, restart   |
-| `sensor_error`   | sensor#error   | Debounce then disable      |
-| `actuator_err_N` | actuator#error | Debounce then disable      |
+| Правило                   | Триггер             | Действие                                                   |
+| ------------------------- | ------------------- | ---------------------------------------------------------- |
+| `sensor_changed`          | Датчик              | Обновить VD current_value, выбрать контур                  |
+| `set_sc_status`           | rule_enabled        | switcher.start() или switcher.stop()                       |
+| `<контур>_set_setpoint`   | `<контур>_setpoint` | Сохранить в storage, проверить пересечение, выбрать контур |
+| `<контур>_pid_reset`      | Кнопка              | reset() у регулятора контура                               |
+| `sensor_error`            | sensor#error        | Debounce then disable                                      |
+| `<контур>_actuator_err_N` | actuator#error      | Debounce then disable                                      |
 
 ---
 
@@ -200,14 +317,17 @@ PidControllerScenario (extends ScenarioBase)
 
 Создаётся `wbsc_<idPrefix>` с контролами:
 
-| Контрол         | Тип        | RO  | Описание                                                       |
-| --------------- | ---------- | --- | -------------------------------------------------------------- |
-| `rule_enabled`  | switch     | нет | Вкл/выкл сценария                                              |
-| `state`         | enum value | да  | Состояние (0-9)                                                |
-| `setpoint`      | range      | нет | Уставка (min..max), шаг ползунка в precision, по умолчанию 0.1 |
-| `current_value` | value      | да  | Показание датчика                                              |
-| `output_power`  | value, %   | да  | Мощность ПИД (0-100%)                                          |
-| `pid_reset`     | pushbutton | —   | Сброс интегратора                                              |
+| Контрол                 | Тип        | RO  | Описание                                                       |
+| ----------------------- | ---------- | --- | -------------------------------------------------------------- |
+| `rule_enabled`          | switch     | нет | Вкл/выкл сценария                                              |
+| `state`                 | enum value | да  | Состояние (0-9)                                                |
+| `current_value`         | value      | да  | Показание датчика                                              |
+| `<контур>_setpoint`     | range      | нет | Уставка (min..max), шаг ползунка в precision, по умолчанию 0.1 |
+| `<контур>_output_power` | value, %   | да  | Мощность ПИД контура (0-100%)                                  |
+| `<контур>_pid_reset`    | pushbutton | —   | Сброс интегратора контура                                      |
+
+`<контур>` — `heating` или `cooling`. Контролы есть только у включённых
+контуров. Ошибка выхода подсвечивает `<контур>_output_power` своего контура.
 
 ---
 
@@ -216,7 +336,8 @@ PidControllerScenario (extends ScenarioBase)
 ### 7.1. Критические ошибки (r/w)
 
 1. Получение ошибки — запуск debounce-таймера (10 сек)
-2. Если ошибка сохраняется — `USED_CONTROL_ERROR`, rule_enabled = readonly + false
+2. Если ошибка сохраняется — `USED_CONTROL_ERROR`, rule_enabled = readonly + false,
+   переключатель контуров останавливается сразу, не дожидаясь правила rule_enabled
 3. Все актуаторы сбрасываются в безопасное состояние
 4. Статус `USED_CONTROL_ERROR` выводится из `#error`, поэтому появляется сразу —
    и при переключении тумблера, и при инициализации со сломанным каналом.
@@ -236,14 +357,15 @@ PidControllerScenario (extends ScenarioBase)
 
 Хранимые данные:
 
-- `setpoint` — уставка, заданная пользователем
+- `heatingSetpoint` и `coolingSetpoint` — уставки контуров с ползунков виртуального устройства
 - `rule_enabled` — состояние включения (через базовый класс)
 
-Ключ хранения: `scenariosRegistry[idPrefix].userSettings.setpoint`
+Ключ хранения: `scenariosRegistry[idPrefix].userSettings.<контур>Setpoint`
 
 При восстановлении:
 
-1. Загрузка из storage
+1. Загрузка из storage. Если ключа нагрева нет, нагрев берёт ключ `setpoint`,
+   в котором уставка хранилась до разделения на контуры
 2. Проверка что значение в пределах [min, max]
 3. Если невалидно — сброс к значению из конфига
 
