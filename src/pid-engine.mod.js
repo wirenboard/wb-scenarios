@@ -12,6 +12,7 @@
  */
 
 var HeatFlowDirection = require('constants.mod').HeatFlowDirection;
+var MS_PER_SECOND = require('constants.mod').MS_PER_SECOND;
 
 /**
  * Gain multiplier inside the deadband zone.
@@ -54,9 +55,18 @@ function clamp(val, min, max) {
  * @param {number} deadband - Deadband zone width
  *     (same units as setpoint, e.g. degrees C)
  * @param {HeatFlowDirection} heatFlowDirection - Heat flow direction
+ * @throws {Error} If heatFlowDirection is not a HeatFlowDirection value
  * @constructor
  */
 function PidEngine(kp, ki, kd, deadband, heatFlowDirection) {
+  if (
+    heatFlowDirection !== HeatFlowDirection.HEATING &&
+    heatFlowDirection !== HeatFlowDirection.COOLING
+  ) {
+    throw new Error(
+      'Unknown heat flow direction "' + heatFlowDirection + '"'
+    );
+  }
   this.kp = kp;
   this.ki = ki;
   this.kd = kd;
@@ -70,12 +80,15 @@ function PidEngine(kp, ki, kd, deadband, heatFlowDirection) {
   this.integral = 0;
   this.lastMeasurement = null;
   this.filteredDerivative = 0;
+  this.lastComputeTimeMs = null; // Time of the last computeAt call
 
   // Last computed components (for getState)
   this._lastP = 0;
   this._lastI = 0;
   this._lastD = 0;
   this._lastOutput = 0;
+  this._lastDt = 0;
+  this._lastDtDeviation = 0;
 }
 
 /**
@@ -133,6 +146,32 @@ PidEngine.prototype.compute = function (setpoint, measurement, dt) {
 };
 
 /**
+ * Compute PID output at the given time. The first call after reset uses
+ * the expected dt, the next calls use the time since the previous call.
+ * getState() then gives the used dt and its deviation from the expected dt
+ * @param {number} setpoint - Target value
+ * @param {number} measurement - Current measured value
+ * @param {number} nowMs - Current time in milliseconds
+ * @param {number} expectedDtSec - Configured time between calls in seconds
+ * @returns {number} Output clamped to 0..100
+ */
+PidEngine.prototype.computeAt = function computeAt(
+  setpoint,
+  measurement,
+  nowMs,
+  expectedDtSec
+) {
+  var dt = expectedDtSec;
+  if (this.lastComputeTimeMs !== null) {
+    dt = (nowMs - this.lastComputeTimeMs) / MS_PER_SECOND;
+  }
+  this.lastComputeTimeMs = nowMs;
+  this._lastDt = dt;
+  this._lastDtDeviation = Math.abs(dt - expectedDtSec) / expectedDtSec;
+  return this.compute(setpoint, measurement, dt);
+};
+
+/**
  * Reset PID internal state.
  * Call when scenario restarts or re-enables.
  * Integral resets to zero for smooth ramp-up.
@@ -141,21 +180,26 @@ PidEngine.prototype.reset = function () {
   this.integral = 0;
   this.lastMeasurement = null;
   this.filteredDerivative = 0;
+  this.lastComputeTimeMs = null;
   this._lastP = 0;
   this._lastI = 0;
   this._lastD = 0;
   this._lastOutput = 0;
+  this._lastDt = 0;
+  this._lastDtDeviation = 0;
 };
 
 /**
  * Get current PID state for debugging/logging
- * @returns {{p: number, i: number, d: number, integral: number, output: number}}
+ * @returns {{p: number, i: number, d: number, integral: number, output: number, dt: number, dtDeviation: number}}
  *     PID components and output:
  *     - p: Last P component
  *     - i: Last I component (= current integral value)
  *     - d: Last D component
  *     - integral: Accumulated integral value
  *     - output: Last output
+ *     - dt: Last dt of computeAt in seconds
+ *     - dtDeviation: Relative deviation of the last dt from the expected dt
  */
 PidEngine.prototype.getState = function () {
   return {
@@ -164,6 +208,8 @@ PidEngine.prototype.getState = function () {
     d: this._lastD,
     integral: this.integral,
     output: this._lastOutput,
+    dt: this._lastDt,
+    dtDeviation: this._lastDtDeviation,
   };
 };
 

@@ -22,12 +22,14 @@ var PidControllerRegulator =
 var CircuitSwitcher = require('circuit-switcher.mod').CircuitSwitcher;
 var getEnabledCircuitNames =
   require('circuit-switcher.mod').getEnabledCircuitNames;
+var getEnabledCircuitsActuators =
+  require('circuit-switcher.mod').getEnabledCircuitsActuators;
+var getCircuitsLinkErrors =
+  require('circuit-switcher.mod').getCircuitsLinkErrors;
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
-var findRepeatedMqttTopics =
-  require('scenarios-general-helpers.mod').findRepeatedMqttTopics;
 
 var loggerFileLabel = 'WBSC-pid-controller-mod';
 var log = new Logger(loggerFileLabel);
@@ -194,13 +196,7 @@ PidControllerScenario.prototype.generateNames = function (idPrefix) {
  * @returns {Object} Waiting configuration object
  */
 PidControllerScenario.prototype.defineControlsWaitConfig = function (cfg) {
-  var actuatorTopics = [];
-  getEnabledCircuitNames(cfg).forEach(function addTopics(circuitName) {
-    actuatorTopics = actuatorTopics.concat(
-      extractMqttTopics(cfg[circuitName].actuators || [])
-    );
-  });
-
+  var actuatorTopics = extractMqttTopics(getEnabledCircuitsActuators(cfg));
   var allTopics = [].concat(cfg.sensor, actuatorTopics);
   return { controls: allTopics };
 };
@@ -373,39 +369,20 @@ PidControllerScenario.prototype.validateCfg = function (cfg) {
     }
   });
 
-  var isActuatorsUnique = true;
-  if (isCircuitsValid) {
-    var allActuators = [];
-    circuitNames.forEach(function collectActuators(circuitName) {
-      allActuators = allActuators.concat(cfg[circuitName].actuators);
-    });
-    var repeatedTopics = findRepeatedMqttTopics(allActuators);
-    if (repeatedTopics.length > 0) {
-      log.error(
-        'PID validation error: outputs "{}" are used more than once',
-        repeatedTopics.join(', ')
-      );
-      isActuatorsUnique = false;
-    }
-  }
-
   var isCircuitsCompatible = true;
-  if (isCircuitsValid && circuitNames.length === 2) {
-    if (cfg.heating.setpoint >= cfg.cooling.setpoint) {
-      log.error(
-        'PID validation error: heating setpoint "{}" must be below cooling setpoint "{}"',
-        cfg.heating.setpoint,
-        cfg.cooling.setpoint
-      );
-      isCircuitsCompatible = false;
-    }
+  if (isCircuitsValid) {
+    getCircuitsLinkErrors(cfg, 'setpoint').forEach(
+      function logLinkError(errorText) {
+        log.error('PID validation error: {}', errorText);
+        isCircuitsCompatible = false;
+      }
+    );
   }
 
   return (
     isSetpointStepCorrect &&
     isSensorValid &&
     isCircuitsValid &&
-    isActuatorsUnique &&
     isCircuitsCompatible
   );
 };
@@ -972,7 +949,9 @@ PidControllerScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       this.ctx.suppressNextDisable = true;
     }
 
-    // Setpoints saved from the card may cross even with a valid config
+    // Setpoints saved from the card may cross even with a valid config.
+    // Check them before start(). Until this check, the switcher does not
+    // know about the crossing and start() can turn on a circuit
     this.ctx.switcher.onSetpointChanged();
     if (enabledFromStorage) {
       this.ctx.switcher.start();

@@ -22,6 +22,10 @@ var PidRegulator = require('thermostat-pid.mod').PidRegulator;
 var CircuitSwitcher = require('circuit-switcher.mod').CircuitSwitcher;
 var getEnabledCircuitNames =
   require('circuit-switcher.mod').getEnabledCircuitNames;
+var getEnabledCircuitsActuators =
+  require('circuit-switcher.mod').getEnabledCircuitsActuators;
+var getCircuitsLinkErrors =
+  require('circuit-switcher.mod').getCircuitsLinkErrors;
 var getPidSettingsErrors = require('pid-engine.mod').getPidSettingsErrors;
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
@@ -29,8 +33,6 @@ var isControlTypeValid =
   require('scenarios-general-helpers.mod').isControlTypeValid;
 var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
-var findRepeatedMqttTopics =
-  require('scenarios-general-helpers.mod').findRepeatedMqttTopics;
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
 var log = new Logger(loggerFileLabel);
@@ -265,13 +267,7 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
  * @returns {Object} Waiting configuration object
  */
 ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {
-  var actuatorTopics = [];
-  getEnabledCircuitNames(cfg).forEach(function addTopics(circuitName) {
-    actuatorTopics = actuatorTopics.concat(
-      extractMqttTopics(cfg[circuitName].actuators || [])
-    );
-  });
-
+  var actuatorTopics = extractMqttTopics(getEnabledCircuitsActuators(cfg));
   var allTopics = [].concat(cfg.tempSensor, actuatorTopics);
   return { controls: allTopics };
 };
@@ -500,39 +496,20 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
     }
   });
 
-  var isActuatorsUnique = true;
-  if (isCircuitsValid) {
-    var allActuators = [];
-    circuitNames.forEach(function collectActuators(circuitName) {
-      allActuators = allActuators.concat(cfg[circuitName].actuators);
-    });
-    var repeatedTopics = findRepeatedMqttTopics(allActuators);
-    if (repeatedTopics.length > 0) {
-      log.error(
-        'Thermostat validation error: channels "{}" are used more than once',
-        repeatedTopics.join(', ')
-      );
-      isActuatorsUnique = false;
-    }
-  }
-
   var isCircuitsCompatible = true;
-  if (isCircuitsValid && circuitNames.length === 2) {
-    if (cfg.heating.targetTemp >= cfg.cooling.targetTemp) {
-      log.error(
-        'Thermostat validation error: heating target temperature "{}" must be below cooling target temperature "{}"',
-        cfg.heating.targetTemp,
-        cfg.cooling.targetTemp
-      );
-      isCircuitsCompatible = false;
-    }
+  if (isCircuitsValid) {
+    getCircuitsLinkErrors(cfg, 'targetTemp').forEach(
+      function logLinkError(errorText) {
+        log.error('Thermostat validation error: {}', errorText);
+        isCircuitsCompatible = false;
+      }
+    );
   }
 
   return (
     isTargetTempStepCorrect &&
     isTempSensorValid &&
     isCircuitsValid &&
-    isActuatorsUnique &&
     isCircuitsCompatible
   );
 };
@@ -1187,7 +1164,9 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       this.ctx.suppressNextDisable = true;
     }
 
-    // Setpoints saved from the card may cross even with a valid config
+    // Setpoints saved from the card may cross even with a valid config.
+    // Check them before start(). Until this check, the switcher does not
+    // know about the crossing and start() can turn on a circuit
     this.ctx.switcher.onSetpointChanged();
     if (enabledFromStorage) {
       this.ctx.switcher.start();

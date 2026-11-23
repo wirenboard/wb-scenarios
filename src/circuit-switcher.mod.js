@@ -7,6 +7,8 @@
  */
 
 var HeatFlowDirection = require('constants.mod').HeatFlowDirection;
+var findRepeatedMqttTopics =
+  require('scenarios-general-helpers.mod').findRepeatedMqttTopics;
 
 /**
  * @typedef {Object} SwitchedRegulator
@@ -39,6 +41,65 @@ function getEnabledCircuitNames(cfg) {
       return !!cfg[circuitName];
     }
   );
+}
+
+/**
+ * Channels of all enabled circuits
+ * @param {Object} cfg - Scenario configuration
+ * @returns {Array<Object>} Channel configs of the enabled circuits
+ */
+function getEnabledCircuitsActuators(cfg) {
+  var actuators = [];
+  getEnabledCircuitNames(cfg).forEach(function addActuators(circuitName) {
+    actuators = actuators.concat(cfg[circuitName].actuators || []);
+  });
+  return actuators;
+}
+
+/**
+ * Checks the heating and cooling setpoints order
+ * @param {number} heatingSetpoint - Setpoint of the heating circuit
+ * @param {number} coolingSetpoint - Setpoint of the cooling circuit
+ * @returns {boolean} True if the heating setpoint is below the cooling one
+ */
+function isHeatingBelowCooling(heatingSetpoint, coolingSetpoint) {
+  return heatingSetpoint < coolingSetpoint;
+}
+
+/**
+ * Checks the enabled circuits together. Each channel must be used once in
+ * the scenario, and the heating setpoint must be below the cooling one.
+ * Call it after each circuit passed its own checks. The scenario writes the
+ * texts to its log
+ * @param {Object} cfg - Scenario configuration
+ * @param {string} setpointKey - Key of the setpoint in the circuit block
+ * @returns {Array<string>} Error texts, empty if the circuits are correct
+ */
+function getCircuitsLinkErrors(cfg, setpointKey) {
+  var errors = [];
+  var repeatedTopics = findRepeatedMqttTopics(
+    getEnabledCircuitsActuators(cfg)
+  );
+  if (repeatedTopics.length > 0) {
+    errors.push(
+      'channels "' + repeatedTopics.join(', ') + '" are used more than once'
+    );
+  }
+
+  if (cfg.heating && cfg.cooling) {
+    var heatingSetpoint = cfg.heating[setpointKey];
+    var coolingSetpoint = cfg.cooling[setpointKey];
+    if (!isHeatingBelowCooling(heatingSetpoint, coolingSetpoint)) {
+      errors.push(
+        'heating setpoint "' +
+          heatingSetpoint +
+          '" must be below cooling setpoint "' +
+          coolingSetpoint +
+          '"'
+      );
+    }
+  }
+  return errors;
 }
 
 /**
@@ -176,7 +237,7 @@ CircuitSwitcher.prototype._checkSetpoints = function checkSetpoints() {
 
   var heatingSetpoint = heating.getSetpoint();
   var coolingSetpoint = cooling.getSetpoint();
-  var isCrossed = heatingSetpoint >= coolingSetpoint;
+  var isCrossed = !isHeatingBelowCooling(heatingSetpoint, coolingSetpoint);
   if (isCrossed === this.isSetpointsCrossed) {
     return false;
   }
@@ -221,3 +282,5 @@ CircuitSwitcher.prototype.onSetpointChanged = function onSetpointChanged() {
 
 exports.CircuitSwitcher = CircuitSwitcher;
 exports.getEnabledCircuitNames = getEnabledCircuitNames;
+exports.getEnabledCircuitsActuators = getEnabledCircuitsActuators;
+exports.getCircuitsLinkErrors = getCircuitsLinkErrors;

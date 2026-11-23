@@ -238,9 +238,10 @@ scenariosRegistry[idPrefix].userSettings.coolingTargetTemp = <number>
 включает каналы по своему алгоритму и своей уставке. Регулятор второго контура
 остановлен, этот контур выключен. Активный контур выбирает `CircuitSwitcher` из
 `src/circuit-switcher.mod.js` при изменении температуры и уставки. Модуль не
-знает полей блока контура и имён контролов, поэтому подходит любому сценарию с
-нагревом и охлаждением. Из конфига модуль знает только ключи `heating` и
-`cooling`, по ним `getEnabledCircuitNames` находит включённые контуры.
+знает имён контролов, поэтому подходит любому сценарию с нагревом и
+охлаждением. Из конфига модуль знает ключи `heating` и `cooling` и список
+каналов `actuators` в блоке контура. По ключам `getEnabledCircuitNames` находит
+включённые контуры. Ключ уставки в блоке модулю передаёт сценарий.
 
 Переключатель знает, включён ли сценарий. `start()` запоминает, что сценарий
 включён, `stop()` запоминает, что выключен. Пока сценарий выключен или уставки
@@ -270,7 +271,7 @@ scenariosRegistry[idPrefix].userSettings.coolingTargetTemp = <number>
 
 При обоих контурах уставка нагрева должна быть ниже уставки охлаждения.
 
-- В конфиге пересечение ловит `validateCfg`, сценарий не стартует (`CONFIG_INVALID`).
+- В конфиге пересечение ловит `validateCfg` через `getCircuitsLinkErrors`, сценарий не стартует (`CONFIG_INVALID`).
 - С карточки пересечение ловит `onSetpointChanged()` переключателя при изменении
   любого ползунка и при инициализации, ведь сохранённые уставки могут пересечься
   и при верном конфиге. Оба контура останавливаются, переключатель вызывает у
@@ -307,7 +308,7 @@ scenarios/thermostat/
 └── img/                                 # Скриншоты для README
 
 src/
-└── circuit-switcher.mod.js              # Выбор активного контура, CircuitSwitcher
+└── circuit-switcher.mod.js              # Выбор активного контура (CircuitSwitcher), общие проверки контуров
 
 schema/
 └── wb-scenarios.schema.json             # Определения thermostat и thermostatCircuit
@@ -334,7 +335,7 @@ ThermostatScenario extends ScenarioBase
 │   → targetTempStep, sensorType, хотя бы один контур,
 │     для каждого контура limits, targetTemp, hysteresis, pidSettings
 │     (коэффициенты и deadBand проверяет getPidSettingsErrors), actuators,
-│     повтор канала во всех списках, между контурами пересечение уставок
+│     повтор канала и пересечение уставок между контурами (getCircuitsLinkErrors)
 │
 ├── computeState(isEnabled)
 │   → ошибка канала > пересечение уставок > вкл/выкл
