@@ -71,7 +71,6 @@ function PidRegulator(heatFlowDirection, pidSettings, circuit, controls) {
   this.offTimerId = null; // setTimeout ID for turning off actuators mid-cycle
   this.pwmCycleCount = 0; // Counter for PID recalculation
   this.pidOutput = 0; // Last PID output (0-100)
-  this.lastComputeTime = null; // Timestamp of last PID computation (ms)
 }
 
 /**
@@ -84,7 +83,6 @@ PidRegulator.prototype.start = function start() {
   this.pid.reset();
   this.pwmCycleCount = 0;
   this.pidOutput = 0;
-  this.lastComputeTime = null; // Reset timestamp on start
   this._runPwmCycle();
   this.circuit.log.debug('{}: PID mode started', this.circuit.name);
 };
@@ -142,50 +140,35 @@ PidRegulator.prototype._cancelPidTimers = function cancelPidTimers() {
  * @private
  */
 PidRegulator.prototype._recomputePidOutput = function recomputePidOutput() {
-  var now = Date.now();
   var setpoint = this.circuit.getSetpoint();
   var measurement = this.circuit.getTemperature();
-
-  // Determine dt for PID computation
-  var dt;
   var configuredDt =
     this.pidSettings.pwmPeriodSec * this.pidSettings.pidRecalcCycles;
 
-  if (this.lastComputeTime === null) {
-    dt = configuredDt;
-    this.circuit.log.debug(
-      '{}: First PID cycle, using configured dt: {} sec',
-      this.circuit.name,
-      dt
-    );
-  } else {
-    var actualDt = (now - this.lastComputeTime) / MS_PER_SECOND;
-    var deviation = Math.abs(actualDt - configuredDt) / configuredDt;
-
-    if (deviation > MAX_CYCLE_TIME_DEVIATION_RATIO) {
-      this.circuit.log.warning(
-        '{}: PID cycle time deviation: actual={} sec, configured={} sec (deviation={}%)',
-        this.circuit.name,
-        actualDt.toFixed(2),
-        configuredDt,
-        (deviation * 100).toFixed(1)
-      );
-    }
-
-    dt = actualDt;
-  }
-
-  this.lastComputeTime = now;
-
-  this.pidOutput = this.pid.compute(setpoint, measurement, dt);
+  this.pidOutput = this.pid.computeAt(
+    setpoint,
+    measurement,
+    Date.now(),
+    configuredDt
+  );
   this.controls.outputPower.setValue(Math.round(this.pidOutput));
 
   var state = this.pid.getState();
+  if (state.dtDeviation > MAX_CYCLE_TIME_DEVIATION_RATIO) {
+    this.circuit.log.warning(
+      '{}: PID cycle time deviation: actual={} sec, configured={} sec (deviation={}%)',
+      this.circuit.name,
+      state.dt.toFixed(2),
+      configuredDt,
+      (state.dtDeviation * 100).toFixed(1)
+    );
+  }
   this.circuit.log.debug(
-    '{}: PID computed: setpoint={} measurement={} output={} P={} I={} D={}',
+    '{}: PID computed: setpoint={} measurement={} dt={} output={} P={} I={} D={}',
     this.circuit.name,
     setpoint,
     measurement,
+    state.dt.toFixed(2),
     this.pidOutput.toFixed(1),
     state.p.toFixed(2),
     state.i.toFixed(2),

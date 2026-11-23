@@ -48,7 +48,6 @@ var MAX_CYCLE_TIME_DEVIATION_RATIO = 0.05;
 
 /**
  * Heat flow direction enum - heating or cooling
- * Used by the PID engine and the thermostat circuits
  * @enum {string}
  */
 var HeatFlowDirection = {

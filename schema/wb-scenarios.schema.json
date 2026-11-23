@@ -2286,7 +2286,7 @@
           "title": "Config version",
           "minimum": 1,
           "maximum": 256,
-          "default": 1,
+          "default": 2,
           "options": {
             "hidden": true
           }
@@ -2316,11 +2316,116 @@
             "patternmessage": "generalErrorRegexpPatternMessageGeneralType"
           }
         },
+        "sensor": {
+          "type": "string",
+          "_format": "wb-autocomplete",
+          "title": "pidControllerSensorTitle",
+          "pattern": "^[^/+#]+/[^/+#]+$",
+          "propertyOrder": 3,
+          "options": {
+            "grid_columns": 12,
+            "inputAttributes": {
+              "placeholder": "generalMqttTopicNamePlaceholder"
+            },
+            "wb": {
+              "data": "devices"
+            },
+            "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName"
+          },
+          "minLength": 1
+        },
+        "setpointStep": {
+          "type": "number",
+          "title": "pidControllerSetpointStepTitle",
+          "default": 0.1,
+          "minimum": 0,
+          "exclusiveMinimum": true,
+          "propertyOrder": 4,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "isHeatingEnabled": {
+          "type": "boolean",
+          "title": "pidControllerHeatingEnabledTitle",
+          "default": true,
+          "_format": "checkbox",
+          "propertyOrder": 5,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "heating": {
+          "$ref": "#/definitions/pidControllerCircuit",
+          "title": "pidControllerHeatingTitle",
+          "propertyOrder": 6,
+          "properties": {
+            "setpoint": { "default": 22 }
+          },
+          "options": {
+            "dependencies": {
+              "isHeatingEnabled": true
+            }
+          }
+        },
+        "isCoolingEnabled": {
+          "type": "boolean",
+          "title": "pidControllerCoolingEnabledTitle",
+          "default": false,
+          "_format": "checkbox",
+          "propertyOrder": 7,
+          "options": {
+            "grid_columns": 12
+          }
+        },
+        "cooling": {
+          "$ref": "#/definitions/pidControllerCircuit",
+          "title": "pidControllerCoolingTitle",
+          "propertyOrder": 8,
+          "properties": {
+            "setpoint": { "default": 26 }
+          },
+          "options": {
+            "dependencies": {
+              "isCoolingEnabled": true
+            }
+          }
+        }
+      },
+      "required": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "sensor",
+        "isHeatingEnabled",
+        "isCoolingEnabled"
+      ],
+      "defaultProperties": [
+        "scenarioType",
+        "componentVersion",
+        "name",
+        "sensor",
+        "isHeatingEnabled",
+        "heating",
+        "isCoolingEnabled",
+        "cooling"
+      ]
+    },
+    "pidControllerCircuit": {
+      "type": "object",
+      "_format": "grid",
+      "options": {
+        "grid_columns": 12,
+        "disable_collapse": true,
+        "disable_edit_json": true,
+        "disable_properties": true,
+        "wb": { "show_editor": true }
+      },
+      "properties": {
         "setpoint": {
           "type": "number",
           "title": "pidControllerSetpointTitle",
-          "default": 22,
-          "propertyOrder": 3,
+          "propertyOrder": 1,
           "options": {
             "grid_columns": 6
           }
@@ -2331,7 +2436,7 @@
           "description": "pidControllerDeadbandDescription",
           "default": 0.2,
           "minimum": 0,
-          "propertyOrder": 4,
+          "propertyOrder": 2,
           "options": {
             "grid_columns": 6
           }
@@ -2339,7 +2444,7 @@
         "setpointLimits": {
           "type": "object",
           "title": "pidControllerSetpointLimitsTitle",
-          "propertyOrder": 5,
+          "propertyOrder": 3,
           "_format": "grid",
           "options": {
             "grid_columns": 12,
@@ -2368,21 +2473,10 @@
             }
           }
         },
-        "setpointStep": {
-          "type": "number",
-          "title": "pidControllerSetpointStepTitle",
-          "default": 0.1,
-          "minimum": 0,
-          "exclusiveMinimum": true,
-          "propertyOrder": 6,
-          "options": {
-            "grid_columns": 12
-          }
-        },
         "pidCoefficients": {
           "type": "object",
           "title": "generalPidCoefficientsTitle",
-          "propertyOrder": 7,
+          "propertyOrder": 4,
           "_format": "grid",
           "options": {
             "disable_collapse": true,
@@ -2428,33 +2522,15 @@
           "description": "pidControllerCalcPeriodDescription",
           "default": 30,
           "minimum": 1,
-          "propertyOrder": 8,
+          "propertyOrder": 5,
           "options": {
             "grid_columns": 12
           }
         },
-        "sensor": {
-          "type": "string",
-          "_format": "wb-autocomplete",
-          "title": "pidControllerSensorTitle",
-          "pattern": "^[^/+#]+/[^/+#]+$",
-          "propertyOrder": 9,
-          "options": {
-            "grid_columns": 12,
-            "inputAttributes": {
-              "placeholder": "generalMqttTopicNamePlaceholder"
-            },
-            "wb": {
-              "data": "devices"
-            },
-            "patternmessage": "generalErrorRegexpPatternMessageMqttTopicName"
-          },
-          "minLength": 1
-        },
         "actuators": {
           "type": "array",
           "minItems": 1,
-          "propertyOrder": 10,
+          "propertyOrder": 6,
           "title": "pidControllerActuatorsTitle",
           "description": "pidControllerActuatorsDescription",
           "_format": "table",
@@ -2540,15 +2616,11 @@
         }
       },
       "required": [
-        "scenarioType",
-        "componentVersion",
-        "name",
         "setpoint",
         "deadBand",
         "setpointLimits",
         "pidCoefficients",
         "calculationPeriodSec",
-        "sensor",
         "actuators"
       ]
     }
@@ -2761,9 +2833,13 @@
       "channelMapDirectionBoth": "A ↔ B",
 
       "pidControllerScenarioName": "PID controller (analog outputs)",
-      "pidControllerScenarioDescription": "PID controller for analog outputs — valves, dampers, frequency inverters (0–10 V, 4–20 mA, 0–100 %).<br><br>The scenario reads the sensor, computes the required power 0–100 % every recalculation interval and maps it to each actuator's range (minimum, maximum) according to the direct or reverse action.",
+      "pidControllerScenarioDescription": "PID controller for analog outputs — valves, dampers, frequency inverters (0–10 V, 4–20 mA, 0–100 %). Heating and cooling are enabled separately, each with its own setpoint and outputs.<br><br>The scenario reads the sensor, computes the required power 0–100 % every recalculation interval and maps it to each actuator's range (minimum, maximum) according to the direct or reverse action.",
       "pidControllerDefaultInputName": "PID Controller",
       "pidControllerSensorTitle": "Temperature Channel",
+      "pidControllerHeatingEnabledTitle": "Enable Heating",
+      "pidControllerHeatingTitle": "Heating Settings",
+      "pidControllerCoolingEnabledTitle": "Enable Cooling",
+      "pidControllerCoolingTitle": "Cooling Settings",
       "pidControllerSetpointTitle": "Setpoint",
       "pidControllerDeadbandTitle": "Deadband",
       "pidControllerDeadbandDescription": "Within ±deadband around the setpoint, P/I/D components are multiplied by 0.1 to avoid chattering",
@@ -2976,9 +3052,13 @@
       "channelMapDirectionBoth": "A ↔ B",
 
       "pidControllerScenarioName": "ПИД-регулятор (аналоговые выходы)",
-      "pidControllerScenarioDescription": "ПИД-регулятор для аналоговых выходов — клапанов, заслонок, частотных преобразователей (0–10 В, 4–20 мА, 0–100 %).<br><br>Сценарий считывает датчик, каждый интервал пересчёта рассчитывает требуемую мощность 0–100 % и пересчитывает её в диапазон каждого актуатора (минимум, максимум) согласно режиму прямой или обратный.",
+      "pidControllerScenarioDescription": "ПИД-регулятор для аналоговых выходов — клапанов, заслонок, частотных преобразователей (0–10 В, 4–20 мА, 0–100 %). Нагрев и охлаждение включаются отдельно, у каждого своя уставка и свои выходы.<br><br>Сценарий считывает датчик, каждый интервал пересчёта рассчитывает требуемую мощность 0–100 % и пересчитывает её в диапазон каждого актуатора (минимум, максимум) согласно режиму прямой или обратный.",
       "pidControllerDefaultInputName": "ПИД-регулятор",
       "pidControllerSensorTitle": "Канал температуры",
+      "pidControllerHeatingEnabledTitle": "Включить нагрев",
+      "pidControllerHeatingTitle": "Настройки нагрева",
+      "pidControllerCoolingEnabledTitle": "Включить охлаждение",
+      "pidControllerCoolingTitle": "Настройки охлаждения",
       "pidControllerSetpointTitle": "Уставка",
       "pidControllerDeadbandTitle": "Зона нечувствительности",
       "pidControllerDeadbandDescription": "В пределах ±зоны от уставки компоненты P/I/D умножаются на 0.1, чтобы избежать частых переключений",

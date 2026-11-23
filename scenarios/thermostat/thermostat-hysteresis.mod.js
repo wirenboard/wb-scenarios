@@ -26,9 +26,18 @@ var HeatFlowDirection = require('constants.mod').HeatFlowDirection;
  * @param {HeatFlowDirection} heatFlowDirection - Heat flow direction of the circuit
  * @param {number} hysteresis - Switching range around the setpoint (°C)
  * @param {RegulatedCircuit} circuit - Circuit to regulate
+ * @throws {Error} If heatFlowDirection is not a HeatFlowDirection value
  * @constructor
  */
 function HysteresisRegulator(heatFlowDirection, hysteresis, circuit) {
+  if (
+    heatFlowDirection !== HeatFlowDirection.HEATING &&
+    heatFlowDirection !== HeatFlowDirection.COOLING
+  ) {
+    throw new Error(
+      'Unknown heat flow direction "' + heatFlowDirection + '"'
+    );
+  }
   this.isHeating = heatFlowDirection === HeatFlowDirection.HEATING;
   this.hysteresis = hysteresis;
   this.circuit = circuit;

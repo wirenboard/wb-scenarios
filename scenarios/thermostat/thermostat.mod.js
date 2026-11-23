@@ -20,6 +20,13 @@ var HysteresisRegulator =
   require('thermostat-hysteresis.mod').HysteresisRegulator;
 var PidRegulator = require('thermostat-pid.mod').PidRegulator;
 var CircuitSwitcher = require('circuit-switcher.mod').CircuitSwitcher;
+var getEnabledCircuitNames =
+  require('circuit-switcher.mod').getEnabledCircuitNames;
+var getEnabledCircuitsActuators =
+  require('circuit-switcher.mod').getEnabledCircuitsActuators;
+var getCircuitsLinkErrors =
+  require('circuit-switcher.mod').getCircuitsLinkErrors;
+var getPidSettingsErrors = require('pid-engine.mod').getPidSettingsErrors;
 
 var hasCriticalErr = require('wbsc-wait-controls.mod').hasCriticalErr;
 var isControlTypeValid =
@@ -92,7 +99,7 @@ var thermostatActionsTable = {
 /**
  * Runtime of one enabled circuit
  * The regulator gets the circuit and uses name, getTemperature, getSetpoint,
- * setWorking and log
+ * setWorking and log, CircuitSwitcher also uses showSetpointError
  * @typedef {Object} Circuit
  * @property {HeatFlowDirection} name - Circuit name
  * @property {ThermostatCircuitConfig} cfg - Circuit configuration
@@ -100,6 +107,8 @@ var thermostatActionsTable = {
  * @property {function(): number} getSetpoint - Setpoint of the circuit
  * @property {function(boolean): void} setWorking - Turns the circuit on or off,
  *   each channel follows its behaviorType
+ * @property {function(boolean): void} showSetpointError - Shows or clears
+ *   the error on the setpoint control
  * @property {Logger} log - Logger of the scenario
  * @property {HysteresisRegulator|PidRegulator} regulator - Regulator
  */
@@ -236,19 +245,6 @@ function getTargetTempStorageKey(circuitName) {
 }
 
 /**
- * Names of the enabled circuits
- * @param {ThermostatConfig} cfg - Configuration object
- * @returns {Array<HeatFlowDirection>} Enabled circuit names
- */
-function getEnabledCircuitNames(cfg) {
-  return [HeatFlowDirection.HEATING, HeatFlowDirection.COOLING].filter(
-    function isEnabled(circuitName) {
-      return !!cfg[circuitName];
-    }
-  );
-}
-
-/**
  * Generates name identifiers for virtual device and rules
  * @param {string} idPrefix - ID prefix for this scenario instance
  * @returns {Object} Generated names
@@ -271,13 +267,7 @@ ThermostatScenario.prototype.generateNames = function (idPrefix) {
  * @returns {Object} Waiting configuration object
  */
 ThermostatScenario.prototype.defineControlsWaitConfig = function (cfg) {
-  var actuatorTopics = [];
-  getEnabledCircuitNames(cfg).forEach(function addTopics(circuitName) {
-    actuatorTopics = actuatorTopics.concat(
-      extractMqttTopics(cfg[circuitName].actuators || [])
-    );
-  });
-
+  var actuatorTopics = extractMqttTopics(getEnabledCircuitsActuators(cfg));
   var allTopics = [].concat(cfg.tempSensor, actuatorTopics);
   return { controls: allTopics };
 };
@@ -381,61 +371,17 @@ function validateCircuitCfg(circuitName, cfg) {
       );
       return false;
     }
-    if (
-      typeof cfg.pidSettings.deadBand !== 'number' ||
-      cfg.pidSettings.deadBand < 0
-    ) {
+    getPidSettingsErrors(
+      cfg.pidSettings.pidCoefficients,
+      cfg.pidSettings.deadBand
+    ).forEach(function logPidError(errorText) {
       log.error(
-        '{}: Thermostat validation error: dead band must be a number >= 0, but got "{}"',
+        '{}: Thermostat validation error: {}',
         circuitName,
-        cfg.pidSettings.deadBand
+        errorText
       );
       isPidValid = false;
-    }
-    if (
-      !cfg.pidSettings.pidCoefficients ||
-      typeof cfg.pidSettings.pidCoefficients !== 'object'
-    ) {
-      log.error(
-        '{}: Thermostat validation error: PID coefficients object is missing',
-        circuitName
-      );
-      isPidValid = false;
-    } else {
-      if (
-        typeof cfg.pidSettings.pidCoefficients.kp !== 'number' ||
-        cfg.pidSettings.pidCoefficients.kp < 0
-      ) {
-        log.error(
-          '{}: Thermostat validation error: Kp must be a number >= 0, but got "{}"',
-          circuitName,
-          cfg.pidSettings.pidCoefficients.kp
-        );
-        isPidValid = false;
-      }
-      if (
-        typeof cfg.pidSettings.pidCoefficients.ki !== 'number' ||
-        cfg.pidSettings.pidCoefficients.ki < 0
-      ) {
-        log.error(
-          '{}: Thermostat validation error: Ki must be a number >= 0, but got "{}"',
-          circuitName,
-          cfg.pidSettings.pidCoefficients.ki
-        );
-        isPidValid = false;
-      }
-      if (
-        typeof cfg.pidSettings.pidCoefficients.kd !== 'number' ||
-        cfg.pidSettings.pidCoefficients.kd < 0
-      ) {
-        log.error(
-          '{}: Thermostat validation error: Kd must be a number >= 0, but got "{}"',
-          circuitName,
-          cfg.pidSettings.pidCoefficients.kd
-        );
-        isPidValid = false;
-      }
-    }
+    });
     if (
       typeof cfg.pidSettings.pwmPeriodSec !== 'number' ||
       cfg.pidSettings.pwmPeriodSec <= 0 ||
@@ -550,47 +496,20 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
     }
   });
 
-  var isActuatorsUnique = true;
-  if (isCircuitsValid) {
-    var usedTopics = [];
-    var repeatedTopics = [];
-    circuitNames.forEach(function collectTopics(circuitName) {
-      extractMqttTopics(cfg[circuitName].actuators).forEach(
-        function checkTopic(topic) {
-          if (usedTopics.indexOf(topic) === -1) {
-            usedTopics.push(topic);
-          } else if (repeatedTopics.indexOf(topic) === -1) {
-            repeatedTopics.push(topic);
-          }
-        }
-      );
-    });
-    if (repeatedTopics.length > 0) {
-      log.error(
-        'Thermostat validation error: channels "{}" are used more than once',
-        repeatedTopics.join(', ')
-      );
-      isActuatorsUnique = false;
-    }
-  }
-
   var isCircuitsCompatible = true;
-  if (isCircuitsValid && circuitNames.length === 2) {
-    if (cfg.heating.targetTemp >= cfg.cooling.targetTemp) {
-      log.error(
-        'Thermostat validation error: heating target temperature "{}" must be below cooling target temperature "{}"',
-        cfg.heating.targetTemp,
-        cfg.cooling.targetTemp
-      );
-      isCircuitsCompatible = false;
-    }
+  if (isCircuitsValid) {
+    getCircuitsLinkErrors(cfg, 'targetTemp').forEach(
+      function logLinkError(errorText) {
+        log.error('Thermostat validation error: {}', errorText);
+        isCircuitsCompatible = false;
+      }
+    );
   }
 
   return (
     isTargetTempStepCorrect &&
     isTempSensorValid &&
     isCircuitsValid &&
-    isActuatorsUnique &&
     isCircuitsCompatible
   );
 };
@@ -752,6 +671,9 @@ function createCircuit(self, circuitName, circuitCfg) {
         );
       }
     },
+    showSetpointError: function showSetpointError(isError) {
+      vdCtrlTargetTemp.setError(isError ? 'r' : '');
+    },
     log: log,
     regulator: null, // Set below, the regulator gets this circuit
   };
@@ -775,37 +697,6 @@ function createCircuit(self, circuitName, circuitCfg) {
     );
   }
   return circuit;
-}
-
-/**
- * Checks whether the circuits may regulate
- * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @returns {boolean} True if the scenario is enabled and setpoints are valid
- */
-function canRegulate(self) {
-  var isEnabled = self.vd.devObj.getControl(vdCtrl.ruleEnabled).getValue();
-  return isEnabled && !self.ctx.switcher.isSetpointsCrossed;
-}
-
-/**
- * Checks the setpoints and marks both setpoint controls with an error
- * while the heating setpoint is not below the cooling one
- * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
- * @returns {boolean} True if the check result changed
- */
-function updateSetpointsCrossing(self) {
-  var switcher = self.ctx.switcher;
-  if (!switcher.checkSetpoints()) {
-    return false;
-  }
-
-  var ctrlError = switcher.isSetpointsCrossed ? 'r' : '';
-  Object.keys(self.ctx.circuits).forEach(function markSetpoint(name) {
-    self.vd.devObj
-      .getControl(getCircuitCtrlIds(name).targetTemp)
-      .setError(ctrlError);
-  });
-  return true;
 }
 
 /**
@@ -937,6 +828,12 @@ function createErrChangeRule(
           );
           self.setState(self.computeState(vdCtrlEnable.getValue()));
           vdCtrlEnable.setReadonly(true);
+          // The rule_enabled rule runs only after this callback. Stop the
+          // circuits now, so that a sensor change before that rule cannot
+          // start a circuit. A disabled scenario keeps its channels as is
+          if (self.ctx.switcher.isStarted) {
+            self.ctx.switcher.stop();
+          }
           vdCtrlEnable.setValue(false);
         } else {
           log.debug(
@@ -1059,16 +956,8 @@ function createCircuitRules(self, circuit) {
         log.error('Error saving {} to storage: {}', storageKey, err);
       }
 
-      var isEnabled = vdCtrlEnable.getValue();
-      var isCrossingChanged = updateSetpointsCrossing(self);
-      if (isCrossingChanged) {
-        // Channels of a disabled scenario stay untouched
-        if (isEnabled) {
-          self.ctx.switcher.start();
-        }
-        self.setState(self.computeState(isEnabled));
-      } else if (canRegulate(self)) {
-        self.ctx.switcher.updateActiveCircuit();
+      if (self.ctx.switcher.onSetpointChanged()) {
+        self.setState(self.computeState(vdCtrlEnable.getValue()));
       }
     },
   });
@@ -1183,10 +1072,7 @@ function createRules(self, cfg) {
     whenChanged: [cfg.tempSensor],
     then: function onTemperatureChanged(newValue) {
       vdCtrlCurTemp.setValue(newValue);
-
-      if (canRegulate(self)) {
-        self.ctx.switcher.updateActiveCircuit();
-      }
+      self.ctx.switcher.updateActiveCircuit();
     },
   });
   if (!ruleId) {
@@ -1278,8 +1164,10 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       this.ctx.suppressNextDisable = true;
     }
 
-    // Setpoints saved from the card may cross even with a valid config
-    updateSetpointsCrossing(this);
+    // Setpoints saved from the card may cross even with a valid config.
+    // Check them before start(). Until this check, the switcher does not
+    // know about the crossing and start() can turn on a circuit
+    this.ctx.switcher.onSetpointChanged();
     if (enabledFromStorage) {
       this.ctx.switcher.start();
     }
