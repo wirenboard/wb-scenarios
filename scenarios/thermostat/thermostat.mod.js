@@ -28,6 +28,7 @@ var extractMqttTopics =
   require('scenarios-general-helpers.mod').extractMqttTopics;
 
 var loggerFileLabel = 'WBSC-thermostat-mod';
+var log = new Logger(loggerFileLabel);
 
 /**
  * Actions table for thermostat actuators.
@@ -90,7 +91,7 @@ var thermostatActionsTable = {
 
 /**
  * Runtime of one enabled circuit
- * The regulator gets the circuit and uses getTemperature, getSetpoint,
+ * The regulator gets the circuit and uses name, getTemperature, getSetpoint,
  * setWorking and log
  * @typedef {Object} Circuit
  * @property {HeatFlowDirection} name - Circuit name
@@ -99,7 +100,7 @@ var thermostatActionsTable = {
  * @property {function(): number} getSetpoint - Setpoint of the circuit
  * @property {function(boolean): void} setWorking - Turns the circuit on or off,
  *   each channel follows its behaviorType
- * @property {Logger} log - Logger of the circuit
+ * @property {Logger} log - Logger of the scenario
  * @property {HysteresisRegulator|PidRegulator} regulator - Regulator
  */
 
@@ -147,7 +148,6 @@ function ThermostatScenario() {
     suppressNextDisable: false,
     circuits: {}, // Enabled circuits by name
     switcher: null, // Picks the active circuit, created in initSpecific
-    log: null, // Logger labeled with this scenario, created in validateCfg
   };
 }
 ThermostatScenario.prototype = Object.create(ScenarioBase.prototype);
@@ -300,21 +300,16 @@ ThermostatScenario.prototype.computeState = function (isEnabled) {
 
 /**
  * Validates configuration of one circuit
- * @param {ThermostatScenario} self - Reference to the ThermostatScenario instance
  * @param {HeatFlowDirection} circuitName - Circuit name
  * @param {ThermostatCircuitConfig} cfg - Circuit configuration
  * @returns {boolean} True if configuration is valid, false otherwise
  */
-function validateCircuitCfg(self, circuitName, cfg) {
-  // The circuit label in the log tells heating from cooling
-  var log = new Logger(
-    loggerFileLabel + '/' + self.idPrefix + '/' + circuitName
-  );
-
+function validateCircuitCfg(circuitName, cfg) {
   var isLimitsCorrect = cfg.tempLimitsMin < cfg.tempLimitsMax;
   if (!isLimitsCorrect) {
     log.error(
-      'Thermostat validation error: temperature limit "Min" = "{}" must be less than "Max" = "{}"',
+      '{}: Thermostat validation error: temperature limit "Min" = "{}" must be less than "Max" = "{}"',
+      circuitName,
       cfg.tempLimitsMin,
       cfg.tempLimitsMax
     );
@@ -325,7 +320,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
     cfg.targetTemp <= cfg.tempLimitsMax;
   if (!isTargetTempCorrect) {
     log.error(
-      'Thermostat validation error: target temperature "{}" must be in the range from "Min" to "Max"',
+      '{}: Thermostat validation error: target temperature "{}" must be in the range from "Min" to "Max"',
+      circuitName,
       cfg.targetTemp
     );
   }
@@ -334,7 +330,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
   if (cfg.controlMode === 'hysteresis') {
     if (!(cfg.hysteresis > 0)) {
       log.error(
-        'Thermostat validation error: hysteresis value must be greater than 0, but got "{}"',
+        '{}: Thermostat validation error: hysteresis value must be greater than 0, but got "{}"',
+        circuitName,
         cfg.hysteresis
       );
       isHysteresisCorrect = false;
@@ -344,7 +341,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
   // Validate actuators array
   if (!Array.isArray(cfg.actuators) || cfg.actuators.length === 0) {
     log.error(
-      'Thermostat validation error: at least one actuator is required'
+      '{}: Thermostat validation error: at least one actuator is required',
+      circuitName
     );
     return false;
   }
@@ -354,7 +352,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
     var act = cfg.actuators[i];
     if (!thermostatActionsTable[act.behaviorType]) {
       log.error(
-        'Thermostat validation error: invalid behaviorType "{}" for actuator "{}"',
+        '{}: Thermostat validation error: invalid behaviorType "{}" for actuator "{}"',
+        circuitName,
         act.behaviorType,
         act.mqttTopicName
       );
@@ -364,7 +363,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
     var reqCtrlTypes = thermostatActionsTable[act.behaviorType].reqCtrlTypes;
     if (!isControlTypeValid(act.mqttTopicName, reqCtrlTypes)) {
       log.error(
-        'Thermostat validation error: actuator "{}" must be of type "switch"',
+        '{}: Thermostat validation error: actuator "{}" must be of type "switch"',
+        circuitName,
         act.mqttTopicName
       );
       isActuatorsValid = false;
@@ -375,7 +375,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
   if (cfg.controlMode === 'pid') {
     if (!cfg.pidSettings || typeof cfg.pidSettings !== 'object') {
       log.error(
-        'Thermostat validation error: pidSettings object is missing, but got "{}"',
+        '{}: Thermostat validation error: pidSettings object is missing, but got "{}"',
+        circuitName,
         cfg.pidSettings
       );
       return false;
@@ -385,7 +386,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
       cfg.pidSettings.deadBand < 0
     ) {
       log.error(
-        'Thermostat validation error: dead band must be a number >= 0, but got "{}"',
+        '{}: Thermostat validation error: dead band must be a number >= 0, but got "{}"',
+        circuitName,
         cfg.pidSettings.deadBand
       );
       isPidValid = false;
@@ -395,7 +397,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
       typeof cfg.pidSettings.pidCoefficients !== 'object'
     ) {
       log.error(
-        'Thermostat validation error: PID coefficients object is missing'
+        '{}: Thermostat validation error: PID coefficients object is missing',
+        circuitName
       );
       isPidValid = false;
     } else {
@@ -404,7 +407,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
         cfg.pidSettings.pidCoefficients.kp < 0
       ) {
         log.error(
-          'Thermostat validation error: Kp must be a number >= 0, but got "{}"',
+          '{}: Thermostat validation error: Kp must be a number >= 0, but got "{}"',
+          circuitName,
           cfg.pidSettings.pidCoefficients.kp
         );
         isPidValid = false;
@@ -414,7 +418,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
         cfg.pidSettings.pidCoefficients.ki < 0
       ) {
         log.error(
-          'Thermostat validation error: Ki must be a number >= 0, but got "{}"',
+          '{}: Thermostat validation error: Ki must be a number >= 0, but got "{}"',
+          circuitName,
           cfg.pidSettings.pidCoefficients.ki
         );
         isPidValid = false;
@@ -424,7 +429,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
         cfg.pidSettings.pidCoefficients.kd < 0
       ) {
         log.error(
-          'Thermostat validation error: Kd must be a number >= 0, but got "{}"',
+          '{}: Thermostat validation error: Kd must be a number >= 0, but got "{}"',
+          circuitName,
           cfg.pidSettings.pidCoefficients.kd
         );
         isPidValid = false;
@@ -436,7 +442,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
       cfg.pidSettings.pwmPeriodSec % 1 !== 0
     ) {
       log.error(
-        'Thermostat validation error: Cycle period must be an integer > 0, but got "{}"',
+        '{}: Thermostat validation error: Cycle period must be an integer > 0, but got "{}"',
+        circuitName,
         cfg.pidSettings.pwmPeriodSec
       );
       isPidValid = false;
@@ -447,7 +454,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
       cfg.pidSettings.pidRecalcCycles % 1 !== 0
     ) {
       log.error(
-        'Thermostat validation error: PID recalc cycles must be an integer >= 1, but got "{}"',
+        '{}: Thermostat validation error: PID recalc cycles must be an integer >= 1, but got "{}"',
+        circuitName,
         cfg.pidSettings.pidRecalcCycles
       );
       isPidValid = false;
@@ -457,7 +465,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
       cfg.pidSettings.minOnTimeSec < 0
     ) {
       log.error(
-        'Thermostat validation error: min ON time must be a number >= 0, but got "{}"',
+        '{}: Thermostat validation error: min ON time must be a number >= 0, but got "{}"',
+        circuitName,
         cfg.pidSettings.minOnTimeSec
       );
       isPidValid = false;
@@ -467,7 +476,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
       cfg.pidSettings.minOffTimeSec < 0
     ) {
       log.error(
-        'Thermostat validation error: min OFF time must be a number >= 0, but got "{}"',
+        '{}: Thermostat validation error: min OFF time must be a number >= 0, but got "{}"',
+        circuitName,
         cfg.pidSettings.minOffTimeSec
       );
       isPidValid = false;
@@ -478,7 +488,8 @@ function validateCircuitCfg(self, circuitName, cfg) {
         cfg.pidSettings.minOnTimeSec + cfg.pidSettings.minOffTimeSec
     ) {
       log.error(
-        'Thermostat validation error: Cycle period ({}) must be greater than min ON time ({}) + min OFF time ({}) = {}',
+        '{}: Thermostat validation error: Cycle period ({}) must be greater than min ON time ({}) + min OFF time ({}) = {}',
+        circuitName,
         cfg.pidSettings.pwmPeriodSec,
         cfg.pidSettings.minOnTimeSec,
         cfg.pidSettings.minOffTimeSec,
@@ -504,13 +515,11 @@ function validateCircuitCfg(self, circuitName, cfg) {
  * @returns {boolean} True if configuration is valid, false otherwise
  */
 ThermostatScenario.prototype.validateCfg = function (cfg) {
-  // validateCfg is the first method that logs
-  this.ctx.log = new Logger(loggerFileLabel + '/' + this.idPrefix);
   var self = this;
 
   var isTargetTempStepCorrect = isRangeStepValid(cfg.targetTempStep);
   if (!isTargetTempStepCorrect) {
-    self.ctx.log.error(
+    log.error(
       'Thermostat validation error: target temperature step must be a number > 0, but got "{}"',
       cfg.targetTempStep
     );
@@ -522,7 +531,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
     tempSensorType === 'value' ||
     tempSensorType === 'temperature';
   if (!isTempSensorValid) {
-    self.ctx.log.error(
+    log.error(
       'Thermostat validation error: sensor type must be "value" or "temperature", but got "{}"',
       tempSensorType
     );
@@ -530,7 +539,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
 
   var circuitNames = getEnabledCircuitNames(cfg);
   if (circuitNames.length === 0) {
-    self.ctx.log.error(
+    log.error(
       'Thermostat validation error: heating, cooling or both must be enabled'
     );
     return false;
@@ -538,7 +547,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
 
   var isCircuitsValid = true;
   circuitNames.forEach(function checkCircuit(circuitName) {
-    if (!validateCircuitCfg(self, circuitName, cfg[circuitName])) {
+    if (!validateCircuitCfg(circuitName, cfg[circuitName])) {
       isCircuitsValid = false;
     }
   });
@@ -559,7 +568,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
       );
     });
     if (repeatedTopics.length > 0) {
-      self.ctx.log.error(
+      log.error(
         'Thermostat validation error: channels "{}" are used more than once',
         repeatedTopics.join(', ')
       );
@@ -570,7 +579,7 @@ ThermostatScenario.prototype.validateCfg = function (cfg) {
   var isCircuitsCompatible = true;
   if (isCircuitsValid && circuitNames.length === 2) {
     if (cfg.heating.targetTemp >= cfg.cooling.targetTemp) {
-      self.ctx.log.error(
+      log.error(
         'Thermostat validation error: heating target temperature "{}" must be below cooling target temperature "{}"',
         cfg.heating.targetTemp,
         cfg.cooling.targetTemp
@@ -685,9 +694,8 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemps) {
  * Only writes to actuators whose current state differs from desired.
  * @param {Array<ActuatorConfig>} actuators - List of actuator configurations
  * @param {boolean} shouldWork - Whether the circuit should work
- * @param {Logger} circuitLog - Logger of the circuit
  */
-function applyToActuators(actuators, shouldWork, circuitLog) {
+function applyToActuators(actuators, shouldWork) {
   for (var i = 0; i < actuators.length; i++) {
     var act = actuators[i];
     try {
@@ -697,7 +705,7 @@ function applyToActuators(actuators, shouldWork, circuitLog) {
         dev[act.mqttTopicName] = desiredValue;
       }
     } catch (error) {
-      circuitLog.error(
+      log.error(
         'Failed to set actuator "{}": {}',
         act.mqttTopicName,
         error.message || error
@@ -718,9 +726,6 @@ function createCircuit(self, circuitName, circuitCfg) {
   var ctrlIds = getCircuitCtrlIds(circuitName);
   var vdCtrlTargetTemp = self.vd.devObj.getControl(ctrlIds.targetTemp);
   var vdCtrlStatus = self.vd.devObj.getControl(ctrlIds.actuatorStatus);
-  var circuitLog = new Logger(
-    loggerFileLabel + '/' + self.idPrefix + '/' + circuitName
-  );
 
   // The regulator reads the temperature and the setpoint and turns
   // the circuit on or off only through these functions
@@ -736,18 +741,19 @@ function createCircuit(self, circuitName, circuitCfg) {
     },
     // Writes the channels of the circuit and its status on the card
     setWorking: function setWorking(shouldWork) {
-      applyToActuators(circuitCfg.actuators, shouldWork, circuitLog);
+      applyToActuators(circuitCfg.actuators, shouldWork);
       if (vdCtrlStatus.getValue() !== shouldWork) {
         vdCtrlStatus.setValue(shouldWork);
-        circuitLog.debug(
-          'Turned {}, current/target temperatures: "{}"/"{}" °C',
+        log.debug(
+          '{}: Turned {}, current/target temperatures: "{}"/"{}" °C',
+          circuitName,
           shouldWork ? 'ON' : 'OFF',
           circuit.getTemperature(),
           circuit.getSetpoint()
         );
       }
     },
-    log: circuitLog,
+    log: log,
     regulator: null, // Set below, the regulator gets this circuit
   };
 
@@ -889,7 +895,7 @@ function createErrChangeRule(
       }
 
       if (!hasCriticalErr(newValue)) {
-        self.ctx.log.debug(
+        log.debug(
           'Error cleared or non-critical error (p) detected for topic "{}". New state: "{}"',
           sourceErrTopic,
           newValue
@@ -901,7 +907,7 @@ function createErrChangeRule(
         if (self.ctx.errorTimers[sourceErrTopic]) {
           clearTimeout(self.ctx.errorTimers[sourceErrTopic]);
           self.ctx.errorTimers[sourceErrTopic] = null;
-          self.ctx.log.debug(
+          log.debug(
             'Debounce timer for error for topic "{}" disabled',
             sourceErrTopic
           );
@@ -909,7 +915,7 @@ function createErrChangeRule(
         return;
       }
 
-      self.ctx.log.warning(
+      log.warning(
         'Get critical error (r/w) for topic "{}". New error state: "{}"',
         sourceErrTopic,
         newValue
@@ -924,7 +930,7 @@ function createErrChangeRule(
         // When timer stop - check still critical errors r/w
         var currentErrorVal = dev[sourceErrTopic];
         if (hasCriticalErr(currentErrorVal)) {
-          self.ctx.log.error(
+          log.error(
             'Scenario disabled: critical error (r/w) for topic "{}" not cleared for {} ms. Current error state: "{}"',
             sourceErrTopic,
             self.ctx.errorCheckTimeoutMs,
@@ -934,7 +940,7 @@ function createErrChangeRule(
           vdCtrlEnable.setReadonly(true);
           vdCtrlEnable.setValue(false);
         } else {
-          self.ctx.log.debug(
+          log.debug(
             'Error in topic "{}" cleared before timer disabled. Scenario still running.',
             sourceErrTopic
           );
@@ -982,7 +988,7 @@ function restoreTargetTemperature(self, circuitName, cfg) {
         if (typeof oldTemp === 'number') {
           storedTemp = oldTemp;
           oldPs[self.idPrefix] = null;
-          self.ctx.log.debug(
+          log.debug(
             'Migrated targetTemp="{}" from old storage for scenario="{}"',
             storedTemp,
             self.idPrefix
@@ -990,7 +996,7 @@ function restoreTargetTemperature(self, circuitName, cfg) {
         }
       }
     } catch (err) {
-      self.ctx.log.error('Error reading old persistent storage: {}', err);
+      log.error('Error reading old persistent storage: {}', err);
     }
   }
 
@@ -1001,7 +1007,7 @@ function restoreTargetTemperature(self, circuitName, cfg) {
 
   if (isValidStoredTemp) {
     self.setPsUserSetting(storageKey, storedTemp);
-    self.ctx.log.debug(
+    log.debug(
       'Restored {}="{}" for scenario="{}"',
       storageKey,
       storedTemp,
@@ -1016,7 +1022,7 @@ function restoreTargetTemperature(self, circuitName, cfg) {
 
   // Show warning only if something was stored but invalid
   if (typeof storedTemp === 'number') {
-    self.ctx.log.warning(
+    log.warning(
       'Stored temp="{}" is out of range or invalid for "{}". Reset to "{}"',
       storedTemp,
       storageKey,
@@ -1045,17 +1051,13 @@ function createCircuitRules(self, circuit) {
     then: function onTargetTempChanged(newValue) {
       try {
         self.setPsUserSetting(storageKey, newValue);
-        self.ctx.log.debug(
+        log.debug(
           '{} "{}" saved in persistent storage',
           storageKey,
           newValue
         );
       } catch (err) {
-        self.ctx.log.error(
-          'Error saving {} to storage: {}',
-          storageKey,
-          err
-        );
+        log.error('Error saving {} to storage: {}', storageKey, err);
       }
 
       var isEnabled = vdCtrlEnable.getValue();
@@ -1072,13 +1074,10 @@ function createCircuitRules(self, circuit) {
     },
   });
   if (!ruleId) {
-    self.ctx.log.error(
-      'Failed to create {} target temperature rule',
-      circuit.name
-    );
+    log.error('Failed to create {} target temperature rule', circuit.name);
     return false;
   }
-  self.ctx.log.debug(
+  log.debug(
     '{} target temperature rule created with ID "{}"',
     circuit.name,
     ruleId
@@ -1095,15 +1094,11 @@ function createCircuitRules(self, circuit) {
     },
   });
   if (!ruleId) {
-    self.ctx.log.error('Failed to create {} PID reset rule', circuit.name);
+    log.error('Failed to create {} PID reset rule', circuit.name);
     return false;
   }
   self.addRule(ruleId);
-  self.ctx.log.debug(
-    '{} PID reset rule created with ID "{}"',
-    circuit.name,
-    ruleId
-  );
+  log.debug('{} PID reset rule created with ID "{}"', circuit.name, ruleId);
 
   return true;
 }
@@ -1131,14 +1126,11 @@ function createErrorRules(self, cfg) {
     null
   );
   if (!ruleId) {
-    self.ctx.log.error('Failed to create tempSensor error handling rule');
+    log.error('Failed to create tempSensor error handling rule');
     return false;
   }
   // This rule not disable when user use switch in virtual device
-  self.ctx.log.debug(
-    'Temp. sensor error handling rule created with ID="{}"',
-    ruleId
-  );
+  log.debug('Temp. sensor error handling rule created with ID="{}"', ruleId);
 
   // Error handling rules for each actuator, shown on the circuit status
   var circuitNames = Object.keys(self.ctx.circuits);
@@ -1160,14 +1152,14 @@ function createErrorRules(self, cfg) {
         actuators
       );
       if (!ruleId) {
-        self.ctx.log.error(
+        log.error(
           'Failed to create error handling rule for actuator "{}"',
           actuators[i].mqttTopicName
         );
         return false;
       }
       // This rule not disable when user use switch in virtual device
-      self.ctx.log.debug(
+      log.debug(
         'Actuator error handling rule created for "{}" with ID="{}"',
         actuators[i].mqttTopicName,
         ruleId
@@ -1199,14 +1191,11 @@ function createRules(self, cfg) {
     },
   });
   if (!ruleId) {
-    self.ctx.log.error('Failed to create temperature changed rule');
+    log.error('Failed to create temperature changed rule');
     return false;
   }
   // This rule not disable when user use switch in virtual device
-  self.ctx.log.debug(
-    'Temperature changed rule created with ID "{}"',
-    ruleId
-  );
+  log.debug('Temperature changed rule created with ID "{}"', ruleId);
 
   ruleId = defineRule(self.genNames.ruleSetScStatus, {
     whenChanged: [self.genNames.vDevice + '/' + vdCtrl.ruleEnabled],
@@ -1217,18 +1206,18 @@ function createRules(self, cfg) {
       }
       if (self.ctx.suppressNextDisable) {
         self.ctx.suppressNextDisable = false;
-        self.ctx.log.debug('Skipping initial disable from storage restore');
+        log.debug('Skipping initial disable from storage restore');
         return;
       }
       self.ctx.switcher.stop();
     },
   });
   if (!ruleId) {
-    self.ctx.log.error('Failed to create scenario status rule');
+    log.error('Failed to create scenario status rule');
     return false;
   }
   // This rule is not managed when user use switch enable/disable in vdev
-  self.ctx.log.debug('Scenario status rule created with ID "{}"', ruleId);
+  log.debug('Scenario status rule created with ID "{}"', ruleId);
 
   var circuitNames = Object.keys(self.ctx.circuits);
   for (var i = 0; i < circuitNames.length; i++) {
@@ -1257,7 +1246,8 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
    * No need to re-validate or check control existence here.
    */
   var self = this;
-  this.ctx.log.debug('Start init thermostat scenario');
+  log.debug('Start init thermostat scenario');
+  log.setLabel(loggerFileLabel + '/' + this.idPrefix);
 
   // Restore the target temperature of each circuit from storage
   var initialTemps = {};
@@ -1278,7 +1268,7 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       cfg[circuitName]
     );
   });
-  this.ctx.switcher = new CircuitSwitcher(this.ctx.circuits, this.ctx.log);
+  this.ctx.switcher = new CircuitSwitcher(this.ctx.circuits, log);
 
   // Create all rules
   var rulesCreated = createRules(this, cfg);
@@ -1295,7 +1285,7 @@ ThermostatScenario.prototype.initSpecific = function (deviceTitle, cfg) {
       this.ctx.switcher.start();
     }
 
-    this.ctx.log.debug(
+    log.debug(
       'Thermostat scenario initialized successfully for device "{}"',
       deviceTitle
     );

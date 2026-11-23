@@ -10,10 +10,11 @@ var HeatFlowDirection = require('constants.mod').HeatFlowDirection;
 /**
  * Circuit as the regulator uses it
  * @typedef {Object} RegulatedCircuit
+ * @property {string} name - Circuit name, starts each log line
  * @property {function(): number} getTemperature - Current temperature
  * @property {function(): number} getSetpoint - Setpoint of the circuit
  * @property {function(boolean): void} setWorking - Turns the circuit on or off
- * @property {Object} log - Logger of the circuit
+ * @property {Object} log - Logger of the scenario
  */
 
 /**
@@ -38,6 +39,7 @@ function HysteresisRegulator(heatFlowDirection, hysteresis, circuit) {
  */
 HysteresisRegulator.prototype.start = function start() {
   this.update();
+  this.circuit.log.debug('{}: Hysteresis mode started', this.circuit.name);
 };
 
 /**
@@ -45,6 +47,7 @@ HysteresisRegulator.prototype.start = function start() {
  */
 HysteresisRegulator.prototype.stop = function stop() {
   this.circuit.setWorking(false);
+  this.circuit.log.debug('{}: Hysteresis mode stopped', this.circuit.name);
 };
 
 /**

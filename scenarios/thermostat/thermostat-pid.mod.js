@@ -32,10 +32,11 @@ var MS_PER_SECOND = constants.MS_PER_SECOND;
 /**
  * Circuit as the regulator uses it
  * @typedef {Object} RegulatedCircuit
+ * @property {string} name - Circuit name, starts each log line
  * @property {function(): number} getTemperature - Current temperature
  * @property {function(): number} getSetpoint - Setpoint of the circuit
  * @property {function(boolean): void} setWorking - Turns the circuit on or off
- * @property {Object} log - Logger of the circuit
+ * @property {Object} log - Logger of the scenario
  */
 
 /**
@@ -85,7 +86,7 @@ PidRegulator.prototype.start = function start() {
   this.pidOutput = 0;
   this.lastComputeTime = null; // Reset timestamp on start
   this._runPwmCycle();
-  this.circuit.log.debug('PID mode started');
+  this.circuit.log.debug('{}: PID mode started', this.circuit.name);
 };
 
 /**
@@ -97,7 +98,10 @@ PidRegulator.prototype.stop = function stop() {
   this.circuit.setWorking(false);
   this.controls.outputPower.setValue(0);
   this.controls.outputTiming.setValue('-');
-  this.circuit.log.debug('PID mode stopped, timers cancelled');
+  this.circuit.log.debug(
+    '{}: PID mode stopped, timers cancelled',
+    this.circuit.name
+  );
 };
 
 /**
@@ -111,7 +115,7 @@ PidRegulator.prototype.update = function update() {};
  * A stopped regulator resets PID on its next start.
  */
 PidRegulator.prototype.reset = function reset() {
-  this.circuit.log.debug('PID reset by user');
+  this.circuit.log.debug('{}: PID reset by user', this.circuit.name);
   if (this.isStarted) {
     this.start();
   }
@@ -150,7 +154,8 @@ PidRegulator.prototype._recomputePidOutput = function recomputePidOutput() {
   if (this.lastComputeTime === null) {
     dt = configuredDt;
     this.circuit.log.debug(
-      'First PID cycle, using configured dt: {} sec',
+      '{}: First PID cycle, using configured dt: {} sec',
+      this.circuit.name,
       dt
     );
   } else {
@@ -159,7 +164,8 @@ PidRegulator.prototype._recomputePidOutput = function recomputePidOutput() {
 
     if (deviation > MAX_CYCLE_TIME_DEVIATION_RATIO) {
       this.circuit.log.warning(
-        'PID cycle time deviation: actual={} sec, configured={} sec (deviation={}%)',
+        '{}: PID cycle time deviation: actual={} sec, configured={} sec (deviation={}%)',
+        this.circuit.name,
         actualDt.toFixed(2),
         configuredDt,
         (deviation * 100).toFixed(1)
@@ -176,7 +182,8 @@ PidRegulator.prototype._recomputePidOutput = function recomputePidOutput() {
 
   var state = this.pid.getState();
   this.circuit.log.debug(
-    'PID computed: setpoint={} measurement={} output={} P={} I={} D={}',
+    '{}: PID computed: setpoint={} measurement={} output={} P={} I={} D={}',
+    this.circuit.name,
     setpoint,
     measurement,
     this.pidOutput.toFixed(1),
@@ -235,7 +242,8 @@ PidRegulator.prototype._runPwmCycle = function runPwmCycle() {
 
   if (constraintsApplied) {
     this.circuit.log.debug(
-      'Cycle adjusted: ON {}s -> {}s, OFF {}s -> {}s (PID output={}%)',
+      '{}: Cycle adjusted: ON {}s -> {}s, OFF {}s -> {}s (PID output={}%)',
+      this.circuit.name,
       originalOnTime.toFixed(2),
       onTime.toFixed(2),
       originalOffTime.toFixed(2),

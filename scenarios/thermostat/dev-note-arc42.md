@@ -221,10 +221,11 @@ scenariosRegistry[idPrefix].userSettings.coolingTargetTemp = <number>
 
 | Поле             | Назначение                                              |
 | ---------------- | ------------------------------------------------------- |
+| `name`           | Имя контура, с него начинаются строки лога контура      |
 | `getTemperature` | Текущая температура датчика                             |
 | `getSetpoint`    | Уставка контура с ползунка виртуального устройства      |
 | `setWorking`     | Включить или выключить контур, записать каналы и статус |
-| `log`            | Логгер с меткой сценария и контура                      |
+| `log`            | Логгер сценария                                         |
 
 Оба регулятора реализуют `start`, `stop` и `update`. Регулятор не знает о
 втором контуре и работает так же, как в сценарии с одним контуром.
@@ -319,7 +320,7 @@ ThermostatScenario extends ScenarioBase
 │   → [tempSensor, ...actuators[].mqttTopicName обоих контуров]
 │
 ├── validateCfg(cfg)
-│   → логгер сценария ctx.log, затем targetTempStep, sensorType, хотя бы один контур,
+│   → targetTempStep, sensorType, хотя бы один контур,
 │     для каждого контура limits, targetTemp, hysteresis, pidSettings, actuators,
 │     повтор канала во всех списках, между контурами пересечение уставок
 │
@@ -340,7 +341,7 @@ ThermostatScenario extends ScenarioBase
     ├── createCircuit()                # для каждого включённого контура
     │   → объект контура Circuit с регулятором
     │
-    ├── new CircuitSwitcher(ctx.circuits, ctx.log) → ctx.switcher
+    ├── new CircuitSwitcher(ctx.circuits, log) → ctx.switcher
     │
     ├── createRules()
     │   ├── ruleTempChanged            # whenChanged tempSensor
