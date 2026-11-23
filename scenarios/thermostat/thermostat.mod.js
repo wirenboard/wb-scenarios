@@ -515,8 +515,6 @@ function validateCircuitCfg(circuitName, cfg) {
  * @returns {boolean} True if configuration is valid, false otherwise
  */
 ThermostatScenario.prototype.validateCfg = function (cfg) {
-  var self = this;
-
   var isTargetTempStepCorrect = isRangeStepValid(cfg.targetTempStep);
   if (!isTargetTempStepCorrect) {
     log.error(
