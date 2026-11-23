@@ -677,6 +677,7 @@ function addCustomControlsToVirtualDevice(self, cfg, initialTemps) {
     type: 'value',
     units: 'deg C',
     value: dev[cfg.tempSensor],
+    forceDefault: true,
     order: 2,
     readonly: true,
   };
