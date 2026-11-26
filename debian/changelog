@@ -1,7 +1,7 @@
 wb-scenarios (1.10.8) stable; urgency=medium
 
-  * Update LICENSE: Wiren Board as the copyright holder,
-    2024 as the first publication year, use restricted to Wiren Board equipment
+  * Switch the license to MIT: Wiren Board as the copyright holder,
+    2024 as the first publication year
   * Fill debian/copyright in the DEP-5 format
 
  -- Ekaterina Volkova <ekaterina.volkova@wirenboard.com>  Thu, 12 Nov 2026 14:40:07 +0300
