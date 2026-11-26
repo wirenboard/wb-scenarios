@@ -49,6 +49,11 @@
             "default": "yourScenarioName",
             "options": {"hidden": true}
         },
+        "componentVersion": {
+            "type": "integer",
+            "default": 1,
+            "options": {"hidden": true}
+        },
         "enable": {
             "type": "boolean",
             "title": "Enable",
@@ -78,7 +83,7 @@
         }
         // ... кастомные поля
     },
-    "required": ["scenarioType", "enable", "name"]
+    "required": ["scenarioType", "componentVersion", "enable", "name"]
 }
 ```
 
@@ -203,6 +208,8 @@ var YourScenarioClass = require('./your-scenario.mod.js');
 var CFG = {
   scenarioTypeStr: 'yourScenarioName',
   reqVerScenario: 1,
+  reqVerGeneralCfg: 1,
+  configPath: '/etc/wb-scenarios.conf',
 };
 
 function initializeScenario(scenarioCfg) {
@@ -228,14 +235,20 @@ function setup() {
   var helpers = require('/usr/share/wb-rules-modules/scenarios-general-helpers');
 
   // Чтение и валидация конфигурации
-  var allCfg = helpers.readConfig();
-  if (allCfg === null) {
-    log.error('Failed to read configuration');
+  var allScenarios = helpers.readAndValidateScenariosConfig(
+    CFG.configPath,
+    CFG.reqVerGeneralCfg
+  );
+  if (!allScenarios) {
     return;
   }
 
-  // Фильтрация и инициализация сценариев
-  var scenarios = helpers.filterScenarios(allCfg, CFG.scenarioTypeStr);
+  // Фильтрация и инициализация сценариев с версией конфига CFG.reqVerScenario
+  var scenarios = helpers.findAllScenariosWithType(
+    allScenarios,
+    CFG.scenarioTypeStr,
+    CFG.reqVerScenario
+  );
   scenarios.forEach(initializeScenario);
 
   log.info(

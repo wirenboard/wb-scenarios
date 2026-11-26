@@ -162,7 +162,7 @@ service wb-rules restart
   "configVersion": 1,
   "scenarios": [
     {
-      "componentVersion": 1,
+      "componentVersion": 2,
       "enable": true,
       "name": "Уличное освещение",
       "coordinates": {

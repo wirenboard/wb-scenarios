@@ -1,10 +1,17 @@
-wb-scenarios (1.10.8) stable; urgency=medium
+wb-scenarios (1.10.9) stable; urgency=medium
 
   * Switch the license to MIT: Wiren Board as the copyright holder,
     2024 as the first publication year
   * Fill debian/copyright in the DEP-5 format
 
- -- Ekaterina Volkova <ekaterina.volkova@wirenboard.com>  Thu, 12 Nov 2026 14:40:07 +0300
+ -- Ekaterina Volkova <ekaterina.volkova@wirenboard.com>  Thu, 26 Nov 2026 18:14:25 +0300
+
+wb-scenarios (1.10.8) stable; urgency=medium
+
+  * Run each config migration once, by the scenario config version
+  * Check the config version in the schedule and devices control scenarios
+
+ -- Valerii Trofimov <valeriy.trofimov@wirenboard.com>  Tue, 17 Nov 2026 16:28:00 +0300
 
 wb-scenarios (1.10.7) stable; urgency=medium
 
